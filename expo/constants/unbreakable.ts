@@ -146,6 +146,94 @@ export interface AnalysisResult {
   delta?: string;
 }
 
+export function getContextualSuggestions(input: string): string[] {
+  const lower = input.toLowerCase().trim();
+
+  if (/(walk|steps|hike)/i.test(lower)) {
+    return [
+      'Walk 10,000 steps every day this week',
+      'Walk for 30 minutes, 5 days this week',
+      'Walk 2 miles every morning this week',
+    ];
+  }
+  if (/(gym|exercise|workout|lift|train|yoga|stretch|swim|bike)/i.test(lower)) {
+    return [
+      'Go to the gym 3 times this week',
+      'Do a 30-minute workout, 4 days this week',
+      'Exercise for 45 minutes, 4 days this week',
+    ];
+  }
+  if (/(run|jog)/i.test(lower)) {
+    return [
+      'Run for 20 minutes, 4 days this week',
+      'Run 2 miles, 3 times this week',
+      'Run every morning this week',
+    ];
+  }
+  if (/(read|book)/i.test(lower)) {
+    return [
+      'Read for 30 minutes every night this week',
+      'Read 50 pages every day this week',
+      'Read one chapter every night before bed',
+    ];
+  }
+  if (/(eat|food|cook|takeout|diet|health|healthier)/i.test(lower)) {
+    return [
+      'No takeout all week',
+      'Cook dinner at home every night this week',
+      'No junk food or sugar all week',
+    ];
+  }
+  if (/(sleep|bed|wake|morning)/i.test(lower)) {
+    return [
+      'Be in bed by 10:30pm every night this week',
+      'No screens after 9pm all week',
+      'Wake up before 7am every weekday',
+    ];
+  }
+  if (/(productive|work|focus|study|learn)/i.test(lower)) {
+    return [
+      'Work for 90 focused minutes on 4 days this week',
+      'No social media during work hours all week',
+      'Complete 3 deep-work blocks this week',
+    ];
+  }
+  if (/(write|code|create)/i.test(lower)) {
+    return [
+      'Write for 60 minutes, 4 days this week',
+      'Write 500 words every day this week',
+      'Code for 90 minutes, 5 days this week',
+    ];
+  }
+  if (/(meditat|mindful)/i.test(lower)) {
+    return [
+      'Meditate for 10 minutes every morning this week',
+      'Meditate every day this week',
+      'Do 15 minutes of meditation, 5 days this week',
+    ];
+  }
+  if (/(phone|screen|social|scroll|instagram|tiktok)/i.test(lower)) {
+    return [
+      'No phone in bed all week',
+      'Under 1 hour of screen time every day this week',
+      'No social media all week',
+    ];
+  }
+  if (/(drink|alcohol|sober|beer|wine)/i.test(lower)) {
+    return [
+      'No alcohol all week',
+      'No drinking on weeknights this week',
+      'Only 2 drinks max all week',
+    ];
+  }
+
+  return [
+    'Work for 90 focused minutes on 4 days this week',
+    'Go to the gym 3 times this week',
+    'Read every night before bed this week',
+  ];
+}
+
 export function analyzeVow(input: string): AnalysisResult {
   const lowered = input.toLowerCase().trim();
   const vagueTerms = [
@@ -164,11 +252,7 @@ export function analyzeVow(input: string): AnalysisResult {
   if (vagueTerms.some((term) => lowered.includes(term)) || lowered.split(' ').length < 3) {
     return {
       type: 'vague',
-      suggestions: [
-        'Work for 90 focused minutes on 4 days this week',
-        'Go to the gym 3 times this week',
-        'Read every night before bed this week',
-      ],
+      suggestions: getContextualSuggestions(input),
     };
   }
 
@@ -264,14 +348,17 @@ export function detectVowNeeds(input: string): VowNeeds {
   const isNegation = /^(no\s+|don't\s+|stop\s+|avoid\s+|quit\s+|cut\s+)/i.test(lower);
   const isTimeBound = /(wake|get up|sleep|bed|alarm|before\s+\d)/i.test(lower);
   const isDeadlineTask = /(send|submit|finish|complete|ship|launch|deliver)/i.test(lower);
-  const hasFrequency = /\d+\s*(?:x|times?)/i.test(lower) || /(every\s+(?:day|weekday|night|morning)|daily)/i.test(lower);
+  const hasFrequency = /\d+\s*(?:x|times?)/i.test(lower)
+    || /(every\s+(?:day|weekday|night|morning)|daily)/i.test(lower)
+    || /(three|four|five|six|seven)\s+times/i.test(lower);
   const hasDuration = /\d+\s*(?:min|minute|hour|hr)/i.test(lower) || /at\s+least\s+\d/i.test(lower);
   const hasDeadline = /(this\s+week|all\s+week|by\s+\w+day|through\s+sunday)/i.test(lower);
   const isDurationRelevant = DURATION_RELEVANT.test(lower);
+  const hasQuantity = /(?:\d+[,.]?\d*k?|\d{1,3}(?:,\d{3})+)\s*(?:steps|miles|km|pages|reps|pushups|pullups|situps|laps|words|oz|glasses|cups|liters)/i.test(lower);
 
   return {
     showFrequency: !isNegation && !isTimeBound && !isDeadlineTask && !hasFrequency,
-    showDuration: !isNegation && !isTimeBound && !isDeadlineTask && !hasDuration && isDurationRelevant,
+    showDuration: !isNegation && !isTimeBound && !isDeadlineTask && !hasDuration && isDurationRelevant && !hasQuantity,
     autoDeadline: !hasDeadline,
     isNegation,
     isTimeBound,
@@ -319,10 +406,16 @@ export function composeVow(
   clean = clean.charAt(0).toUpperCase() + clean.slice(1);
 
   if (needs.isNegation) {
+    if (/(all\s+week|every|this\s+week)/i.test(clean)) {
+      return `${clean}.`;
+    }
     return `${clean}, all week.`;
   }
 
   if (needs.isDeadlineTask) {
+    if (/by\s+(mon|tue|wed|thu|fri|sat|sun)/i.test(clean)) {
+      return `${clean}.`;
+    }
     return `${clean} by Friday.`;
   }
 
