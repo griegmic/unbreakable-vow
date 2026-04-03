@@ -30,9 +30,10 @@ export default function HomeScreen() {
   const heroSlide = useRef(new Animated.Value(12)).current;
   const inputFade = useRef(new Animated.Value(0)).current;
   const inputSlide = useRef(new Animated.Value(16)).current;
+  const ctaFade = useRef(new Animated.Value(0)).current;
+  const ctaSlide = useRef(new Animated.Value(12)).current;
   const stepsFade = useRef(new Animated.Value(0)).current;
   const stepsSlide = useRef(new Animated.Value(16)).current;
-  const ctaScale = useRef(new Animated.Value(0.97)).current;
 
   useEffect(() => {
     Animated.sequence([
@@ -49,9 +50,12 @@ export default function HomeScreen() {
         Animated.timing(inputSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
       ]),
       Animated.parallel([
+        Animated.timing(ctaFade, { toValue: 1, duration: 350, useNativeDriver: true }),
+        Animated.timing(ctaSlide, { toValue: 0, duration: 350, useNativeDriver: true }),
+      ]),
+      Animated.parallel([
         Animated.timing(stepsFade, { toValue: 1, duration: 400, useNativeDriver: true }),
         Animated.timing(stepsSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
-        Animated.spring(ctaScale, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 6 }),
       ]),
     ]).start();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -95,9 +99,7 @@ export default function HomeScreen() {
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View pointerEvents="none" style={styles.orbTopRight} />
-      <View pointerEvents="none" style={styles.orbBottomLeft} />
-      <View pointerEvents="none" style={styles.orbCenter} />
+      <View pointerEvents="none" style={styles.ambientGlow} />
 
       <SafeAreaView style={styles.safe}>
         <ScrollView
@@ -127,13 +129,20 @@ export default function HomeScreen() {
             </Text>
           </Animated.View>
 
-          <Animated.View style={[styles.inputCard, focused && styles.inputCardFocused, { opacity: inputFade, transform: [{ translateY: inputSlide }] }]}>
+          <Animated.View
+            style={[
+              styles.inputCard,
+              focused && styles.inputCardFocused,
+              !focused && styles.inputCardRest,
+              { opacity: inputFade, transform: [{ translateY: inputSlide }] },
+            ]}
+          >
             <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>YOUR VOW</Text>
             <TextInput
               ref={inputRef}
               style={styles.input}
               placeholder="No phone in bed all week"
-              placeholderTextColor={palette.textMuted}
+              placeholderTextColor="rgba(166,176,192,0.6)"
               value={input}
               onChangeText={setInput}
               onFocus={() => setFocused(true)}
@@ -154,6 +163,29 @@ export default function HomeScreen() {
                 </Pressable>
               ))}
             </View>
+          </Animated.View>
+
+          <Animated.View style={[styles.ctaSection, { opacity: ctaFade, transform: [{ translateY: ctaSlide }] }]}>
+            <Animated.View style={{ transform: [{ scale: btnScale }] }}>
+              <Pressable
+                disabled={!canContinue}
+                onPress={handleContinue}
+                onPressIn={handlePressIn}
+                onPressOut={handlePressOut}
+                style={styles.ctaWrap}
+                testID="home-continue"
+              >
+                <LinearGradient
+                  colors={canContinue ? [palette.goldBright, palette.gold, palette.goldDeep] : ['#1E2430', '#1E2430']}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={styles.ctaGradient}
+                >
+                  <Text style={[styles.ctaText, !canContinue && styles.ctaTextDisabled]}>Set the terms</Text>
+                  {canContinue ? <ArrowRight color="#0B0D11" size={18} /> : null}
+                </LinearGradient>
+              </Pressable>
+            </Animated.View>
           </Animated.View>
 
           <Animated.View style={[styles.stepsCard, { opacity: stepsFade, transform: [{ translateY: stepsSlide }] }]}>
@@ -189,29 +221,6 @@ export default function HomeScreen() {
             </View>
           </Animated.View>
         </ScrollView>
-
-        <Animated.View style={[styles.footer, { transform: [{ scale: ctaScale }] }]}>
-          <Animated.View style={{ transform: [{ scale: btnScale }] }}>
-            <Pressable
-              disabled={!canContinue}
-              onPress={handleContinue}
-              onPressIn={handlePressIn}
-              onPressOut={handlePressOut}
-              style={styles.ctaWrap}
-              testID="home-continue"
-            >
-              <LinearGradient
-                colors={canContinue ? [palette.goldBright, palette.gold, palette.goldDeep] : ['#1E2430', '#1E2430']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.ctaGradient}
-              >
-                <Text style={[styles.ctaText, !canContinue && styles.ctaTextDisabled]}>Set the terms</Text>
-                {canContinue ? <ArrowRight color="#0B0D11" size={18} /> : null}
-              </LinearGradient>
-            </Pressable>
-          </Animated.View>
-        </Animated.View>
       </SafeAreaView>
     </View>
   );
@@ -228,41 +237,24 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 22,
     paddingTop: 8,
-    paddingBottom: 100,
+    paddingBottom: 40,
   },
-  orbTopRight: {
+  ambientGlow: {
     position: 'absolute',
-    top: -70,
-    right: -50,
-    width: 280,
-    height: 280,
-    borderRadius: 280,
-    backgroundColor: 'rgba(212,162,79,0.22)',
-    opacity: 0.6,
-  },
-  orbBottomLeft: {
-    position: 'absolute',
-    bottom: 60,
-    left: -80,
-    width: 200,
-    height: 200,
-    borderRadius: 200,
-    backgroundColor: 'rgba(70,100,180,0.08)',
-  },
-  orbCenter: {
-    position: 'absolute',
-    top: 200,
-    left: '30%',
-    width: 160,
-    height: 160,
-    borderRadius: 160,
-    backgroundColor: 'rgba(212,162,79,0.06)',
+    top: -40,
+    left: '50%',
+    marginLeft: -180,
+    width: 360,
+    height: 360,
+    borderRadius: 360,
+    backgroundColor: 'rgba(212,162,79,0.14)',
+    opacity: 0.7,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 28,
+    marginBottom: 24,
     marginTop: 4,
   },
   headerIcon: {
@@ -301,13 +293,16 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     fontFamily: serifFont,
     letterSpacing: -1.5,
-    marginBottom: 14,
+    marginBottom: 12,
+    textShadowColor: 'rgba(212,162,79,0.25)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 18,
   },
   heroSub: {
     color: palette.textSecondary,
     fontSize: 15,
     lineHeight: 23,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   inputCard: {
     backgroundColor: palette.surface,
@@ -315,17 +310,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
     padding: 18,
-    marginBottom: 20,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.22,
     shadowRadius: 24,
     elevation: 10,
   },
+  inputCardRest: {
+    borderColor: 'rgba(212,162,79,0.12)',
+    shadowColor: palette.gold,
+    shadowOpacity: 0.06,
+  },
   inputCardFocused: {
     borderColor: 'rgba(212,162,79,0.35)',
     shadowColor: palette.gold,
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.14,
   },
   inputLabel: {
     color: palette.textMuted,
@@ -348,11 +348,11 @@ const styles = StyleSheet.create({
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 7,
   },
   chip: {
-    paddingHorizontal: 13,
-    paddingVertical: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: palette.border,
@@ -364,11 +364,40 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: palette.textSecondary,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '500' as const,
   },
   chipTextActive: {
     color: palette.goldBright,
+  },
+  ctaSection: {
+    marginBottom: 24,
+  },
+  ctaWrap: {
+    borderRadius: 18,
+    overflow: 'hidden',
+    shadowColor: palette.gold,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  ctaGradient: {
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 20,
+  },
+  ctaText: {
+    color: '#0B0D11',
+    fontSize: 16,
+    fontWeight: '800' as const,
+    letterSpacing: 0.2,
+  },
+  ctaTextDisabled: {
+    color: palette.textMuted,
   },
   stepsCard: {
     backgroundColor: palette.surface,
@@ -428,40 +457,5 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: palette.border,
     marginLeft: 46,
-  },
-  footer: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 22,
-    paddingBottom: 34,
-    paddingTop: 12,
-  },
-  ctaWrap: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    shadowColor: palette.gold,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  ctaGradient: {
-    minHeight: 56,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-  },
-  ctaText: {
-    color: '#0B0D11',
-    fontSize: 16,
-    fontWeight: '800' as const,
-    letterSpacing: 0.2,
-  },
-  ctaTextDisabled: {
-    color: palette.textMuted,
   },
 });

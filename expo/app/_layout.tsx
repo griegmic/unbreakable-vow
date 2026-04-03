@@ -2,8 +2,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
+import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { IntroCeremony } from '@/components/intro-ceremony';
+import { OathStateProvider, useOathState } from '@/providers/oath-state';
 import { VowFlowProvider } from '@/providers/vow-flow';
 
 void SplashScreen.preventAutoHideAsync();
@@ -32,6 +35,28 @@ function RootLayoutNav() {
   );
 }
 
+function AppWithOath() {
+  const { ready, shouldShowIntro, shouldShowOath, completeIntro, dismissOath } = useOathState();
+
+  if (!ready) {
+    return <View style={{ flex: 1, backgroundColor: '#030508' }} />;
+  }
+
+  const showCeremony = shouldShowIntro || shouldShowOath;
+
+  return (
+    <View style={{ flex: 1, backgroundColor: '#030508' }}>
+      <RootLayoutNav />
+      {showCeremony ? (
+        <IntroCeremony
+          showFullIntro={shouldShowIntro}
+          onComplete={shouldShowIntro ? completeIntro : dismissOath}
+        />
+      ) : null}
+    </View>
+  );
+}
+
 export default function RootLayout() {
   useEffect(() => {
     void SplashScreen.hideAsync();
@@ -39,11 +64,13 @@ export default function RootLayout() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <VowFlowProvider>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <RootLayoutNav />
-        </GestureHandlerRootView>
-      </VowFlowProvider>
+      <OathStateProvider>
+        <VowFlowProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <AppWithOath />
+          </GestureHandlerRootView>
+        </VowFlowProvider>
+      </OathStateProvider>
     </QueryClientProvider>
   );
 }

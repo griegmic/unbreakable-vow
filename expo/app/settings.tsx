@@ -1,20 +1,22 @@
 import * as Haptics from 'expo-haptics';
 import { Stack } from 'expo-router';
-import { Bell, CreditCard, LogOut, Mail, Shield } from 'lucide-react-native';
+import { Bell, CreditCard, LogOut, Mail, Shield, Sparkles } from 'lucide-react-native';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { BackButton, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
+import { useOathState } from '@/providers/oath-state';
 
 interface SettingsRowProps {
   icon: React.ReactNode;
   label: string;
   description: string;
   onPress?: () => void;
+  trailing?: React.ReactNode;
 }
 
-function SettingsRow({ icon, label, description, onPress }: SettingsRowProps) {
+function SettingsRow({ icon, label, description, onPress, trailing }: SettingsRowProps) {
   return (
     <Pressable
       style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
@@ -29,11 +31,14 @@ function SettingsRow({ icon, label, description, onPress }: SettingsRowProps) {
         <Text style={styles.rowLabel}>{label}</Text>
         <Text style={styles.rowDesc}>{description}</Text>
       </View>
+      {trailing ?? null}
     </Pressable>
   );
 }
 
 export default function SettingsScreen() {
+  const { oathToggleEnabled, setOathToggle } = useOathState();
+
   return (
     <RitualScreen>
       <Stack.Screen options={{ headerShown: false }} />
@@ -63,6 +68,27 @@ export default function SettingsScreen() {
           icon={<Shield color={palette.textSecondary} size={18} />}
           label="Privacy"
           description="Data and permissions"
+        />
+      </View>
+
+      <View style={styles.section}>
+        <SettingsRow
+          icon={<Sparkles color={palette.goldBright} size={18} />}
+          label="Show oath on open"
+          description="Start each session with the ritual"
+          onPress={() => setOathToggle(!oathToggleEnabled)}
+          trailing={
+            <Switch
+              value={oathToggleEnabled}
+              onValueChange={(val) => {
+                void Haptics.selectionAsync();
+                setOathToggle(val);
+              }}
+              trackColor={{ false: palette.surfaceStrong, true: 'rgba(212,162,79,0.4)' }}
+              thumbColor={oathToggleEnabled ? palette.goldBright : palette.textMuted}
+              testID="oath-toggle"
+            />
+          }
         />
       </View>
 

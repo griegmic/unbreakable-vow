@@ -18,6 +18,7 @@ export default function SealScreen() {
   const checkScale = useRef(new Animated.Value(0)).current;
   const swearGlow = useRef(new Animated.Value(0)).current;
   const checkboxScale = useRef(new Animated.Value(1)).current;
+  const oathFlashOpacity = useRef(new Animated.Value(0)).current;
 
   const isVowkeeper = vow.witnessName === 'Vowkeeper';
 
@@ -61,17 +62,24 @@ export default function SealScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setSealed(true);
 
-      Animated.spring(checkScale, {
-        toValue: 1,
-        useNativeDriver: true,
-        speed: 8,
-        bounciness: 14,
-      }).start();
+      Animated.parallel([
+        Animated.spring(checkScale, {
+          toValue: 1,
+          useNativeDriver: true,
+          speed: 8,
+          bounciness: 14,
+        }),
+        Animated.sequence([
+          Animated.timing(oathFlashOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.delay(600),
+          Animated.timing(oathFlashOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+        ]),
+      ]).start();
 
       setTimeout(() => {
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         router.push('/sent');
-      }, 700);
+      }, 1600);
     });
   };
 
@@ -198,6 +206,12 @@ export default function SealScreen() {
             </View>
           </Pressable>
         </RitualCard>
+      ) : null}
+
+      {sealed ? (
+        <Animated.View style={[styles.oathFlash, { opacity: oathFlashOpacity }]} pointerEvents="none">
+          <Text style={styles.oathFlashText}>I solemnly swear{"\n"}to keep my word this week.</Text>
+        </Animated.View>
       ) : null}
 
       {!sealed ? (
@@ -411,5 +425,29 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 21,
+  },
+  oathFlash: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(5,7,11,0.85)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+    paddingHorizontal: 40,
+  },
+  oathFlashText: {
+    color: palette.goldBright,
+    fontSize: 26,
+    fontWeight: '700' as const,
+    fontFamily: serifFont,
+    textAlign: 'center' as const,
+    lineHeight: 38,
+    letterSpacing: -0.5,
+    textShadowColor: 'rgba(212,162,79,0.3)',
+    textShadowOffset: { width: 0, height: 4 },
+    textShadowRadius: 20,
   },
 });
