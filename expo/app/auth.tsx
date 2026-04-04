@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { ArrowLeft, MoveRight, Phone } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BackButton, PrimaryButton, RitualScreen, TitleBlock, VowPreview } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
@@ -38,6 +38,10 @@ export default function AuthScreen() {
 
   const handleGoogle = async () => {
     if (loading) return;
+    if (Platform.OS === 'web') {
+      Alert.alert('Native only', 'Google Sign-In requires the native app. Use phone number instead.');
+      return;
+    }
     setLoading('google');
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
