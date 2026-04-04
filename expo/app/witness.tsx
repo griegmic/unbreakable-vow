@@ -52,6 +52,7 @@ export default function WitnessScreen() {
   const handleConfirm = () => {
     if (!selectedName.trim()) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setWitnessType('friend');
     setWitness(selectedName, 'sms', phone);
     router.push('/stake');
   };

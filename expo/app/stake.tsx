@@ -84,7 +84,10 @@ export default function StakeScreen() {
       <BackButton />
       <TitleBlock
         title="Set the stakes."
-        subtitle="You're only charged if your witness says you broke it. Pick an amount you'd genuinely hate to lose."
+        subtitle={isSelfWitness
+          ? "You're only charged if you honestly admit you broke it. Pick an amount you'd genuinely hate to lose."
+          : "You're only charged if your witness says you broke it. Pick an amount you'd genuinely hate to lose."
+        }
       />
       <VowPreview text={activeVowText} compact />
 

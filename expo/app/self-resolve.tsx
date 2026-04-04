@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Check, CircleDollarSign, Hand, ShieldCheck } from 'lucide-react-native';
@@ -13,10 +14,12 @@ import {
   View,
 } from 'react-native';
 
-import { RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
+import { BackButton, RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
 import { useVowFlow } from '@/providers/vow-flow';
+
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
 type VerdictChoice = 'kept' | 'broken' | null;
 
@@ -79,7 +82,9 @@ export default function SelfResolveScreen() {
     if (submitting) return;
     setSubmitting(true);
 
-    if (vow.witnessInviteToken) {
+    if (IS_EXPO_GO) {
+      console.log('[SelfResolve] Expo Go dev mode — skipping backend, simulating verdict:', selectedVerdict);
+    } else if (vow.witnessInviteToken) {
       try {
         await supabase.functions.invoke('submit-verdict', {
           body: { token: vow.witnessInviteToken, verdict: selectedVerdict },
@@ -91,6 +96,12 @@ export default function SelfResolveScreen() {
         Alert.alert('Something went wrong', 'Please try again.');
         return;
       }
+    } else {
+      console.warn('[SelfResolve] No witnessInviteToken and not in Expo Go — cannot submit verdict');
+      setSubmitting(false);
+      setConfirmVisible(false);
+      Alert.alert('Something went wrong', 'Missing invite token. Please try again.');
+      return;
     }
 
     setSubmitting(false);
@@ -126,6 +137,7 @@ export default function SelfResolveScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.content}>
         <View style={styles.topSection}>
+          <BackButton />
           <View style={styles.oathSymbol}>
             <Animated.View style={[styles.oathGlow, { opacity: oathPulse }]} />
             <View style={styles.oathCircle}>

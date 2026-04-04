@@ -43,7 +43,7 @@ export default function SentScreen() {
 
   const brokenTarget =
     vow.stake.consequence === 'witness'
-      ? vow.witnessName
+      ? (isSelfWitness ? 'charity' : vow.witnessName)
       : vow.stake.destination;
 
   return (
@@ -51,17 +51,19 @@ export default function SentScreen() {
       footer={
         <>
           <PrimaryButton label="Got it" onPress={() => router.push('/live')} testID="sent-continue" />
-          <SecondaryButton
-            label="Preview what your witness sees"
-            onPress={() => {
-              if (vow.witnessInviteToken) {
-                void Linking.openURL(`https://unbreakablevow.app/witness?token=${vow.witnessInviteToken}`);
-              } else {
-                router.push('/witness-invite');
-              }
-            }}
-            testID="sent-witness-preview"
-          />
+          {!isSelfWitness && (
+            <SecondaryButton
+              label="Preview what your witness sees"
+              onPress={() => {
+                if (vow.witnessInviteToken) {
+                  void Linking.openURL(`https://unbreakablevow.app/witness?token=${vow.witnessInviteToken}`);
+                } else {
+                  router.push('/witness-invite');
+                }
+              }}
+              testID="sent-witness-preview"
+            />
+          )}
         </>
       }
     >
