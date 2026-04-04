@@ -1,5 +1,3 @@
-import { Platform } from 'react-native';
-
 import { supabase } from './supabase';
 
 export interface AuthResult {
@@ -8,32 +6,40 @@ export interface AuthResult {
   displayName?: string | null;
 }
 
-// Configure Google Sign-In lazily on native only
+// Lazy-load Google Sign-In to avoid crashes in environments where native module isn't available
+let _google: typeof import('@react-native-google-signin/google-signin') | null = null;
 let googleConfigured = false;
-async function getGoogleSignin() {
-  const mod = await import('@react-native-google-signin/google-signin');
-  if (!googleConfigured) {
-    mod.GoogleSignin.configure({
+
+function getGoogle() {
+  if (!_google) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      _google = require('@react-native-google-signin/google-signin');
+    } catch {
+      return null;
+    }
+  }
+  if (!googleConfigured && _google) {
+    _google.GoogleSignin.configure({
       webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
       iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
     });
     googleConfigured = true;
   }
-  return mod;
+  return _google;
 }
 
 export async function signInWithGoogle(): Promise<AuthResult> {
-  if (Platform.OS === 'web') {
-    return { success: false, error: 'Google Sign-In is not supported on web' };
+  const g = getGoogle();
+  if (!g) {
+    return { success: false, error: 'Google Sign-In is not available in this environment' };
   }
 
   try {
-    const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = await getGoogleSignin();
+    await g.GoogleSignin.hasPlayServices();
+    const response = await g.GoogleSignin.signIn();
 
-    await GoogleSignin.hasPlayServices();
-    const response = await GoogleSignin.signIn();
-
-    if (!isSuccessResponse(response)) {
+    if (!g.isSuccessResponse(response)) {
       return { success: false, error: 'Sign-in cancelled' };
     }
 
@@ -79,14 +85,13 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 
     return { success: true, displayName };
   } catch (err: unknown) {
-    const { isErrorWithCode, statusCodes } = await getGoogleSignin();
-    if (isErrorWithCode(err)) {
+    if (g.isErrorWithCode(err)) {
       switch (err.code) {
-        case statusCodes.SIGN_IN_CANCELLED:
+        case g.statusCodes.SIGN_IN_CANCELLED:
           return { success: false, error: 'Sign-in cancelled' };
-        case statusCodes.IN_PROGRESS:
+        case g.statusCodes.IN_PROGRESS:
           return { success: false, error: 'Sign-in already in progress' };
-        case statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
+        case g.statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
           return { success: false, error: 'Play Services not available' };
         default:
           return { success: false, error: err.message };
@@ -155,10 +160,10 @@ export async function verifyPhoneOtp(phone: string, code: string): Promise<AuthR
 }
 
 export async function signOut(): Promise<void> {
-  if (Platform.OS !== 'web') {
+  const g = getGoogle();
+  if (g) {
     try {
-      const { GoogleSignin } = await getGoogleSignin();
-      await GoogleSignin.signOut();
+      await g.GoogleSignin.signOut();
     } catch {
       // May not be signed in with Google
     }
