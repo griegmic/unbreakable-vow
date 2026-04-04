@@ -118,6 +118,7 @@ export const [OathStateProvider, useOathState] = createContextHook(() => {
   const completeIntro = useCallback(() => {
     console.log('[OathState] completeIntro');
     setIntroPlayed(true);
+    setOathDismissed(true);
     markIntroSeen.mutate();
   }, [markIntroSeen]);
 
