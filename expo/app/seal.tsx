@@ -5,6 +5,8 @@ import { Check, Sparkles, Star } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
+
 import { BackButton, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { createPaymentIntent, setupPaymentSheet, showPaymentSheet } from '@/lib/stripe';
@@ -126,6 +128,15 @@ export default function SealScreen() {
     if (!sworn || loading) return;
     setLoading(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    // ── Expo Go dev bypass: skip all backend calls ──
+    if (IS_EXPO_GO) {
+      console.log('[SealScreen] Expo Go dev mode — skipping backend, simulating seal');
+      setVowId('dev-' + Date.now(), 'dev-token-' + Date.now());
+      setLoading(false);
+      playSealAnimation();
+      return;
+    }
 
     // If we already paid but seal failed, retry the seal only
     if (paidVowId) {
