@@ -1,6 +1,7 @@
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Mail, MoveRight, Phone } from 'lucide-react-native';
+import { ArrowLeft, Mail, MoveRight, Phone, SkipForward } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -9,6 +10,8 @@ import { palette } from '@/constants/unbreakable';
 import { type AuthResult, GOOGLE_SIGN_IN_AVAILABLE, sendEmailOtp, sendPhoneOtp, signInWithGoogle, verifyEmailOtp, verifyPhoneOtp } from '@/lib/auth';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { useVowFlow } from '@/providers/vow-flow';
+
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
 type AuthMode = 'pick' | 'phone' | 'otp' | 'email' | 'email-otp';
 
@@ -458,6 +461,25 @@ export default function AuthScreen() {
         <Text style={styles.authTitle}>Continue with Apple</Text>
         <Text style={styles.soonBadge}>SOON</Text>
       </Pressable>
+
+      {IS_EXPO_GO ? (
+        <Pressable
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push('/seal');
+          }}
+          style={[styles.authRow, styles.devSkipRow]}
+          testID="auth-dev-skip"
+        >
+          <View style={[styles.authIcon, styles.devSkipIcon]}>
+            <SkipForward color={palette.goldBright} size={18} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.authTitle}>Skip auth (Expo Go)</Text>
+            <Text style={styles.devSkipHint}>Dev only — bypasses sign-in to test the rest of the flow</Text>
+          </View>
+        </Pressable>
+      ) : null}
     </RitualScreen>
   );
 }
@@ -475,6 +497,18 @@ const styles = StyleSheet.create({
   },
   authRowDisabled: {
     opacity: 0.45,
+  },
+  devSkipRow: {
+    borderColor: 'rgba(212,162,79,0.25)',
+    borderStyle: 'dashed' as const,
+  },
+  devSkipIcon: {
+    backgroundColor: 'rgba(212,162,79,0.12)',
+  },
+  devSkipHint: {
+    color: palette.textMuted,
+    fontSize: 12,
+    marginTop: 2,
   },
   authIcon: {
     width: 42,

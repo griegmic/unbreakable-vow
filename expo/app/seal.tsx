@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Check, Sparkles, Star } from 'lucide-react-native';
@@ -23,8 +24,9 @@ export default function SealScreen() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const { activeVowText, vow, setVowId } = useVowFlow();
 
-  // Redirect to auth if not signed in
+  // Redirect to auth if not signed in (skip in Expo Go dev mode)
   useEffect(() => {
+    if (Constants.appOwnership === 'expo') return;
     if (!authLoading && !isAuthenticated) {
       router.replace('/auth');
     }
