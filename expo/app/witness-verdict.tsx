@@ -248,7 +248,7 @@ export default function WitnessVerdictScreen() {
                   }
                 </Text>
                 <Text style={styles.modalBody}>
-                  ${vow.stake.amount} stays safe. This is final.
+                  ${vow.stake.amount} stays safe. No charge.
                 </Text>
               </>
             ) : (
@@ -256,10 +256,14 @@ export default function WitnessVerdictScreen() {
                 <View style={[styles.modalIconWrap, styles.modalIconBroken]}>
                   <CircleDollarSign color={palette.warmAmber} size={24} />
                 </View>
-                <Text style={styles.modalTitle}>This is final.</Text>
+                <Text style={styles.modalTitle}>
+                  {isVowkeeper
+                    ? `Confirm: you didn\u2019t keep the vow?`
+                    : `Confirm: ${displayName} broke the vow?`
+                  }
+                </Text>
                 <Text style={styles.modalBody}>
-                  ${vow.stake.amount} will go to {destination}.{' '}
-                  {isVowkeeper ? 'You' : displayName} cannot appeal.
+                  ${vow.stake.amount} will be donated to {destination}.
                 </Text>
               </>
             )}

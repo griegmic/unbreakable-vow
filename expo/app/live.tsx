@@ -5,12 +5,12 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
-import { getVowDates, palette } from '@/constants/unbreakable';
+import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function LiveScreen() {
   const { activeVowText, vow } = useVowFlow();
-  const dates = getVowDates();
+  const dates = getVowVerdictDate(vow.rawInput);
   const isVowkeeper = vow.witnessName === 'Vowkeeper';
 
   const brokenTarget =
@@ -65,7 +65,7 @@ export default function LiveScreen() {
       />
 
       <View style={styles.statsRow}>
-        <StatPill value="Day 1" label="of 7" />
+        <StatPill value="Day 1" label={dates.isCustomDate ? `of deadline` : 'of 7'} />
         <StatPill value={dates.endLabel} label="verdict date" />
       </View>
 
@@ -82,8 +82,8 @@ export default function LiveScreen() {
           <ShieldCheck color={palette.textSecondary} size={18} />
           <Text style={styles.infoText}>
             {isVowkeeper
-              ? 'On day 7, you deliver the final verdict yourself.'
-              : `On day 7, ${vow.witnessName} delivers the final verdict.`}
+              ? `On ${dates.endLabel}, you deliver the final verdict yourself.`
+              : `On ${dates.endLabel}, ${vow.witnessName} delivers the final verdict.`}
           </Text>
         </View>
       </RitualCard>

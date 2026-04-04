@@ -102,7 +102,7 @@ export default function VowKeptScreen() {
           </View>
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Your stake</Text>
-            <Text style={styles.metaValueSuccess}>${vow.stake.amount} \u2014 safe</Text>
+            <Text style={styles.metaValueSuccess}>Not charged</Text>
           </View>
         </RitualCard>
       </Animated.View>

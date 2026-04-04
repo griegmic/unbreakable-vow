@@ -87,7 +87,7 @@ export default function VowBrokenScreen() {
           </View>
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Stake</Text>
-            <Text style={styles.metaValueAmber}>${vow.stake.amount} \u2014 donated</Text>
+            <Text style={styles.metaValueAmber}>Donated to {destination}</Text>
           </View>
         </RitualCard>
       </Animated.View>

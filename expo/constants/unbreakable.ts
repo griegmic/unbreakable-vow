@@ -55,7 +55,7 @@ export const consequenceOptions: ConsequenceOption[] = [
   },
   {
     id: 'anti',
-    label: 'A cause you dislike',
+    label: 'A cause you hate',
     description: 'Maximum pain. Maximum motivation.',
   },
 ];
@@ -252,7 +252,23 @@ export function analyzeVow(input: string): AnalysisResult {
     'get fit',
   ];
 
-  if (vagueTerms.some((term) => lowered.includes(term)) || lowered.split(' ').length < 3) {
+  const hasVagueTerm = vagueTerms.some((term) => lowered.includes(term));
+  const tooShort = lowered.split(' ').length < 3;
+
+  const hasVagueAction = /(more|less|better|some|a bit|a little|a few)\s+(\w+)/i.test(lowered)
+    && !/\d+/.test(lowered)
+    && !/(no\s+|don't\s+|stop\s+|avoid\s+|quit\s+)/i.test(lowered);
+
+  const hasNoMeasurable = !/(\d+|every|all\s+week|daily|no\s+|don't|stop|avoid|quit|before\s+\d|by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|by\s+end)/i.test(lowered);
+
+  if (hasVagueTerm || tooShort) {
+    return {
+      type: 'vague',
+      suggestions: getContextualSuggestions(input),
+    };
+  }
+
+  if (hasVagueAction && hasNoMeasurable) {
     return {
       type: 'vague',
       suggestions: getContextualSuggestions(input),
@@ -261,6 +277,10 @@ export function analyzeVow(input: string): AnalysisResult {
 
   const alreadyGoodPattern = /wake.*before.*\d|gym.*\d.*(?:time|x)|no.*(?:phone|takeout|alcohol|sugar|social media|instagram|tiktok|junk|delivery|netflix|youtube|screen).*(?:week|all|every|tonight|in bed|before|after)|send.*by.*(?:fri|mon|tue|wed|thu|sat|sun)|read.*every.*(?:night|day|evening|morning)|read.*(?:night|day).*(?:in bed|before bed)|run.*(?:\d|every|daily)|meditate.*(?:every|daily|\d)/i;
   if (alreadyGoodPattern.test(lowered)) {
+    return { type: 'already_good' };
+  }
+
+  if (hasExplicitDate(lowered)) {
     return { type: 'already_good' };
   }
 
@@ -274,6 +294,65 @@ export function analyzeVow(input: string): AnalysisResult {
     sharperText,
     delta: getDelta(input, sharperText),
   };
+}
+
+export function hasExplicitDate(input: string): boolean {
+  const lower = input.toLowerCase();
+  const monthPattern = /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}/i;
+  const byDatePattern = /by\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}/i;
+  const endOfPattern = /by\s+(end\s+of\s+)?(this\s+)?(month|year|quarter|semester)/i;
+  const slashDate = /by\s+\d{1,2}\/\d{1,2}/i;
+  return monthPattern.test(lower) || byDatePattern.test(lower) || endOfPattern.test(lower) || slashDate.test(lower);
+}
+
+export function extractDeadlineDate(input: string): string | null {
+  const lower = input.toLowerCase();
+  const monthNames: Record<string, string> = {
+    jan: 'January', january: 'January',
+    feb: 'February', february: 'February',
+    mar: 'March', march: 'March',
+    apr: 'April', april: 'April',
+    may: 'May',
+    jun: 'June', june: 'June',
+    jul: 'July', july: 'July',
+    aug: 'August', august: 'August',
+    sep: 'September', september: 'September',
+    oct: 'October', october: 'October',
+    nov: 'November', november: 'November',
+    dec: 'December', december: 'December',
+  };
+
+  const monthMatch = lower.match(/(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})/i);
+  if (monthMatch) {
+    const month = monthNames[monthMatch[1].toLowerCase()] ?? monthMatch[1];
+    const day = parseInt(monthMatch[2], 10);
+    return `${month} ${day}`;
+  }
+
+  if (/end\s+of\s+(this\s+)?month/i.test(lower)) {
+    const now = new Date();
+    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    return lastDay.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  }
+
+  return null;
+}
+
+export function getVowVerdictDate(input: string): { verdictLabel: string; endLabel: string; range: string; isCustomDate: boolean } {
+  const deadlineDate = extractDeadlineDate(input);
+  if (deadlineDate) {
+    const start = new Date();
+    const formatShort = (date: Date): string =>
+      date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return {
+      verdictLabel: `Verdict on ${deadlineDate}`,
+      endLabel: deadlineDate,
+      range: `${formatShort(start)} \u2013 ${deadlineDate}`,
+      isCustomDate: true,
+    };
+  }
+  const dates = getVowDates();
+  return { ...dates, isCustomDate: false };
 }
 
 export function isAlreadySharp(input: string): boolean {
@@ -350,7 +429,7 @@ export function detectVowNeeds(input: string): VowNeeds {
 
   const isNegation = /^(no\s+|don't\s+|stop\s+|avoid\s+|quit\s+|cut\s+)/i.test(lower);
   const isTimeBound = /(wake|get up|sleep|bed|alarm|before\s+\d)/i.test(lower);
-  const isDeadlineTask = /(send|submit|finish|complete|ship|launch|deliver)/i.test(lower);
+  const isDeadlineTask = /(send|submit|finish|complete|ship|launch|deliver)/i.test(lower) && !hasExplicitDate(lower);
   const hasFrequency = /\d+\s*(?:x|times?)/i.test(lower)
     || /(every\s+(?:day|weekday|night|morning)|daily)/i.test(lower)
     || /(three|four|five|six|seven)\s+times/i.test(lower);

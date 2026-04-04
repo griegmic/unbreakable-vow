@@ -5,7 +5,7 @@ import React, { useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BackButton, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { palette, serifFont } from '@/constants/unbreakable';
+import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function SealScreen() {
@@ -21,6 +21,7 @@ export default function SealScreen() {
   const oathFlashOpacity = useRef(new Animated.Value(0)).current;
 
   const isVowkeeper = vow.witnessName === 'Vowkeeper';
+  const dates = getVowVerdictDate(vow.rawInput);
 
   const brokenLabel =
     vow.stake.consequence === 'witness'
@@ -154,7 +155,7 @@ export default function SealScreen() {
         <View style={styles.twoCol}>
           <View style={styles.metaCell}>
             <Text style={styles.metaLabel}>DURATION</Text>
-            <Text style={styles.metaValue}>7 days</Text>
+            <Text style={styles.metaValue}>{dates.isCustomDate ? `Until ${dates.endLabel}` : '7 days'}</Text>
           </View>
           <View style={styles.metaCell}>
             <Text style={styles.metaLabel}>IF BROKEN</Text>
@@ -163,7 +164,7 @@ export default function SealScreen() {
         </View>
         <View style={styles.metaCell}>
           <Text style={styles.metaLabel}>VERDICT</Text>
-          <Text style={styles.metaValue}>{vow.witnessName} decides on day 7</Text>
+          <Text style={styles.metaValue}>{vow.witnessName} decides on {dates.endLabel}</Text>
         </View>
       </RitualCard>
 

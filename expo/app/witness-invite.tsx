@@ -5,7 +5,7 @@ import React, { useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { palette, serifFont } from '@/constants/unbreakable';
+import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function WitnessInviteScreen() {
@@ -13,6 +13,7 @@ export default function WitnessInviteScreen() {
   const [sworn, setSworn] = useState<boolean>(false);
 
   const makerName = 'Someone';
+  const dates = getVowVerdictDate(vow.rawInput);
   const brokenTarget =
     vow.stake.consequence === 'witness'
       ? 'you'
@@ -106,7 +107,7 @@ export default function WitnessInviteScreen() {
         </View>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-          <Text style={styles.stepText}>On day 7, you get a prompt: kept or broken. One tap. Their fate is in your hands.</Text>
+          <Text style={styles.stepText}>On {dates.endLabel}, you get a prompt: kept or broken. One tap. Their fate is in your hands.</Text>
         </View>
       </RitualCard>
 

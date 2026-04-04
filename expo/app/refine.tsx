@@ -200,7 +200,7 @@ export default function RefineScreen() {
         <BackButton />
         <TitleBlock
           title={"Let\u2019s make it unbreakable."}
-          subtitle={"Your witness has to call this \u2018kept\u2019 or \u2018broken\u2019 on Day 7. The best vows are specific enough to judge."}
+          subtitle={"Your witness has to call this \u2018kept\u2019 or \u2018broken\u2019 at the end. The best vows are specific enough to judge."}
         />
 
         <RitualCard>

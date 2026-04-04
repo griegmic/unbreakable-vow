@@ -5,12 +5,12 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock, VowPreview } from '@/components/vow-ui';
-import { getVowDates, palette } from '@/constants/unbreakable';
+import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function SentScreen() {
   const { activeVowText, vow } = useVowFlow();
-  const dates = getVowDates();
+  const dates = getVowVerdictDate(vow.rawInput);
   const isVowkeeper = vow.witnessName === 'Vowkeeper';
 
   const checkScale = useRef(new Animated.Value(0)).current;
@@ -65,7 +65,7 @@ export default function SentScreen() {
           title={isVowkeeper ? 'Vow sealed.' : 'Sealed. Invite sent.'}
           subtitle={
             isVowkeeper
-              ? 'Vowkeeper will check in with you during the week. On day 7, you deliver the verdict.'
+              ? `Vowkeeper will check in with you during the week. On ${dates.endLabel}, you deliver the verdict.`
               : `${vow.witnessName} will receive your vow and choose to accept.`
           }
         />
@@ -114,7 +114,7 @@ export default function SentScreen() {
               </View>
               <View style={styles.stepRow}>
                 <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-                <Text style={styles.stepText}>On day 7, you call the verdict.</Text>
+                <Text style={styles.stepText}>On {dates.endLabel}, you call the verdict.</Text>
               </View>
             </>
           ) : (
@@ -129,7 +129,7 @@ export default function SentScreen() {
               </View>
               <View style={styles.stepRow}>
                 <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-                <Text style={styles.stepText}>{vow.witnessName} delivers the verdict on day 7.</Text>
+                <Text style={styles.stepText}>{vow.witnessName} delivers the verdict on {dates.endLabel}.</Text>
               </View>
             </>
           )}
