@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowRight, ReceiptText, TriangleAlert } from 'lucide-react-native';
+import { ArrowRight, CircleDollarSign, ReceiptText } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text, View } from 'react-native';
 
@@ -16,8 +16,8 @@ export default function VowBrokenScreen() {
       ? vow.witnessName
       : vow.stake.destination;
 
-  const firstName = vow.witnessName === 'Vowkeeper' ? 'You' : vow.witnessName.split(' ')[0];
   const isVowkeeper = vow.witnessName === 'Vowkeeper';
+  const firstName = isVowkeeper ? 'You' : vow.witnessName.split(' ')[0];
 
   const alertScale = useRef(new Animated.Value(0.5)).current;
   const alertOpacity = useRef(new Animated.Value(0)).current;
@@ -66,14 +66,14 @@ export default function VowBrokenScreen() {
 
       <View style={styles.alertWrap}>
         <Animated.View style={[styles.alertBadge, { opacity: alertOpacity, transform: [{ scale: alertScale }] }]}>
-          <TriangleAlert color={palette.danger} size={28} />
+          <CircleDollarSign color={palette.warmAmber} size={28} />
         </Animated.View>
       </View>
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={isVowkeeper ? 'Vow broken.' : `${firstName} called it: vow broken.`}
-          subtitle={`$${vow.stake.amount} is being donated to ${destination}. The terms were clear.`}
+          title={isVowkeeper ? "It happens." : `${firstName} called it.`}
+          subtitle={`${vow.stake.amount} goes to ${destination}. The terms were clear, and you were honest.`}
         />
       </Animated.View>
 
@@ -87,7 +87,7 @@ export default function VowBrokenScreen() {
           </View>
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Stake</Text>
-            <Text style={styles.metaValueDanger}>${vow.stake.amount} — lost</Text>
+            <Text style={styles.metaValueAmber}>${vow.stake.amount} \u2014 donated</Text>
           </View>
         </RitualCard>
       </Animated.View>
@@ -108,14 +108,14 @@ export default function VowBrokenScreen() {
           </View>
           <View style={styles.receiptRow}>
             <Text style={styles.receiptLabel}>Status</Text>
-            <Text style={styles.receiptValueDanger}>Payment processed</Text>
+            <Text style={styles.receiptValueAmber}>Payment processed</Text>
           </View>
         </RitualCard>
       </Animated.View>
 
       <Animated.View style={[styles.redemptionHint, { opacity: receiptFade }]}>
         <ArrowRight color={palette.goldBright} size={14} />
-        <Text style={styles.redemptionText}>The best response to a broken vow is a new one. Come back stronger.</Text>
+        <Text style={styles.redemptionText}>The best response is a new vow. Come back stronger.</Text>
       </Animated.View>
     </RitualScreen>
   );
@@ -133,10 +133,10 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.dangerMuted,
+    backgroundColor: palette.warmAmberMuted,
     borderWidth: 1,
-    borderColor: 'rgba(255,123,123,0.28)',
-    shadowColor: '#FF7B7B',
+    borderColor: palette.warmAmberBorder,
+    shadowColor: palette.warmAmber,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
@@ -166,8 +166,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
   },
-  metaValueDanger: {
-    color: palette.danger,
+  metaValueAmber: {
+    color: palette.warmAmber,
     fontSize: 14,
     fontWeight: '700' as const,
   },
@@ -198,8 +198,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
   },
-  receiptValueDanger: {
-    color: palette.danger,
+  receiptValueAmber: {
+    color: palette.warmAmber,
     fontSize: 14,
     fontWeight: '600' as const,
   },

@@ -19,8 +19,8 @@ export default function VowKeptScreen() {
   const contentFade = useRef(new Animated.Value(0)).current;
   const confettiScale = useRef(new Animated.Value(0)).current;
 
-  const firstName = vow.witnessName === 'Vowkeeper' ? 'You' : vow.witnessName.split(' ')[0];
   const isVowkeeper = vow.witnessName === 'Vowkeeper';
+  const firstName = isVowkeeper ? 'You' : vow.witnessName.split(' ')[0];
 
   useEffect(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -87,8 +87,8 @@ export default function VowKeptScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={isVowkeeper ? 'You kept the vow.' : `${firstName} confirmed: vow kept.`}
-          subtitle={`Your word held. $${vow.stake.amount} is safe — you won't be charged.`}
+          title={isVowkeeper ? 'You nailed it.' : `${firstName} confirmed: vow kept.`}
+          subtitle={`Your word held. ${vow.stake.amount} stays safe \u2014 you won\u2019t be charged.`}
         />
       </Animated.View>
 
@@ -102,7 +102,7 @@ export default function VowKeptScreen() {
           </View>
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Your stake</Text>
-            <Text style={styles.metaValueSuccess}>${vow.stake.amount} — protected</Text>
+            <Text style={styles.metaValueSuccess}>${vow.stake.amount} \u2014 safe</Text>
           </View>
         </RitualCard>
       </Animated.View>
@@ -121,7 +121,7 @@ export default function VowKeptScreen() {
 
       <Animated.View style={[styles.celebrateRow, { opacity: contentFade }]}>
         <PartyPopper color={palette.goldBright} size={16} />
-        <Text style={styles.celebrateText}>Keep the momentum. Another vow, another week conquered.</Text>
+        <Text style={styles.celebrateText}>Keep the momentum going. Another vow, another week owned.</Text>
       </Animated.View>
     </RitualScreen>
   );

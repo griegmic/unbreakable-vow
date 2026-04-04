@@ -19,6 +19,9 @@ export const palette = {
   successMuted: 'rgba(82,214,154,0.14)',
   danger: '#FF7B7B',
   dangerMuted: 'rgba(255,123,123,0.14)',
+  warmAmber: '#D4A24F',
+  warmAmberMuted: 'rgba(212,162,79,0.14)',
+  warmAmberBorder: 'rgba(212,162,79,0.24)',
   whiteOverlay: 'rgba(255,255,255,0.04)',
 } as const;
 
