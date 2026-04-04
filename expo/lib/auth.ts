@@ -1,4 +1,5 @@
 import Constants from 'expo-constants';
+import { Platform } from 'react-native';
 
 import { supabase } from './supabase';
 
@@ -40,10 +41,23 @@ function getGoogle() {
     }
   }
   if (!googleConfigured && _google) {
-    _google.GoogleSignin.configure({
-      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-    });
+    const webClientId =
+      Constants.expoConfig?.extra?.googleWebClientId ??
+      process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ??
+      '543817344565-tkr5h3jj2fb0bpk8belk3bjk2404bu9b.apps.googleusercontent.com';
+    const iosClientId =
+      Constants.expoConfig?.extra?.googleIosClientId ??
+      process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ??
+      '543817344565-b2tg6eonrbglhot5rccd87e8vot4b69p.apps.googleusercontent.com';
+
+    console.log(
+      '[Auth] GoogleSignin.configure() webClientId=',
+      webClientId?.substring(0, 20),
+      'iosClientId=',
+      iosClientId?.substring(0, 20),
+    );
+
+    _google.GoogleSignin.configure({ webClientId, iosClientId });
     googleConfigured = true;
   }
   return _google;
@@ -56,7 +70,9 @@ export async function signInWithGoogle(): Promise<AuthResult> {
   }
 
   try {
-    await g.GoogleSignin.hasPlayServices();
+    if (Platform.OS === 'android') {
+      await g.GoogleSignin.hasPlayServices();
+    }
     const response = await g.GoogleSignin.signIn();
 
     if (!g.isSuccessResponse(response)) {
@@ -105,6 +121,13 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 
     return { success: true, displayName };
   } catch (err: unknown) {
+    const errMsg = err instanceof Error ? err.message : String(err);
+    console.error('[Auth] Google Sign-In error:', JSON.stringify(err, Object.getOwnPropertyNames(err instanceof Error ? err : {})), errMsg);
+
+    if (errMsg.includes('nonce')) {
+      return { success: false, error: 'Google Sign-In configuration error. Please contact support.' };
+    }
+
     if (g.isErrorWithCode(err)) {
       switch (err.code) {
         case g.statusCodes.SIGN_IN_CANCELLED:
@@ -114,11 +137,11 @@ export async function signInWithGoogle(): Promise<AuthResult> {
         case g.statusCodes.PLAY_SERVICES_NOT_AVAILABLE:
           return { success: false, error: 'Play Services not available' };
         default:
-          return { success: false, error: err.message };
+          return { success: false, error: errMsg };
       }
     }
-    console.error('[Auth] unexpected error:', err);
-    return { success: false, error: 'Something went wrong' };
+    console.error('[Auth] unexpected error (full object):', err);
+    return { success: false, error: errMsg || 'Something went wrong' };
   }
 }
 
