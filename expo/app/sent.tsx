@@ -9,7 +9,7 @@ import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function SentScreen() {
-  const { activeVowText, vow, resetVow } = useVowFlow();
+  const { activeVowText, vow } = useVowFlow();
   const dates = getVowVerdictDate(vow.rawInput);
   const checkScale = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
@@ -50,7 +50,7 @@ export default function SentScreen() {
     <RitualScreen
       footer={
         <>
-          <PrimaryButton label="Got it" onPress={() => { resetVow(); router.push('/live'); }} testID="sent-continue" />
+          <PrimaryButton label="Got it" onPress={() => router.push('/live')} testID="sent-continue" />
           <SecondaryButton
             label="Preview what your witness sees"
             onPress={() => {

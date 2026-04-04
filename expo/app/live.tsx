@@ -19,6 +19,14 @@ export default function LiveScreen() {
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // Guard: if vow state is empty (e.g. deep link or stale navigation), go home
+  useEffect(() => {
+    if (!vow.witnessName || !vow.rawInput) {
+      console.log('[LiveScreen] empty vow state, redirecting home');
+      router.replace('/');
+    }
+  }, [vow.witnessName, vow.rawInput]);
+
   useEffect(() => {
     console.log('[LiveScreen] vow active:', activeVowText);
     Animated.loop(
