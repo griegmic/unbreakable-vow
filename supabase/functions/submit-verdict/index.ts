@@ -94,10 +94,16 @@ Deno.serve(async (req) => {
         });
         await stripe.refunds.create({
           payment_intent: vow.stripe_payment_intent_id,
+        }, {
+          idempotencyKey: `refund-${vow.id}`,
         });
       } catch (refundErr) {
         console.error('Stripe refund failed:', refundErr);
-        // Don't fail the verdict — log and continue
+        // Flag for manual review — verdict is recorded but refund needs retry
+        await supabase
+          .from('vows')
+          .update({ refund_failed: true })
+          .eq('id', vow.id);
       }
     }
 

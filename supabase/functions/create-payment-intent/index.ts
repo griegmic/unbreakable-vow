@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
       amount,
       currency: 'usd',
       customer: customerId,
-      capture_method: 'automatic',
+      capture_method: 'manual',
       metadata: { vow_id, user_id: user.id },
     });
 

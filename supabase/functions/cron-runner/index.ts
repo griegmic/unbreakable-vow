@@ -146,9 +146,13 @@ Deno.serve(async (req) => {
               apiVersion: '2024-04-10',
               httpClient: Stripe.createFetchHttpClient(),
             });
-            await stripe.refunds.create({ payment_intent: vow.stripe_payment_intent_id });
+            await stripe.refunds.create(
+              { payment_intent: vow.stripe_payment_intent_id },
+              { idempotencyKey: `refund-${vow.id}` },
+            );
           } catch (refundErr) {
             results.errors.push(`refund ${vow.id}: ${refundErr}`);
+            await supabase.from('vows').update({ refund_failed: true }).eq('id', vow.id);
           }
         }
 

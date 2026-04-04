@@ -81,9 +81,13 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify payment actually succeeded via Stripe API
+    // Verify payment status and capture if needed
     const paymentIntent = await stripe.paymentIntents.retrieve(vow.stripe_payment_intent_id);
-    if (paymentIntent.status !== 'succeeded') {
+
+    if (paymentIntent.status === 'requires_capture') {
+      // Manual capture mode — capture funds now that seal is confirmed
+      await stripe.paymentIntents.capture(vow.stripe_payment_intent_id);
+    } else if (paymentIntent.status !== 'succeeded') {
       return new Response(JSON.stringify({
         error: 'Payment not confirmed',
         payment_status: paymentIntent.status,
