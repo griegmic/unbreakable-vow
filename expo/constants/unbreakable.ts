@@ -476,7 +476,10 @@ export function detectVowNeeds(input: string): VowNeeds {
   const hasDuration = /\d+\s*(?:min|minute|hour|hr)/i.test(lower) || /at\s+least\s+\d/i.test(lower);
   const hasDeadline = /(this\s+week|this\s+month|this\s+year|this\s+quarter|all\s+week|all\s+month|by\s+\w+day|through\s+sunday)/i.test(lower) || hasExplicitDate(lower);
   const isDurationRelevant = DURATION_RELEVANT.test(lower);
-  const hasQuantity = /(?:\d+[,.]?\d*k?|\d{1,3}(?:,\d{3})+)\s*(?:steps|miles|km|pages|reps|pushups|pullups|situps|laps|words|oz|glasses|cups|liters)/i.test(lower);
+  const hasNumericQuantity = /(?:\d+[,.]?\d*k?|\d{1,3}(?:,\d{3})+)\s*(?:steps|miles?|km|kilometers?|pages?|reps|pushups?|pullups?|situps?|laps?|words|oz|glasses|cups|liters?)/i.test(lower);
+  const hasVerbalQuantity = /(?:a|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:mile|km|kilometer|lap|chapter|book|page|rep|set|round|block|hour|song|piece|essay|article)/i.test(lower);
+  const hasImplicitMeasure = /(?:finish|complete|ship|submit|launch|deliver|build|read|write)\s+(?:a|one|the|my)\s+\w+/i.test(lower) && hasExplicitDate(lower);
+  const hasQuantity = hasNumericQuantity || hasVerbalQuantity || hasImplicitMeasure;
 
   return {
     showFrequency: !isNegation && !isTimeBound && !isDeadlineTask && !isCompletionTask && !hasFrequency,
