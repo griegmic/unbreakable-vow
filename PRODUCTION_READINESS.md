@@ -541,3 +541,129 @@ Only wire up the backend connections. Use the existing state management pattern
 
 After completing each file, briefly note what you changed and why.
 ```
+
+---
+
+## Rork vs Claude Code: What to Build Where
+
+Rork is an AI app builder that generates and edits React Native/Expo code via natural language prompts. It's excellent for UI, component-level logic, and integrations it natively supports. But it has limits — anything requiring server-side infrastructure, complex API flows, or systems Rork doesn't have built-in connectors for needs Claude Code (or manual dev work).
+
+### What Rork Can Do
+
+| Capability | Details |
+|---|---|
+| **UI/UX screens & components** | Full screen generation, animations, styling, layout — its core strength |
+| **Supabase integration** | One-click Supabase connect in project settings. Can generate client code, queries, auth flows, and RLS policies |
+| **Firebase Auth** | Built-in Firebase auth support (alternative to Supabase Auth) |
+| **RevenueCat payments** | Native RevenueCat integration for subscriptions and in-app purchases |
+| **expo-* libraries** | Can install and wire up most Expo SDK modules (contacts, notifications, image picker, haptics, etc.) |
+| **State management** | Zustand, React Context, AsyncStorage — generates and edits these fluently |
+| **Basic API calls** | Can write `fetch` calls to external APIs (OpenAI, REST endpoints) from client code |
+| **Navigation & routing** | expo-router screens, tabs, modals, deep link config |
+| **App config** | `app.json` / `app.config.js` edits, splash screens, icons, schemes |
+| **Deployment** | Can trigger EAS builds and help configure build profiles |
+
+### What Rork Cannot Do (Use Claude Code Instead)
+
+| Limitation | Why | Claude Code approach |
+|---|---|---|
+| **Supabase Edge Functions** | Rork operates on the Expo project only — it can't write or deploy server-side functions | Claude Code writes Edge Functions in TypeScript, deploys via `supabase functions deploy` |
+| **Stripe authorize/capture flow** | Rork supports RevenueCat (subscriptions) but not custom Stripe flows with manual capture | Claude Code builds the Edge Function that creates PaymentIntents with `capture_method: 'manual'`, plus capture/cancel endpoints |
+| **Twilio SMS integration** | No built-in Twilio connector. SMS requires server-side credentials, webhooks, and A2P registration | Claude Code builds Edge Functions for send/receive SMS, configures Twilio webhooks |
+| **Webhook handlers** | Rork can't expose server endpoints that receive inbound requests (Twilio replies, Stripe events) | Claude Code writes Supabase Edge Functions that handle incoming webhooks |
+| **Scheduled jobs / cron** | No cron support — can't schedule Vowkeeper check-in messages | Claude Code sets up `pg_cron` in Supabase or uses an external scheduler |
+| **Complex server-side logic** | Verdict resolution, payment capture on verdict, auto-expire logic | Claude Code writes this as Edge Functions or database triggers |
+| **Environment variables / secrets** | Rork can read env vars client-side but can't manage server-side secrets | Claude Code configures Supabase secrets via CLI (`supabase secrets set`) |
+| **Database migrations** | Rork can generate SQL for Supabase but can't run migrations or manage schema versioning | Claude Code writes and applies migrations via `supabase db push` or migration files |
+| **Universal links / AASA hosting** | Rork can configure the client-side deep link scheme but can't host the `.well-known` files | Claude Code sets up the web hosting (Vercel/Cloudflare) with AASA and assetlinks.json |
+| **Web landing pages** | Witness verdict page, invite page — these are web, not React Native | Claude Code builds these as standalone pages (Next.js, static HTML, or Supabase Edge Function serving HTML) |
+
+### Phase-by-Phase: Rork vs Claude Code
+
+#### Phase 1: Backend & Database
+| Task | Tool | Notes |
+|---|---|---|
+| Create Supabase project | **Manual** | Done in Supabase dashboard |
+| Connect Supabase to Expo | **Rork** | Use Rork's one-click Supabase integration |
+| Create database schema (SQL) | **Claude Code** | Write migration files, apply via CLI |
+| Create `lib/supabase.ts` client | **Rork** | Rork generates this when connecting Supabase |
+| Set up `app.config.js` with env vars | **Rork** | Prompt: "Convert app.json to app.config.js reading env vars from .env" |
+| Row-level security policies | **Claude Code** | RLS policies are SQL — write and apply via CLI |
+
+#### Phase 2: Authentication
+| Task | Tool | Notes |
+|---|---|---|
+| Email/magic link auth UI | **Rork** | Prompt: "Replace stubbed auth with real Supabase email auth with magic link" |
+| Apple Sign-In config | **Rork + Manual** | Rork wires up `expo-apple-authentication`; you configure Apple Developer portal manually |
+| Google Sign-In config | **Rork + Manual** | Rork wires up `expo-auth-session`; you configure Google Cloud Console manually |
+| Session persistence | **Rork** | Prompt: "Add Supabase session persistence so users stay logged in across restarts" |
+
+#### Phase 3: Payments (Stripe)
+| Task | Tool | Notes |
+|---|---|---|
+| Install `@stripe/stripe-react-native` | **Rork** | Prompt: "Add Stripe React Native SDK and configure in app.json" |
+| Payment sheet UI in seal flow | **Rork** | Prompt: "Add Stripe payment sheet to seal screen, collecting card before sealing" |
+| `create-payment-intent` Edge Function | **Claude Code** | Server-side Stripe secret key usage — must be an Edge Function |
+| `capture-payment` Edge Function | **Claude Code** | Called on broken verdict |
+| `cancel-payment` Edge Function | **Claude Code** | Called on kept verdict |
+| Stripe webhook handler | **Claude Code** | Receives Stripe events (payment succeeded, failed, etc.) |
+
+#### Phase 4: SMS & Messaging (Twilio)
+| Task | Tool | Notes |
+|---|---|---|
+| A2P 10DLC registration | **Manual** | Done in Twilio console — start immediately |
+| SMS send Edge Functions | **Claude Code** | All server-side: invite, check-in, verdict prompt, outcome |
+| Incoming SMS webhook | **Claude Code** | Edge Function that receives Twilio POST requests |
+| Vowkeeper check-in scheduler | **Claude Code** | `pg_cron` job or scheduled Edge Function |
+| Vowkeeper message templates | **Claude Code** | Server-side logic determining which message to send when |
+
+#### Phase 5: Contacts & Deep Links
+| Task | Tool | Notes |
+|---|---|---|
+| Real contact picker | **Rork** | Prompt: "Replace hardcoded witness list with expo-contacts native picker" |
+| Configure deep link scheme | **Rork** | Prompt: "Update app.json scheme to unbreakablevow and configure expo-linking for universal links" |
+| Host AASA / assetlinks.json | **Claude Code** | Web hosting config — not React Native |
+| Build web invite landing page | **Claude Code** | Standalone web page, not part of the Expo app |
+| Build web verdict page | **Claude Code** | Witness taps link in SMS, sees web page to submit verdict |
+
+#### Phase 6: Push Notifications
+| Task | Tool | Notes |
+|---|---|---|
+| Install & configure expo-notifications | **Rork** | Prompt: "Add push notifications with expo-notifications, register device token on auth" |
+| APNs + FCM credential setup | **Manual** | Apple Developer portal + Firebase console |
+| Server-side push sending | **Claude Code** | Edge Functions that send push via Expo's push API |
+| Notification tap → deep link routing | **Rork** | Prompt: "Handle notification taps to deep link to the correct screen based on notification type" |
+
+#### Phase 7: Polish & Custom Build
+| Task | Tool | Notes |
+|---|---|---|
+| Vow sharpening bug fixes | **Rork** | Feed it the sharpening prompt from the audit — contextual suggestions, text input on vague screen, deadline "by when?" |
+| Crew/multiplayer UI | **Rork** | Prompt with the crew feature design |
+| Error states & loading UI | **Rork** | Prompt: "Add error and loading states to all screens that fetch data" |
+| EAS build configuration | **Rork + Manual** | Rork can help generate `eas.json`; you run `eas build` from CLI |
+| Edge case handling (expired holds, unresponsive witness) | **Claude Code** | Server-side auto-resolve logic, re-authorization flows |
+
+#### Phase 8: App Store
+| Task | Tool | Notes |
+|---|---|---|
+| Update bundle ID, slug, scheme | **Rork** | Prompt: "Update app.json bundle identifier to com.unbreakablevow.app, slug to unbreakable-vow, scheme to unbreakablevow" |
+| App icon design | **Manual** | Design tool (Figma, etc.) |
+| App Store screenshots | **Manual** | Run on simulator, take screenshots |
+| Privacy policy & ToS | **Claude Code** | Generate legal docs, host on web |
+| EAS submit | **Manual** | `eas submit --platform ios` from CLI |
+
+### Summary: The Split
+
+**Rork handles ~40% of the work** — all client-side UI, Supabase client integration, auth flows, Expo SDK modules, state management, navigation, and app config.
+
+**Claude Code handles ~45% of the work** — all server-side logic (Edge Functions), Stripe payment flows, Twilio SMS, webhooks, cron jobs, database migrations, RLS policies, web pages (invite/verdict), universal link hosting, and complex business logic.
+
+**Manual work is ~15%** — service signups (Stripe, Twilio, Apple, Google), A2P registration, APNs/FCM credential setup, app icon design, screenshots, and App Store submission.
+
+### Optimal Workflow
+
+1. **Start in Rork** — build the Supabase connection, auth, and any UI fixes (sharpening bugs, crew feature)
+2. **Switch to Claude Code** — clone the repo locally, build all Edge Functions, database migrations, Twilio/Stripe integrations, web pages
+3. **Push Claude Code changes** → pull into Rork to see them in the live preview
+4. **Iterate in Rork** for any UI polish needed after backend is connected
+5. **Final build and submit** from CLI using EAS
