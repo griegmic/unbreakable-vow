@@ -37,15 +37,21 @@ export default function WitnessVerdictScreen() {
   const handleCardTap = useCallback((choice: VerdictChoice) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    if (isVowkeeper) {
-      setSelected(choice);
-      if (choice === 'kept') {
-        Animated.timing(keptColorAnim, { toValue: 1, duration: 300, useNativeDriver: false }).start();
-        Animated.timing(brokenColorAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
-      } else {
+    if (choice === 'broken') {
+      if (isVowkeeper) {
+        setSelected('broken');
         Animated.timing(brokenColorAnim, { toValue: 1, duration: 300, useNativeDriver: false }).start();
         Animated.timing(keptColorAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
       }
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      setTimeout(() => router.push('/vow-broken'), isVowkeeper ? 350 : 150);
+      return;
+    }
+
+    if (isVowkeeper) {
+      setSelected(choice);
+      Animated.timing(keptColorAnim, { toValue: 1, duration: 300, useNativeDriver: false }).start();
+      Animated.timing(brokenColorAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
     }
 
     setPendingVerdict(choice);
