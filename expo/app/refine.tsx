@@ -14,6 +14,7 @@ import {
   TitleBlock,
   VowPreview,
 } from '@/components/vow-ui';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import {
   analyzeVow,
   composeVow,
@@ -25,7 +26,7 @@ import {
 } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
-type RefineStep = 'analyze' | 'vague' | 'frequency' | 'duration' | 'deadline' | 'preview';
+type RefineStep = 'analyze' | 'vague' | 'soft_sharpen' | 'frequency' | 'duration' | 'deadline' | 'preview';
 
 export default function RefineScreen() {
   const { analysis, activeVowText, vow, setRawInput, setRefinedText } = useVowFlow();
@@ -41,6 +42,10 @@ export default function RefineScreen() {
   const inputRef = useRef<TextInput>(null);
 
   const [deadlineComposed, setDeadlineComposed] = useState<string>('');
+  const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
+  const [pickerMonth, setPickerMonth] = useState<number>(new Date().getMonth());
+  const [pickerYear, setPickerYear] = useState<number>(new Date().getFullYear());
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   const needs = useMemo(() => detectVowNeeds(vow.rawInput), [vow.rawInput]);
   const frequencyOptions = useMemo(() => getFrequencyOptions(vow.rawInput), [vow.rawInput]);
@@ -84,7 +89,12 @@ export default function RefineScreen() {
     }
 
     if (analysis.type === 'already_good') {
-      setStep('preview');
+      if (needs.showFrequency || needs.showDuration) {
+        setStep('soft_sharpen');
+        animateChipsIn();
+      } else {
+        setStep('preview');
+      }
       return;
     }
 
@@ -176,6 +186,40 @@ export default function RefineScreen() {
       setDeadlineComposed(`${clean} ${deadline}.`);
     }
     setTimeout(() => setStep('preview'), 200);
+  };
+
+  const handleDatePickerSelect = (day: number) => {
+    void Haptics.selectionAsync();
+    setSelectedDay(day);
+    const monthName = new Date(pickerYear, pickerMonth, 1).toLocaleString('en-US', { month: 'long' });
+    const deadline = `by ${monthName} ${day}`;
+    handleDeadlineSelect(deadline);
+  };
+
+  const handleSoftSharpenFrequency = (value: string) => {
+    void Haptics.selectionAsync();
+    setSelectedFrequency(value);
+    if (needs.showDuration) {
+      setTimeout(() => {
+        setStep('duration');
+        animateChipsIn();
+      }, 200);
+    } else {
+      setTimeout(() => setStep('preview'), 200);
+    }
+  };
+
+  const handleSoftSharpenSkip = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setStep('preview');
+  };
+
+  const getDaysInMonth = (month: number, year: number): number => {
+    return new Date(year, month + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (month: number, year: number): number => {
+    return new Date(year, month, 1).getDay();
   };
 
   const continueWith = (value: string) => {
@@ -271,6 +315,51 @@ export default function RefineScreen() {
     );
   }
 
+  if (step === 'soft_sharpen') {
+    return (
+      <RitualScreen
+        footer={
+          <Pressable
+            onPress={handleSoftSharpenSkip}
+            style={styles.softSkipButton}
+            testID="soft-sharpen-skip"
+          >
+            <Text style={styles.softSkipText}>{"No, this works \u2192"}</Text>
+          </Pressable>
+        }
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <BackButton />
+        <TitleBlock
+          title={"Want to tighten this up?"}
+          subtitle={"Your vow is solid. Adding a frequency makes it airtight for your witness."}
+        />
+        <VowPreview text={activeVowText} />
+
+        <Animated.View style={{ opacity: chipFade, transform: [{ translateY: chipSlide }] }}>
+          <RitualCard>
+            <Text style={styles.questionTitle}>How often?</Text>
+            <Text style={styles.questionSub}>Pick a frequency to remove any grey area.</Text>
+            <View style={styles.optionGrid}>
+              {frequencyOptions.map((opt) => (
+                <Pressable
+                  key={opt.value}
+                  style={[styles.optionChip, selectedFrequency === opt.value && styles.optionChipActive]}
+                  onPress={() => handleSoftSharpenFrequency(opt.value)}
+                  testID={`soft-freq-${opt.label}`}
+                >
+                  <Text style={[styles.optionChipText, selectedFrequency === opt.value && styles.optionChipTextActive]}>
+                    {opt.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </RitualCard>
+        </Animated.View>
+      </RitualScreen>
+    );
+  }
+
   if (step === 'deadline') {
     const deadlines = [
       { label: 'By Wednesday', value: 'by Wednesday' },
@@ -278,17 +367,44 @@ export default function RefineScreen() {
       { label: 'By Sunday end of day', value: 'by Sunday end of day' },
     ];
 
+    const now = new Date();
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const endOfMonthLabel = endOfMonth.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    const nextMonthEnd = new Date(now.getFullYear(), now.getMonth() + 2, 0);
+    const nextMonthLabel = nextMonthEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+    const daysInPickerMonth = getDaysInMonth(pickerMonth, pickerYear);
+    const firstDay = getFirstDayOfMonth(pickerMonth, pickerYear);
+    const today = new Date();
+    const pickerMonthName = new Date(pickerYear, pickerMonth, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+    const dayLabels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+    const canGoPrev = pickerMonth > today.getMonth() || pickerYear > today.getFullYear();
+    const navigateMonth = (dir: 1 | -1) => {
+      let newMonth = pickerMonth + dir;
+      let newYear = pickerYear;
+      if (newMonth > 11) { newMonth = 0; newYear++; }
+      if (newMonth < 0) { newMonth = 11; newYear--; }
+      if (dir === -1) {
+        if (newYear < today.getFullYear() || (newYear === today.getFullYear() && newMonth < today.getMonth())) return;
+      }
+      setPickerMonth(newMonth);
+      setPickerYear(newYear);
+      setSelectedDay(null);
+    };
+
     return (
       <RitualScreen>
         <Stack.Screen options={{ headerShown: false }} />
         <BackButton />
         <TitleBlock
-          title="Good. When's the deadline?"
+          title={"When\u2019s the deadline?"}
           subtitle="Pick a day so your witness knows when to check."
         />
         <VowPreview text={activeVowText} />
 
         <Animated.View style={{ opacity: chipFade, transform: [{ translateY: chipSlide }] }}>
+          <Text style={styles.deadlineSectionLabel}>This week</Text>
           <View style={styles.optionGrid}>
             {deadlines.map((opt) => (
               <Pressable
@@ -301,6 +417,88 @@ export default function RefineScreen() {
               </Pressable>
             ))}
           </View>
+
+          <Text style={[styles.deadlineSectionLabel, { marginTop: 20 }]}>Further out</Text>
+          <View style={styles.optionGrid}>
+            <Pressable
+              style={styles.deadlineChip}
+              onPress={() => handleDeadlineSelect(`by ${endOfMonthLabel}`)}
+              testID="deadline-end-month"
+            >
+              <Text style={styles.deadlineChipText}>End of {endOfMonth.toLocaleDateString('en-US', { month: 'short' })}</Text>
+            </Pressable>
+            <Pressable
+              style={styles.deadlineChip}
+              onPress={() => handleDeadlineSelect(`by ${nextMonthLabel}`)}
+              testID="deadline-end-next-month"
+            >
+              <Text style={styles.deadlineChipText}>End of {nextMonthEnd.toLocaleDateString('en-US', { month: 'short' })}</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.deadlineChip, showDatePicker && styles.deadlineChipActive]}
+              onPress={() => setShowDatePicker(!showDatePicker)}
+              testID="deadline-pick-date"
+            >
+              <View style={styles.pickDateRow}>
+                <Calendar color={showDatePicker ? palette.goldBright : palette.textMuted} size={14} />
+                <Text style={[styles.deadlineChipText, showDatePicker && styles.deadlineChipTextActive]}>Pick a date</Text>
+              </View>
+            </Pressable>
+          </View>
+
+          {showDatePicker && (
+            <View style={styles.calendarContainer}>
+              <View style={styles.calendarHeader}>
+                <Pressable
+                  onPress={() => navigateMonth(-1)}
+                  style={[styles.calendarNavBtn, !canGoPrev && styles.calendarNavBtnDisabled]}
+                  disabled={!canGoPrev}
+                >
+                  <ChevronLeft color={canGoPrev ? palette.text : palette.textMuted} size={18} />
+                </Pressable>
+                <Text style={styles.calendarMonthLabel}>{pickerMonthName}</Text>
+                <Pressable onPress={() => navigateMonth(1)} style={styles.calendarNavBtn}>
+                  <ChevronRight color={palette.text} size={18} />
+                </Pressable>
+              </View>
+              <View style={styles.calendarDayLabels}>
+                {dayLabels.map((d, i) => (
+                  <Text key={`label-${i}`} style={styles.calendarDayLabel}>{d}</Text>
+                ))}
+              </View>
+              <View style={styles.calendarGrid}>
+                {Array.from({ length: firstDay }).map((_, i) => (
+                  <View key={`empty-${i}`} style={styles.calendarCell} />
+                ))}
+                {Array.from({ length: daysInPickerMonth }).map((_, i) => {
+                  const day = i + 1;
+                  const isPast = pickerYear === today.getFullYear()
+                    && pickerMonth === today.getMonth()
+                    && day <= today.getDate();
+                  const isSelected = selectedDay === day;
+                  return (
+                    <Pressable
+                      key={`day-${day}`}
+                      style={[
+                        styles.calendarCell,
+                        styles.calendarDayCell,
+                        isSelected && styles.calendarDayCellSelected,
+                        isPast && styles.calendarDayCellPast,
+                      ]}
+                      onPress={() => !isPast && handleDatePickerSelect(day)}
+                      disabled={isPast}
+                    >
+                      <Text style={[
+                        styles.calendarDayText,
+                        isSelected && styles.calendarDayTextSelected,
+                        isPast && styles.calendarDayTextPast,
+                      ]}>{day}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
         </Animated.View>
       </RitualScreen>
     );
@@ -619,5 +817,107 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 21,
+  },
+  softSkipButton: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    marginTop: 4,
+  },
+  softSkipText: {
+    color: palette.goldBright,
+    fontSize: 16,
+    fontWeight: '600' as const,
+    letterSpacing: 0.2,
+  },
+  deadlineSectionLabel: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '600' as const,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  deadlineChipActive: {
+    borderColor: palette.borderStrong,
+    backgroundColor: 'rgba(212,162,79,0.14)',
+  },
+  deadlineChipTextActive: {
+    color: palette.goldBright,
+  },
+  pickDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  calendarContainer: {
+    backgroundColor: palette.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: palette.border,
+    padding: 16,
+    marginTop: 16,
+  },
+  calendarHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  calendarNavBtn: {
+    padding: 6,
+    borderRadius: 8,
+  },
+  calendarNavBtnDisabled: {
+    opacity: 0.3,
+  },
+  calendarMonthLabel: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
+    letterSpacing: -0.3,
+  },
+  calendarDayLabels: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  calendarDayLabel: {
+    flex: 1,
+    textAlign: 'center',
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  calendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calendarCell: {
+    width: '14.28%' as unknown as number,
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calendarDayCell: {
+    borderRadius: 10,
+  },
+  calendarDayCellSelected: {
+    backgroundColor: 'rgba(212,162,79,0.22)',
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+  },
+  calendarDayCellPast: {
+    opacity: 0.25,
+  },
+  calendarDayText: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  calendarDayTextSelected: {
+    color: palette.goldBright,
+    fontWeight: '700' as const,
+  },
+  calendarDayTextPast: {
+    color: palette.textMuted,
   },
 });
