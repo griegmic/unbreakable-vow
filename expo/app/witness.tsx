@@ -82,37 +82,62 @@ export default function WitnessScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setLoadingContacts(true);
 
-    const { status } = await Contacts.requestPermissionsAsync();
-    if (status !== 'granted') {
+    try {
+      const { status } = await Contacts.requestPermissionsAsync();
+      if (status !== 'granted') {
+        setLoadingContacts(false);
+        Alert.alert(
+          'Contacts access needed',
+          'Go to Settings → Unbreakable Vow → Contacts to allow access.',
+        );
+        return;
+      }
+
+      const { data } = await Contacts.getContactsAsync({
+        fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
+        sort: Contacts.SortTypes.FirstName,
+      });
+
+      const parsed: ContactEntry[] = [];
+      for (const c of data) {
+        if (!c.name) continue;
+        const phoneNum = c.phoneNumbers?.[0]?.number;
+        if (phoneNum) {
+          parsed.push({
+            id: c.id ?? c.name,
+            name: c.name,
+            phone: phoneNum,
+          });
+        }
+      }
+
+      if (parsed.length === 0) {
+        setLoadingContacts(false);
+        Alert.alert(
+          'No contacts found',
+          'We couldn\'t find contacts with phone numbers. Try typing a name instead.',
+          [
+            { text: 'Type a name', onPress: () => setMode('manual') },
+            { text: 'Cancel', style: 'cancel' },
+          ],
+        );
+        return;
+      }
+
+      setContacts(parsed);
+      setLoadingContacts(false);
+      setMode('contacts');
+    } catch {
       setLoadingContacts(false);
       Alert.alert(
-        'Contacts access needed',
-        'Go to Settings → Unbreakable Vow → Contacts to allow access.',
+        'Contacts unavailable',
+        'Contacts aren\'t available in this environment. Try typing a name instead.',
+        [
+          { text: 'Type a name', onPress: () => setMode('manual') },
+          { text: 'Cancel', style: 'cancel' },
+        ],
       );
-      return;
     }
-
-    const { data } = await Contacts.getContactsAsync({
-      fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
-      sort: Contacts.SortTypes.FirstName,
-    });
-
-    const parsed: ContactEntry[] = [];
-    for (const c of data) {
-      if (!c.name) continue;
-      const phoneNum = c.phoneNumbers?.[0]?.number;
-      if (phoneNum) {
-        parsed.push({
-          id: c.id ?? c.name,
-          name: c.name,
-          phone: phoneNum,
-        });
-      }
-    }
-
-    setContacts(parsed);
-    setLoadingContacts(false);
-    setMode('contacts');
   }, []);
 
   const handleSelectContact = useCallback((contact: ContactEntry) => {
