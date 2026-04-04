@@ -29,6 +29,17 @@ export default function SealScreen() {
       router.replace('/auth');
     }
   }, [authLoading, isAuthenticated]);
+
+  // Guard: redirect back if witness phone is missing
+  useEffect(() => {
+    if (!vow.phoneNumber) {
+      Alert.alert(
+        'Witness phone needed',
+        'We need your witness\'s phone number to send them the invite.',
+        [{ text: 'OK', onPress: () => router.replace('/witness') }],
+      );
+    }
+  }, [vow.phoneNumber]);
   const [sworn, setSworn] = useState<boolean>(false);
   const [sealed, setSealed] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -125,9 +136,10 @@ export default function SealScreen() {
       const paid = await showPaymentSheet();
 
       if (!paid) {
-        // User cancelled payment
+        // User cancelled payment — void the draft vow
         await voidVow(vowId);
         setLoading(false);
+        Alert.alert('Payment cancelled', 'No charge was made. You can try again whenever you\'re ready.');
         return;
       }
 
@@ -364,6 +376,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
+    // Touch target is the full swearRow pressable (well above 44pt)
+    // Visual size stays 28 for aesthetics
   },
   checkboxChecked: {
     backgroundColor: palette.goldBright,

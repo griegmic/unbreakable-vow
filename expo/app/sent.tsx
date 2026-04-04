@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Check, Copy, SendHorizontal } from 'lucide-react-native';
+import { Check, Copy } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Linking, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -75,8 +75,12 @@ export default function SentScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title="Sealed. Invite sent."
-          subtitle={`${vow.witnessName} will receive your vow and choose to accept.`}
+          title={vow.phoneNumber ? 'Sealed. Invite sent.' : 'Sealed.'}
+          subtitle={
+            vow.phoneNumber
+              ? `We just texted ${vow.witnessName}. They'll get the details and choose to accept.`
+              : `Share the link with ${vow.witnessName} so they can be your witness.`
+          }
         />
       </Animated.View>
 
@@ -109,7 +113,11 @@ export default function SentScreen() {
         <RitualCard style={styles.stepsCard}>
           <View style={styles.stepRow}>
             <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-            <Text style={styles.stepText}>{vow.witnessName} gets an SMS invite and accepts.</Text>
+            <Text style={styles.stepText}>
+              {vow.phoneNumber
+                ? `We texted ${vow.witnessName}. They'll accept the invite.`
+                : `Share the invite link with ${vow.witnessName}.`}
+            </Text>
           </View>
           <View style={styles.stepRow}>
             <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
@@ -125,11 +133,7 @@ export default function SentScreen() {
       <Animated.View style={[styles.actionsRow, { opacity: contentFade }]}>
         <Pressable style={styles.smallAction} onPress={handleCopyLink} testID="sent-copy-link">
           <Copy color={palette.textSecondary} size={16} />
-          <Text style={styles.smallActionText}>Copy invite</Text>
-        </Pressable>
-        <Pressable style={styles.smallAction} testID="sent-resend">
-          <SendHorizontal color={palette.textSecondary} size={16} />
-          <Text style={styles.smallActionText}>Resend</Text>
+          <Text style={styles.smallActionText}>Share invite link</Text>
         </Pressable>
       </Animated.View>
     </RitualScreen>

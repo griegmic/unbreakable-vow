@@ -3,7 +3,6 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Link2, MessageSquareText, Search, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
-import * as Clipboard from 'expo-clipboard';
 import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
@@ -32,7 +31,7 @@ export default function WitnessScreen() {
   const [selectedName, setSelectedName] = useState<string>('');
   const [inviteMethod, setInviteMethod] = useState<'sms' | 'link'>('sms');
   const [phone, setPhone] = useState<string>('');
-  const [copied, setCopied] = useState<boolean>(false);
+
 
   // Contact picker state
   const [contacts, setContacts] = useState<ContactEntry[]>([]);
@@ -43,9 +42,8 @@ export default function WitnessScreen() {
 
   const canFinish = useMemo(() => {
     if (!selectedName.trim()) return false;
-    if (inviteMethod === 'sms') return phone.replace(/\D/g, '').length >= 10;
-    return true;
-  }, [selectedName, inviteMethod, phone]);
+    return phone.replace(/\D/g, '').length >= 10;
+  }, [selectedName, phone]);
 
   const handleConfirm = () => {
     if (!selectedName.trim()) return;
@@ -57,13 +55,6 @@ export default function WitnessScreen() {
   const makerName = displayName || 'Your friend';
   const witnessUrl = `https://unbreakablevow.app/witness?preview&vow=${encodeURIComponent(activeVowText)}&name=${encodeURIComponent(selectedName)}&maker=${encodeURIComponent(makerName)}`;
   const shareMessage = `I just made an Unbreakable Vow and I need you to hold me to it. Will you be my witness?\n\n${witnessUrl}`;
-
-  const handleCopyLink = async () => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    await Clipboard.setStringAsync(shareMessage);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
-  };
 
   const handleShareLink = async () => {
     if (Platform.OS !== 'web') {
@@ -323,13 +314,8 @@ export default function WitnessScreen() {
     <RitualScreen
       footer={
         <PrimaryButton
-          label={inviteMethod === 'link' ? 'Share link & continue' : 'Send invite & continue'}
-          onPress={async () => {
-            if (inviteMethod === 'link') {
-              await handleShareLink();
-            }
-            handleConfirm();
-          }}
+          label="Continue"
+          onPress={handleConfirm}
           disabled={!canFinish}
           testID="witness-confirm"
         />
@@ -339,68 +325,42 @@ export default function WitnessScreen() {
       <BackButton />
       <TitleBlock
         title={`Invite ${selectedName}`}
-        subtitle={`We'll notify ${selectedName} after you seal the vow. They'll get the details and choose to accept.`}
+        subtitle="Their phone number is needed so we can text them the invite."
       />
       <VowPreview text={activeVowText} compact />
 
-      <Pressable
-        onPress={() => setInviteMethod('sms')}
-        style={[styles.methodCard, inviteMethod === 'sms' ? styles.methodCardActive : null]}
-        testID="witness-method-sms"
-      >
-        <View style={styles.methodIcon}>
-          <Text style={styles.methodEmoji}>💬</Text>
-        </View>
-        <View style={styles.methodCopy}>
-          <Text style={styles.methodTitle}>Text {selectedName}</Text>
-          <Text style={styles.methodSub}>We'll SMS them the invite</Text>
-        </View>
-      </Pressable>
-
-      {inviteMethod === 'sms' ? (
-        <View style={styles.manualInputShell}>
-          <Text style={styles.manualLabel}>PHONE NUMBER</Text>
-          <TextInput
-            style={styles.manualInput}
-            placeholder="(555) 123-4567"
-            placeholderTextColor={palette.textMuted}
-            keyboardType="phone-pad"
-            value={phone}
-            onChangeText={setPhone}
-            autoFocus={!phone}
-            testID="witness-phone-input"
-          />
-        </View>
-      ) : null}
+      <View style={styles.manualInputShell}>
+        <Text style={styles.manualLabel}>PHONE NUMBER</Text>
+        <TextInput
+          style={styles.manualInput}
+          placeholder="(555) 123-4567"
+          placeholderTextColor={palette.textMuted}
+          keyboardType="phone-pad"
+          value={phone}
+          onChangeText={setPhone}
+          autoFocus={!phone}
+          accessibilityLabel={`Phone number for ${selectedName}`}
+          testID="witness-phone-input"
+        />
+      </View>
 
       <Pressable
-        onPress={() => setInviteMethod('link')}
-        style={[styles.methodCard, inviteMethod === 'link' ? styles.methodCardActive : null]}
-        testID="witness-method-link"
+        onPress={handleShareLink}
+        style={styles.sharePreviewCard}
+        testID="witness-share-preview"
       >
         <View style={styles.methodIcon}>
           <Link2 color={palette.goldBright} size={18} />
         </View>
         <View style={styles.methodCopy}>
-          <Text style={styles.methodTitle}>Share a link myself</Text>
-          <Text style={styles.methodSub}>iMessage, WhatsApp, DM — your choice</Text>
+          <Text style={styles.methodTitle}>Share a preview link</Text>
+          <Text style={styles.methodSub}>Optional — send via iMessage, WhatsApp, etc</Text>
         </View>
       </Pressable>
 
-      {inviteMethod === 'link' ? (
-        <View style={styles.linkPreviewRow}>
-          <Text style={styles.linkUrl} numberOfLines={1}>unbreakablevow.app/witness</Text>
-          <Pressable
-            style={[styles.copyBtn, copied && styles.copyBtnCopied]}
-            onPress={handleCopyLink}
-            testID="witness-copy-link"
-          >
-            <Text style={[styles.copyBtnText, copied && styles.copyBtnTextCopied]}>
-              {copied ? 'Copied ✓' : 'Copy'}
-            </Text>
-          </Pressable>
-        </View>
-      ) : null}
+      <Text style={styles.inviteExplainer}>
+        We'll text {selectedName} when you seal the vow.
+      </Text>
     </RitualScreen>
   );
 }
@@ -601,20 +561,6 @@ const styles = StyleSheet.create({
     paddingVertical: 0,
   },
   // Invite method
-  methodCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: palette.surface,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: 'transparent',
-  },
-  methodCardActive: {
-    borderColor: palette.borderStrong,
-    backgroundColor: palette.surfaceElevated,
-  },
   methodIcon: {
     width: 40,
     height: 40,
@@ -624,9 +570,6 @@ const styles = StyleSheet.create({
     borderColor: palette.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  methodEmoji: {
-    fontSize: 18,
   },
   methodCopy: {
     flex: 1,
@@ -641,41 +584,21 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     fontSize: 13,
   },
-  linkPreviewRow: {
+  sharePreviewCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 14,
     backgroundColor: palette.surface,
-    borderRadius: 12,
+    borderRadius: 16,
+    padding: 16,
     borderWidth: 1,
     borderColor: palette.border,
-    paddingLeft: 14,
-    paddingRight: 6,
-    paddingVertical: 6,
   },
-  linkUrl: {
-    flex: 1,
+  inviteExplainer: {
     color: palette.textMuted,
     fontSize: 13,
-    marginRight: 8,
-  },
-  copyBtn: {
-    backgroundColor: palette.surfaceElevated,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: palette.border,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  copyBtnCopied: {
-    backgroundColor: palette.successMuted,
-    borderColor: 'rgba(82,214,154,0.22)',
-  },
-  copyBtnText: {
-    color: palette.text,
-    fontSize: 12,
-    fontWeight: '600' as const,
-  },
-  copyBtnTextCopied: {
-    color: palette.success,
+    textAlign: 'center' as const,
+    lineHeight: 19,
+    paddingHorizontal: 20,
   },
 });

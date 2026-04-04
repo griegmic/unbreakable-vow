@@ -8,24 +8,23 @@ export interface AuthResult {
   displayName?: string | null;
 }
 
-// Google Sign-In requires native modules that are ONLY available in
-// custom dev clients or standalone builds (EAS Build / TestFlight).
-// In Expo Go and Rork, the native binary doesn't include RNGoogleSignin,
-// so requiring the JS wrapper triggers TurboModuleRegistry.getEnforcing()
-// which throws an invariant that shows as a red screen even inside try/catch.
-//
-// Constants.appOwnership:
-//   'expo'      → Expo Go (no custom native modules)
-//   'standalone' / null → standalone or dev-client build (has native modules)
-//
-// Constants.executionEnvironment:
-//   'storeClient' → Expo Go
-//   'standalone'  → production build
-//   'bare'        → dev client / bare workflow
-const isExpoGo = Constants.appOwnership === 'expo'
-  || Constants.executionEnvironment === 'storeClient';
-
-export const GOOGLE_SIGN_IN_AVAILABLE = !isExpoGo;
+// Google Sign-In requires native modules only available in custom dev clients
+// or standalone builds (EAS Build / TestFlight).
+// Constants.appOwnership === 'expo' reliably detects Expo Go.
+// For all other environments, we try to load the module — if it's not in the
+// binary, the require will throw and we catch it gracefully.
+// NOTE: We removed the executionEnvironment === 'storeClient' check because
+// it was falsely triggering on TestFlight builds.
+export const GOOGLE_SIGN_IN_AVAILABLE = (() => {
+  if (Constants.appOwnership === 'expo') return false;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const g = require('@react-native-google-signin/google-signin');
+    return !!g?.GoogleSignin;
+  } catch {
+    return false;
+  }
+})();
 
 let _google: typeof import('@react-native-google-signin/google-signin') | null = null;
 let googleConfigured = false;
@@ -176,6 +175,59 @@ export async function verifyPhoneOtp(phone: string, code: string): Promise<AuthR
     return { success: true };
   } catch (err: unknown) {
     console.error('[Auth] verifyPhoneOtp unexpected:', err);
+    return { success: false, error: 'Verification failed' };
+  }
+}
+
+export async function sendEmailOtp(email: string): Promise<AuthResult> {
+  try {
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) {
+      console.error('[Auth] sendEmailOtp error:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: unknown) {
+    console.error('[Auth] sendEmailOtp unexpected:', err);
+    return { success: false, error: 'Failed to send code' };
+  }
+}
+
+export async function verifyEmailOtp(email: string, code: string): Promise<AuthResult> {
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: 'email',
+    });
+
+    if (error) {
+      console.error('[Auth] verifyEmailOtp error:', error);
+      return { success: false, error: error.message };
+    }
+
+    const user = data.user;
+    if (!user) {
+      return { success: false, error: 'No user returned' };
+    }
+
+    const displayName =
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      email.split('@')[0] ||
+      null;
+
+    const { error: upsertError } = await supabase.from('users').upsert(
+      { id: user.id, display_name: displayName },
+      { onConflict: 'id' }
+    );
+    if (upsertError) {
+      console.error('[Auth] user upsert error:', upsertError);
+    }
+
+    return { success: true, displayName };
+  } catch (err: unknown) {
+    console.error('[Auth] verifyEmailOtp unexpected:', err);
     return { success: false, error: 'Verification failed' };
   }
 }

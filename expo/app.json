@@ -15,7 +15,17 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.unbreakablevow.ios"
+      "bundleIdentifier": "app.unbreakablevow.ios",
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleTypeRole": "Editor",
+            "CFBundleURLSchemes": [
+              "com.googleusercontent.apps.543817344565-b2tg6eonrbglhot5rccd87e8vot4b69p"
+            ]
+          }
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -40,7 +50,9 @@
         "merchantIdentifier": "merchant.app.unbreakablevow",
         "enableGooglePay": false
       }],
-      "@react-native-google-signin/google-signin",
+      ["@react-native-google-signin/google-signin", {
+        "iosUrlScheme": "com.googleusercontent.apps.543817344565-b2tg6eonrbglhot5rccd87e8vot4b69p"
+      }],
       [
         "expo-contacts",
         {

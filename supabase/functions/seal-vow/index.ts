@@ -93,6 +93,13 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (!count) {
+      // Vow was already sealed (status no longer draft/sealed) — idempotent return
+      return new Response(JSON.stringify({ success: true, already_sealed: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const verdictUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
 
     // Send SMS #1 to witness (seal notification)

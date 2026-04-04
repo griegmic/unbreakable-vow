@@ -1,22 +1,23 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, MoveRight, Phone } from 'lucide-react-native';
+import { ArrowLeft, Mail, MoveRight, Phone } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BackButton, PrimaryButton, RitualScreen, TitleBlock, VowPreview } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
-import { GOOGLE_SIGN_IN_AVAILABLE, sendPhoneOtp, signInWithGoogle, verifyPhoneOtp } from '@/lib/auth';
+import { type AuthResult, GOOGLE_SIGN_IN_AVAILABLE, sendEmailOtp, sendPhoneOtp, signInWithGoogle, verifyEmailOtp, verifyPhoneOtp } from '@/lib/auth';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { useVowFlow } from '@/providers/vow-flow';
 
-type AuthMode = 'pick' | 'phone' | 'otp';
+type AuthMode = 'pick' | 'phone' | 'otp' | 'email' | 'email-otp';
 
 export default function AuthScreen() {
   const { activeVowText } = useVowFlow();
   const [loading, setLoading] = useState<string | null>(null);
   const [mode, setMode] = useState<AuthMode>('pick');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const otpRef = useRef<TextInput>(null);
 
@@ -41,14 +42,17 @@ export default function AuthScreen() {
     if (!GOOGLE_SIGN_IN_AVAILABLE) {
       Alert.alert(
         'Not available here',
-        'Google Sign-In requires a production build. Use phone number to sign in.',
+        'Google Sign-In is not available in this environment. Use email or phone to sign in.',
       );
       return;
     }
     setLoading('google');
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    const result = await signInWithGoogle();
+    const timeout = new Promise<AuthResult>((resolve) =>
+      setTimeout(() => resolve({ success: false, error: 'Sign-in timed out. Please try again.' }), 30000)
+    );
+    const result = await Promise.race([signInWithGoogle(), timeout]);
 
     if (result.success) {
       await handleSuccess();
@@ -102,6 +106,119 @@ export default function AuthScreen() {
       setOtp('');
     }
   };
+
+  const handleSendEmailOtp = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      Alert.alert('Invalid email', 'Please enter a valid email address.');
+      return;
+    }
+    if (loading) return;
+    setLoading('email');
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const result = await sendEmailOtp(email);
+    setLoading(null);
+
+    if (result.success) {
+      setMode('email-otp');
+      setTimeout(() => otpRef.current?.focus(), 300);
+    } else {
+      Alert.alert('Failed to send code', result.error || 'Please try again.');
+    }
+  };
+
+  const handleVerifyEmailOtp = async () => {
+    if (otp.length < 6) return;
+    if (loading) return;
+    setLoading('email-otp');
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const result = await verifyEmailOtp(email, otp);
+    setLoading(null);
+
+    if (result.success) {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      await handleSuccess();
+    } else {
+      Alert.alert('Invalid code', result.error || 'Check your email and try again.');
+      setOtp('');
+    }
+  };
+
+  // ─── Email OTP entry screen ───
+  if (mode === 'email-otp') {
+    const maskedEmail = email.length > 5
+      ? `${email.slice(0, 3)}···${email.slice(email.indexOf('@'))}`
+      : email;
+    return (
+      <RitualScreen
+        footer={
+          <PrimaryButton
+            label={loading === 'email-otp' ? 'Verifying...' : 'Verify'}
+            onPress={handleVerifyEmailOtp}
+            disabled={otp.length < 6 || loading === 'email-otp'}
+            testID="auth-verify-email-otp"
+          />
+        }
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <Pressable
+          onPress={() => { setMode('email'); setOtp(''); }}
+          style={styles.backBtn}
+          testID="auth-email-otp-back"
+        >
+          <ArrowLeft color={palette.textSecondary} size={18} />
+        </Pressable>
+        <TitleBlock
+          title="Enter the code"
+          subtitle={`We sent a 6-digit code to ${maskedEmail}`}
+        />
+
+        <View style={styles.otpContainer}>
+          <TextInput
+            ref={otpRef}
+            style={styles.otpInput}
+            value={otp}
+            onChangeText={(text) => {
+              const cleaned = text.replace(/\D/g, '').slice(0, 6);
+              setOtp(cleaned);
+              if (cleaned.length === 6) {
+                setTimeout(() => handleVerifyEmailOtp(), 100);
+              }
+            }}
+            keyboardType="number-pad"
+            autoFocus
+            maxLength={6}
+            textContentType="oneTimeCode"
+            testID="auth-email-otp-input"
+          />
+          <View style={styles.otpBoxes} pointerEvents="none">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <View key={i} style={[styles.otpBox, otp.length === i && styles.otpBoxActive]}>
+                <Text style={styles.otpDigit}>{otp[i] || ''}</Text>
+              </View>
+            ))}
+          </View>
+        </View>
+
+        <Text style={styles.phoneDisclaimer}>
+          Check your inbox (and spam folder) for the code.
+        </Text>
+
+        <Pressable
+          onPress={() => {
+            setOtp('');
+            handleSendEmailOtp();
+          }}
+          style={styles.resendBtn}
+          testID="auth-resend-email-otp"
+        >
+          <Text style={styles.resendText}>Didn't get the code? Resend</Text>
+        </Pressable>
+      </RitualScreen>
+    );
+  }
 
   // ─── OTP entry screen ───
   if (mode === 'otp') {
@@ -219,6 +336,56 @@ export default function AuthScreen() {
     );
   }
 
+  // ─── Email entry screen ───
+  if (mode === 'email') {
+    return (
+      <RitualScreen
+        footer={
+          <PrimaryButton
+            label={loading === 'email' ? 'Sending...' : 'Send code'}
+            onPress={handleSendEmailOtp}
+            disabled={!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || loading === 'email'}
+            testID="auth-send-email-otp"
+          />
+        }
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <Pressable
+          onPress={() => setMode('pick')}
+          style={styles.backBtn}
+          testID="auth-email-back"
+        >
+          <ArrowLeft color={palette.textSecondary} size={18} />
+        </Pressable>
+        <TitleBlock
+          title="Enter your email"
+          subtitle="We'll send you a 6-digit code to verify it's you."
+        />
+
+        <View style={styles.phoneInputShell}>
+          <TextInput
+            style={[styles.phoneInput, { paddingLeft: 4 }]}
+            placeholder="you@example.com"
+            placeholderTextColor={palette.textMuted}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            textContentType="emailAddress"
+            value={email}
+            onChangeText={setEmail}
+            autoFocus
+            accessibilityLabel="Email address"
+            testID="auth-email-input"
+          />
+        </View>
+
+        <Text style={styles.phoneDisclaimer}>
+          We'll only use this to verify your identity.
+        </Text>
+      </RitualScreen>
+    );
+  }
+
   // ─── Auth method picker (default) ───
   return (
     <RitualScreen>
@@ -230,12 +397,12 @@ export default function AuthScreen() {
       />
       <VowPreview text={activeVowText} compact />
 
-      <Pressable onPress={handleApple} style={[styles.authRow, styles.authRowDisabled]} testID="auth-apple">
+      <Pressable onPress={() => setMode('email')} style={styles.authRow} testID="auth-email">
         <View style={styles.authIcon}>
-          <Text style={styles.appleMark}>{"\uF8FF"}</Text>
+          <Mail color={palette.text} size={18} />
         </View>
-        <Text style={styles.authTitle}>Continue with Apple</Text>
-        <Text style={styles.soonBadge}>SOON</Text>
+        <Text style={styles.authTitle}>Continue with email</Text>
+        <MoveRight color={palette.textMuted} size={16} />
       </Pressable>
 
       <Pressable onPress={handleGoogle} style={styles.authRow} testID="auth-google">
@@ -256,6 +423,14 @@ export default function AuthScreen() {
         </View>
         <Text style={styles.authTitle}>Continue with phone</Text>
         <MoveRight color={palette.textMuted} size={16} />
+      </Pressable>
+
+      <Pressable onPress={handleApple} style={[styles.authRow, styles.authRowDisabled]} testID="auth-apple">
+        <View style={styles.authIcon}>
+          <Text style={styles.appleMark}>{"\uF8FF"}</Text>
+        </View>
+        <Text style={styles.authTitle}>Continue with Apple</Text>
+        <Text style={styles.soonBadge}>SOON</Text>
       </Pressable>
     </RitualScreen>
   );

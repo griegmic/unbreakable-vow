@@ -68,6 +68,55 @@ export async function verifyPhoneOtp(phone: string, code: string): Promise<AuthR
   }
 }
 
+export async function sendEmailOtp(email: string): Promise<AuthResult> {
+  try {
+    const { error } = await supabase.auth.signInWithOtp({ email });
+    if (error) {
+      console.error('[Auth] sendEmailOtp error:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err: unknown) {
+    console.error('[Auth] sendEmailOtp unexpected:', err);
+    return { success: false, error: 'Failed to send code' };
+  }
+}
+
+export async function verifyEmailOtp(email: string, code: string): Promise<AuthResult> {
+  try {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email,
+      token: code,
+      type: 'email',
+    });
+
+    if (error) {
+      console.error('[Auth] verifyEmailOtp error:', error);
+      return { success: false, error: error.message };
+    }
+
+    const user = data.user;
+    if (!user) {
+      return { success: false, error: 'No user returned' };
+    }
+
+    const displayName = email.split('@')[0] || null;
+
+    const { error: upsertError } = await supabase.from('users').upsert(
+      { id: user.id, display_name: displayName },
+      { onConflict: 'id' }
+    );
+    if (upsertError) {
+      console.error('[Auth] user upsert error:', upsertError);
+    }
+
+    return { success: true, displayName };
+  } catch (err: unknown) {
+    console.error('[Auth] verifyEmailOtp unexpected:', err);
+    return { success: false, error: 'Verification failed' };
+  }
+}
+
 export async function signOut(): Promise<void> {
   await supabase.auth.signOut();
 }
