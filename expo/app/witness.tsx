@@ -52,7 +52,8 @@ export default function WitnessScreen() {
     router.push('/stake');
   };
 
-  const shareMessage = `I'm about to make an Unbreakable Vow — will you be my witness? You'll get a text with the details once I seal it.`;
+  const shareUrl = 'https://unbreakablevow.app';
+  const shareMessage = `I just made an Unbreakable Vow and I need you to hold me to it. Will you be my witness?\n\n${shareUrl}`;
 
   const handleCopyLink = async () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -64,7 +65,10 @@ export default function WitnessScreen() {
   const handleShareLink = async () => {
     if (Platform.OS !== 'web') {
       try {
-        await Share.share({ message: shareMessage });
+        await Share.share({
+          message: shareMessage,
+          url: shareUrl,
+        });
       } catch {
         console.log('[WitnessScreen] share failed');
       }
@@ -357,7 +361,7 @@ export default function WitnessScreen() {
 
       {inviteMethod === 'link' ? (
         <View style={styles.linkPreviewRow}>
-          <Text style={styles.linkUrl} numberOfLines={1}>I'm about to make an Unbreakable Vow...</Text>
+          <Text style={styles.linkUrl} numberOfLines={1}>unbreakablevow.app</Text>
           <Pressable
             style={[styles.copyBtn, copied && styles.copyBtnCopied]}
             onPress={handleCopyLink}
