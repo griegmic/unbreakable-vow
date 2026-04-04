@@ -27,8 +27,10 @@ export default function WitnessVerdictScreen() {
       ? 'you'
       : vow.stake.destination;
 
+  console.log('[WitnessVerdictScreen] rendering, isVowkeeper:', isVowkeeper);
+
   const [selected, setSelected] = useState<VerdictChoice>(null);
-  const [confirmVisible, setConfirmVisible] = useState(false);
+  const [confirmVisible, setConfirmVisible] = useState<boolean>(false);
   const [pendingVerdict, setPendingVerdict] = useState<VerdictChoice>(null);
 
   const keptColorAnim = useRef(new Animated.Value(0)).current;

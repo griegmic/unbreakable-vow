@@ -30,7 +30,7 @@ export default function AuthScreen() {
 
       <Pressable onPress={() => handleAuth('apple')} style={styles.authRow} testID="auth-apple">
         <View style={styles.authIcon}>
-          <Text style={styles.appleMark}></Text>
+          <Text style={styles.appleMark}>{"\uF8FF"}</Text>
         </View>
         <Text style={styles.authTitle}>Continue with Apple</Text>
         <MoveRight color={palette.textMuted} size={16} />

@@ -35,6 +35,8 @@ export default function WitnessScreen() {
 
   const isVowkeeper = selectedName === 'Vowkeeper' || vow.witnessName === 'Vowkeeper';
 
+  console.log('[WitnessScreen] mode:', mode, 'selectedName:', selectedName);
+
   const filteredContacts = useMemo(() => {
     if (!searchQuery.trim()) return witnessContacts;
     return witnessContacts.filter((c) =>

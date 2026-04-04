@@ -23,6 +23,8 @@ export default function SealScreen() {
   const isVowkeeper = vow.witnessName === 'Vowkeeper';
   const dates = getVowVerdictDate(vow.rawInput);
 
+  console.log('[SealScreen] rendering, sworn:', sworn, 'sealed:', sealed);
+
   const brokenLabel =
     vow.stake.consequence === 'witness'
       ? `${vow.witnessName} gets it`

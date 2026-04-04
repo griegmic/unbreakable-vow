@@ -39,6 +39,8 @@ function SettingsRow({ icon, label, description, onPress, trailing }: SettingsRo
 export default function SettingsScreen() {
   const { oathToggleEnabled, setOathToggle } = useOathState();
 
+  console.log('[SettingsScreen] oathToggle:', oathToggleEnabled);
+
   return (
     <RitualScreen>
       <Stack.Screen options={{ headerShown: false }} />

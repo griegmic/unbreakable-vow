@@ -36,6 +36,7 @@ export default function HomeScreen() {
   const stepsSlide = useRef(new Animated.Value(16)).current;
 
   useEffect(() => {
+    console.log('[HomeScreen] mounted, starting entrance animations');
     Animated.sequence([
       Animated.parallel([
         Animated.timing(fadeIn, { toValue: 1, duration: 500, useNativeDriver: true }),
@@ -66,12 +67,15 @@ export default function HomeScreen() {
   const handleContinue = () => {
     const trimmed = input.trim();
     if (!trimmed) return;
+    console.log('[HomeScreen] handleContinue:', trimmed);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setRawInput(trimmed);
     if (shouldSkipRefine(trimmed)) {
+      console.log('[HomeScreen] vow is already sharp, skipping refine');
       setRefinedText(trimmed);
       router.push('/witness');
     } else {
+      console.log('[HomeScreen] vow needs sharpening, going to refine');
       router.push('/refine');
     }
   };

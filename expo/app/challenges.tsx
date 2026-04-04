@@ -12,6 +12,7 @@ export default function ChallengesScreen() {
   const slideValues = useRef(upcomingChallenges.map(() => new Animated.Value(20))).current;
 
   useEffect(() => {
+    console.log('[ChallengesScreen] animating', upcomingChallenges.length, 'challenges');
     const animations = upcomingChallenges.map((_, i) =>
       Animated.parallel([
         Animated.timing(fadeValues[i], { toValue: 1, duration: 350, delay: i * 80, useNativeDriver: true }),

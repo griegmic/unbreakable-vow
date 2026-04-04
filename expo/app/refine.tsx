@@ -32,6 +32,8 @@ export default function RefineScreen() {
   const shakeAnim = useRef(new Animated.Value(0)).current;
   const inputRef = useRef<TextInput>(null);
 
+  console.log('[RefineScreen] rawInput:', vow.rawInput, '| suggestion:', initialSuggestion);
+
   const triggerShake = useCallback(() => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     shakeAnim.setValue(0);

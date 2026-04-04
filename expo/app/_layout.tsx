@@ -11,9 +11,17 @@ import { VowFlowProvider } from '@/providers/vow-flow';
 
 void SplashScreen.preventAutoHideAsync();
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 2,
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
 
 function RootLayoutNav() {
+  console.log('[RootLayoutNav] rendering stack');
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="index" />
@@ -60,6 +68,7 @@ function AppWithOath() {
 
 export default function RootLayout() {
   useEffect(() => {
+    console.log('[RootLayout] hiding splash');
     void SplashScreen.hideAsync();
   }, []);
 

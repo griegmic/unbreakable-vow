@@ -19,6 +19,8 @@ export default function WitnessInviteScreen() {
       ? 'you'
       : vow.stake.destination;
 
+  console.log('[WitnessInviteScreen] rendering for witness:', vow.witnessName);
+
   const checkboxScale = useRef(new Animated.Value(1)).current;
   const swearGlow = useRef(new Animated.Value(0)).current;
 

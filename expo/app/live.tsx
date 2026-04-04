@@ -21,6 +21,7 @@ export default function LiveScreen() {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
+    console.log('[LiveScreen] vow active:', activeVowText);
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.15, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
@@ -65,7 +66,7 @@ export default function LiveScreen() {
       />
 
       <View style={styles.statsRow}>
-        <StatPill value="Day 1" label={dates.isCustomDate ? `of deadline` : 'of 7'} />
+        <StatPill value="Day 1" label={dates.isCustomDate ? 'of deadline' : 'of 7'} />
         <StatPill value={dates.endLabel} label="verdict date" />
       </View>
 

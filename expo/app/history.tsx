@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ChevronRight, Settings, Trophy, Users } from 'lucide-react-native';
+import { ChevronRight, Settings, Users } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -12,6 +12,8 @@ export default function HistoryScreen() {
   const brokenCount = historyEntries.filter((e) => !e.kept).length;
   const moneyProtected = historyEntries.filter((e) => e.kept).reduce((sum, e) => sum + e.amount, 0);
   const moneyLost = historyEntries.filter((e) => !e.kept).reduce((sum, e) => sum + e.amount, 0);
+
+  console.log('[HistoryScreen] stats:', { keptCount, brokenCount, moneyProtected, moneyLost });
 
   return (
     <RitualScreen
@@ -89,7 +91,10 @@ export default function HistoryScreen() {
 
       <Pressable
         style={styles.navRow}
-        onPress={() => void Haptics.selectionAsync()}
+        onPress={() => {
+          void Haptics.selectionAsync();
+          router.push('/settings');
+        }}
         testID="history-settings"
       >
         <View style={styles.navIconWrapMuted}>

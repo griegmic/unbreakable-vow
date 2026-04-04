@@ -17,6 +17,7 @@ export default function SentScreen() {
   const contentFade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    console.log('[SentScreen] vow sealed, playing success animation');
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Animated.sequence([
       Animated.spring(checkScale, { toValue: 1, useNativeDriver: true, speed: 8, bounciness: 12 }),

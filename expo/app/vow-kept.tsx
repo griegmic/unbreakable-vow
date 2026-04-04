@@ -23,6 +23,7 @@ export default function VowKeptScreen() {
   const firstName = isVowkeeper ? 'You' : vow.witnessName.split(' ')[0];
 
   useEffect(() => {
+    console.log('[VowKeptScreen] vow kept! playing celebration');
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     Animated.sequence([
@@ -88,7 +89,7 @@ export default function VowKeptScreen() {
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
           title={isVowkeeper ? 'You nailed it.' : `${firstName} confirmed: vow kept.`}
-          subtitle={`Your word held. ${vow.stake.amount} stays safe \u2014 you won\u2019t be charged.`}
+          subtitle={`Your word held. $${vow.stake.amount} stays safe \u2014 you won\u2019t be charged.`}
         />
       </Animated.View>
 

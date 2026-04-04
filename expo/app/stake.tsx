@@ -22,6 +22,8 @@ export default function StakeScreen() {
   const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(vow.stake.consequence);
   const [destination, setDestination] = useState<string>(vow.stake.destination);
 
+  console.log('[StakeScreen] rendering, amount:', amount, 'consequence:', consequence);
+
   const options = useMemo(() => {
     if (consequence === 'anti') return antiCauses;
     if (consequence === 'charity') return charities;

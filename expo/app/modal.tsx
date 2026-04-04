@@ -1,17 +1,19 @@
-// template
-import { router } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
+import React from 'react';
 import {
   Modal,
   Platform,
   Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
-} from "react-native";
+} from 'react-native';
+
+import { palette } from '@/constants/unbreakable';
 
 export default function ModalScreen() {
+  console.log('[ModalScreen] rendering');
   return (
     <Modal
       animationType="fade"
@@ -21,23 +23,19 @@ export default function ModalScreen() {
     >
       <Pressable style={styles.overlay} onPress={() => router.back()}>
         <View style={styles.modalContent}>
-          <Text style={styles.title}>Modal</Text>
+          <Text style={styles.title}>Info</Text>
           <Text style={styles.description}>
-            This is an example modal with proper fade animation. You can edit it
-            in app/modal.tsx.
+            Unbreakable Vow — commit to your goals with real stakes.
           </Text>
-
-          <TouchableOpacity
+          <Pressable
             style={styles.closeButton}
             onPress={() => router.back()}
           >
             <Text style={styles.closeButtonText}>Close</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       </Pressable>
-
-      {/* Use a light status bar on iOS to account for the black space above the modal */}
-      <StatusBar style={Platform.OS === "ios" ? "light" : "auto"} />
+      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
     </Modal>
   );
 }
@@ -45,39 +43,46 @@ export default function ModalScreen() {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: "white",
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: palette.surfaceElevated,
+    borderRadius: 24,
+    padding: 28,
     margin: 20,
-    alignItems: "center",
+    alignItems: 'center',
     minWidth: 300,
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   title: {
     fontSize: 20,
-    fontWeight: "bold",
+    fontWeight: '700' as const,
     marginBottom: 16,
+    color: palette.text,
   },
   description: {
-    textAlign: "center",
+    textAlign: 'center',
     marginBottom: 24,
-    color: "#666",
-    lineHeight: 20,
+    color: palette.textSecondary,
+    lineHeight: 22,
+    fontSize: 15,
   },
   closeButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: palette.surface,
     paddingHorizontal: 24,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 14,
     minWidth: 100,
+    borderWidth: 1,
+    borderColor: palette.border,
   },
   closeButtonText: {
-    color: "white",
-    fontWeight: "600",
-    textAlign: "center",
+    color: palette.text,
+    fontWeight: '600' as const,
+    textAlign: 'center',
+    fontSize: 15,
   },
 });

@@ -12,6 +12,8 @@ export default function CrewInviteScreen() {
   const dates = getVowVerdictDate(vow.rawInput);
   const makerName = 'Someone';
 
+  console.log('[CrewInviteScreen] rendering for witness:', vow.witnessName);
+
   return (
     <RitualScreen
       footer={

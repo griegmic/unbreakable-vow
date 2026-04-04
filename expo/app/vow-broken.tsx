@@ -26,6 +26,7 @@ export default function VowBrokenScreen() {
   const receiptFade = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    console.log('[VowBrokenScreen] vow broken, destination:', destination);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
     Animated.sequence([
@@ -73,7 +74,7 @@ export default function VowBrokenScreen() {
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
           title={isVowkeeper ? "It happens." : `${firstName} called it.`}
-          subtitle={`${vow.stake.amount} goes to ${destination}. The terms were clear, and you were honest.`}
+          subtitle={`$${vow.stake.amount} goes to ${destination}. The terms were clear, and you were honest.`}
         />
       </Animated.View>
 
