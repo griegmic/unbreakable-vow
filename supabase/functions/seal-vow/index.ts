@@ -122,9 +122,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    const verdictUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
+    const witnessUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
 
-    // Send SMS #1 to witness (seal notification)
+    // Send SMS #1 to witness (seal notification with acceptance link)
     if (vow.witness_phone) {
       // Get vow owner's display name
       const { data: profile } = await supabase
@@ -140,7 +140,7 @@ Deno.serve(async (req) => {
         : 'soon';
 
       try {
-        const messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDate);
+        const messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDate, witnessUrl);
         const twilioSid = await sendSMS(vow.witness_phone, messageBody);
 
         await supabase.from('sms_log').insert({

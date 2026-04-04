@@ -557,6 +557,22 @@
       color: var(--text-muted);
     }
 
+    /* Decline button */
+    .btn-decline {
+      width: 100%;
+      max-width: 400px;
+      min-height: 44px;
+      border: none;
+      border-radius: 14px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+    .btn-decline:hover { color: var(--text); }
+
     /* Hidden utility */
     .hidden { display: none !important; }
 
@@ -646,7 +662,77 @@
     </div>
   </div>
 
-  <!-- TOKEN MODE (post-seal) -->
+  <!-- ACCEPTANCE MODE (witness hasn't accepted yet) -->
+  <div class="witness-container hidden" id="acceptanceMode">
+    <div class="star fade-in fade-in-d1">&#9733;</div>
+    <div class="badge fade-in fade-in-d2">You've been chosen</div>
+    <h1 class="fade-in fade-in-d2">Hold them to it.</h1>
+    <div class="subtitle fade-in fade-in-d3" id="acceptSubtitle"></div>
+    <div class="divider fade-in fade-in-d3"></div>
+
+    <div class="vow-card fade-in fade-in-d3">
+      <div class="vow-card-label">They vowed</div>
+      <div class="vow-card-text" id="acceptVowText"></div>
+    </div>
+
+    <div class="fade-in fade-in-d3" style="width:100%">
+      <div class="detail-row">
+        <span class="detail-label">Made by</span>
+        <span class="detail-value" id="acceptMaker"></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Stake</span>
+        <span class="detail-value gold" id="acceptStake"></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Your role</span>
+        <span class="detail-value verdict-date-highlight">The judge</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Verdict date</span>
+        <span class="detail-value verdict-date-highlight" id="acceptVerdictDate"></span>
+      </div>
+    </div>
+
+    <div class="steps fade-in fade-in-d4">
+      <div class="steps-title">Here's how it works</div>
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-text">They put real money behind this vow. <span>You'll see exactly what they promised.</span></div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-text">When the deadline hits, we text you. <span>One question: did they do it?</span></div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-text">Your call is final. <span>If they broke it, their money goes to charity. No appeals.</span></div>
+      </div>
+    </div>
+
+    <div id="acceptActions" class="fade-in fade-in-d5" style="width:100%;display:flex;flex-direction:column;align-items:center;gap:12px;">
+      <div class="swear-row" id="acceptSwearRow" onclick="toggleAcceptSwear()">
+        <div class="swear-checkbox" id="acceptSwearCheckbox"></div>
+        <div class="swear-label">I swear to judge honestly and without mercy.</div>
+      </div>
+      <button class="btn-primary" id="acceptWitnessBtn" disabled onclick="submitAcceptance()">I accept — hold them to it</button>
+      <button class="btn-decline" onclick="submitDecline()">I can't do this</button>
+    </div>
+
+    <div id="acceptConfirmation" class="hidden confirmation fade-in">
+      <div class="confirmation-icon">&#9733;</div>
+      <div class="confirmation-title">You're locked in.</div>
+      <div class="confirmation-text" id="acceptConfirmText">We'll text you when it's time to deliver the verdict.</div>
+    </div>
+
+    <div id="declineConfirmation" class="hidden confirmation fade-in">
+      <div class="confirmation-icon" style="opacity:0.5">&#10005;</div>
+      <div class="confirmation-title">No worries.</div>
+      <div class="confirmation-text">We'll let them know to pick someone else.</div>
+    </div>
+  </div>
+
+  <!-- TOKEN MODE (post-seal, witness accepted) -->
   <div class="witness-container hidden" id="tokenMode">
     <div class="star fade-in fade-in-d1">&#9733;</div>
     <div class="badge fade-in fade-in-d2">Witness Portal</div>
@@ -738,15 +824,18 @@
 
     // ── State ──
     let swearChecked = false;
+    let acceptSwearChecked = false;
     let verdictSwearChecked = false;
     let pendingVerdict = null;
     let currentToken = null;
+    let currentVow = null;
 
     // ── DOM refs ──
     const loadingState = document.getElementById('loadingState');
     const errorState = document.getElementById('errorState');
     const errorMessage = document.getElementById('errorMessage');
     const previewMode = document.getElementById('previewMode');
+    const acceptanceMode = document.getElementById('acceptanceMode');
     const tokenMode = document.getElementById('tokenMode');
 
     // ── URL parsing ──
@@ -824,25 +913,114 @@
         }
 
         const vow = data[0];
-        renderTokenMode(vow);
+        currentVow = vow;
+
+        // Gate: if witness hasn't accepted yet and vow is active, show acceptance screen first
+        if (!vow.witness_accepted_at && !vow.witness_declined && ['active', 'awaiting_verdict'].includes(vow.status || 'active')) {
+          renderAcceptanceMode(vow);
+        } else {
+          renderTokenMode(vow);
+        }
       } catch (err) {
         showError('Something went wrong', err.message || 'Could not load the vow. Please try again.');
       }
     }
 
+    // ── ACCEPTANCE MODE ──
+    function renderAcceptanceMode(vow) {
+      loadingState.classList.add('hidden');
+
+      document.getElementById('acceptVowText').textContent = vow.refined_text || vow.vow_text || '';
+      document.getElementById('acceptSubtitle').textContent =
+        (vow.maker_name || vow.user_name || 'Someone') + ' made a vow — and put real money behind it. You decide if they follow through.';
+      document.getElementById('acceptMaker').textContent = vow.maker_name || vow.user_name || 'Unknown';
+      document.getElementById('acceptStake').textContent = '$' + Math.round((vow.stake_amount || 0) / 100);
+
+      if (vow.ends_at) {
+        const d = new Date(vow.ends_at);
+        document.getElementById('acceptVerdictDate').textContent = d.toLocaleDateString('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric'
+        });
+      } else {
+        document.getElementById('acceptVerdictDate').textContent = 'TBD';
+      }
+
+      acceptanceMode.classList.remove('hidden');
+    }
+
+    function toggleAcceptSwear() {
+      acceptSwearChecked = !acceptSwearChecked;
+      const cb = document.getElementById('acceptSwearCheckbox');
+      const btn = document.getElementById('acceptWitnessBtn');
+      if (acceptSwearChecked) {
+        cb.classList.add('checked');
+        btn.disabled = false;
+      } else {
+        cb.classList.remove('checked');
+        btn.disabled = true;
+      }
+    }
+
+    async function submitAcceptance() {
+      const btn = document.getElementById('acceptWitnessBtn');
+      btn.disabled = true;
+      btn.textContent = 'Accepting...';
+
+      try {
+        const res = await fetch(SUPABASE_URL + '/functions/v1/accept-witness', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({ token: currentToken, action: 'accept' })
+        });
+
+        if (!res.ok) {
+          throw new Error('Failed to accept');
+        }
+
+        // Show confirmation
+        document.getElementById('acceptActions').classList.add('hidden');
+        document.getElementById('acceptConfirmation').classList.remove('hidden');
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = 'I accept — hold them to it';
+        alert('Something went wrong. Please try again.');
+      }
+    }
+
+    async function submitDecline() {
+      try {
+        await fetch(SUPABASE_URL + '/functions/v1/accept-witness', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({ token: currentToken, action: 'decline' })
+        });
+      } catch (err) {
+        // Best effort
+      }
+
+      document.getElementById('acceptActions').classList.add('hidden');
+      document.getElementById('declineConfirmation').classList.remove('hidden');
+    }
+
     function renderTokenMode(vow) {
       loadingState.classList.add('hidden');
 
-      document.getElementById('tokenVowText').textContent = vow.vow_text || vow.description || '';
+      document.getElementById('tokenVowText').textContent = vow.refined_text || vow.vow_text || '';
       document.getElementById('tokenMaker').textContent = vow.maker_name || vow.user_name || 'Unknown';
-      document.getElementById('tokenStake').textContent = '$' + (vow.stake_amount || vow.amount || '0');
+      document.getElementById('tokenStake').textContent = '$' + Math.round((vow.stake_amount || 0) / 100);
       document.getElementById('tokenWitness').textContent = vow.witness_name || 'You';
       document.getElementById('tokenSubtitle').textContent =
         'You are the witness for ' + (vow.maker_name || vow.user_name || 'this') + "'s vow.";
 
       // Verdict date
-      if (vow.verdict_date || vow.end_date) {
-        const d = new Date(vow.verdict_date || vow.end_date);
+      if (vow.ends_at) {
+        const d = new Date(vow.ends_at);
         document.getElementById('tokenVerdictDate').textContent = d.toLocaleDateString('en-US', {
           weekday: 'long', month: 'long', day: 'numeric'
         });

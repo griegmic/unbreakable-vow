@@ -1,5 +1,12 @@
-export function sealMessage(name: string, vowText: string, amount: number, endDate: string): string {
+export function sealMessage(name: string, vowText: string, amount: number, endDate: string, acceptUrl?: string): string {
+  if (acceptUrl) {
+    return `${name} just made an Unbreakable Vow: "${vowText}" — with $${amount} on the line. You're the witness. Accept here: ${acceptUrl}`;
+  }
   return `${name} just made an Unbreakable Vow: "${vowText}" — with $${amount} on the line. You're the witness. You'll get a link to deliver your verdict on ${endDate}.`;
+}
+
+export function witnessReminderMessage(name: string, vowText: string, acceptUrl: string): string {
+  return `Reminder: ${name} is counting on you to witness their vow: "${vowText}". Accept here: ${acceptUrl}`;
 }
 
 export function warmupMessage(name: string, vowText: string): string {

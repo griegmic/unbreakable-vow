@@ -85,6 +85,15 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Auto-set witness_accepted_at if witness never formally accepted
+    // (submitting a verdict is implicit acceptance)
+    if (!vow.witness_accepted_at) {
+      await supabase
+        .from('vows')
+        .update({ witness_accepted_at: now })
+        .eq('id', vow.id);
+    }
+
     // If kept: issue Stripe refund
     if (verdict === 'kept' && vow.stripe_payment_intent_id) {
       try {

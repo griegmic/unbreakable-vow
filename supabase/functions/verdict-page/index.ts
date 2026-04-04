@@ -244,6 +244,15 @@ Deno.serve(async (req) => {
     return errorPage("Not ready yet", "This vow hasn't been activated yet.");
   }
 
+  // If witness hasn't accepted yet, redirect to the witness landing page
+  // which now handles acceptance gating
+  if (!vow.witness_accepted_at) {
+    return new Response(null, {
+      status: 302,
+      headers: { 'Location': `https://unbreakablevow.app/witness?token=${token}` },
+    });
+  }
+
   // Show verdict page
   return new Response(renderPage({
     token,

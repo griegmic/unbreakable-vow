@@ -1,11 +1,17 @@
+import Constants from 'expo-constants';
 import { Stack, router } from 'expo-router';
-import { MessageCircleMore, ShieldCheck } from 'lucide-react-native';
-import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
+import { AlertCircle, CheckCircle2, Clock, MessageCircleMore, RefreshCw, ShieldCheck, User, UserMinus } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
+import { supabase } from '@/lib/supabase';
 import { useVowFlow } from '@/providers/vow-flow';
+
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
+
+type WitnessStatus = 'pending' | 'accepted' | 'declined' | 'unknown';
 
 export default function LiveScreen() {
   const { activeVowText, vow, isSelfWitness } = useVowFlow();
@@ -13,10 +19,11 @@ export default function LiveScreen() {
 
   const brokenTarget =
     vow.stake.consequence === 'witness'
-      ? vow.witnessName
+      ? (isSelfWitness ? 'charity' : vow.witnessName)
       : vow.stake.destination;
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const [witnessStatus, setWitnessStatus] = useState<WitnessStatus>(IS_EXPO_GO ? 'accepted' : 'unknown');
 
   useEffect(() => {
     if (!vow.rawInput) {
@@ -24,6 +31,37 @@ export default function LiveScreen() {
       router.replace('/');
     }
   }, [vow.rawInput]);
+
+  // Fetch witness acceptance status from DB
+  useEffect(() => {
+    if (isSelfWitness || IS_EXPO_GO || !vow.vowId) return;
+
+    async function checkWitnessStatus() {
+      try {
+        const { data } = await supabase
+          .from('vows')
+          .select('witness_accepted_at, witness_declined')
+          .eq('id', vow.vowId)
+          .single();
+
+        if (data?.witness_accepted_at) {
+          setWitnessStatus('accepted');
+        } else if (data?.witness_declined) {
+          setWitnessStatus('declined');
+        } else {
+          setWitnessStatus('pending');
+        }
+      } catch {
+        setWitnessStatus('pending');
+      }
+    }
+
+    checkWitnessStatus();
+
+    // Poll every 30s for updates
+    const interval = setInterval(checkWitnessStatus, 30000);
+    return () => clearInterval(interval);
+  }, [vow.vowId, isSelfWitness]);
 
   useEffect(() => {
     console.log('[LiveScreen] vow active:', activeVowText);
@@ -81,18 +119,79 @@ export default function LiveScreen() {
               </Text>
             </View>
           </>
+        ) : witnessStatus === 'accepted' ? (
+          <>
+            <View style={styles.infoRow}>
+              <CheckCircle2 color={palette.success} size={18} />
+              <Text style={styles.infoText}>
+                <Text style={styles.witnessAccepted}>{vow.witnessName} accepted!</Text> They're locked in and will deliver the verdict on {dates.endLabel}.
+              </Text>
+            </View>
+          </>
+        ) : witnessStatus === 'declined' ? (
+          <>
+            <View style={styles.infoRow}>
+              <UserMinus color={palette.warmAmber} size={18} />
+              <Text style={styles.infoText}>
+                {vow.witnessName} can't be your witness. Pick a new one or switch to solo.
+              </Text>
+            </View>
+            <View style={styles.witnessActions}>
+              <Pressable style={styles.witnessActionBtn} onPress={() => router.push('/witness')}>
+                <RefreshCw color={palette.goldBright} size={14} />
+                <Text style={styles.witnessActionText}>New witness</Text>
+              </Pressable>
+              <Pressable style={styles.witnessActionBtn} onPress={() => {
+                Alert.alert(
+                  'Switch to solo?',
+                  'Your vow continues with the same stake and deadline. You\'ll judge yourself. This can\'t be undone.',
+                  [
+                    { text: 'Keep waiting', style: 'cancel' },
+                    { text: 'Go solo', onPress: () => console.log('[LiveScreen] TODO: switch to solo mid-vow') },
+                  ]
+                );
+              }}>
+                <User color={palette.goldBright} size={14} />
+                <Text style={styles.witnessActionText}>Go solo</Text>
+              </Pressable>
+            </View>
+          </>
+        ) : witnessStatus === 'pending' ? (
+          <>
+            <View style={styles.infoRow}>
+              <Clock color={palette.warmAmber} size={18} />
+              <Text style={styles.infoText}>
+                <Text style={styles.witnessPending}>Waiting for {vow.witnessName}</Text> to accept. Most witnesses respond within a few hours.
+              </Text>
+            </View>
+            <View style={styles.witnessActions}>
+              <Pressable style={styles.witnessActionBtn} onPress={() => {
+                Alert.alert('Invite resent', `We sent another SMS to ${vow.witnessName}.`);
+              }}>
+                <RefreshCw color={palette.goldBright} size={14} />
+                <Text style={styles.witnessActionText}>Resend invite</Text>
+              </Pressable>
+              <Pressable style={styles.witnessActionBtn} onPress={() => {
+                Alert.alert(
+                  'Switch to solo?',
+                  'Your vow continues with the same stake and deadline. You\'ll judge yourself. This can\'t be undone.',
+                  [
+                    { text: 'Keep waiting', style: 'cancel' },
+                    { text: 'Go solo', onPress: () => console.log('[LiveScreen] TODO: switch to solo mid-vow') },
+                  ]
+                );
+              }}>
+                <User color={palette.goldBright} size={14} />
+                <Text style={styles.witnessActionText}>Go solo</Text>
+              </Pressable>
+            </View>
+          </>
         ) : (
           <>
             <View style={styles.infoRow}>
               <MessageCircleMore color={palette.goldBright} size={18} />
               <Text style={styles.infoText}>
                 {vow.witnessName} is your witness. They'll get an SMS when it's time to deliver the verdict.
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <ShieldCheck color={palette.textSecondary} size={18} />
-              <Text style={styles.infoText}>
-                On {dates.endLabel}, {vow.witnessName} delivers the final verdict.
               </Text>
             </View>
           </>
@@ -156,6 +255,36 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 21,
+  },
+  witnessAccepted: {
+    color: palette.success,
+    fontWeight: '700' as const,
+  },
+  witnessPending: {
+    color: palette.warmAmber,
+    fontWeight: '600' as const,
+  },
+  witnessActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  witnessActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: palette.surfaceElevated,
+  },
+  witnessActionText: {
+    color: palette.goldBright,
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   footerNote: {
     color: palette.textMuted,

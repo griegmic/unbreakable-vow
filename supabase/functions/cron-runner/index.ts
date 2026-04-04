@@ -1,7 +1,7 @@
 import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { sendSMS } from '../_shared/twilio.ts';
-import { warmupMessage, verdictRequestMessage, outcomeMessage } from '../_shared/sms-templates.ts';
+import { witnessReminderMessage, warmupMessage, verdictRequestMessage, outcomeMessage } from '../_shared/sms-templates.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,9 +36,58 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const now = new Date();
-  const results = { warmup: 0, verdict_request: 0, auto_resolve: 0, push: 0, errors: [] as string[] };
+  const results = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, push: 0, errors: [] as string[] };
 
   try {
+    // === TASK 0: Send witness acceptance reminders ===
+    // Find active vows sealed >24h ago where witness hasn't accepted
+    const reminderDeadline = new Date(now);
+    reminderDeadline.setHours(reminderDeadline.getHours() - 24);
+
+    const { data: unacceptedVows } = await supabase
+      .from('vows')
+      .select('*')
+      .eq('status', 'active')
+      .not('witness_phone', 'is', null)
+      .is('witness_accepted_at', null)
+      .eq('witness_declined', false)
+      .lte('sealed_at', reminderDeadline.toISOString());
+
+    for (const vow of unacceptedVows || []) {
+      // Idempotency check
+      const { data: existing } = await supabase
+        .from('sms_log')
+        .select('id')
+        .eq('vow_id', vow.id)
+        .eq('message_type', 'witness_reminder')
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) continue;
+
+      try {
+        const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
+        const ownerName = profile?.display_name || 'Someone';
+        const acceptUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
+        const body = witnessReminderMessage(ownerName, vow.refined_text, acceptUrl);
+        const sid = await sendSMS(vow.witness_phone!, body);
+        await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_reminder', twilio_sid: sid });
+
+        // Push notification to owner
+        await supabase.from('push_queue').insert({
+          user_id: vow.user_id,
+          title: `${vow.witness_name} hasn't responded`,
+          body: 'Your witness hasn\'t accepted yet. You can resend, switch witnesses, or go solo.',
+          data: { vow_id: vow.id, event: 'witness_no_response' },
+          send_after: now.toISOString(),
+        });
+
+        results.witness_reminder++;
+      } catch (err) {
+        results.errors.push(`witness_reminder ${vow.id}: ${err}`);
+      }
+    }
+
     // === TASK 1: Send warmup SMS (#2) ===
     // Find active vows ending within 12-36 hours
     const warmupStart = new Date(now);
