@@ -667,3 +667,75 @@ Rork is an AI app builder that generates and edits React Native/Expo code via na
 3. **Push Claude Code changes** → pull into Rork to see them in the live preview
 4. **Iterate in Rork** for any UI polish needed after backend is connected
 5. **Final build and submit** from CLI using EAS
+
+---
+
+## Realistic Timeline: Expert AI Coder with Claude Code
+
+This assumes you're proficient with Claude Code, can context-switch between Rork and Claude Code efficiently, and have done Supabase/Stripe/Twilio integrations before (or can learn fast with AI assistance). It also assumes you're working solo, dedicating focused time, and not blocked by day-job obligations.
+
+### The Honest Breakdown
+
+| Phase | Coding Time | Waiting/Manual Time | What Slows You Down |
+|---|---|---|---|
+| **Phase 1: Backend & Database** | 2-3 hours | 30 min (Supabase setup) | Nothing — Claude Code writes the schema, migrations, RLS, and client in one session |
+| **Phase 2: Authentication** | 2-3 hours | 1-2 hours (Apple/Google portal config) | Apple Developer portal is slow and confusing. Google OAuth consent screen has its own flow. The actual code is fast. |
+| **Phase 3: Payments (Stripe)** | 4-6 hours | 1-3 days (Stripe verification) | Stripe business verification is the blocker. Code-wise, Claude Code writes the Edge Functions quickly, but testing the full authorize→capture→cancel flow end-to-end takes iteration. |
+| **Phase 4: SMS (Twilio)** | 3-4 hours | 3-15 business days (A2P 10DLC) | **This is your critical path.** The code is straightforward — 5 Edge Functions + a webhook. But A2P registration is a hard external dependency. Start this on Day 1. |
+| **Phase 5: Contacts & Deep Links** | 3-4 hours | 1 hour (domain purchase + DNS) | Web invite/verdict pages are the bulk. Contact picker is a quick Rork prompt. AASA hosting is fiddly but Claude Code handles it. |
+| **Phase 6: Push Notifications** | 2-3 hours | 1 hour (APNs/FCM setup) | Mostly Rork work. Server-side push sending is one Edge Function. Credential setup in Apple/Firebase portals is the tedious part. |
+| **Phase 7: Polish & Custom Build** | 4-6 hours | 1-2 hours (EAS build time) | Sharpening fixes via Rork, edge case handling via Claude Code. First EAS build always has config issues — budget time for debugging. |
+| **Phase 8: App Store** | 2-3 hours | 1-7 days (Apple review) | Screenshots, privacy policy, ToS, App Store listing. Claude Code generates the legal docs. Apple review is the final wait. |
+
+### Total Coding Time: 22-32 hours
+
+That's **3-4 full days** of focused coding, or **1.5-2 weeks** at 3-4 hours/day.
+
+### Total Calendar Time: 3-4 weeks
+
+The calendar time is driven by external blockers, not coding speed:
+
+```
+Day 1:    Sign up for everything. Start A2P 10DLC registration.
+          Start Stripe verification. Buy domain.
+          Code: Phase 1 (backend) + Phase 2 (auth) — done in one sitting.
+
+Day 2-3:  Code: Phase 3 (Stripe) + Phase 6 (push notifications).
+          Stripe verification may still be pending — use test mode.
+
+Day 4-5:  Code: Phase 4 (Twilio) + Phase 5 (deep links + web pages).
+          A2P still pending — test with verified numbers only.
+
+Day 6-7:  Code: Phase 7 (polish, sharpening fixes, edge cases).
+          First EAS development build. Test on real device.
+
+Day 8-10: Integration testing. Fix the bugs that only show up on real devices.
+          Stripe verification should be done — switch to live mode.
+
+Day 10-14: A2P 10DLC hopefully approved. Test real SMS delivery.
+           If not approved yet, everything else is ready — just waiting.
+
+Day 14-17: Phase 8. Screenshots, legal docs, App Store listing.
+           Submit to Apple review.
+
+Day 17-24: Apple review (typically 1-3 days, can be up to 7).
+           Address any rejection feedback if needed.
+```
+
+### What Could Speed This Up
+
+- **Skip SMS for v1** — use only push notifications + in-app messaging. Eliminates the 3-15 day A2P wait entirely. Add Twilio in v1.1. This alone cuts calendar time to **2 weeks**.
+- **Skip Apple/Google Sign-In for v1** — email-only auth works in Expo Go (no custom build needed). Saves a day of portal config and build debugging.
+- **Use the charge-and-refund model** — simpler than authorize/capture. One Edge Function instead of three. Eliminates the hold expiration risk entirely.
+- **Skip the web verdict page for v1** — have the witness download the app. Less work, but more friction in the viral loop.
+
+### What Could Slow This Down
+
+- **Apple rejects the app** — if they flag the stakes mechanic as gambling, you'll need to revise the framing and resubmit. Could add 1-2 weeks.
+- **A2P registration denied** — rare but possible. You'd need to appeal or restructure your messaging campaign description.
+- **Stripe flags the business model** — Stripe is cautious about "wager-like" products. Clear description of the charitable/accountability framing matters.
+- **First-time Supabase Edge Functions** — if you haven't deployed Edge Functions before, the local dev setup + CORS + auth headers can eat a few hours of debugging.
+
+### Bottom Line
+
+An expert using Claude Code + Rork together, working focused hours, ships a production-ready v1 in **3 weeks** from first commit to App Store submission. Cut SMS and it's **2 weeks**. The coding isn't the bottleneck — it's Twilio's A2P registration and Apple's review process.
