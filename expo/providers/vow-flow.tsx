@@ -10,9 +10,12 @@ export interface StakeState {
   destination: string;
 }
 
+export type WitnessType = 'self' | 'friend';
+
 export interface VowState {
   rawInput: string;
   refinedText: string;
+  witnessType: WitnessType;
   witnessName: string;
   inviteMethod: 'sms' | 'link';
   phoneNumber: string;
@@ -24,6 +27,7 @@ export interface VowState {
 const initialState: VowState = {
   rawInput: '',
   refinedText: '',
+  witnessType: 'friend',
   witnessName: '',
   inviteMethod: 'sms',
   phoneNumber: '',
@@ -48,6 +52,11 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
     const next = formalizeVow(value);
     console.log('[VowFlow] setRefinedText', next);
     setVow((current) => ({ ...current, refinedText: next || current.refinedText }));
+  }, []);
+
+  const setWitnessType = useCallback((type: WitnessType) => {
+    console.log('[VowFlow] setWitnessType', type);
+    setVow((current) => ({ ...current, witnessType: type }));
   }, []);
 
   const setWitness = useCallback((name: string, inviteMethod: 'sms' | 'link', phoneNumber?: string) => {
@@ -88,19 +97,23 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
     [vow.rawInput, vow.refinedText]
   );
 
+  const isSelfWitness = useMemo(() => vow.witnessType === 'self', [vow.witnessType]);
+
   return useMemo(
     () => ({
       vow,
       analysis,
       activeVowText,
+      isSelfWitness,
       setRawInput,
       setRefinedText,
+      setWitnessType,
       setWitness,
       setStake,
       setVowId,
       resetVow,
       shouldSkipRefine,
     }),
-    [activeVowText, analysis, resetVow, setRawInput, setRefinedText, setStake, setVowId, setWitness, shouldSkipRefine, vow]
+    [activeVowText, analysis, isSelfWitness, resetVow, setRawInput, setRefinedText, setStake, setVowId, setWitness, setWitnessType, shouldSkipRefine, vow]
   );
 });

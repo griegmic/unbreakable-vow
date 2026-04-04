@@ -9,7 +9,7 @@ import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function SentScreen() {
-  const { activeVowText, vow } = useVowFlow();
+  const { activeVowText, vow, isSelfWitness } = useVowFlow();
   const dates = getVowVerdictDate(vow.rawInput);
   const checkScale = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
@@ -55,7 +55,7 @@ export default function SentScreen() {
             label="Preview what your witness sees"
             onPress={() => {
               if (vow.witnessInviteToken) {
-                Linking.openURL(`https://unbreakablevow.app/witness?token=${vow.witnessInviteToken}`);
+                void Linking.openURL(`https://unbreakablevow.app/witness?token=${vow.witnessInviteToken}`);
               } else {
                 router.push('/witness-invite');
               }
@@ -75,11 +75,13 @@ export default function SentScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={vow.phoneNumber ? 'Sealed. Invite sent.' : 'Sealed.'}
+          title={isSelfWitness ? 'Sealed.' : vow.phoneNumber ? 'Sealed. Invite sent.' : 'Sealed.'}
           subtitle={
-            vow.phoneNumber
-              ? `We just texted ${vow.witnessName}. They'll get the details and choose to accept.`
-              : `Share the link with ${vow.witnessName} so they can be your witness.`
+            isSelfWitness
+              ? 'Your vow is locked. When the time comes, you\'ll judge yourself honestly.'
+              : vow.phoneNumber
+                ? `We just texted ${vow.witnessName}. They'll get the details and choose to accept.`
+                : `Share the link with ${vow.witnessName} so they can be your witness.`
           }
         />
       </Animated.View>
@@ -91,8 +93,8 @@ export default function SentScreen() {
       <Animated.View style={{ opacity: contentFade }}>
         <RitualCard>
           <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Witness</Text>
-            <Text style={styles.metaValue}>{vow.witnessName}</Text>
+            <Text style={styles.metaLabel}>{isSelfWitness ? 'Accountability' : 'Witness'}</Text>
+            <Text style={styles.metaValue}>{isSelfWitness ? 'Self-judged' : vow.witnessName}</Text>
           </View>
           <View style={styles.metaRow}>
             <Text style={styles.metaLabel}>Stake</Text>
@@ -111,31 +113,52 @@ export default function SentScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <RitualCard style={styles.stepsCard}>
-          <View style={styles.stepRow}>
-            <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-            <Text style={styles.stepText}>
-              {vow.phoneNumber
-                ? `We texted ${vow.witnessName}. They'll accept the invite.`
-                : `Share the invite link with ${vow.witnessName}.`}
-            </Text>
-          </View>
-          <View style={styles.stepRow}>
-            <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
-            <Text style={styles.stepText}>{vow.witnessName} delivers the verdict on {dates.endLabel}.</Text>
-          </View>
-          <View style={styles.stepRow}>
-            <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-            <Text style={styles.stepText}>If broken, ${vow.stake.amount} goes to {brokenTarget}.</Text>
-          </View>
+          {isSelfWitness ? (
+            <>
+              <View style={styles.stepRow}>
+                <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
+                <Text style={styles.stepText}>Honor your vow for the full window.</Text>
+              </View>
+              <View style={styles.stepRow}>
+                <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
+                <Text style={styles.stepText}>On {dates.endLabel}, you deliver your own honest verdict.</Text>
+              </View>
+              <View style={styles.stepRow}>
+                <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
+                <Text style={styles.stepText}>If broken, ${vow.stake.amount} goes to {brokenTarget}.</Text>
+              </View>
+            </>
+          ) : (
+            <>
+              <View style={styles.stepRow}>
+                <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
+                <Text style={styles.stepText}>
+                  {vow.phoneNumber
+                    ? `We texted ${vow.witnessName}. They'll accept the invite.`
+                    : `Share the invite link with ${vow.witnessName}.`}
+                </Text>
+              </View>
+              <View style={styles.stepRow}>
+                <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
+                <Text style={styles.stepText}>{vow.witnessName} delivers the verdict on {dates.endLabel}.</Text>
+              </View>
+              <View style={styles.stepRow}>
+                <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
+                <Text style={styles.stepText}>If broken, ${vow.stake.amount} goes to {brokenTarget}.</Text>
+              </View>
+            </>
+          )}
         </RitualCard>
       </Animated.View>
 
-      <Animated.View style={[styles.actionsRow, { opacity: contentFade }]}>
-        <Pressable style={styles.smallAction} onPress={handleCopyLink} testID="sent-copy-link">
-          <Copy color={palette.textSecondary} size={16} />
-          <Text style={styles.smallActionText}>Share invite link</Text>
-        </Pressable>
-      </Animated.View>
+      {!isSelfWitness ? (
+        <Animated.View style={[styles.actionsRow, { opacity: contentFade }]}>
+          <Pressable style={styles.smallAction} onPress={handleCopyLink} testID="sent-copy-link">
+            <Copy color={palette.textSecondary} size={16} />
+            <Text style={styles.smallActionText}>Share invite link</Text>
+          </Pressable>
+        </Animated.View>
+      ) : null}
     </RitualScreen>
   );
 }

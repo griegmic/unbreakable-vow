@@ -13,7 +13,7 @@ import type { Database } from '@/types/database';
 type VowRow = Database['public']['Tables']['vows']['Row'];
 
 export default function VowKeptScreen() {
-  const { activeVowText, resetVow, vow } = useVowFlow();
+  const { activeVowText, resetVow, vow, isSelfWitness } = useVowFlow();
   const [keptCount, setKeptCount] = useState(0);
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function VowKeptScreen() {
   const contentFade = useRef(new Animated.Value(0)).current;
   const confettiScale = useRef(new Animated.Value(0)).current;
 
-  const firstName = vow.witnessName.split(' ')[0];
+  const firstName = isSelfWitness ? 'You' : vow.witnessName.split(' ')[0];
 
   useEffect(() => {
     console.log('[VowKeptScreen] vow kept! playing celebration');
@@ -103,8 +103,8 @@ export default function VowKeptScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={`${firstName} confirmed: vow kept.`}
-          subtitle={`Your word held. $${vow.stake.amount} stays safe \u2014 you won\u2019t be charged.`}
+          title={isSelfWitness ? 'You kept your word.' : `${firstName} confirmed: vow kept.`}
+          subtitle={`Your word held. ${vow.stake.amount} stays safe \u2014 you won\u2019t be charged.`}
         />
       </Animated.View>
 

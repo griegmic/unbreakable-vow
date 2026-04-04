@@ -42,6 +42,7 @@ function RootLayoutNav() {
       <Stack.Screen name="witness-verdict" />
       <Stack.Screen name="vow-kept" />
       <Stack.Screen name="vow-broken" />
+      <Stack.Screen name="self-resolve" />
       <Stack.Screen name="history" />
       <Stack.Screen name="settings" />
     </Stack>

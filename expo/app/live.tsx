@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { MessageCircleMore, ShieldCheck } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
@@ -9,7 +8,7 @@ import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function LiveScreen() {
-  const { activeVowText, vow } = useVowFlow();
+  const { activeVowText, vow, isSelfWitness } = useVowFlow();
   const dates = getVowVerdictDate(vow.rawInput);
 
   const brokenTarget =
@@ -19,13 +18,12 @@ export default function LiveScreen() {
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  // Guard: if vow state is empty (e.g. deep link or stale navigation), go home
   useEffect(() => {
-    if (!vow.witnessName || !vow.rawInput) {
+    if (!vow.rawInput) {
       console.log('[LiveScreen] empty vow state, redirecting home');
       router.replace('/');
     }
-  }, [vow.witnessName, vow.rawInput]);
+  }, [vow.rawInput]);
 
   useEffect(() => {
     console.log('[LiveScreen] vow active:', activeVowText);
@@ -42,7 +40,11 @@ export default function LiveScreen() {
     <RitualScreen
       footer={
         <>
-          <PrimaryButton label="Preview the witness verdict" onPress={() => router.push('/witness-verdict')} testID="live-verdict" />
+          <PrimaryButton
+            label={isSelfWitness ? 'Deliver your verdict' : 'Preview the witness verdict'}
+            onPress={() => router.push(isSelfWitness ? '/self-resolve' : '/witness-verdict')}
+            testID="live-verdict"
+          />
           <SecondaryButton label="View history" onPress={() => router.push('/history')} testID="live-history" />
         </>
       }
@@ -61,7 +63,7 @@ export default function LiveScreen() {
 
       <TitleBlock
         title={activeVowText}
-        subtitle={`$${vow.stake.amount} at stake · Goes to ${brokenTarget} if broken`}
+        subtitle={`${vow.stake.amount} at stake \u00B7 Goes to ${brokenTarget} if broken`}
       />
 
       <View style={styles.statsRow}>
@@ -70,18 +72,31 @@ export default function LiveScreen() {
       </View>
 
       <RitualCard>
-        <View style={styles.infoRow}>
-          <MessageCircleMore color={palette.goldBright} size={18} />
-          <Text style={styles.infoText}>
-            {vow.witnessName} is your witness. They'll get an SMS when it's time to deliver the verdict.
-          </Text>
-        </View>
-        <View style={styles.infoRow}>
-          <ShieldCheck color={palette.textSecondary} size={18} />
-          <Text style={styles.infoText}>
-            On {dates.endLabel}, {vow.witnessName} delivers the final verdict.
-          </Text>
-        </View>
+        {isSelfWitness ? (
+          <>
+            <View style={styles.infoRow}>
+              <ShieldCheck color={palette.goldBright} size={18} />
+              <Text style={styles.infoText}>
+                You're holding yourself accountable. On {dates.endLabel}, you'll deliver your own honest verdict.
+              </Text>
+            </View>
+          </>
+        ) : (
+          <>
+            <View style={styles.infoRow}>
+              <MessageCircleMore color={palette.goldBright} size={18} />
+              <Text style={styles.infoText}>
+                {vow.witnessName} is your witness. They'll get an SMS when it's time to deliver the verdict.
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <ShieldCheck color={palette.textSecondary} size={18} />
+              <Text style={styles.infoText}>
+                On {dates.endLabel}, {vow.witnessName} delivers the final verdict.
+              </Text>
+            </View>
+          </>
+        )}
       </RitualCard>
 
       <Text style={styles.footerNote}>{dates.range} · {dates.verdictLabel}</Text>

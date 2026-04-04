@@ -9,14 +9,14 @@ import { palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function VowBrokenScreen() {
-  const { activeVowText, resetVow, vow } = useVowFlow();
+  const { activeVowText, resetVow, vow, isSelfWitness } = useVowFlow();
 
   const destination =
     vow.stake.consequence === 'witness'
       ? vow.witnessName
       : vow.stake.destination;
 
-  const firstName = vow.witnessName.split(' ')[0];
+  const firstName = isSelfWitness ? 'You' : vow.witnessName.split(' ')[0];
 
   const alertScale = useRef(new Animated.Value(0.5)).current;
   const alertOpacity = useRef(new Animated.Value(0)).current;
@@ -72,8 +72,10 @@ export default function VowBrokenScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={`${firstName} called it.`}
-          subtitle={`$${vow.stake.amount} goes to ${destination}. The terms were clear, and you were honest.`}
+          title={isSelfWitness ? 'You were honest.' : `${firstName} called it.`}
+          subtitle={isSelfWitness
+            ? `${vow.stake.amount} goes to ${destination}. It takes real integrity to admit that.`
+            : `${vow.stake.amount} goes to ${destination}. The terms were clear, and you were honest.`}
         />
       </Animated.View>
 

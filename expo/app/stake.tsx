@@ -18,17 +18,16 @@ import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function StakeScreen() {
-  const { activeVowText, setStake, vow } = useVowFlow();
+  const { activeVowText, setStake, vow, isSelfWitness } = useVowFlow();
   const { isAuthenticated } = useAuth();
 
-  // Guard: redirect back if witness not yet selected
   useEffect(() => {
-    if (!vow.witnessName) {
+    if (!vow.witnessName && !isSelfWitness) {
       Alert.alert('Pick a witness first', 'You need to choose a witness before setting stakes.', [
         { text: 'OK', onPress: () => router.replace('/witness') },
       ]);
     }
-  }, [vow.witnessName]);
+  }, [vow.witnessName, isSelfWitness]);
 
   const [amount, setAmount] = useState<number>(vow.stake.amount);
   const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(vow.stake.consequence);
@@ -113,7 +112,7 @@ export default function StakeScreen() {
 
       <RitualCard>
         <Text style={styles.sectionTitle}>Where does it go if you fail?</Text>
-        {consequenceOptions.map((option) => {
+        {consequenceOptions.filter(o => !(isSelfWitness && o.id === 'witness')).map((option) => {
           const active = consequence === option.id;
           const Icon = option.id === 'charity' ? HeartHandshake : option.id === 'witness' ? HandCoins : Flame;
           return (
@@ -168,7 +167,7 @@ export default function StakeScreen() {
           <ShieldCheck color={palette.textMuted} size={16} />
         </View>
         <Text style={styles.paymentText}>
-          Secure payment via Stripe. You'll be refunded in full if your witness confirms you kept your vow.
+          Secure payment via Stripe. {isSelfWitness ? 'You\'ll be refunded in full if you honestly confirm you kept your vow.' : 'You\'ll be refunded in full if your witness confirms you kept your vow.'}
         </Text>
       </View>
     </RitualScreen>

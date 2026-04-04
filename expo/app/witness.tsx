@@ -1,9 +1,9 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Check, Link2, MessageSquareText, Search, UserPlus, X } from 'lucide-react-native';
-import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Check, Link2, MessageSquareText, Search, Shield, User, UserPlus, X } from 'lucide-react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   BackButton,
@@ -12,11 +12,11 @@ import {
   TitleBlock,
   VowPreview,
 } from '@/components/vow-ui';
-import { palette } from '@/constants/unbreakable';
+import { palette, serifFont } from '@/constants/unbreakable';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
-type WitnessMode = 'choose' | 'contacts' | 'manual' | 'invite';
+type WitnessMode = 'choose' | 'contacts' | 'manual' | 'invite' | 'solo-oath';
 
 interface ContactEntry {
   id: string;
@@ -26,11 +26,14 @@ interface ContactEntry {
 
 export default function WitnessScreen() {
   const { displayName } = useAuth();
-  const { activeVowText, setWitness } = useVowFlow();
+  const { activeVowText, setWitness, setWitnessType } = useVowFlow();
   const [mode, setMode] = useState<WitnessMode>('choose');
   const [selectedName, setSelectedName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
   const [linkShared, setLinkShared] = useState(false);
+  const [soloSworn, setSoloSworn] = useState<boolean>(false);
+  const soloCheckScale = useRef(new Animated.Value(1)).current;
+  const soloGlow = useRef(new Animated.Value(0)).current;
 
 
   // Contact picker state
@@ -149,6 +152,32 @@ export default function WitnessScreen() {
     return contacts.filter(c => c.name.toLowerCase().includes(q));
   }, [contacts, contactSearch]);
 
+  const handleSoloSwear = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSoloSworn(true);
+    Animated.parallel([
+      Animated.timing(soloGlow, { toValue: 1, duration: 600, useNativeDriver: false }),
+      Animated.sequence([
+        Animated.timing(soloCheckScale, { toValue: 1.2, duration: 150, useNativeDriver: true }),
+        Animated.spring(soloCheckScale, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 10 }),
+      ]),
+    ]).start();
+  };
+
+  const handleSoloUnswear = () => {
+    void Haptics.selectionAsync();
+    setSoloSworn(false);
+    Animated.timing(soloGlow, { toValue: 0, duration: 300, useNativeDriver: false }).start();
+  };
+
+  const handleSoloContinue = () => {
+    if (!soloSworn) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setWitnessType('self');
+    setWitness('Just me', 'link');
+    router.push('/stake');
+  };
+
   // ─── Choose mode ───
   if (mode === 'choose') {
     return (
@@ -156,10 +185,33 @@ export default function WitnessScreen() {
         <Stack.Screen options={{ headerShown: false }} />
         <BackButton />
         <TitleBlock
-          title="Choose your witness."
-          subtitle="Someone who knows you well enough to call it honestly."
+          title="Who holds you accountable?"
+          subtitle="Choose a witness, or make a solemn promise to yourself."
         />
         <VowPreview text={activeVowText} compact />
+
+        <Pressable
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setMode('solo-oath');
+          }}
+          style={styles.soloOption}
+          testID="witness-solo"
+        >
+          <View style={styles.soloOptionIcon}>
+            <User color={palette.goldBright} size={20} />
+          </View>
+          <View style={styles.heroOptionCopy}>
+            <Text style={styles.soloOptionTitle}>Just me</Text>
+            <Text style={styles.soloOptionSub}>Make a solemn promise to yourself</Text>
+          </View>
+        </Pressable>
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or pick a witness</Text>
+          <View style={styles.dividerLine} />
+        </View>
 
         <Pressable
           onPress={handlePickFromContacts}
@@ -177,7 +229,7 @@ export default function WitnessScreen() {
           )}
           <View style={styles.heroOptionCopy}>
             <Text style={styles.heroOptionTitle}>Pick from contacts</Text>
-            <Text style={styles.heroOptionSub}>Find them in one tap</Text>
+            <Text style={styles.heroOptionSub}>They deliver the final verdict</Text>
           </View>
         </Pressable>
 
@@ -194,13 +246,71 @@ export default function WitnessScreen() {
             <Text style={styles.secondaryOptionSub}>Enter their name and send a link</Text>
           </View>
         </Pressable>
+      </RitualScreen>
+    );
+  }
 
-        <View style={styles.explainerCard}>
-          <Text style={styles.explainerTitle}>What does a witness do?</Text>
-          <Text style={styles.explainerBody}>
-            Your witness gets a text when you seal your vow. When the time is up, they deliver the verdict — kept or broken. Their call is final.
+  // ─── Solo oath mode ───
+  if (mode === 'solo-oath') {
+    const soloBorderColor = soloGlow.interpolate({
+      inputRange: [0, 1],
+      outputRange: [palette.border, palette.borderStrong],
+    });
+    const soloBgOpacity = soloGlow.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0, 0.06],
+    });
+
+    return (
+      <RitualScreen
+        footer={
+          <PrimaryButton
+            label="Continue"
+            onPress={handleSoloContinue}
+            disabled={!soloSworn}
+            testID="solo-continue"
+          />
+        }
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <BackButton />
+        <TitleBlock
+          title="A promise to yourself."
+          subtitle="No witness. No one watching. Just you and your word. That makes it harder — and more meaningful."
+        />
+        <VowPreview text={activeVowText} compact />
+
+        <View style={styles.soloOathCard}>
+          <View style={styles.soloOathIconWrap}>
+            <Shield color={palette.goldBright} size={24} />
+          </View>
+          <Text style={styles.soloOathHeading}>How this works</Text>
+          <Text style={styles.soloOathBody}>
+            When your vow window ends, you'll judge yourself. You'll be asked to honestly declare whether you kept or broke your word — under oath.
+          </Text>
+          <Text style={styles.soloOathBody}>
+            No one can verify this but you. That's the point. This is about integrity.
           </Text>
         </View>
+
+        <Animated.View style={[styles.solemnCard, { borderColor: soloBorderColor }]}>
+          <Animated.View style={[styles.solemnGlowBg, { opacity: soloBgOpacity }]} />
+          <Pressable
+            onPress={soloSworn ? handleSoloUnswear : handleSoloSwear}
+            style={styles.solemnRow}
+            testID="solo-swear"
+          >
+            <Animated.View style={[styles.solemnCheckbox, soloSworn && styles.solemnCheckboxChecked, { transform: [{ scale: soloCheckScale }] }]}>
+              {soloSworn ? <Check color="#0B0D11" size={14} strokeWidth={3} /> : null}
+            </Animated.View>
+            <View style={styles.solemnCopy}>
+              <Text style={styles.solemnTitle}>I solemnly swear</Text>
+              <Text style={styles.solemnText}>
+                to be completely honest when I judge myself. I will not bend the truth, make excuses, or let myself off easy.
+              </Text>
+            </View>
+          </Pressable>
+        </Animated.View>
       </RitualScreen>
     );
   }
@@ -620,5 +730,132 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     lineHeight: 19,
     paddingHorizontal: 20,
+  },
+  soloOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: palette.surface,
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+  },
+  soloOptionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(212,162,79,0.12)',
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soloOptionTitle: {
+    color: palette.goldBright,
+    fontSize: 16,
+    fontWeight: '600' as const,
+  },
+  soloOptionSub: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 2,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: palette.border,
+  },
+  dividerText: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '500' as const,
+    textTransform: 'lowercase' as const,
+  },
+  soloOathCard: {
+    backgroundColor: palette.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: palette.border,
+    padding: 20,
+    gap: 12,
+    alignItems: 'center',
+  },
+  soloOathIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(212,162,79,0.1)',
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  soloOathHeading: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  soloOathBody: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center' as const,
+  },
+  solemnCard: {
+    borderRadius: 22,
+    borderWidth: 1,
+    padding: 20,
+    backgroundColor: palette.surface,
+    overflow: 'hidden',
+    shadowColor: palette.gold,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  solemnGlowBg: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: palette.goldBright,
+  },
+  solemnRow: {
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: 'flex-start',
+  },
+  solemnCheckbox: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: palette.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  solemnCheckboxChecked: {
+    backgroundColor: palette.goldBright,
+    borderColor: palette.goldBright,
+  },
+  solemnCopy: {
+    flex: 1,
+    gap: 6,
+  },
+  solemnTitle: {
+    color: palette.goldBright,
+    fontSize: 18,
+    fontWeight: '700' as const,
+    fontFamily: serifFont,
+    letterSpacing: -0.3,
+  },
+  solemnText: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
   },
 });

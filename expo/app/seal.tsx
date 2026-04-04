@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Check, Sparkles, Star } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
@@ -24,7 +24,7 @@ function formatE164(phone: string): string {
 
 export default function SealScreen() {
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const { activeVowText, vow, setVowId } = useVowFlow();
+  const { activeVowText, vow, setVowId, isSelfWitness } = useVowFlow();
 
   // Redirect to auth if not signed in (skip in Expo Go dev mode)
   useEffect(() => {
@@ -49,9 +49,11 @@ export default function SealScreen() {
   console.log('[SealScreen] rendering, sworn:', sworn, 'sealed:', sealed);
 
   const brokenLabel =
-    vow.stake.consequence === 'witness'
-      ? `${vow.witnessName} gets it`
-      : `Donated to ${vow.stake.destination}`;
+    isSelfWitness && vow.stake.consequence === 'witness'
+      ? `Donated to charity`
+      : vow.stake.consequence === 'witness'
+        ? `${vow.witnessName} gets it`
+        : `Donated to ${vow.stake.destination}`;
 
   const handleSwear = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -264,8 +266,8 @@ export default function SealScreen() {
         <View style={styles.rule} />
         <View style={styles.twoCol}>
           <View style={styles.metaCell}>
-            <Text style={styles.metaLabel}>WITNESS</Text>
-            <Text style={styles.metaValue}>{vow.witnessName}</Text>
+            <Text style={styles.metaLabel}>{isSelfWitness ? 'ACCOUNTABILITY' : 'WITNESS'}</Text>
+            <Text style={styles.metaValue}>{isSelfWitness ? 'Self-judged' : vow.witnessName}</Text>
           </View>
           <View style={styles.metaCell}>
             <Text style={styles.metaLabel}>AT STAKE</Text>
@@ -284,7 +286,7 @@ export default function SealScreen() {
         </View>
         <View style={styles.metaCell}>
           <Text style={styles.metaLabel}>VERDICT</Text>
-          <Text style={styles.metaValue}>{vow.witnessName} decides on {dates.endLabel}</Text>
+          <Text style={styles.metaValue}>{isSelfWitness ? `You decide on ${dates.endLabel}` : `${vow.witnessName} decides on ${dates.endLabel}`}</Text>
         </View>
       </RitualCard>
 
