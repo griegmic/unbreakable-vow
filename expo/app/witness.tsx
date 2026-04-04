@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Link2, MessageSquareText, Search, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
+import * as Clipboard from 'expo-clipboard';
 import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
@@ -51,17 +52,23 @@ export default function WitnessScreen() {
     router.push('/stake');
   };
 
+  const shareMessage = `I'm about to make an Unbreakable Vow — will you be my witness? You'll get a text with the details once I seal it.`;
+
   const handleCopyLink = async () => {
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    await Clipboard.setStringAsync(shareMessage);
     setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
+
+  const handleShareLink = async () => {
     if (Platform.OS !== 'web') {
       try {
-        await Share.share({ message: 'I\'m about to make an Unbreakable Vow — will you be my witness? You\'ll get a text with the details once I seal it.' });
+        await Share.share({ message: shareMessage });
       } catch {
         console.log('[WitnessScreen] share failed');
       }
     }
-    setTimeout(() => setCopied(false), 2500);
   };
 
   const handlePickFromContacts = useCallback(async () => {
@@ -285,7 +292,12 @@ export default function WitnessScreen() {
       footer={
         <PrimaryButton
           label={inviteMethod === 'link' ? 'Share link & continue' : 'Send invite & continue'}
-          onPress={handleConfirm}
+          onPress={async () => {
+            if (inviteMethod === 'link') {
+              await handleShareLink();
+            }
+            handleConfirm();
+          }}
           disabled={!canFinish}
           testID="witness-confirm"
         />
@@ -345,7 +357,7 @@ export default function WitnessScreen() {
 
       {inviteMethod === 'link' ? (
         <View style={styles.linkPreviewRow}>
-          <Text style={styles.linkUrl} numberOfLines={1}>Invite sent via SMS after sealing</Text>
+          <Text style={styles.linkUrl} numberOfLines={1}>I'm about to make an Unbreakable Vow...</Text>
           <Pressable
             style={[styles.copyBtn, copied && styles.copyBtnCopied]}
             onPress={handleCopyLink}
