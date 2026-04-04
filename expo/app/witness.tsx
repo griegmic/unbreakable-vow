@@ -1,7 +1,7 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Link2, MessageSquareText, Search, UserPlus, X } from 'lucide-react-native';
+import { Check, Link2, MessageSquareText, Search, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -30,6 +30,7 @@ export default function WitnessScreen() {
   const [mode, setMode] = useState<WitnessMode>('choose');
   const [selectedName, setSelectedName] = useState<string>('');
   const [phone, setPhone] = useState<string>('');
+  const [linkShared, setLinkShared] = useState(false);
 
 
   // Contact picker state
@@ -39,10 +40,11 @@ export default function WitnessScreen() {
 
   console.log('[WitnessScreen] mode:', mode, 'selectedName:', selectedName);
 
+  const hasPhone = phone.replace(/\D/g, '').length >= 10;
   const canFinish = useMemo(() => {
     if (!selectedName.trim()) return false;
-    return phone.replace(/\D/g, '').length >= 10;
-  }, [selectedName, phone]);
+    return hasPhone || linkShared;
+  }, [selectedName, hasPhone, linkShared]);
 
   const handleConfirm = () => {
     if (!selectedName.trim()) return;
@@ -58,10 +60,14 @@ export default function WitnessScreen() {
   const handleShareLink = async () => {
     if (Platform.OS !== 'web') {
       try {
-        await Share.share({
+        const result = await Share.share({
           message: shareMessage,
           url: witnessUrl,
         });
+        if (result.action === Share.sharedAction) {
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setLinkShared(true);
+        }
       } catch {
         console.log('[WitnessScreen] share failed');
       }
@@ -323,12 +329,30 @@ export default function WitnessScreen() {
       <BackButton />
       <TitleBlock
         title={`Invite ${selectedName}`}
-        subtitle="Their phone number is needed so we can text them the invite."
+        subtitle={linkShared
+          ? `Link shared! Add their number for SMS reminders, or continue.`
+          : `Share a link or add their phone number so we can reach them.`}
       />
       <VowPreview text={activeVowText} compact />
 
+      <Pressable
+        onPress={handleShareLink}
+        style={[styles.sharePreviewCard, linkShared && styles.sharePreviewCardDone]}
+        testID="witness-share-preview"
+      >
+        <View style={[styles.methodIcon, linkShared && styles.methodIconDone]}>
+          {linkShared
+            ? <Check color={palette.success} size={18} />
+            : <Link2 color={palette.goldBright} size={18} />}
+        </View>
+        <View style={styles.methodCopy}>
+          <Text style={styles.methodTitle}>{linkShared ? 'Link shared' : 'Share invite link'}</Text>
+          <Text style={styles.methodSub}>{linkShared ? 'Tap to share again' : 'Send via iMessage, WhatsApp, etc'}</Text>
+        </View>
+      </Pressable>
+
       <View style={styles.manualInputShell}>
-        <Text style={styles.manualLabel}>PHONE NUMBER</Text>
+        <Text style={styles.manualLabel}>PHONE NUMBER {linkShared ? '(OPTIONAL)' : ''}</Text>
         <TextInput
           style={styles.manualInput}
           placeholder="(555) 123-4567"
@@ -336,28 +360,18 @@ export default function WitnessScreen() {
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
-          autoFocus={!phone}
+          autoFocus={!phone && !linkShared}
           accessibilityLabel={`Phone number for ${selectedName}`}
           testID="witness-phone-input"
         />
       </View>
 
-      <Pressable
-        onPress={handleShareLink}
-        style={styles.sharePreviewCard}
-        testID="witness-share-preview"
-      >
-        <View style={styles.methodIcon}>
-          <Link2 color={palette.goldBright} size={18} />
-        </View>
-        <View style={styles.methodCopy}>
-          <Text style={styles.methodTitle}>Share a preview link</Text>
-          <Text style={styles.methodSub}>Optional — send via iMessage, WhatsApp, etc</Text>
-        </View>
-      </Pressable>
-
       <Text style={styles.inviteExplainer}>
-        We'll text {selectedName} when you seal the vow.
+        {hasPhone
+          ? `We'll text ${selectedName} when you seal the vow.`
+          : linkShared
+            ? `${selectedName} will get the details via the link you shared.`
+            : `Share a link or enter their number to continue.`}
       </Text>
     </RitualScreen>
   );
@@ -591,6 +605,14 @@ const styles = StyleSheet.create({
     padding: 16,
     borderWidth: 1,
     borderColor: palette.border,
+  },
+  sharePreviewCardDone: {
+    borderColor: 'rgba(82,214,154,0.25)',
+    backgroundColor: 'rgba(82,214,154,0.06)',
+  },
+  methodIconDone: {
+    backgroundColor: 'rgba(82,214,154,0.12)',
+    borderColor: 'rgba(82,214,154,0.25)',
   },
   inviteExplainer: {
     color: palette.textMuted,

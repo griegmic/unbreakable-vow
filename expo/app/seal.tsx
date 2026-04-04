@@ -30,16 +30,6 @@ export default function SealScreen() {
     }
   }, [authLoading, isAuthenticated]);
 
-  // Guard: redirect back if witness phone is missing
-  useEffect(() => {
-    if (!vow.phoneNumber) {
-      Alert.alert(
-        'Witness phone needed',
-        'We need your witness\'s phone number to send them the invite.',
-        [{ text: 'OK', onPress: () => router.replace('/witness') }],
-      );
-    }
-  }, [vow.phoneNumber]);
   const [sworn, setSworn] = useState<boolean>(false);
   const [sealed, setSealed] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
