@@ -1,3 +1,5 @@
+import { NativeModules } from 'react-native';
+
 import { supabase } from './supabase';
 
 export interface AuthResult {
@@ -6,11 +8,16 @@ export interface AuthResult {
   displayName?: string | null;
 }
 
-// Lazy-load Google Sign-In to avoid crashes in environments where native module isn't available
+// Check if the Google Sign-In native module is in the binary BEFORE requiring
+// the JS wrapper. The JS wrapper calls TurboModuleRegistry.getEnforcing()
+// which throws an uncatchable invariant in dev mode if the module is missing.
+const GOOGLE_AVAILABLE = NativeModules.RNGoogleSignin != null;
+
 let _google: typeof import('@react-native-google-signin/google-signin') | null = null;
 let googleConfigured = false;
 
 function getGoogle() {
+  if (!GOOGLE_AVAILABLE) return null;
   if (!_google) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires
