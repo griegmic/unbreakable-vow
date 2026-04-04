@@ -6,6 +6,8 @@ export interface AuthResult {
   displayName?: string | null;
 }
 
+export const GOOGLE_SIGN_IN_AVAILABLE = false;
+
 export async function signInWithGoogle(): Promise<AuthResult> {
   return { success: false, error: 'Google Sign-In is not available on web' };
 }

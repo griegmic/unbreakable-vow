@@ -1,4 +1,4 @@
-import { NativeModules } from 'react-native';
+import Constants from 'expo-constants';
 
 import { supabase } from './supabase';
 
@@ -8,16 +8,30 @@ export interface AuthResult {
   displayName?: string | null;
 }
 
-// Check if the Google Sign-In native module is in the binary BEFORE requiring
-// the JS wrapper. The JS wrapper calls TurboModuleRegistry.getEnforcing()
-// which throws an uncatchable invariant in dev mode if the module is missing.
-const GOOGLE_AVAILABLE = NativeModules.RNGoogleSignin != null;
+// Google Sign-In requires native modules that are ONLY available in
+// custom dev clients or standalone builds (EAS Build / TestFlight).
+// In Expo Go and Rork, the native binary doesn't include RNGoogleSignin,
+// so requiring the JS wrapper triggers TurboModuleRegistry.getEnforcing()
+// which throws an invariant that shows as a red screen even inside try/catch.
+//
+// Constants.appOwnership:
+//   'expo'      → Expo Go (no custom native modules)
+//   'standalone' / null → standalone or dev-client build (has native modules)
+//
+// Constants.executionEnvironment:
+//   'storeClient' → Expo Go
+//   'standalone'  → production build
+//   'bare'        → dev client / bare workflow
+const isExpoGo = Constants.appOwnership === 'expo'
+  || Constants.executionEnvironment === 'storeClient';
+
+export const GOOGLE_SIGN_IN_AVAILABLE = !isExpoGo;
 
 let _google: typeof import('@react-native-google-signin/google-signin') | null = null;
 let googleConfigured = false;
 
 function getGoogle() {
-  if (!GOOGLE_AVAILABLE) return null;
+  if (!GOOGLE_SIGN_IN_AVAILABLE) return null;
   if (!_google) {
     try {
       // eslint-disable-next-line @typescript-eslint/no-var-requires

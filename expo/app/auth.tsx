@@ -6,7 +6,7 @@ import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextIn
 
 import { BackButton, PrimaryButton, RitualScreen, TitleBlock, VowPreview } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
-import { sendPhoneOtp, signInWithGoogle, verifyPhoneOtp } from '@/lib/auth';
+import { GOOGLE_SIGN_IN_AVAILABLE, sendPhoneOtp, signInWithGoogle, verifyPhoneOtp } from '@/lib/auth';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { useVowFlow } from '@/providers/vow-flow';
 
@@ -38,8 +38,11 @@ export default function AuthScreen() {
 
   const handleGoogle = async () => {
     if (loading) return;
-    if (Platform.OS === 'web') {
-      Alert.alert('Native only', 'Google Sign-In requires the native app. Use phone number instead.');
+    if (!GOOGLE_SIGN_IN_AVAILABLE) {
+      Alert.alert(
+        'Not available here',
+        'Google Sign-In requires a production build. Use phone number to sign in.',
+      );
       return;
     }
     setLoading('google');
