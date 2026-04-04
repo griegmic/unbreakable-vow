@@ -1,4 +1,4 @@
-import { initPaymentSheet, presentPaymentSheet } from '@stripe/stripe-react-native';
+import { Platform } from 'react-native';
 
 import { supabase } from './supabase';
 
@@ -20,6 +20,8 @@ export async function createPaymentIntent(vowId: string, amountCents: number): P
 }
 
 export async function setupPaymentSheet(clientSecret: string): Promise<void> {
+  if (Platform.OS === 'web') throw new Error('Stripe is not supported on web');
+  const { initPaymentSheet } = await import('@stripe/stripe-react-native');
   const { error } = await initPaymentSheet({
     paymentIntentClientSecret: clientSecret,
     merchantDisplayName: 'Unbreakable Vow',
@@ -30,6 +32,8 @@ export async function setupPaymentSheet(clientSecret: string): Promise<void> {
 }
 
 export async function showPaymentSheet(): Promise<boolean> {
+  if (Platform.OS === 'web') throw new Error('Stripe is not supported on web');
+  const { presentPaymentSheet } = await import('@stripe/stripe-react-native');
   const { error } = await presentPaymentSheet();
 
   if (error) {

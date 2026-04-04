@@ -1,10 +1,9 @@
-import { StripeProvider } from '@stripe/stripe-react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { IntroCeremony } from '@/components/intro-ceremony';
@@ -97,19 +96,27 @@ export default function RootLayout() {
     };
   }, []);
 
+  const inner = (
+    <QueryClientProvider client={queryClient}>
+      <OathStateProvider>
+        <AuthProvider>
+        <VowFlowProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <AppWithOath />
+          </GestureHandlerRootView>
+        </VowFlowProvider>
+        </AuthProvider>
+      </OathStateProvider>
+    </QueryClientProvider>
+  );
+
+  if (Platform.OS === 'web') return inner;
+
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const { StripeProvider } = require('@stripe/stripe-react-native');
   return (
     <StripeProvider publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}>
-      <QueryClientProvider client={queryClient}>
-        <OathStateProvider>
-          <AuthProvider>
-          <VowFlowProvider>
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <AppWithOath />
-            </GestureHandlerRootView>
-          </VowFlowProvider>
-          </AuthProvider>
-        </OathStateProvider>
-      </QueryClientProvider>
+      {inner}
     </StripeProvider>
   );
 }

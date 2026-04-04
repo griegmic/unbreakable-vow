@@ -1,18 +1,6 @@
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
+import { Platform } from 'react-native';
 
 import { supabase } from './supabase';
-
-// Configure Google Sign-In — called once at app startup
-GoogleSignin.configure({
-  // This is the Web Client ID from Google Cloud Console (NOT the iOS one)
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-  iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
-});
 
 export interface AuthResult {
   success: boolean;
@@ -20,8 +8,28 @@ export interface AuthResult {
   displayName?: string | null;
 }
 
+// Configure Google Sign-In lazily on native only
+let googleConfigured = false;
+async function getGoogleSignin() {
+  const mod = await import('@react-native-google-signin/google-signin');
+  if (!googleConfigured) {
+    mod.GoogleSignin.configure({
+      webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+      iosClientId: process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID,
+    });
+    googleConfigured = true;
+  }
+  return mod;
+}
+
 export async function signInWithGoogle(): Promise<AuthResult> {
+  if (Platform.OS === 'web') {
+    return { success: false, error: 'Google Sign-In is not supported on web' };
+  }
+
   try {
+    const { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } = await getGoogleSignin();
+
     await GoogleSignin.hasPlayServices();
     const response = await GoogleSignin.signIn();
 
@@ -67,11 +75,11 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 
     if (upsertError) {
       console.error('[Auth] user upsert error:', upsertError);
-      // Don't fail sign-in — the user record isn't critical for auth
     }
 
     return { success: true, displayName };
-  } catch (err) {
+  } catch (err: unknown) {
+    const { isErrorWithCode, statusCodes } = await getGoogleSignin();
     if (isErrorWithCode(err)) {
       switch (err.code) {
         case statusCodes.SIGN_IN_CANCELLED:
@@ -90,10 +98,13 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 }
 
 export async function signOut(): Promise<void> {
-  try {
-    await GoogleSignin.signOut();
-  } catch {
-    // May not be signed in with Google
+  if (Platform.OS !== 'web') {
+    try {
+      const { GoogleSignin } = await getGoogleSignin();
+      await GoogleSignin.signOut();
+    } catch {
+      // May not be signed in with Google
+    }
   }
   await supabase.auth.signOut();
 }
