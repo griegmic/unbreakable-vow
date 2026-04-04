@@ -28,7 +28,7 @@ interface ScreenProps {
 
 export function RitualScreen({ children, scroll = true, footer, contentStyle }: ScreenProps) {
   const body = (
-    <View style={[styles.content, contentStyle]}>{children}</View>
+    <View style={[styles.content, !scroll && { flex: 1 }, contentStyle]}>{children}</View>
   );
 
   return (
