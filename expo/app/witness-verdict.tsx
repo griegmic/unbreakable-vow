@@ -1,9 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowUpRight, Check, CircleDollarSign } from 'lucide-react-native';
-import React, { useCallback, useRef, useState } from 'react';
+import { Check, CircleDollarSign } from 'lucide-react-native';
+import React, { useCallback, useState } from 'react';
 import {
-  Animated,
   Modal,
   Pressable,
   StyleSheet,
@@ -13,6 +12,7 @@ import {
 
 import { RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
+import { supabase } from '@/lib/supabase';
 import { useVowFlow } from '@/providers/vow-flow';
 
 type VerdictChoice = 'kept' | 'broken' | null;
@@ -20,48 +20,37 @@ type VerdictChoice = 'kept' | 'broken' | null;
 export default function WitnessVerdictScreen() {
   const { activeVowText, vow } = useVowFlow();
 
-  const isVowkeeper = vow.witnessName === 'Vowkeeper';
-  const displayName = isVowkeeper ? 'You' : vow.witnessName.split(' ')[0];
+  const displayName = vow.witnessName.split(' ')[0];
   const destination =
     vow.stake.consequence === 'witness'
       ? 'you'
       : vow.stake.destination;
 
-  console.log('[WitnessVerdictScreen] rendering, isVowkeeper:', isVowkeeper);
+  console.log('[WitnessVerdictScreen] rendering');
 
-  const [selected, setSelected] = useState<VerdictChoice>(null);
   const [confirmVisible, setConfirmVisible] = useState<boolean>(false);
   const [pendingVerdict, setPendingVerdict] = useState<VerdictChoice>(null);
 
-  const keptColorAnim = useRef(new Animated.Value(0)).current;
-  const brokenColorAnim = useRef(new Animated.Value(0)).current;
-
   const handleCardTap = useCallback((choice: VerdictChoice) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-
-    if (choice === 'broken') {
-      if (isVowkeeper) {
-        setSelected('broken');
-        Animated.timing(brokenColorAnim, { toValue: 1, duration: 300, useNativeDriver: false }).start();
-        Animated.timing(keptColorAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
-      }
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      setTimeout(() => router.push('/vow-broken'), isVowkeeper ? 350 : 150);
-      return;
-    }
-
-    if (isVowkeeper) {
-      setSelected(choice);
-      Animated.timing(keptColorAnim, { toValue: 1, duration: 300, useNativeDriver: false }).start();
-      Animated.timing(brokenColorAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
-    }
-
     setPendingVerdict(choice);
-    setTimeout(() => setConfirmVisible(true), isVowkeeper ? 350 : 100);
-  }, [isVowkeeper, keptColorAnim, brokenColorAnim]);
+    setTimeout(() => setConfirmVisible(true), 100);
+  }, []);
 
-  const handleConfirm = useCallback(() => {
+  const handleConfirm = useCallback(async () => {
     setConfirmVisible(false);
+
+    // Call submit-verdict edge function if we have a token
+    if (vow.witnessInviteToken) {
+      try {
+        await supabase.functions.invoke('submit-verdict', {
+          body: { token: vow.witnessInviteToken, verdict: pendingVerdict },
+        });
+      } catch (err) {
+        console.error('[WitnessVerdict] submit error:', err);
+      }
+    }
+
     if (pendingVerdict === 'kept') {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.push('/vow-kept');
@@ -69,64 +58,20 @@ export default function WitnessVerdictScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       router.push('/vow-broken');
     }
-  }, [pendingVerdict]);
+  }, [pendingVerdict, vow.witnessInviteToken]);
 
   const handleCancel = useCallback(() => {
     setConfirmVisible(false);
-    if (isVowkeeper) {
-      setSelected(null);
-      Animated.timing(keptColorAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
-      Animated.timing(brokenColorAnim, { toValue: 0, duration: 200, useNativeDriver: false }).start();
-    }
     setPendingVerdict(null);
-  }, [isVowkeeper, keptColorAnim, brokenColorAnim]);
-
-  const keptBgColor = isVowkeeper
-    ? keptColorAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [palette.surface, 'rgba(82,214,154,0.1)'],
-      })
-    : undefined;
-
-  const keptBorderColor = isVowkeeper
-    ? keptColorAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['rgba(255,255,255,0.08)', 'rgba(82,214,154,0.24)'],
-      })
-    : undefined;
-
-  const brokenBgColor = isVowkeeper
-    ? brokenColorAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: [palette.surface, 'rgba(212,162,79,0.1)'],
-      })
-    : undefined;
-
-  const brokenBorderColor = isVowkeeper
-    ? brokenColorAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ['rgba(255,255,255,0.08)', 'rgba(212,162,79,0.24)'],
-      })
-    : undefined;
-
-  const keptIconColor = isVowkeeper
-    ? (selected === 'kept' ? palette.success : palette.textSecondary)
-    : palette.success;
-
-  const brokenIconColor = isVowkeeper
-    ? (selected === 'broken' ? palette.warmAmber : palette.textSecondary)
-    : palette.warmAmber;
+  }, []);
 
   return (
     <RitualScreen scroll={false}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.content}>
         <TitleBlock
-          title={isVowkeeper ? 'How did it go?' : `Did ${displayName} keep the vow?`}
-          subtitle={isVowkeeper
-            ? 'No judgment. Just the truth.'
-            : "Be honest. That\u2019s the whole point."
-          }
+          title={`Did ${displayName} keep the vow?`}
+          subtitle="Be honest. That's the whole point."
         />
 
         <RitualCard>
@@ -143,91 +88,37 @@ export default function WitnessVerdictScreen() {
         </RitualCard>
 
         <View style={styles.buttonColumn}>
-          {isVowkeeper ? (
-            <>
-              <Animated.View style={[
-                styles.verdictCardBase,
-                {
-                  backgroundColor: keptBgColor,
-                  borderColor: keptBorderColor,
-                },
-              ]}>
-                <Pressable
-                  style={styles.verdictPressable}
-                  onPress={() => handleCardTap('kept')}
-                  testID="verdict-kept"
-                >
-                  <View style={[styles.iconCircle, selected === 'kept' && styles.iconCircleKept]}>
-                    <Check color={keptIconColor} size={22} />
-                  </View>
-                  <View style={styles.copyWrap}>
-                    <Text style={styles.verdictTitle}>Nailed it.</Text>
-                    <Text style={styles.verdictDesc}>
-                      ${vow.stake.amount} stays safe. You earned it.
-                    </Text>
-                  </View>
-                </Pressable>
-              </Animated.View>
+          <Pressable
+            style={[styles.verdictButton, styles.keepButtonWitness]}
+            onPress={() => handleCardTap('kept')}
+            testID="verdict-kept"
+          >
+            <View style={[styles.iconCircle, styles.iconCircleKept]}>
+              <Check color={palette.success} size={22} />
+            </View>
+            <View style={styles.copyWrap}>
+              <Text style={styles.verdictTitle}>Vow kept.</Text>
+              <Text style={styles.verdictDesc}>
+                {displayName} did what they said. ${vow.stake.amount} stays safe.
+              </Text>
+            </View>
+          </Pressable>
 
-              <Animated.View style={[
-                styles.verdictCardBase,
-                {
-                  backgroundColor: brokenBgColor,
-                  borderColor: brokenBorderColor,
-                },
-              ]}>
-                <Pressable
-                  style={styles.verdictPressable}
-                  onPress={() => handleCardTap('broken')}
-                  testID="verdict-broken"
-                >
-                  <View style={[styles.iconCircle, selected === 'broken' && styles.iconCircleBroken]}>
-                    <ArrowUpRight color={brokenIconColor} size={22} />
-                  </View>
-                  <View style={styles.copyWrap}>
-                    <Text style={styles.verdictTitle}>{"Didn\u2019t make it."}</Text>
-                    <Text style={styles.verdictDesc}>
-                      ${vow.stake.amount} goes to {destination}. Honest answer, good karma.
-                    </Text>
-                  </View>
-                </Pressable>
-              </Animated.View>
-            </>
-          ) : (
-            <>
-              <Pressable
-                style={[styles.verdictButton, styles.keepButtonWitness]}
-                onPress={() => handleCardTap('kept')}
-                testID="verdict-kept"
-              >
-                <View style={[styles.iconCircle, styles.iconCircleKept]}>
-                  <Check color={palette.success} size={22} />
-                </View>
-                <View style={styles.copyWrap}>
-                  <Text style={styles.verdictTitle}>Vow kept.</Text>
-                  <Text style={styles.verdictDesc}>
-                    {displayName} did what they said. ${vow.stake.amount} stays safe.
-                  </Text>
-                </View>
-              </Pressable>
-
-              <Pressable
-                style={[styles.verdictButton, styles.breakButtonWitness]}
-                onPress={() => handleCardTap('broken')}
-                testID="verdict-broken"
-              >
-                <View style={[styles.iconCircle, styles.iconCircleBroken]}>
-                  <CircleDollarSign color={palette.warmAmber} size={22} />
-                </View>
-                <View style={styles.copyWrap}>
-                  <Text style={styles.verdictTitle}>Vow broken.</Text>
-                  <Text style={styles.verdictDesc}>
-                    ${vow.stake.amount} goes to {destination}. {displayName} would want you to be honest.
-                  </Text>
-                </View>
-              </Pressable>
-            </>
-          )}
+          <Pressable
+            style={[styles.verdictButton, styles.breakButtonWitness]}
+            onPress={() => handleCardTap('broken')}
+            testID="verdict-broken"
+          >
+            <View style={[styles.iconCircle, styles.iconCircleBroken]}>
+              <CircleDollarSign color={palette.warmAmber} size={22} />
+            </View>
+            <View style={styles.copyWrap}>
+              <Text style={styles.verdictTitle}>Vow broken.</Text>
+              <Text style={styles.verdictDesc}>
+                ${vow.stake.amount} goes to {destination}. {displayName} would want you to be honest.
+              </Text>
+            </View>
+          </Pressable>
         </View>
 
         <Text style={styles.disclaimer}>
@@ -250,10 +141,7 @@ export default function WitnessVerdictScreen() {
                   <Check color={palette.success} size={24} />
                 </View>
                 <Text style={styles.modalTitle}>
-                  {isVowkeeper
-                    ? 'Confirm: you kept the vow?'
-                    : `Confirm: ${displayName} kept the vow?`
-                  }
+                  {`Confirm: ${displayName} kept the vow?`}
                 </Text>
                 <Text style={styles.modalBody}>
                   ${vow.stake.amount} stays safe. No charge.
@@ -265,10 +153,7 @@ export default function WitnessVerdictScreen() {
                   <CircleDollarSign color={palette.warmAmber} size={24} />
                 </View>
                 <Text style={styles.modalTitle}>
-                  {isVowkeeper
-                    ? `Confirm: you didn\u2019t keep the vow?`
-                    : `Confirm: ${displayName} broke the vow?`
-                  }
+                  {`Confirm: ${displayName} broke the vow?`}
                 </Text>
                 <Text style={styles.modalBody}>
                   ${vow.stake.amount} will be donated to {destination}.
@@ -338,18 +223,6 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   buttonColumn: {
-    gap: 14,
-  },
-  verdictCardBase: {
-    borderRadius: 20,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  verdictPressable: {
-    minHeight: 96,
-    padding: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 14,
   },
   verdictButton: {

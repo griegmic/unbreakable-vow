@@ -1,19 +1,38 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ChevronRight, Settings, Users } from 'lucide-react-native';
-import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ChevronRight, Settings } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BackButton, PrimaryButton, RitualCard, RitualScreen, StatPill, TitleBlock } from '@/components/vow-ui';
-import { historyEntries, palette } from '@/constants/unbreakable';
+import { palette } from '@/constants/unbreakable';
+import { getVowHistory } from '@/lib/vow-api';
+import type { Database } from '@/types/database';
+
+type VowRow = Database['public']['Tables']['vows']['Row'];
 
 export default function HistoryScreen() {
-  const keptCount = historyEntries.filter((e) => e.kept).length;
-  const brokenCount = historyEntries.filter((e) => !e.kept).length;
-  const moneyProtected = historyEntries.filter((e) => e.kept).reduce((sum, e) => sum + e.amount, 0);
-  const moneyLost = historyEntries.filter((e) => !e.kept).reduce((sum, e) => sum + e.amount, 0);
+  const [vows, setVows] = useState<VowRow[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  console.log('[HistoryScreen] stats:', { keptCount, brokenCount, moneyProtected, moneyLost });
+  useEffect(() => {
+    getVowHistory()
+      .then((data) => {
+        setVows(data as VowRow[]);
+      })
+      .catch((err) => {
+        console.error('[HistoryScreen] failed to load vows:', err);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, []);
+
+  const completedVows = vows.filter((v) => v.status === 'kept' || v.status === 'broken');
+  const keptCount = completedVows.filter((v) => v.verdict === 'kept').length;
+  const brokenCount = completedVows.filter((v) => v.verdict === 'broken').length;
+  const moneyProtected = completedVows.filter((v) => v.verdict === 'kept').reduce((sum, v) => sum + Math.round(v.stake_amount / 100), 0);
+  const moneyLost = completedVows.filter((v) => v.verdict === 'broken').reduce((sum, v) => sum + Math.round(v.stake_amount / 100), 0);
 
   return (
     <RitualScreen
@@ -35,59 +54,59 @@ export default function HistoryScreen() {
         subtitle="Every vow you've made, kept, and broken."
       />
 
-      <View style={styles.statsRow}>
-        <StatPill value={`${keptCount}`} label="kept" tone="success" />
-        <StatPill value={`${brokenCount}`} label="broken" tone="danger" />
-      </View>
-      <View style={styles.statsRow}>
-        <StatPill value={`$${moneyProtected}`} label="protected" />
-        <StatPill value={`$${moneyLost}`} label="lost" />
-      </View>
-
-      <Text style={styles.sectionTitle}>Past vows</Text>
-      <RitualCard>
-        {historyEntries.map((entry, index) => (
-          <View key={entry.id} style={[styles.entryRow, index < historyEntries.length - 1 ? styles.entryRowBorder : null]}>
-            <View style={styles.entryLeft}>
-              <Text style={styles.entryTitle}>{entry.text}</Text>
-              <Text style={styles.entryMeta}>{entry.date} · {entry.witness}</Text>
-            </View>
-            <View style={styles.entryRight}>
-              <View style={[styles.statusPill, entry.kept ? styles.statusKept : styles.statusBroken]}>
-                <Text style={[styles.statusText, entry.kept ? styles.statusTextKept : styles.statusTextBroken]}>
-                  {entry.kept ? 'Kept' : 'Broken'}
-                </Text>
-              </View>
-              <Text style={[styles.entryAmount, entry.kept ? styles.amountKept : styles.amountBroken]}>
-                ${entry.amount}
-              </Text>
-            </View>
-          </View>
-        ))}
-      </RitualCard>
-
-      <Pressable
-        style={styles.navRow}
-        onPress={() => {
-          void Haptics.selectionAsync();
-          router.push('/challenges');
-        }}
-        testID="history-challenges"
-      >
-        <View style={styles.navIconWrap}>
-          <Users color={palette.goldBright} size={18} />
+      {loading ? (
+        <View style={styles.loadingWrap}>
+          <ActivityIndicator color={palette.goldBright} />
         </View>
-        <View style={styles.navCopy}>
-          <View style={styles.navTitleRow}>
-            <Text style={styles.navTitle}>Group Challenges</Text>
-            <View style={styles.soonBadge}>
-              <Text style={styles.soonBadgeText}>SOON</Text>
-            </View>
+      ) : (
+        <>
+          <View style={styles.statsRow}>
+            <StatPill value={`${keptCount}`} label="kept" tone="success" />
+            <StatPill value={`${brokenCount}`} label="broken" tone="danger" />
           </View>
-          <Text style={styles.navDesc}>Compete with hundreds on shared goals.</Text>
-        </View>
-        <ChevronRight color={palette.textMuted} size={16} />
-      </Pressable>
+          <View style={styles.statsRow}>
+            <StatPill value={`$${moneyProtected}`} label="protected" />
+            <StatPill value={`$${moneyLost}`} label="lost" />
+          </View>
+
+          {completedVows.length > 0 ? (
+            <>
+              <Text style={styles.sectionTitle}>Past vows</Text>
+              <RitualCard>
+                {completedVows.map((vow, index) => {
+                  const kept = vow.verdict === 'kept';
+                  const amount = Math.round(vow.stake_amount / 100);
+                  const date = vow.sealed_at
+                    ? new Date(vow.sealed_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    : '';
+                  return (
+                    <View key={vow.id} style={[styles.entryRow, index < completedVows.length - 1 ? styles.entryRowBorder : null]}>
+                      <View style={styles.entryLeft}>
+                        <Text style={styles.entryTitle}>{vow.refined_text}</Text>
+                        <Text style={styles.entryMeta}>{date} · {vow.witness_name}</Text>
+                      </View>
+                      <View style={styles.entryRight}>
+                        <View style={[styles.statusPill, kept ? styles.statusKept : styles.statusBroken]}>
+                          <Text style={[styles.statusText, kept ? styles.statusTextKept : styles.statusTextBroken]}>
+                            {kept ? 'Kept' : 'Broken'}
+                          </Text>
+                        </View>
+                        <Text style={[styles.entryAmount, kept ? styles.amountKept : styles.amountBroken]}>
+                          ${amount}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </RitualCard>
+            </>
+          ) : (
+            <RitualCard>
+              <Text style={styles.emptyText}>No completed vows yet. Make your first vow to get started.</Text>
+            </RitualCard>
+          )}
+        </>
+      )}
 
       <Pressable
         style={styles.navRow}
@@ -111,6 +130,10 @@ export default function HistoryScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingWrap: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
   statsRow: {
     flexDirection: 'row',
     gap: 12,
@@ -186,6 +209,12 @@ const styles = StyleSheet.create({
   amountBroken: {
     color: palette.danger,
   },
+  emptyText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    textAlign: 'center' as const,
+    lineHeight: 21,
+  },
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -195,16 +224,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
     padding: 16,
-  },
-  navIconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: 'rgba(212,162,79,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.18)',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   navIconWrapMuted: {
     width: 42,
@@ -220,29 +239,10 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 3,
   },
-  navTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   navTitle: {
     color: palette.text,
     fontSize: 15,
     fontWeight: '600' as const,
-  },
-  soonBadge: {
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 5,
-    backgroundColor: 'rgba(212,162,79,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.18)',
-  },
-  soonBadgeText: {
-    color: palette.goldBright,
-    fontSize: 9,
-    fontWeight: '700' as const,
-    letterSpacing: 0.6,
   },
   navDesc: {
     color: palette.textMuted,

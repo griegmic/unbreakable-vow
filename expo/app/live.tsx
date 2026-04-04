@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { MessageCircleMore, ShieldCheck } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
@@ -11,7 +11,6 @@ import { useVowFlow } from '@/providers/vow-flow';
 export default function LiveScreen() {
   const { activeVowText, vow } = useVowFlow();
   const dates = getVowVerdictDate(vow.rawInput);
-  const isVowkeeper = vow.witnessName === 'Vowkeeper';
 
   const brokenTarget =
     vow.stake.consequence === 'witness'
@@ -31,19 +30,11 @@ export default function LiveScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleOpenSMS = () => {
-    void Haptics.selectionAsync();
-    if (Platform.OS === 'web') return;
-    Linking.openURL('sms:').catch(() => {
-      console.log('[LiveScreen] failed to open SMS');
-    });
-  };
-
   return (
     <RitualScreen
       footer={
         <>
-          <PrimaryButton label={isVowkeeper ? 'Go to verdict' : 'Preview the witness verdict'} onPress={() => router.push('/witness-verdict')} testID="live-verdict" />
+          <PrimaryButton label="Preview the witness verdict" onPress={() => router.push('/witness-verdict')} testID="live-verdict" />
           <SecondaryButton label="View history" onPress={() => router.push('/history')} testID="live-history" />
         </>
       }
@@ -66,7 +57,7 @@ export default function LiveScreen() {
       />
 
       <View style={styles.statsRow}>
-        <StatPill value="Day 1" label={dates.isCustomDate ? 'of deadline' : 'of 7'} />
+        <StatPill value={dates.range} label="vow window" />
         <StatPill value={dates.endLabel} label="verdict date" />
       </View>
 
@@ -74,26 +65,16 @@ export default function LiveScreen() {
         <View style={styles.infoRow}>
           <MessageCircleMore color={palette.goldBright} size={18} />
           <Text style={styles.infoText}>
-            {isVowkeeper
-              ? 'Vowkeeper will check in with you via text during the week to keep you on track.'
-              : `You, ${vow.witnessName}, and Vowkeeper are in a group text. Vowkeeper checks in during the week to keep you on track.`}
+            {vow.witnessName} is your witness. They'll get an SMS when it's time to deliver the verdict.
           </Text>
         </View>
         <View style={styles.infoRow}>
           <ShieldCheck color={palette.textSecondary} size={18} />
           <Text style={styles.infoText}>
-            {isVowkeeper
-              ? `On ${dates.endLabel}, you deliver the final verdict yourself.`
-              : `On ${dates.endLabel}, ${vow.witnessName} delivers the final verdict.`}
+            On {dates.endLabel}, {vow.witnessName} delivers the final verdict.
           </Text>
         </View>
       </RitualCard>
-
-      {!isVowkeeper ? (
-        <Pressable style={styles.chatButton} onPress={handleOpenSMS} testID="live-open-chat">
-          <Text style={styles.chatButtonText}>Open SMS thread</Text>
-        </Pressable>
-      ) : null}
 
       <Text style={styles.footerNote}>{dates.range} · {dates.verdictLabel}</Text>
     </RitualScreen>
@@ -152,20 +133,6 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 21,
-  },
-  chatButton: {
-    minHeight: 54,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: palette.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: palette.surface,
-  },
-  chatButtonText: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '700' as const,
   },
   footerNote: {
     color: palette.textMuted,

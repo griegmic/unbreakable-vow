@@ -1,11 +1,16 @@
+import { StripeProvider } from '@stripe/stripe-react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Stack } from 'expo-router';
+import * as Notifications from 'expo-notifications';
+import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { IntroCeremony } from '@/components/intro-ceremony';
+import '@/lib/notifications';
+import { supabase } from '@/lib/supabase';
+import { AuthProvider } from '@/providers/auth-provider';
 import { OathStateProvider, useOathState } from '@/providers/oath-state';
 import { VowFlowProvider } from '@/providers/vow-flow';
 
@@ -37,9 +42,7 @@ function RootLayoutNav() {
       <Stack.Screen name="vow-kept" />
       <Stack.Screen name="vow-broken" />
       <Stack.Screen name="history" />
-      <Stack.Screen name="challenges" />
       <Stack.Screen name="settings" />
-      <Stack.Screen name="crew-invite" />
     </Stack>
   );
 }
@@ -70,17 +73,43 @@ export default function RootLayout() {
   useEffect(() => {
     console.log('[RootLayout] hiding splash');
     void SplashScreen.hideAsync();
+
+    const sub = Notifications.addNotificationReceivedListener(notification => {
+      console.log('[RootLayout] notification received:', notification.request.content.title);
+    });
+
+    const responseSub = Notifications.addNotificationResponseReceivedListener(async (response) => {
+      const data = response.notification.request.content.data;
+      if (data?.route && typeof data.route === 'string') {
+        // Only route to protected screens if user has a session
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          router.push(data.route as never);
+        } else {
+          router.push('/auth' as never);
+        }
+      }
+    });
+
+    return () => {
+      sub.remove();
+      responseSub.remove();
+    };
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <OathStateProvider>
-        <VowFlowProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <AppWithOath />
-          </GestureHandlerRootView>
-        </VowFlowProvider>
-      </OathStateProvider>
-    </QueryClientProvider>
+    <StripeProvider publishableKey={process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY!}>
+      <QueryClientProvider client={queryClient}>
+        <OathStateProvider>
+          <AuthProvider>
+          <VowFlowProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <AppWithOath />
+            </GestureHandlerRootView>
+          </VowFlowProvider>
+          </AuthProvider>
+        </OathStateProvider>
+      </QueryClientProvider>
+    </StripeProvider>
   );
 }

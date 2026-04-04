@@ -1,12 +1,14 @@
 import * as Haptics from 'expo-haptics';
-import { Stack } from 'expo-router';
-import { Bell, CreditCard, LogOut, Mail, Shield, Sparkles } from 'lucide-react-native';
+import { Stack, router } from 'expo-router';
+import { Bell, LogOut, Mail, Sparkles } from 'lucide-react-native';
 import React from 'react';
-import { Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { BackButton, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
+import { signOut } from '@/lib/auth';
 import { useOathState } from '@/providers/oath-state';
+import { useVowFlow } from '@/providers/vow-flow';
 
 interface SettingsRowProps {
   icon: React.ReactNode;
@@ -38,6 +40,7 @@ function SettingsRow({ icon, label, description, onPress, trailing }: SettingsRo
 
 export default function SettingsScreen() {
   const { oathToggleEnabled, setOathToggle } = useOathState();
+  const { resetVow } = useVowFlow();
 
   console.log('[SettingsScreen] oathToggle:', oathToggleEnabled);
 
@@ -57,19 +60,9 @@ export default function SettingsScreen() {
           description="Email, sign-in method"
         />
         <SettingsRow
-          icon={<CreditCard color={palette.textSecondary} size={18} />}
-          label="Payment"
-          description="Manage payment methods"
-        />
-        <SettingsRow
           icon={<Bell color={palette.textSecondary} size={18} />}
           label="Notifications"
           description="Check-ins, verdict alerts"
-        />
-        <SettingsRow
-          icon={<Shield color={palette.textSecondary} size={18} />}
-          label="Privacy"
-          description="Data and permissions"
         />
       </View>
 
@@ -99,6 +92,20 @@ export default function SettingsScreen() {
           icon={<LogOut color={palette.danger} size={18} />}
           label="Sign out"
           description="Log out of your account"
+          onPress={() => {
+            Alert.alert('Sign out', 'Are you sure?', [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Sign out',
+                style: 'destructive',
+                onPress: async () => {
+                  await signOut();
+                  resetVow();
+                  router.replace('/');
+                },
+              },
+            ]);
+          }}
         />
       </View>
 

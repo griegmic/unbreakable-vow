@@ -1,26 +1,43 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Camera, Check, Eye, Sparkles, Star } from 'lucide-react-native';
-import React, { useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Check, Sparkles, Star } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BackButton, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
+import { createPaymentIntent, setupPaymentSheet, showPaymentSheet } from '@/lib/stripe';
+import { createVow, voidVow } from '@/lib/vow-api';
+import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
+function formatE164(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('1') && digits.length === 11) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  return `+${digits}`; // best effort
+}
+
 export default function SealScreen() {
-  const { activeVowText, vow, setProofMode } = useVowFlow();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { activeVowText, vow, setVowId } = useVowFlow();
+
+  // Redirect to auth if not signed in
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      router.replace('/auth');
+    }
+  }, [authLoading, isAuthenticated]);
   const [sworn, setSworn] = useState<boolean>(false);
   const [sealed, setSealed] = useState<boolean>(false);
-  const [proofChoice, setProofChoice] = useState<'word' | 'screenshot'>('word');
-
+  const [loading, setLoading] = useState<boolean>(false);
   const glow = useRef(new Animated.Value(0)).current;
   const checkScale = useRef(new Animated.Value(0)).current;
   const swearGlow = useRef(new Animated.Value(0)).current;
   const checkboxScale = useRef(new Animated.Value(1)).current;
   const oathFlashOpacity = useRef(new Animated.Value(0)).current;
 
-  const isVowkeeper = vow.witnessName === 'Vowkeeper';
   const dates = getVowVerdictDate(vow.rawInput);
 
   console.log('[SealScreen] rendering, sworn:', sworn, 'sealed:', sealed);
@@ -49,14 +66,7 @@ export default function SealScreen() {
     Animated.timing(swearGlow, { toValue: 0, duration: 300, useNativeDriver: false }).start();
   };
 
-  const handleSeal = () => {
-    if (!sworn) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-
-    if (isVowkeeper) {
-      setProofMode(proofChoice);
-    }
-
+  const playSealAnimation = () => {
     Animated.timing(glow, {
       toValue: 1,
       duration: 900,
@@ -86,6 +96,59 @@ export default function SealScreen() {
     });
   };
 
+  const handleSeal = async () => {
+    if (!sworn || loading) return;
+    setLoading(true);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    let vowId: string | null = null;
+
+    try {
+      // 1. Create vow record in Supabase
+      const vowRecord = await createVow({
+        rawInput: vow.rawInput,
+        refinedText: activeVowText,
+        witnessName: vow.witnessName,
+        witnessPhone: vow.phoneNumber ? formatE164(vow.phoneNumber) : null,
+        stakeAmount: vow.stake.amount,
+        consequence: vow.stake.consequence,
+        destination: vow.stake.destination,
+      });
+      vowId = vowRecord.id;
+      setVowId(vowId, vowRecord.witness_invite_token);
+
+      // 2. Create PaymentIntent via edge function
+      const { clientSecret } = await createPaymentIntent(vowId, vow.stake.amount * 100);
+
+      // 3. Setup and show Stripe payment sheet
+      await setupPaymentSheet(clientSecret);
+      const paid = await showPaymentSheet();
+
+      if (!paid) {
+        // User cancelled payment
+        await voidVow(vowId);
+        setLoading(false);
+        return;
+      }
+
+      // 4. Payment succeeded — seal the vow via edge function (activates + notifies witness)
+      await supabase.functions.invoke('seal-vow', {
+        body: { vow_id: vowId },
+      });
+
+      // 5. Play the seal animation
+      setLoading(false);
+      playSealAnimation();
+    } catch (err) {
+      console.error('[SealScreen] seal flow error:', err);
+      if (vowId) {
+        await voidVow(vowId).catch(() => {});
+      }
+      setLoading(false);
+      Alert.alert('Something went wrong', 'Please try again.');
+    }
+  };
+
   const haloOpacity = glow.interpolate({
     inputRange: [0, 1],
     outputRange: [0.15, 0.55],
@@ -111,7 +174,7 @@ export default function SealScreen() {
       footer={
         sealed ? null : (
           <>
-            <PrimaryButton label="Seal this vow" onPress={handleSeal} disabled={!sworn} testID="seal-primary" />
+            <PrimaryButton label={loading ? 'Processing...' : 'Seal this vow'} onPress={handleSeal} disabled={!sworn || loading} testID="seal-primary" />
             <SecondaryButton label="Back" onPress={() => router.back()} testID="seal-back" />
           </>
         )
@@ -154,14 +217,6 @@ export default function SealScreen() {
             <Text style={[styles.metaValue, styles.goldValue]}>${vow.stake.amount}</Text>
           </View>
         </View>
-        {vow.crew.length > 0 ? (
-          <View style={styles.metaCell}>
-            <Text style={styles.metaLabel}>CREW</Text>
-            <Text style={styles.metaValue}>
-              {vow.crew.map((c) => c.name).join(', ')} (in the chat)
-            </Text>
-          </View>
-        ) : null}
         <View style={styles.twoCol}>
           <View style={styles.metaCell}>
             <Text style={styles.metaLabel}>DURATION</Text>
@@ -177,47 +232,6 @@ export default function SealScreen() {
           <Text style={styles.metaValue}>{vow.witnessName} decides on {dates.endLabel}</Text>
         </View>
       </RitualCard>
-
-      {isVowkeeper && !sealed ? (
-        <RitualCard>
-          <Text style={styles.proofTitle}>How will you prove it?</Text>
-          <Text style={styles.proofSub}>Since Vowkeeper is your witness, how do you want to verify?</Text>
-
-          <Pressable
-            onPress={() => { void Haptics.selectionAsync(); setProofChoice('word'); }}
-            style={[styles.proofOption, proofChoice === 'word' && styles.proofOptionActive]}
-            testID="proof-word"
-          >
-            <View style={styles.proofIconWrap}>
-              <Eye color={proofChoice === 'word' ? palette.goldBright : palette.textSecondary} size={18} />
-            </View>
-            <View style={styles.proofCopy}>
-              <Text style={[styles.proofLabel, proofChoice === 'word' && styles.proofLabelActive]}>My word is gold</Text>
-              <Text style={styles.proofDesc}>You'll self-report honestly at the end</Text>
-            </View>
-            <View style={[styles.radioSmall, proofChoice === 'word' && styles.radioSmallActive]}>
-              {proofChoice === 'word' ? <View style={styles.radioDotSmall} /> : null}
-            </View>
-          </Pressable>
-
-          <Pressable
-            onPress={() => { void Haptics.selectionAsync(); setProofChoice('screenshot'); }}
-            style={[styles.proofOption, proofChoice === 'screenshot' && styles.proofOptionActive]}
-            testID="proof-screenshot"
-          >
-            <View style={styles.proofIconWrap}>
-              <Camera color={proofChoice === 'screenshot' ? palette.goldBright : palette.textSecondary} size={18} />
-            </View>
-            <View style={styles.proofCopy}>
-              <Text style={[styles.proofLabel, proofChoice === 'screenshot' && styles.proofLabelActive]}>Screenshot proof</Text>
-              <Text style={styles.proofDesc}>Vowkeeper will ask for photo evidence</Text>
-            </View>
-            <View style={[styles.radioSmall, proofChoice === 'screenshot' && styles.radioSmallActive]}>
-              {proofChoice === 'screenshot' ? <View style={styles.radioDotSmall} /> : null}
-            </View>
-          </Pressable>
-        </RitualCard>
-      ) : null}
 
       {sealed ? (
         <Animated.View style={[styles.oathFlash, { opacity: oathFlashOpacity }]} pointerEvents="none">
@@ -319,72 +333,6 @@ const styles = StyleSheet.create({
   goldValue: {
     color: palette.goldBright,
     fontWeight: '800' as const,
-  },
-  proofTitle: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  proofSub: {
-    color: palette.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    marginTop: -4,
-  },
-  proofOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    backgroundColor: palette.surfaceElevated,
-  },
-  proofOptionActive: {
-    borderColor: palette.borderStrong,
-  },
-  proofIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(212,162,79,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  proofCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  proofLabel: {
-    color: palette.textSecondary,
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  proofLabelActive: {
-    color: palette.text,
-  },
-  proofDesc: {
-    color: palette.textMuted,
-    fontSize: 12,
-  },
-  radioSmall: {
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 2,
-    borderColor: palette.textMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radioSmallActive: {
-    borderColor: palette.goldBright,
-  },
-  radioDotSmall: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: palette.goldBright,
   },
   swearCard: {
     borderRadius: 22,

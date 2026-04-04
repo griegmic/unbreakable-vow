@@ -4,18 +4,10 @@ import { useCallback, useMemo, useState } from 'react';
 import type { ConsequenceType } from '@/constants/unbreakable';
 import { analyzeVow, formalizeVow, vowExamples } from '@/constants/unbreakable';
 
-export type ProofMode = 'word' | 'screenshot';
-
 export interface StakeState {
   amount: number;
   consequence: ConsequenceType;
   destination: string;
-}
-
-export interface CrewMember {
-  name: string;
-  inviteMethod: 'sms' | 'link';
-  phoneNumber?: string;
 }
 
 export interface VowState {
@@ -25,12 +17,9 @@ export interface VowState {
   inviteMethod: 'sms' | 'link';
   phoneNumber: string;
   stake: StakeState;
-  authenticated: boolean;
-  proofMode: ProofMode;
-  crew: CrewMember[];
+  vowId: string | null;
+  witnessInviteToken: string | null;
 }
-
-const MAX_CREW = 4;
 
 const initialState: VowState = {
   rawInput: '',
@@ -43,9 +32,8 @@ const initialState: VowState = {
     consequence: 'charity',
     destination: 'ALS Association',
   },
-  authenticated: false,
-  proofMode: 'word',
-  crew: [],
+  vowId: null,
+  witnessInviteToken: null,
 };
 
 export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
@@ -77,36 +65,9 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
     setVow((current) => ({ ...current, stake }));
   }, []);
 
-  const setAuthenticated = useCallback((value: boolean) => {
-    console.log('[VowFlow] setAuthenticated', value);
-    setVow((current) => ({ ...current, authenticated: value }));
-  }, []);
-
-  const setProofMode = useCallback((mode: ProofMode) => {
-    console.log('[VowFlow] setProofMode', mode);
-    setVow((current) => ({ ...current, proofMode: mode }));
-  }, []);
-
-  const addCrewMember = useCallback((member: CrewMember) => {
-    console.log('[VowFlow] addCrewMember', member.name);
-    setVow((current) => {
-      if (current.crew.length >= MAX_CREW) return current;
-      if (current.crew.some((c) => c.name.toLowerCase() === member.name.toLowerCase())) return current;
-      return { ...current, crew: [...current.crew, member] };
-    });
-  }, []);
-
-  const removeCrewMember = useCallback((name: string) => {
-    console.log('[VowFlow] removeCrewMember', name);
-    setVow((current) => ({
-      ...current,
-      crew: current.crew.filter((c) => c.name !== name),
-    }));
-  }, []);
-
-  const clearCrew = useCallback(() => {
-    console.log('[VowFlow] clearCrew');
-    setVow((current) => ({ ...current, crew: [] }));
+  const setVowId = useCallback((vowId: string, witnessInviteToken: string | null) => {
+    console.log('[VowFlow] setVowId', vowId);
+    setVow((current) => ({ ...current, vowId, witnessInviteToken }));
   }, []);
 
   const resetVow = useCallback(() => {
@@ -136,14 +97,10 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
       setRefinedText,
       setWitness,
       setStake,
-      setAuthenticated,
-      setProofMode,
-      addCrewMember,
-      removeCrewMember,
-      clearCrew,
+      setVowId,
       resetVow,
       shouldSkipRefine,
     }),
-    [activeVowText, addCrewMember, analysis, clearCrew, removeCrewMember, resetVow, setAuthenticated, setProofMode, setRawInput, setRefinedText, setStake, setWitness, shouldSkipRefine, vow]
+    [activeVowText, analysis, resetVow, setRawInput, setRefinedText, setStake, setVowId, setWitness, shouldSkipRefine, vow]
   );
 });

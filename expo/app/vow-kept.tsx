@@ -1,16 +1,32 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { PartyPopper, ShieldCheck, Share2 } from 'lucide-react-native';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
-import { historyEntries, palette } from '@/constants/unbreakable';
+import { palette } from '@/constants/unbreakable';
+import { getVowHistory } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
+import type { Database } from '@/types/database';
+
+type VowRow = Database['public']['Tables']['vows']['Row'];
 
 export default function VowKeptScreen() {
   const { activeVowText, resetVow, vow } = useVowFlow();
-  const keptCount = historyEntries.filter((e) => e.kept).length + 1;
+  const [keptCount, setKeptCount] = useState(0);
+
+  useEffect(() => {
+    getVowHistory()
+      .then((data) => {
+        const kept = (data as VowRow[]).filter((v) => v.verdict === 'kept').length + 1; // +1 for this one
+        setKeptCount(kept);
+      })
+      .catch((err) => {
+        console.error('[VowKeptScreen] failed to load history:', err);
+        setKeptCount(1); // fallback: at least this one
+      });
+  }, []);
 
   const medalScale = useRef(new Animated.Value(0.3)).current;
   const medalOpacity = useRef(new Animated.Value(0)).current;
@@ -19,8 +35,7 @@ export default function VowKeptScreen() {
   const contentFade = useRef(new Animated.Value(0)).current;
   const confettiScale = useRef(new Animated.Value(0)).current;
 
-  const isVowkeeper = vow.witnessName === 'Vowkeeper';
-  const firstName = isVowkeeper ? 'You' : vow.witnessName.split(' ')[0];
+  const firstName = vow.witnessName.split(' ')[0];
 
   useEffect(() => {
     console.log('[VowKeptScreen] vow kept! playing celebration');
@@ -88,7 +103,7 @@ export default function VowKeptScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={isVowkeeper ? 'You nailed it.' : `${firstName} confirmed: vow kept.`}
+          title={`${firstName} confirmed: vow kept.`}
           subtitle={`Your word held. $${vow.stake.amount} stays safe \u2014 you won\u2019t be charged.`}
         />
       </Animated.View>
@@ -110,7 +125,7 @@ export default function VowKeptScreen() {
 
       <Animated.View style={[styles.statsRow, { opacity: contentFade }]}>
         <StatPill value={`${keptCount}`} label="vows kept" tone="success" />
-        <StatPill value="3 wk" label="streak" />
+        <StatPill value={`${keptCount}`} label="in a row" tone="success" />
       </Animated.View>
 
       <Animated.View style={[styles.shareRow, { opacity: contentFade, transform: [{ scale: confettiScale }] }]}>

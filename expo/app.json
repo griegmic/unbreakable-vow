@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "rork-app",
+    "scheme": "unbreakablevow",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "app.rork.vkqbtdzg60w057segl0gr"
+      "bundleIdentifier": "app.unbreakablevow.ios"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.rork.vkqbtdzg60w057segl0gr"
+      "package": "app.unbreakablevow.android"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -31,11 +31,22 @@
       [
         "expo-router",
         {
-          "origin": "https://rork.com/"
+          "origin": "https://unbreakablevow.app"
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      ["@stripe/stripe-react-native", {
+        "merchantIdentifier": "merchant.app.unbreakablevow",
+        "enableGooglePay": false
+      }],
+      "@react-native-google-signin/google-signin",
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "Unbreakable Vow needs access to your contacts so you can choose a witness."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

@@ -2,17 +2,17 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Check, Copy, SendHorizontal } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Animated, Linking, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock, VowPreview } from '@/components/vow-ui';
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
+
 export default function SentScreen() {
   const { activeVowText, vow } = useVowFlow();
   const dates = getVowVerdictDate(vow.rawInput);
-  const isVowkeeper = vow.witnessName === 'Vowkeeper';
-
   const checkScale = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
 
@@ -30,7 +30,13 @@ export default function SentScreen() {
     void Haptics.selectionAsync();
     if (Platform.OS !== 'web') {
       try {
-        await Share.share({ message: 'Accept my Unbreakable Vow: https://unbreakablevow.app/invite/a3x9k2' });
+        const verdictUrl = vow.witnessInviteToken
+          ? `${SUPABASE_URL}/functions/v1/verdict-page?token=${vow.witnessInviteToken}`
+          : '';
+        const shareMsg = verdictUrl
+          ? `I just made an Unbreakable Vow. Be my witness: ${verdictUrl}`
+          : `I just made an Unbreakable Vow. Can you be my witness?`;
+        await Share.share({ message: shareMsg });
       } catch {
         console.log('[SentScreen] share failed');
       }
@@ -47,9 +53,17 @@ export default function SentScreen() {
       footer={
         <>
           <PrimaryButton label="Got it" onPress={() => router.push('/live')} testID="sent-continue" />
-          {!isVowkeeper ? (
-            <SecondaryButton label="Preview what your witness sees" onPress={() => router.push('/witness-invite')} testID="sent-witness-preview" />
-          ) : null}
+          <SecondaryButton
+            label="Preview what your witness sees"
+            onPress={() => {
+              if (vow.witnessInviteToken) {
+                Linking.openURL(`${SUPABASE_URL}/functions/v1/verdict-page?token=${vow.witnessInviteToken}`);
+              } else {
+                router.push('/witness-invite');
+              }
+            }}
+            testID="sent-witness-preview"
+          />
         </>
       }
     >
@@ -63,12 +77,8 @@ export default function SentScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={isVowkeeper ? 'Vow sealed.' : 'Sealed. Invite sent.'}
-          subtitle={
-            isVowkeeper
-              ? `Vowkeeper will check in with you during the week. On ${dates.endLabel}, you deliver the verdict.`
-              : `${vow.witnessName} will receive your vow and choose to accept.`
-          }
+          title="Sealed. Invite sent."
+          subtitle={`${vow.witnessName} will receive your vow and choose to accept.`}
         />
       </Animated.View>
 
@@ -94,67 +104,36 @@ export default function SentScreen() {
             <Text style={styles.metaLabel}>Verdict</Text>
             <Text style={styles.metaValue}>{dates.endLabel}</Text>
           </View>
-          {vow.crew.length > 0 ? (
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Group chat</Text>
-              <Text style={styles.metaValue}>{vow.crew.length} {vow.crew.length === 1 ? 'other' : 'others'} added</Text>
-            </View>
-          ) : null}
         </RitualCard>
       </Animated.View>
 
       <Animated.View style={{ opacity: contentFade }}>
         <RitualCard style={styles.stepsCard}>
-          {isVowkeeper ? (
-            <>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-                <Text style={styles.stepText}>Vowkeeper checks in with you during the week.</Text>
-              </View>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
-                <Text style={styles.stepText}>
-                  {vow.proofMode === 'screenshot'
-                    ? 'Submit screenshot proof when prompted.'
-                    : 'Stay honest and report your progress.'}
-                </Text>
-              </View>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-                <Text style={styles.stepText}>On {dates.endLabel}, you call the verdict.</Text>
-              </View>
-            </>
-          ) : (
-            <>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-                <Text style={styles.stepText}>{vow.witnessName} accepts. We notify you.</Text>
-              </View>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
-                <Text style={styles.stepText}>Vowkeeper starts a group text to keep you on track.</Text>
-              </View>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-                <Text style={styles.stepText}>{vow.witnessName} delivers the verdict on {dates.endLabel}.</Text>
-              </View>
-            </>
-          )}
+          <View style={styles.stepRow}>
+            <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
+            <Text style={styles.stepText}>{vow.witnessName} gets an SMS invite and accepts.</Text>
+          </View>
+          <View style={styles.stepRow}>
+            <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
+            <Text style={styles.stepText}>{vow.witnessName} delivers the verdict on {dates.endLabel}.</Text>
+          </View>
+          <View style={styles.stepRow}>
+            <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
+            <Text style={styles.stepText}>If broken, ${vow.stake.amount} goes to {brokenTarget}.</Text>
+          </View>
         </RitualCard>
       </Animated.View>
 
-      {!isVowkeeper ? (
-        <Animated.View style={[styles.actionsRow, { opacity: contentFade }]}>
-          <Pressable style={styles.smallAction} onPress={handleCopyLink} testID="sent-copy-link">
-            <Copy color={palette.textSecondary} size={16} />
-            <Text style={styles.smallActionText}>Copy invite</Text>
-          </Pressable>
-          <Pressable style={styles.smallAction} testID="sent-resend">
-            <SendHorizontal color={palette.textSecondary} size={16} />
-            <Text style={styles.smallActionText}>Resend</Text>
-          </Pressable>
-        </Animated.View>
-      ) : null}
+      <Animated.View style={[styles.actionsRow, { opacity: contentFade }]}>
+        <Pressable style={styles.smallAction} onPress={handleCopyLink} testID="sent-copy-link">
+          <Copy color={palette.textSecondary} size={16} />
+          <Text style={styles.smallActionText}>Copy invite</Text>
+        </Pressable>
+        <Pressable style={styles.smallAction} testID="sent-resend">
+          <SendHorizontal color={palette.textSecondary} size={16} />
+          <Text style={styles.smallActionText}>Resend</Text>
+        </Pressable>
+      </Animated.View>
     </RitualScreen>
   );
 }

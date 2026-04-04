@@ -14,10 +14,12 @@ import {
   VowPreview,
 } from '@/components/vow-ui';
 import { antiCauses, charities, consequenceOptions, palette, stakeAmounts } from '@/constants/unbreakable';
+import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function StakeScreen() {
   const { activeVowText, setStake, vow } = useVowFlow();
+  const { isAuthenticated } = useAuth();
   const [amount, setAmount] = useState<number>(vow.stake.amount);
   const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(vow.stake.consequence);
   const [destination, setDestination] = useState<string>(vow.stake.destination);
@@ -36,7 +38,7 @@ export default function StakeScreen() {
     if (!canContinue) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setStake({ amount, consequence, destination });
-    router.push('/auth');
+    router.push(isAuthenticated ? '/seal' : '/auth');
   };
 
   const amountHint = useMemo(() => {
@@ -156,7 +158,7 @@ export default function StakeScreen() {
           <ShieldCheck color={palette.textMuted} size={16} />
         </View>
         <Text style={styles.paymentText}>
-          Secure payment via Stripe. You'll only be charged if your witness delivers a "broken" verdict.
+          Secure payment via Stripe. You'll be refunded in full if your witness confirms you kept your vow.
         </Text>
       </View>
     </RitualScreen>

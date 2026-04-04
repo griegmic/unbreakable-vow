@@ -195,7 +195,7 @@ export function AppMenuButton({ style }: AppMenuProps) {
             <View style={styles.panelFooter}>
               <View style={styles.streakRow}>
                 <Trophy color={palette.goldBright} size={14} />
-                <Text style={styles.streakText}>3 vows kept · 2 week streak</Text>
+                <Text style={styles.streakText}>Keep your word. Build your streak.</Text>
               </View>
             </View>
           </View>

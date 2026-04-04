@@ -101,7 +101,7 @@ export default function WitnessInviteScreen() {
         <Text style={styles.whatTitle}>What happens when you accept</Text>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-          <Text style={styles.stepText}>A group text starts with you, {makerName}, and Vowkeeper (our AI accountability bot).</Text>
+          <Text style={styles.stepText}>You'll get an SMS when it's time to deliver your verdict.</Text>
         </View>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>

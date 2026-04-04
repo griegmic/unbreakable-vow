@@ -16,8 +16,7 @@ export default function VowBrokenScreen() {
       ? vow.witnessName
       : vow.stake.destination;
 
-  const isVowkeeper = vow.witnessName === 'Vowkeeper';
-  const firstName = isVowkeeper ? 'You' : vow.witnessName.split(' ')[0];
+  const firstName = vow.witnessName.split(' ')[0];
 
   const alertScale = useRef(new Animated.Value(0.5)).current;
   const alertOpacity = useRef(new Animated.Value(0)).current;
@@ -73,7 +72,7 @@ export default function VowBrokenScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={isVowkeeper ? "It happens." : `${firstName} called it.`}
+          title={`${firstName} called it.`}
           subtitle={`$${vow.stake.amount} goes to ${destination}. The terms were clear, and you were honest.`}
         />
       </Animated.View>

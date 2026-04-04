@@ -1,7 +1,13 @@
-export function redirectSystemPath({
-  path: _path,
-  initial: _initial,
-}: { path: string; initial: boolean }) {
-  console.log('[NativeIntent] redirectSystemPath', _path, _initial);
+export function redirectSystemPath({ path }: { path: string; initial: boolean }) {
+  const knownRoutes = [
+    '/refine', '/witness', '/stake', '/auth', '/seal', '/sent',
+    '/live', '/witness-invite', '/witness-verdict',
+    '/vow-kept', '/vow-broken', '/history', '/settings',
+  ];
+
+  if (knownRoutes.some(route => path.startsWith(route))) {
+    return path;
+  }
+
   return '/';
 }
