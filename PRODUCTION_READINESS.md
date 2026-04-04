@@ -670,72 +670,95 @@ Rork is an AI app builder that generates and edits React Native/Expo code via na
 
 ---
 
-## Realistic Timeline: Expert AI Coder with Claude Code
+## V1 Plan: 10-30 Users on TestFlight
 
-This assumes you're proficient with Claude Code, can context-switch between Rork and Claude Code efficiently, and have done Supabase/Stripe/Twilio integrations before (or can learn fast with AI assistance). It also assumes you're working solo, dedicating focused time, and not blocked by day-job obligations.
+This is the real plan. The phases above are the full production roadmap. This section is what you actually build first.
 
-### The Honest Breakdown
+### V1 Stack
 
-| Phase | Coding Time | Waiting/Manual Time | What Slows You Down |
+| Layer | Choice | Why |
+|---|---|---|
+| **Auth** | Apple Sign-In only | Every TestFlight user has an iPhone → has an Apple ID. One tap. Zero typing. |
+| **Database** | Supabase (users + vows tables) | Minimal schema. Just enough to persist vows and users. |
+| **Payments** | Stripe — charge on seal, refund on kept | Real money, real stakes. Simpler than authorize/capture. No hold expiration risk. |
+| **Witness verdict** | In-app (witness installs via TestFlight) | Share a TestFlight link + invite code. Witness opens app, taps kept/broken. |
+| **Group chat** | Manual Telegram groups | User creates a Telegram group with their witness/crew. No bot, no automation. You can play Vowkeeper manually in the groups to learn what messages land. |
+| **Notifications** | Push only (verdict day reminder) | One notification that matters. No SMS, no Twilio, no A2P. |
+| **Distribution** | TestFlight | No App Store review. No gambling concerns. No privacy policy drama. Up to 10,000 testers. |
+
+### What's Cut from V1
+
+- ~~Google Sign-In~~ → v2
+- ~~Twilio / SMS~~ → replaced by Telegram groups + push
+- ~~Telegram bot~~ → you are the bot for now (learn what messages work)
+- ~~Web landing pages~~ → witness just installs TestFlight
+- ~~Universal links / AASA~~ → v2
+- ~~Automated Vowkeeper check-ins~~ → manual in Telegram
+- ~~Contact picker~~ → type a name
+- ~~Crew/multiplayer~~ → organic via Telegram groups
+- ~~A2P 10DLC registration~~ → not needed without SMS
+- ~~Authorize/capture payment flow~~ → charge + refund is simpler
+
+### V1 Build Plan
+
+| # | Task | Time | Tool |
 |---|---|---|---|
-| **Phase 1: Backend & Database** | 2-3 hours | 30 min (Supabase setup) | Nothing — Claude Code writes the schema, migrations, RLS, and client in one session |
-| **Phase 2: Authentication** | 2-3 hours | 1-2 hours (Apple/Google portal config) | Apple Developer portal is slow and confusing. Google OAuth consent screen has its own flow. The actual code is fast. |
-| **Phase 3: Payments (Stripe)** | 4-6 hours | 1-3 days (Stripe verification) | Stripe business verification is the blocker. Code-wise, Claude Code writes the Edge Functions quickly, but testing the full authorize→capture→cancel flow end-to-end takes iteration. |
-| **Phase 4: SMS (Twilio)** | 3-4 hours | 3-15 business days (A2P 10DLC) | **This is your critical path.** The code is straightforward — 5 Edge Functions + a webhook. But A2P registration is a hard external dependency. Start this on Day 1. |
-| **Phase 5: Contacts & Deep Links** | 3-4 hours | 1 hour (domain purchase + DNS) | Web invite/verdict pages are the bulk. Contact picker is a quick Rork prompt. AASA hosting is fiddly but Claude Code handles it. |
-| **Phase 6: Push Notifications** | 2-3 hours | 1 hour (APNs/FCM setup) | Mostly Rork work. Server-side push sending is one Edge Function. Credential setup in Apple/Firebase portals is the tedious part. |
-| **Phase 7: Polish & Custom Build** | 4-6 hours | 1-2 hours (EAS build time) | Sharpening fixes via Rork, edge case handling via Claude Code. First EAS build always has config issues — budget time for debugging. |
-| **Phase 8: App Store** | 2-3 hours | 1-7 days (Apple review) | Screenshots, privacy policy, ToS, App Store listing. Claude Code generates the legal docs. Apple review is the final wait. |
+| 1 | Create Supabase project, schema (users + vows), RLS policies | 2 hrs | Claude Code |
+| 2 | Connect Supabase to Expo, create client | 30 min | Rork |
+| 3 | Wire auth.tsx to Supabase Apple Sign-In | 1 hr | Rork + Manual (Apple Developer portal) |
+| 4 | Save vows to Supabase on seal | 1.5 hrs | Rork |
+| 5 | Load active vow + history from Supabase | 1.5 hrs | Rork |
+| 6 | Stripe: Edge Function to create charge on seal | 2 hrs | Claude Code |
+| 7 | Stripe: Edge Function to refund on kept verdict | 1 hr | Claude Code |
+| 8 | Stripe: payment sheet UI in seal screen | 1.5 hrs | Rork |
+| 9 | Witness flow: invite code generation + in-app verdict | 2 hrs | Claude Code + Rork |
+| 10 | Push notification for verdict day | 1.5 hrs | Rork + Claude Code |
+| 11 | Sharpening bug fixes (contextual suggestions, text input, deadline "by when?") | 2 hrs | Rork |
+| 12 | EAS build + TestFlight upload | 2 hrs | Manual |
+| **Total** | | **~19 hours** | |
 
-### Total Coding Time: 22-32 hours
-
-That's **3-4 full days** of focused coding, or **1.5-2 weeks** at 3-4 hours/day.
-
-### Total Calendar Time: 3-4 weeks
-
-The calendar time is driven by external blockers, not coding speed:
+### V1 Timeline
 
 ```
-Day 1:    Sign up for everything. Start A2P 10DLC registration.
-          Start Stripe verification. Buy domain.
-          Code: Phase 1 (backend) + Phase 2 (auth) — done in one sitting.
+Day 1:  Sign up for Apple Developer ($99) + Supabase + Stripe.
+        Start Stripe business verification.
+        Code: Tasks 1-3 (backend + auth). Done by end of day.
 
-Day 2-3:  Code: Phase 3 (Stripe) + Phase 6 (push notifications).
-          Stripe verification may still be pending — use test mode.
+Day 2:  Code: Tasks 4-5 (vow persistence + history).
+        Code: Tasks 6-8 (Stripe). Use test mode while verification pending.
 
-Day 4-5:  Code: Phase 4 (Twilio) + Phase 5 (deep links + web pages).
-          A2P still pending — test with verified numbers only.
+Day 3:  Code: Tasks 9-10 (witness verdict + push).
+        Code: Task 11 (sharpening fixes).
 
-Day 6-7:  Code: Phase 7 (polish, sharpening fixes, edge cases).
-          First EAS development build. Test on real device.
+Day 4:  Integration testing on simulator. Fix bugs.
+        Task 12: First EAS build → TestFlight.
+        Debug build config issues (there will be some).
 
-Day 8-10: Integration testing. Fix the bugs that only show up on real devices.
-          Stripe verification should be done — switch to live mode.
-
-Day 10-14: A2P 10DLC hopefully approved. Test real SMS delivery.
-           If not approved yet, everything else is ready — just waiting.
-
-Day 14-17: Phase 8. Screenshots, legal docs, App Store listing.
-           Submit to Apple review.
-
-Day 17-24: Apple review (typically 1-3 days, can be up to 7).
-           Address any rejection feedback if needed.
+Day 5:  Stripe verification should be done. Switch to live keys.
+        Final TestFlight build with live Stripe.
+        Invite your 10-30 testers.
 ```
 
-### What Could Speed This Up
+**5 days of focused work. 1 calendar week. No external blockers.**
 
-- **Skip SMS for v1** — use only push notifications + in-app messaging. Eliminates the 3-15 day A2P wait entirely. Add Twilio in v1.1. This alone cuts calendar time to **2 weeks**.
-- **Skip Apple/Google Sign-In for v1** — email-only auth works in Expo Go (no custom build needed). Saves a day of portal config and build debugging.
-- **Use the charge-and-refund model** — simpler than authorize/capture. One Edge Function instead of three. Eliminates the hold expiration risk entirely.
-- **Skip the web verdict page for v1** — have the witness download the app. Less work, but more friction in the viral loop.
+The only wait is Stripe verification (1-3 days), and you can build everything in test mode while it processes.
 
-### What Could Slow This Down
+### What You Learn from V1
 
-- **Apple rejects the app** — if they flag the stakes mechanic as gambling, you'll need to revise the framing and resubmit. Could add 1-2 weeks.
-- **A2P registration denied** — rare but possible. You'd need to appeal or restructure your messaging campaign description.
-- **Stripe flags the business model** — Stripe is cautious about "wager-like" products. Clear description of the charitable/accountability framing matters.
-- **First-time Supabase Edge Functions** — if you haven't deployed Edge Functions before, the local dev setup + CORS + auth headers can eat a few hours of debugging.
+These are the questions that determine what v2 looks like:
 
-### Bottom Line
+1. **Do people actually seal vows with real money?** If not, the stake UX needs work.
+2. **Do witnesses follow through on verdicts?** If not, you need automated reminders or a fallback.
+3. **Does the Telegram group feel right?** If people love it → build the bot. If they ignore it → maybe in-app chat instead.
+4. **What Vowkeeper messages land?** You're saying them manually — take notes on what motivates people.
+5. **Does the sharpening flow produce better vows?** Compare kept rates for sharpened vs already-good vows.
+6. **Do people come back for vow #2?** Retention is the real metric.
 
-An expert using Claude Code + Rork together, working focused hours, ships a production-ready v1 in **3 weeks** from first commit to App Store submission. Cut SMS and it's **2 weeks**. The coding isn't the bottleneck — it's Twilio's A2P registration and Apple's review process.
+### V2 Roadmap (after V1 learnings)
+
+- Google Sign-In (expand to Android)
+- Telegram bot for automated Vowkeeper
+- App Store submission (with real usage data to defend against gambling claims)
+- Web verdict page (so witness doesn't need the app)
+- Automated check-ins based on what worked manually
+- Crew/multiplayer if Telegram groups showed demand
