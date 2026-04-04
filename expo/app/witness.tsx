@@ -186,32 +186,9 @@ export default function WitnessScreen() {
         <BackButton />
         <TitleBlock
           title="Who holds you accountable?"
-          subtitle="Choose a witness, or make a solemn promise to yourself."
+          subtitle="A witness makes it real. Pick someone who won't let you off easy."
         />
         <VowPreview text={activeVowText} compact />
-
-        <Pressable
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setMode('solo-oath');
-          }}
-          style={styles.soloOption}
-          testID="witness-solo"
-        >
-          <View style={styles.soloOptionIcon}>
-            <User color={palette.goldBright} size={20} />
-          </View>
-          <View style={styles.heroOptionCopy}>
-            <Text style={styles.soloOptionTitle}>Just me</Text>
-            <Text style={styles.soloOptionSub}>Make a solemn promise to yourself</Text>
-          </View>
-        </Pressable>
-
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or pick a witness</Text>
-          <View style={styles.dividerLine} />
-        </View>
 
         <Pressable
           onPress={handlePickFromContacts}
@@ -228,7 +205,7 @@ export default function WitnessScreen() {
             </View>
           )}
           <View style={styles.heroOptionCopy}>
-            <Text style={styles.heroOptionTitle}>Pick from contacts</Text>
+            <Text style={styles.heroOptionTitle}>Vow with a friend</Text>
             <Text style={styles.heroOptionSub}>They deliver the final verdict</Text>
           </View>
         </Pressable>
@@ -242,8 +219,31 @@ export default function WitnessScreen() {
             <MessageSquareText color={palette.textSecondary} size={18} />
           </View>
           <View style={styles.heroOptionCopy}>
-            <Text style={styles.secondaryOptionTitle}>Type a name</Text>
-            <Text style={styles.secondaryOptionSub}>Enter their name and send a link</Text>
+            <Text style={styles.secondaryOptionTitle}>Type their name instead</Text>
+            <Text style={styles.secondaryOptionSub}>Enter a name and send them a link</Text>
+          </View>
+        </Pressable>
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or go solo</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <Pressable
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setMode('solo-oath');
+          }}
+          style={styles.soloOption}
+          testID="witness-solo"
+        >
+          <View style={styles.soloOptionIcon}>
+            <User color={palette.textMuted} size={18} />
+          </View>
+          <View style={styles.heroOptionCopy}>
+            <Text style={styles.soloOptionTitle}>Just me</Text>
+            <Text style={styles.soloOptionSub}>Hold yourself accountable</Text>
           </View>
         </Pressable>
       </RitualScreen>
@@ -735,30 +735,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
-    backgroundColor: palette.surface,
-    borderRadius: 16,
-    padding: 18,
+    backgroundColor: 'transparent',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: palette.borderStrong,
+    borderColor: palette.border,
+    opacity: 0.7,
   },
   soloOptionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(212,162,79,0.12)',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: palette.surface,
     borderWidth: 1,
-    borderColor: palette.borderStrong,
+    borderColor: palette.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   soloOptionTitle: {
-    color: palette.goldBright,
-    fontSize: 16,
-    fontWeight: '600' as const,
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   soloOptionSub: {
     color: palette.textMuted,
-    fontSize: 13,
+    fontSize: 12,
   },
   dividerRow: {
     flexDirection: 'row',
