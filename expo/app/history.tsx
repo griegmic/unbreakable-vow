@@ -14,6 +14,7 @@ type VowRow = Database['public']['Tables']['vows']['Row'];
 export default function HistoryScreen() {
   const [vows, setVows] = useState<VowRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     getVowHistory()
@@ -22,6 +23,7 @@ export default function HistoryScreen() {
       })
       .catch((err) => {
         console.error('[HistoryScreen] failed to load vows:', err);
+        setError(true);
       })
       .finally(() => {
         setLoading(false);
@@ -58,6 +60,10 @@ export default function HistoryScreen() {
         <View style={styles.loadingWrap}>
           <ActivityIndicator color={palette.goldBright} />
         </View>
+      ) : error ? (
+        <RitualCard>
+          <Text style={styles.emptyText}>Couldn't load your vows. Check your connection and try again.</Text>
+        </RitualCard>
       ) : (
         <>
           <View style={styles.statsRow}>

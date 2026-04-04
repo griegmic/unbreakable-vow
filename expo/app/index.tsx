@@ -5,6 +5,7 @@ import { ArrowRight, Shield, Sparkles, Zap } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Keyboard,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -83,7 +84,7 @@ export default function HomeScreen() {
   const handleChip = (example: string) => {
     void Haptics.selectionAsync();
     setInput(example);
-    inputRef.current?.focus();
+    Keyboard.dismiss();
   };
 
   const btnScale = useRef(new Animated.Value(1)).current;

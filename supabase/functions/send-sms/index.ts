@@ -17,16 +17,29 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Auth check: require service role key as bearer token
+    // Auth check: require service role key OR valid JWT
     const authHeader = req.headers.get('Authorization');
-    if (authHeader?.replace('Bearer ', '') !== serviceRoleKey) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Missing authorization' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    const token = authHeader.replace('Bearer ', '');
+    const isServiceRole = token === serviceRoleKey;
+
     const supabase = createClient(supabaseUrl, serviceRoleKey);
+
+    if (!isServiceRole) {
+      const { error: authError } = await supabase.auth.getUser(token);
+      if (authError) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
 
     const { vow_id, message_type, body_override } = await req.json();
 

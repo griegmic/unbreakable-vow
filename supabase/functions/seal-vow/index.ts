@@ -1,6 +1,12 @@
+import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { sendSMS } from '../_shared/twilio.ts';
 import { sealMessage } from '../_shared/sms-templates.ts';
+
+const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
+  apiVersion: '2024-04-10',
+  httpClient: Stripe.createFetchHttpClient(),
+});
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -71,6 +77,18 @@ Deno.serve(async (req) => {
     if (!vow.stripe_payment_intent_id) {
       return new Response(JSON.stringify({ error: 'Payment not yet captured' }), {
         status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Verify payment actually succeeded via Stripe API
+    const paymentIntent = await stripe.paymentIntents.retrieve(vow.stripe_payment_intent_id);
+    if (paymentIntent.status !== 'succeeded') {
+      return new Response(JSON.stringify({
+        error: 'Payment not confirmed',
+        payment_status: paymentIntent.status,
+      }), {
+        status: 402,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

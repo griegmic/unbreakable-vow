@@ -19,7 +19,23 @@ export default function AuthScreen() {
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [resendCooldown, setResendCooldown] = useState(0);
   const otpRef = useRef<TextInput>(null);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const startCooldown = () => {
+    setResendCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
 
   const registerPush = async () => {
     try {
@@ -82,6 +98,7 @@ export default function AuthScreen() {
     setLoading(null);
 
     if (result.success) {
+      startCooldown();
       setMode('otp');
       setTimeout(() => otpRef.current?.focus(), 300);
     } else {
@@ -121,6 +138,7 @@ export default function AuthScreen() {
     setLoading(null);
 
     if (result.success) {
+      startCooldown();
       setMode('email-otp');
       setTimeout(() => otpRef.current?.focus(), 300);
     } else {
@@ -208,13 +226,17 @@ export default function AuthScreen() {
 
         <Pressable
           onPress={() => {
+            if (resendCooldown > 0) return;
             setOtp('');
             handleSendEmailOtp();
           }}
-          style={styles.resendBtn}
+          disabled={resendCooldown > 0}
+          style={[styles.resendBtn, resendCooldown > 0 && { opacity: 0.5 }]}
           testID="auth-resend-email-otp"
         >
-          <Text style={styles.resendText}>Didn't get the code? Resend</Text>
+          <Text style={styles.resendText}>
+            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Didn't get the code? Resend"}
+          </Text>
         </Pressable>
       </RitualScreen>
     );
@@ -277,13 +299,17 @@ export default function AuthScreen() {
 
         <Pressable
           onPress={() => {
+            if (resendCooldown > 0) return;
             setOtp('');
             handleSendOtp();
           }}
-          style={styles.resendBtn}
+          disabled={resendCooldown > 0}
+          style={[styles.resendBtn, resendCooldown > 0 && { opacity: 0.5 }]}
           testID="auth-resend-otp"
         >
-          <Text style={styles.resendText}>Didn't get the code? Resend</Text>
+          <Text style={styles.resendText}>
+            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Didn't get the code? Resend"}
+          </Text>
         </Pressable>
       </RitualScreen>
     );

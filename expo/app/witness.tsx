@@ -29,7 +29,6 @@ export default function WitnessScreen() {
   const { activeVowText, setWitness } = useVowFlow();
   const [mode, setMode] = useState<WitnessMode>('choose');
   const [selectedName, setSelectedName] = useState<string>('');
-  const [inviteMethod, setInviteMethod] = useState<'sms' | 'link'>('sms');
   const [phone, setPhone] = useState<string>('');
 
 
@@ -48,7 +47,7 @@ export default function WitnessScreen() {
   const handleConfirm = () => {
     if (!selectedName.trim()) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setWitness(selectedName, inviteMethod, phone);
+    setWitness(selectedName, 'sms', phone);
     router.push('/stake');
   };
 
@@ -135,7 +134,6 @@ export default function WitnessScreen() {
     void Haptics.selectionAsync();
     setSelectedName(contact.name.split(' ')[0]);
     setPhone(contact.phone);
-    setInviteMethod('sms');
     setMode('invite');
   }, []);
 

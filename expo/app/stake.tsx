@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { CreditCard, Flame, HandCoins, HeartHandshake, ShieldCheck } from 'lucide-react-native';
-import React, { useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   BackButton,
@@ -20,6 +20,16 @@ import { useVowFlow } from '@/providers/vow-flow';
 export default function StakeScreen() {
   const { activeVowText, setStake, vow } = useVowFlow();
   const { isAuthenticated } = useAuth();
+
+  // Guard: redirect back if witness not yet selected
+  useEffect(() => {
+    if (!vow.witnessName) {
+      Alert.alert('Pick a witness first', 'You need to choose a witness before setting stakes.', [
+        { text: 'OK', onPress: () => router.replace('/witness') },
+      ]);
+    }
+  }, [vow.witnessName]);
+
   const [amount, setAmount] = useState<number>(vow.stake.amount);
   const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(vow.stake.consequence);
   const [destination, setDestination] = useState<string>(vow.stake.destination);

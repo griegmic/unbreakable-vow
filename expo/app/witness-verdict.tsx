@@ -3,6 +3,8 @@ import { Stack, router } from 'expo-router';
 import { Check, CircleDollarSign } from 'lucide-react-native';
 import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   StyleSheet,
@@ -30,6 +32,7 @@ export default function WitnessVerdictScreen() {
 
   const [confirmVisible, setConfirmVisible] = useState<boolean>(false);
   const [pendingVerdict, setPendingVerdict] = useState<VerdictChoice>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   const handleCardTap = useCallback((choice: VerdictChoice) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -38,7 +41,8 @@ export default function WitnessVerdictScreen() {
   }, []);
 
   const handleConfirm = useCallback(async () => {
-    setConfirmVisible(false);
+    if (submitting) return;
+    setSubmitting(true);
 
     // Call submit-verdict edge function if we have a token
     if (vow.witnessInviteToken) {
@@ -48,8 +52,15 @@ export default function WitnessVerdictScreen() {
         });
       } catch (err) {
         console.error('[WitnessVerdict] submit error:', err);
+        setSubmitting(false);
+        setConfirmVisible(false);
+        Alert.alert('Something went wrong', 'Please try again.');
+        return;
       }
     }
+
+    setSubmitting(false);
+    setConfirmVisible(false);
 
     if (pendingVerdict === 'kept') {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -58,12 +69,13 @@ export default function WitnessVerdictScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       router.push('/vow-broken');
     }
-  }, [pendingVerdict, vow.witnessInviteToken]);
+  }, [pendingVerdict, submitting, vow.witnessInviteToken]);
 
   const handleCancel = useCallback(() => {
+    if (submitting) return;
     setConfirmVisible(false);
     setPendingVerdict(null);
-  }, []);
+  }, [submitting]);
 
   return (
     <RitualScreen scroll={false}>
@@ -167,11 +179,17 @@ export default function WitnessVerdictScreen() {
                 pendingVerdict === 'kept'
                   ? styles.confirmButtonKept
                   : styles.confirmButtonBroken,
+                submitting && { opacity: 0.6 },
               ]}
               onPress={handleConfirm}
+              disabled={submitting}
               testID="verdict-confirm"
             >
-              <Text style={styles.confirmButtonText}>Confirm</Text>
+              {submitting ? (
+                <ActivityIndicator color={palette.text} size="small" />
+              ) : (
+                <Text style={styles.confirmButtonText}>Confirm</Text>
+              )}
             </Pressable>
 
             <Pressable onPress={handleCancel} style={styles.cancelButton} testID="verdict-cancel">

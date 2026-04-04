@@ -43,6 +43,7 @@ export default function SealScreen() {
   const [sworn, setSworn] = useState<boolean>(false);
   const [sealed, setSealed] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
+  const [paidVowId, setPaidVowId] = useState<string | null>(null);
   const glow = useRef(new Animated.Value(0)).current;
   const checkScale = useRef(new Animated.Value(0)).current;
   const swearGlow = useRef(new Animated.Value(0)).current;
@@ -107,10 +108,38 @@ export default function SealScreen() {
     });
   };
 
+  const retrySeal = async (vowId: string) => {
+    setLoading(true);
+    try {
+      await supabase.functions.invoke('seal-vow', {
+        body: { vow_id: vowId },
+      });
+      setLoading(false);
+      playSealAnimation();
+    } catch (err) {
+      console.error('[SealScreen] retry seal error:', err);
+      setLoading(false);
+      Alert.alert(
+        'Still having trouble',
+        'Your payment was captured. Please try again or contact support.',
+        [
+          { text: 'Try again', onPress: () => retrySeal(vowId) },
+          { text: 'OK' },
+        ],
+      );
+    }
+  };
+
   const handleSeal = async () => {
     if (!sworn || loading) return;
     setLoading(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+
+    // If we already paid but seal failed, retry the seal only
+    if (paidVowId) {
+      await retrySeal(paidVowId);
+      return;
+    }
 
     let vowId: string | null = null;
 
@@ -143,6 +172,9 @@ export default function SealScreen() {
         return;
       }
 
+      // Mark payment as captured so retries skip payment
+      setPaidVowId(vowId);
+
       // 4. Payment succeeded — seal the vow via edge function (activates + notifies witness)
       await supabase.functions.invoke('seal-vow', {
         body: { vow_id: vowId },
@@ -153,11 +185,19 @@ export default function SealScreen() {
       playSealAnimation();
     } catch (err) {
       console.error('[SealScreen] seal flow error:', err);
-      if (vowId) {
-        await voidVow(vowId).catch(() => {});
-      }
       setLoading(false);
-      Alert.alert('Something went wrong', 'Please try again.');
+      if (paidVowId || (vowId && vowId === paidVowId)) {
+        // Payment was captured — don't void, offer retry
+        Alert.alert(
+          'Almost there',
+          'Your payment went through but we couldn\'t finish sealing. Tap "Seal this vow" to try again.',
+        );
+      } else {
+        if (vowId) {
+          await voidVow(vowId).catch(() => {});
+        }
+        Alert.alert('Something went wrong', 'Please try again.');
+      }
     }
   };
 
