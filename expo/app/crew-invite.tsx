@@ -5,12 +5,14 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
+import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function CrewInviteScreen() {
+  const { displayName } = useAuth();
   const { activeVowText, vow } = useVowFlow();
   const dates = getVowVerdictDate(vow.rawInput);
-  const makerName = 'Someone';
+  const makerName = displayName || 'Your friend';
 
   console.log('[CrewInviteScreen] rendering for witness:', vow.witnessName);
 

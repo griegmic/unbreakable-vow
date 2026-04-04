@@ -6,13 +6,15 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
+import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function WitnessInviteScreen() {
+  const { displayName } = useAuth();
   const { activeVowText, vow } = useVowFlow();
   const [sworn, setSworn] = useState<boolean>(false);
 
-  const makerName = 'Someone';
+  const makerName = displayName || 'Your friend';
   const dates = getVowVerdictDate(vow.rawInput);
   const brokenTarget =
     vow.stake.consequence === 'witness'

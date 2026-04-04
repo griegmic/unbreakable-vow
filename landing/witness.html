@@ -769,12 +769,13 @@
 
       const vowText = params.get('vow') || 'No vow text provided';
       const witnessName = params.get('name') || 'Witness';
+      const makerName = params.get('maker') || 'Your friend';
 
       document.getElementById('previewVowText').textContent = vowText;
       document.getElementById('previewSubtitle').textContent =
-        'Your friend made a vow — and put real money behind it. You decide if they follow through.';
+        makerName + ' made a vow — and put real money behind it. You decide if they follow through.';
       document.getElementById('confirmationText').textContent =
-        "We'll text you the full details once the vow is sealed. When the deadline hits, you deliver the verdict.";
+        "We'll text you the full details once " + makerName + " seals the vow. When the deadline hits, you deliver the verdict.";
 
       previewMode.classList.remove('hidden');
     }
