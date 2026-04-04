@@ -116,9 +116,7 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
 
 
   const shouldSkipRefine = useCallback((input: string): boolean => {
-    if (vowExamples.includes(input)) {
-      return true;
-    }
+    if (vowExamples.includes(input)) return true;
     if (!isAlreadySharp(input)) return false;
     const needs = detectVowNeeds(input);
     if (needs.showFrequency || needs.showDuration) return false;

@@ -149,92 +149,113 @@ export interface AnalysisResult {
   delta?: string;
 }
 
+function detectTimeFrame(input: string): string {
+  const lower = input.toLowerCase();
+  if (/this\s+month/i.test(lower)) return 'this month';
+  if (/this\s+year/i.test(lower)) return 'this year';
+  if (/this\s+quarter/i.test(lower)) return 'this quarter';
+  return 'this week';
+}
+
+function applyTimeFrame(suggestions: string[], timeFrame: string): string[] {
+  if (timeFrame === 'this week') return suggestions;
+  return suggestions.map((s) => s.replace(/this week/gi, timeFrame).replace(/all week/gi, `all ${timeFrame.replace('this ', '')}`));
+}
+
 export function getContextualSuggestions(input: string): string[] {
   const lower = input.toLowerCase().trim();
+  const tf = detectTimeFrame(input);
 
   if (/(walk|steps|hike)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'Walk 10,000 steps every day this week',
       'Walk for 30 minutes, 5 days this week',
       'Walk 2 miles every morning this week',
-    ];
+    ], tf);
   }
   if (/(gym|exercise|workout|lift|train|yoga|stretch|swim|bike)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'Go to the gym 3 times this week',
       'Do a 30-minute workout, 4 days this week',
       'Exercise for 45 minutes, 4 days this week',
-    ];
+    ], tf);
   }
   if (/(run|jog)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'Run for 20 minutes, 4 days this week',
       'Run 2 miles, 3 times this week',
       'Run every morning this week',
-    ];
+    ], tf);
   }
   if (/(read|book)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'Read for 30 minutes every night this week',
       'Read 50 pages every day this week',
       'Read one chapter every night before bed',
-    ];
+    ], tf);
   }
   if (/(eat|food|cook|takeout|diet|health|healthier)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'No takeout all week',
       'Cook dinner at home every night this week',
       'No junk food or sugar all week',
-    ];
+    ], tf);
   }
   if (/(sleep|bed|wake|morning)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'Be in bed by 10:30pm every night this week',
       'No screens after 9pm all week',
       'Wake up before 7am every weekday',
-    ];
+    ], tf);
   }
   if (/(productive|work|focus|study|learn)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'Work for 90 focused minutes on 4 days this week',
       'No social media during work hours all week',
       'Complete 3 deep-work blocks this week',
-    ];
+    ], tf);
   }
   if (/(write|code|create)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'Write for 60 minutes, 4 days this week',
       'Write 500 words every day this week',
       'Code for 90 minutes, 5 days this week',
-    ];
+    ], tf);
   }
   if (/(meditat|mindful)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'Meditate for 10 minutes every morning this week',
       'Meditate every day this week',
       'Do 15 minutes of meditation, 5 days this week',
-    ];
+    ], tf);
   }
   if (/(phone|screen|social|scroll|instagram|tiktok)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'No phone in bed all week',
       'Under 1 hour of screen time every day this week',
       'No social media all week',
-    ];
+    ], tf);
   }
   if (/(drink|alcohol|sober|beer|wine)/i.test(lower)) {
-    return [
+    return applyTimeFrame([
       'No alcohol all week',
       'No drinking on weeknights this week',
       'Only 2 drinks max all week',
-    ];
+    ], tf);
+  }
+  if (/(piano|guitar|music|instrument|practice)/i.test(lower)) {
+    return applyTimeFrame([
+      'Practice for 30 minutes, 5 days this week',
+      'Practice for 20 minutes every day this week',
+      'Do 3 focused practice sessions this week',
+    ], tf);
   }
 
-  return [
+  return applyTimeFrame([
     'Work for 90 focused minutes on 4 days this week',
     'Go to the gym 3 times this week',
     'Read every night before bed this week',
-  ];
+  ], tf);
 }
 
 export function analyzeVow(input: string): AnalysisResult {
@@ -259,7 +280,7 @@ export function analyzeVow(input: string): AnalysisResult {
     && !/\d+/.test(lowered)
     && !/(no\s+|don't\s+|stop\s+|avoid\s+|quit\s+)/i.test(lowered);
 
-  const hasNoMeasurable = !/(\d+|every|all\s+week|daily|no\s+|don't|stop|avoid|quit|before\s+\d|by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|by\s+end)/i.test(lowered);
+  const hasNoMeasurable = !/(\d+|every|all\s+week|all\s+month|daily|no\s+|don't|stop|avoid|quit|before\s+\d|by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|by\s+end)/i.test(lowered);
 
   if (hasVagueTerm || tooShort) {
     return {
@@ -275,7 +296,7 @@ export function analyzeVow(input: string): AnalysisResult {
     };
   }
 
-  const alreadyGoodPattern = /wake.*before.*\d|gym.*\d.*(?:time|x)|no.*(?:phone|takeout|alcohol|sugar|social media|instagram|tiktok|junk|delivery|netflix|youtube|screen).*(?:week|all|every|tonight|in bed|before|after)|send.*by.*(?:fri|mon|tue|wed|thu|sat|sun)|read.*every.*(?:night|day|evening|morning)|read.*(?:night|day).*(?:in bed|before bed)|run.*(?:\d|every|daily)|meditate.*(?:every|daily|\d)/i;
+  const alreadyGoodPattern = /wake.*before.*\d|gym.*\d.*(?:time|x)|no.*(?:phone|takeout|alcohol|sugar|social media|instagram|tiktok|junk|delivery|netflix|youtube|screen).*(?:week|month|all|every|tonight|in bed|before|after)|send.*by.*(?:fri|mon|tue|wed|thu|sat|sun)|read.*every.*(?:night|day|evening|morning)|read.*(?:night|day).*(?:in bed|before bed)|run.*(?:\d|every|daily)|meditate.*(?:every|daily|\d)/i;
   if (alreadyGoodPattern.test(lowered)) {
     return { type: 'already_good' };
   }
@@ -284,7 +305,15 @@ export function analyzeVow(input: string): AnalysisResult {
     return { type: 'already_good' };
   }
 
-  if (/(every|all|this week|weekday|daily|each day|each night)/i.test(lowered) && lowered.split(' ').length >= 4) {
+  if (/\d+\s*(?:x|times?)/i.test(lowered) && /(this\s+(?:week|month|year))/i.test(lowered)) {
+    return { type: 'already_good' };
+  }
+
+  if (/\d+/.test(lowered) && /(this\s+(?:week|month|year)|every\s+(?:day|night|morning|weekday))/i.test(lowered) && lowered.split(' ').length >= 4) {
+    return { type: 'already_good' };
+  }
+
+  if (/(every|all|this\s+week|this\s+month|this\s+year|weekday|daily|each day|each night)/i.test(lowered) && lowered.split(' ').length >= 4) {
     return { type: 'already_good' };
   }
 
@@ -298,11 +327,13 @@ export function analyzeVow(input: string): AnalysisResult {
 
 export function hasExplicitDate(input: string): boolean {
   const lower = input.toLowerCase();
-  const monthPattern = /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}/i;
-  const byDatePattern = /by\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+\d{1,2}/i;
-  const endOfPattern = /by\s+(end\s+of\s+)?(this\s+)?(month|year|quarter|semester)/i;
+  const MONTH_NAMES = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
+  const monthWithDay = new RegExp(`(${MONTH_NAMES})\\s+\\d{1,2}`, 'i');
+  const byMonth = new RegExp(`by\\s+(?:end\\s+of\\s+)?(?:the\\s+)?(?:${MONTH_NAMES})(?:\\s+\\d{1,2})?`, 'i');
+  const endOfPattern = /(?:by\s+)?end\s+of\s+(?:the\s+)?(?:this\s+)?(?:month|year|quarter|semester)/i;
+  const endOfMonthName = new RegExp(`(?:by\\s+)?end\\s+of\\s+(?:${MONTH_NAMES})`, 'i');
   const slashDate = /by\s+\d{1,2}\/\d{1,2}/i;
-  return monthPattern.test(lower) || byDatePattern.test(lower) || endOfPattern.test(lower) || slashDate.test(lower);
+  return monthWithDay.test(lower) || byMonth.test(lower) || endOfPattern.test(lower) || endOfMonthName.test(lower) || slashDate.test(lower);
 }
 
 export function extractDeadlineDate(input: string): string | null {
@@ -360,19 +391,27 @@ export function isAlreadySharp(input: string): boolean {
   return result.type === 'already_good';
 }
 
+function hasExistingTimeWindow(input: string): boolean {
+  return /(this\s+(week|month|year|quarter)|all\s+(week|month)|by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|by\s+end|through\s+sunday)/i.test(input);
+}
+
 function buildSharper(input: string): string {
   const lowered = input.toLowerCase();
   const clean = formalizeVow(input).replace(/[.]$/, '');
 
-  if (/read/.test(lowered) && !/every|week/.test(lowered)) {
+  if (hasExistingTimeWindow(lowered)) {
+    return `${clean}.`;
+  }
+
+  if (/read/.test(lowered) && !/every|week|month/.test(lowered)) {
     return `${clean}, every night this week.`;
   }
 
-  if (/(gym|run|workout|train|exercise|jog)/.test(lowered) && !/week|sunday|times|x/.test(lowered)) {
+  if (/(gym|run|workout|train|exercise|jog)/.test(lowered) && !/week|month|sunday|times|x/.test(lowered)) {
     return `${clean} this week, by Sunday 8pm.`;
   }
 
-  if (/no\s+/.test(lowered) && !/all week|week|every/.test(lowered)) {
+  if (/no\s+/.test(lowered) && !/all week|all month|week|month|every/.test(lowered)) {
     return `${clean}, all week through Sunday midnight.`;
   }
 
@@ -429,18 +468,19 @@ export function detectVowNeeds(input: string): VowNeeds {
 
   const isNegation = /^(no\s+|don't\s+|stop\s+|avoid\s+|quit\s+|cut\s+)/i.test(lower);
   const isTimeBound = /(wake|get up|sleep|bed|alarm|before\s+\d)/i.test(lower);
-  const isDeadlineTask = /(send|submit|finish|complete|ship|launch|deliver)/i.test(lower) && !hasExplicitDate(lower);
+  const isCompletionTask = /(send|submit|finish|complete|ship|launch|deliver)/i.test(lower);
+  const isDeadlineTask = isCompletionTask && !hasExplicitDate(lower);
   const hasFrequency = /\d+\s*(?:x|times?)/i.test(lower)
     || /(every\s+(?:day|weekday|night|morning)|daily)/i.test(lower)
     || /(three|four|five|six|seven)\s+times/i.test(lower);
   const hasDuration = /\d+\s*(?:min|minute|hour|hr)/i.test(lower) || /at\s+least\s+\d/i.test(lower);
-  const hasDeadline = /(this\s+week|all\s+week|by\s+\w+day|through\s+sunday)/i.test(lower);
+  const hasDeadline = /(this\s+week|this\s+month|this\s+year|this\s+quarter|all\s+week|all\s+month|by\s+\w+day|through\s+sunday)/i.test(lower) || hasExplicitDate(lower);
   const isDurationRelevant = DURATION_RELEVANT.test(lower);
   const hasQuantity = /(?:\d+[,.]?\d*k?|\d{1,3}(?:,\d{3})+)\s*(?:steps|miles|km|pages|reps|pushups|pullups|situps|laps|words|oz|glasses|cups|liters)/i.test(lower);
 
   return {
-    showFrequency: !isNegation && !isTimeBound && !isDeadlineTask && !hasFrequency,
-    showDuration: !isNegation && !isTimeBound && !isDeadlineTask && !hasDuration && isDurationRelevant && !hasQuantity,
+    showFrequency: !isNegation && !isTimeBound && !isDeadlineTask && !isCompletionTask && !hasFrequency,
+    showDuration: !isNegation && !isTimeBound && !isDeadlineTask && !isCompletionTask && !hasDuration && isDurationRelevant && !hasQuantity,
     autoDeadline: !hasDeadline,
     isNegation,
     isTimeBound,
@@ -462,11 +502,12 @@ export function getFrequencyOptions(input: string): FrequencyOption[] {
     ];
   }
 
+  const tf = detectTimeFrame(input);
   return [
-    { label: '3x this week', value: '3 times this week' },
-    { label: '4x this week', value: '4 times this week' },
-    { label: '5x this week', value: '5 times this week' },
-    { label: 'Daily', value: 'every day this week' },
+    { label: `3x ${tf}`, value: `3 times ${tf}` },
+    { label: `4x ${tf}`, value: `4 times ${tf}` },
+    { label: `5x ${tf}`, value: `5 times ${tf}` },
+    { label: 'Daily', value: `every day ${tf}` },
   ];
 }
 
@@ -488,7 +529,7 @@ export function composeVow(
   clean = clean.charAt(0).toUpperCase() + clean.slice(1);
 
   if (needs.isNegation) {
-    if (/(all\s+week|every|this\s+week)/i.test(clean)) {
+    if (/(all\s+(week|month)|every|this\s+(week|month|year))/i.test(clean)) {
       return `${clean}.`;
     }
     return `${clean}, all week.`;
@@ -501,23 +542,32 @@ export function composeVow(
     return `${clean} by Friday.`;
   }
 
-  const parts: string[] = [clean];
-
-  if (duration && duration.length > 0) {
-    parts.push(`for at least ${duration}`);
-  }
+  const timeWindowPattern = /\s*(,\s*)?(this\s+(?:week|month|year|quarter))/i;
+  const hasTimeWindow = timeWindowPattern.test(clean);
 
   if (frequency) {
-    parts.push(frequency);
+    if (hasTimeWindow) {
+      const freqCore = frequency.replace(/\s*this\s+(?:week|month|year|quarter)/i, '').trim();
+      if (freqCore) {
+        clean = clean.replace(timeWindowPattern, (_match, comma, tw) => ` ${freqCore} ${tw}`);
+      }
+    } else {
+      clean = `${clean}, ${frequency}`;
+    }
   } else if (needs.autoDeadline) {
-    parts.push('this week');
+    if (!hasTimeWindow && !/(all\s+(week|month)|by\s+)/i.test(clean) && !hasExplicitDate(clean.toLowerCase())) {
+      clean = `${clean}, this week`;
+    }
   }
 
-  let result = parts.join(', ');
-  if (!/[.!]$/.test(result)) {
-    result += '.';
+  if (duration && duration.length > 0) {
+    clean = `${clean}, for at least ${duration}`;
   }
-  return result;
+
+  if (!/[.!]$/.test(clean)) {
+    clean += '.';
+  }
+  return clean;
 }
 
 export interface Challenge {
