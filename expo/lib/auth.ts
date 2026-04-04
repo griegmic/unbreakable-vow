@@ -181,17 +181,23 @@ export async function verifyPhoneOtp(phone: string, code: string): Promise<AuthR
 
 export async function sendEmailOtp(email: string): Promise<AuthResult> {
   try {
+    console.log('[Auth] sendEmailOtp calling signInWithOtp for:', email.split('@')[0] + '@...');
     const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) {
       console.error('[Auth] sendEmailOtp error:', error.name, error.message, error.status);
-      const message = error.name === 'AuthRetryableFetchError'
-        ? 'Network request failed. Check your connection and try again.'
-        : error.message;
-      return { success: false, error: message };
+      if (error.message?.includes('rate') || error.status === 429) {
+        return { success: false, error: 'Too many attempts. Please wait a minute and try again.' };
+      }
+      if (error.name === 'AuthRetryableFetchError') {
+        return { success: false, error: 'Network request failed. Check your connection and try again.' };
+      }
+      return { success: false, error: error.message };
     }
+    console.log('[Auth] sendEmailOtp success');
     return { success: true };
   } catch (err: unknown) {
-    console.error('[Auth] sendEmailOtp unexpected:', err);
+    const errMsg = err instanceof Error ? `${err.name}: ${err.message}` : String(err);
+    console.error('[Auth] sendEmailOtp unexpected:', errMsg);
     return { success: false, error: 'Network request failed. Check your connection and try again.' };
   }
 }

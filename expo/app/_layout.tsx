@@ -1,3 +1,4 @@
+import 'react-native-url-polyfill/auto';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Notifications from 'expo-notifications';
 import { Stack, router } from 'expo-router';

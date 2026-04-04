@@ -60,6 +60,10 @@
         }
       ]
     ],
+    "extra": {
+      "supabaseUrl": "https://faufcfppnkwrxabgvknt.supabase.co",
+      "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdWZjZnBwbmt3cnhhYmd2a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzQyNDYsImV4cCI6MjA5MDg1MDI0Nn0.s82fzQzwSo6XvIp1tLUsomeELkZcDOs16IupjkGA4OM"
+    },
     "experiments": {
       "typedRoutes": true
     }
