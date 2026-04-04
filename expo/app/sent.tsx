@@ -93,6 +93,12 @@ export default function SentScreen() {
             <Text style={styles.metaLabel}>Verdict</Text>
             <Text style={styles.metaValue}>{dates.endLabel}</Text>
           </View>
+          {vow.crew.length > 0 ? (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Group chat</Text>
+              <Text style={styles.metaValue}>{vow.crew.length} {vow.crew.length === 1 ? 'other' : 'others'} added</Text>
+            </View>
+          ) : null}
         </RitualCard>
       </Animated.View>
 

@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Link2, MessageSquareText, Search, Sparkles, UserPlus } from 'lucide-react-native';
-import React, { useMemo, useState } from 'react';
-import { Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ChevronDown, ChevronUp, Link2, MessageSquareText, Search, Sparkles, UserPlus, Users, X } from 'lucide-react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Animated, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   BackButton,
@@ -13,18 +13,27 @@ import {
   VowPreview,
 } from '@/components/vow-ui';
 import { palette, witnessContacts } from '@/constants/unbreakable';
+import type { CrewMember } from '@/providers/vow-flow';
 import { useVowFlow } from '@/providers/vow-flow';
 
 type WitnessMode = 'choose' | 'contacts' | 'manual' | 'invite';
+type CrewAddMode = 'idle' | 'contacts' | 'manual';
 
 export default function WitnessScreen() {
-  const { activeVowText, setWitness } = useVowFlow();
+  const { activeVowText, setWitness, vow, addCrewMember, removeCrewMember } = useVowFlow();
   const [mode, setMode] = useState<WitnessMode>('choose');
   const [selectedName, setSelectedName] = useState<string>('');
   const [inviteMethod, setInviteMethod] = useState<'sms' | 'link'>('link');
   const [phone, setPhone] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [copied, setCopied] = useState<boolean>(false);
+  const [crewExpanded, setCrewExpanded] = useState<boolean>(false);
+  const [crewAddMode, setCrewAddMode] = useState<CrewAddMode>('idle');
+  const [crewName, setCrewName] = useState<string>('');
+  const [crewSearchQuery, setCrewSearchQuery] = useState<string>('');
+  const crewExpandAnim = useRef(new Animated.Value(0)).current;
+
+  const isVowkeeper = selectedName === 'Vowkeeper' || vow.witnessName === 'Vowkeeper';
 
   const filteredContacts = useMemo(() => {
     if (!searchQuery.trim()) return witnessContacts;
@@ -70,6 +79,63 @@ export default function WitnessScreen() {
     setWitness('Vowkeeper', 'link');
     router.push('/stake');
   };
+
+  const toggleCrewSection = useCallback(() => {
+    const expanding = !crewExpanded;
+    setCrewExpanded(expanding);
+    Animated.spring(crewExpandAnim, {
+      toValue: expanding ? 1 : 0,
+      useNativeDriver: false,
+      speed: 14,
+      bounciness: 4,
+    }).start();
+  }, [crewExpanded, crewExpandAnim]);
+
+  const handleAddCrewFromContacts = useCallback((name: string) => {
+    if (name.toLowerCase() === selectedName.toLowerCase()) return;
+    void Haptics.selectionAsync();
+    const member: CrewMember = { name, inviteMethod: 'link' };
+    addCrewMember(member);
+    setCrewAddMode('idle');
+    setCrewSearchQuery('');
+  }, [selectedName, addCrewMember]);
+
+  const handleAddCrewManual = useCallback(() => {
+    const trimmed = crewName.trim();
+    if (!trimmed || trimmed.toLowerCase() === selectedName.toLowerCase()) return;
+    void Haptics.selectionAsync();
+    const member: CrewMember = { name: trimmed, inviteMethod: 'link' };
+    addCrewMember(member);
+    setCrewName('');
+    setCrewAddMode('idle');
+  }, [crewName, selectedName, addCrewMember]);
+
+  const handleRemoveCrew = useCallback((name: string) => {
+    void Haptics.selectionAsync();
+    removeCrewMember(name);
+  }, [removeCrewMember]);
+
+  const filteredCrewContacts = useMemo(() => {
+    const existing = vow.crew.map((c) => c.name.toLowerCase());
+    const witnessLower = selectedName.toLowerCase();
+    let list = witnessContacts.filter(
+      (c) => !existing.includes(c.name.toLowerCase()) && c.name.toLowerCase() !== witnessLower
+    );
+    if (crewSearchQuery.trim()) {
+      list = list.filter((c) => c.name.toLowerCase().includes(crewSearchQuery.toLowerCase()));
+    }
+    return list;
+  }, [crewSearchQuery, vow.crew, selectedName]);
+
+  const crewSectionHeight = crewExpandAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0, 300],
+  });
+
+  const crewSectionOpacity = crewExpandAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [0, 0, 1],
+  });
 
   if (mode === 'choose') {
     return (
@@ -133,7 +199,7 @@ export default function WitnessScreen() {
         <View style={styles.explainerCard}>
           <Text style={styles.explainerTitle}>What does a witness do?</Text>
           <Text style={styles.explainerBody}>
-            Your witness gets a text when you seal your vow. At the end of the week, they deliver the verdict — kept or broken. Their call is final.
+            Your witness gets a text when you seal your vow. When the time is up, they deliver the verdict — kept or broken. Their call is final.
           </Text>
         </View>
       </RitualScreen>
@@ -306,6 +372,132 @@ export default function WitnessScreen() {
               {copied ? 'Copied ✓' : 'Copy'}
             </Text>
           </Pressable>
+        </View>
+      ) : null}
+
+      {!isVowkeeper ? (
+        <View style={styles.crewSection}>
+          <Pressable
+            onPress={toggleCrewSection}
+            style={styles.crewToggle}
+            testID="crew-toggle"
+          >
+            <Users color={palette.textMuted} size={16} />
+            <Text style={styles.crewToggleText}>
+              {crewExpanded ? 'Hide group chat options' : '+ Add others to the group chat'}
+            </Text>
+            {crewExpanded
+              ? <ChevronUp color={palette.textMuted} size={16} />
+              : <ChevronDown color={palette.textMuted} size={16} />}
+          </Pressable>
+
+          <Animated.View style={[styles.crewContent, { maxHeight: crewSectionHeight, opacity: crewSectionOpacity }]}>
+            <Text style={styles.crewExplainer}>
+              They'll be in the thread but only {selectedName} delivers the verdict.
+            </Text>
+
+            {vow.crew.length > 0 ? (
+              <View style={styles.crewChipsRow}>
+                {vow.crew.map((member) => (
+                  <View key={member.name} style={styles.crewChip}>
+                    <Text style={styles.crewChipName}>{member.name}</Text>
+                    <Pressable
+                      onPress={() => handleRemoveCrew(member.name)}
+                      hitSlop={8}
+                      testID={`crew-remove-${member.name}`}
+                    >
+                      <X color={palette.textMuted} size={14} />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
+            {vow.crew.length < 4 ? (
+              <>
+                {crewAddMode === 'idle' ? (
+                  <View style={styles.crewAddActions}>
+                    <Pressable
+                      onPress={() => setCrewAddMode('contacts')}
+                      style={styles.crewAddBtn}
+                      testID="crew-add-contacts"
+                    >
+                      <UserPlus color={palette.textSecondary} size={14} />
+                      <Text style={styles.crewAddBtnText}>From contacts</Text>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => setCrewAddMode('manual')}
+                      style={styles.crewAddBtn}
+                      testID="crew-add-manual"
+                    >
+                      <MessageSquareText color={palette.textSecondary} size={14} />
+                      <Text style={styles.crewAddBtnText}>Type a name</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+
+                {crewAddMode === 'contacts' ? (
+                  <View style={styles.crewPickerWrap}>
+                    <View style={styles.crewSearchBar}>
+                      <Search color={palette.textMuted} size={14} />
+                      <TextInput
+                        style={styles.crewSearchInput}
+                        placeholder="Search..."
+                        placeholderTextColor={palette.textMuted}
+                        value={crewSearchQuery}
+                        onChangeText={setCrewSearchQuery}
+                        testID="crew-search"
+                      />
+                    </View>
+                    {filteredCrewContacts.map((contact) => (
+                      <Pressable
+                        key={contact.id}
+                        onPress={() => handleAddCrewFromContacts(contact.name)}
+                        style={styles.crewContactRow}
+                        testID={`crew-contact-${contact.id}`}
+                      >
+                        <View style={[styles.crewContactAvatar, { backgroundColor: contact.accent }]}>
+                          <Text style={styles.crewContactInitial}>{contact.initials}</Text>
+                        </View>
+                        <Text style={styles.crewContactName}>{contact.name}</Text>
+                      </Pressable>
+                    ))}
+                    <Pressable onPress={() => { setCrewAddMode('idle'); setCrewSearchQuery(''); }} style={styles.crewCancelBtn}>
+                      <Text style={styles.crewCancelText}>Cancel</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+
+                {crewAddMode === 'manual' ? (
+                  <View style={styles.crewManualWrap}>
+                    <TextInput
+                      style={styles.crewManualInput}
+                      placeholder="Their name"
+                      placeholderTextColor={palette.textMuted}
+                      value={crewName}
+                      onChangeText={setCrewName}
+                      onSubmitEditing={handleAddCrewManual}
+                      autoFocus
+                      testID="crew-name-input"
+                    />
+                    <Pressable
+                      onPress={handleAddCrewManual}
+                      style={[styles.crewManualAdd, !crewName.trim() && styles.crewManualAddDisabled]}
+                      disabled={!crewName.trim()}
+                      testID="crew-add-confirm"
+                    >
+                      <Text style={styles.crewManualAddText}>Add</Text>
+                    </Pressable>
+                    <Pressable onPress={() => { setCrewAddMode('idle'); setCrewName(''); }} style={styles.crewCancelBtn}>
+                      <Text style={styles.crewCancelText}>Cancel</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </>
+            ) : (
+              <Text style={styles.crewFullText}>Group chat is full (4 max)</Text>
+            )}
+          </Animated.View>
         </View>
       ) : null}
     </RitualScreen>
@@ -574,5 +766,165 @@ const styles = StyleSheet.create({
   },
   copyBtnTextCopied: {
     color: palette.success,
+  },
+  crewSection: {
+    borderTopWidth: 1,
+    borderTopColor: palette.border,
+    paddingTop: 14,
+    gap: 10,
+  },
+  crewToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 6,
+  },
+  crewToggleText: {
+    flex: 1,
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  crewContent: {
+    overflow: 'hidden',
+    gap: 12,
+  },
+  crewExplainer: {
+    color: palette.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  crewChipsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  crewChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: palette.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: palette.border,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  crewChipName: {
+    color: palette.text,
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  crewAddActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  crewAddBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: palette.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: palette.border,
+    paddingVertical: 10,
+  },
+  crewAddBtnText: {
+    color: palette.textSecondary,
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  crewPickerWrap: {
+    backgroundColor: palette.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: palette.border,
+    padding: 10,
+    gap: 4,
+  },
+  crewSearchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: palette.surfaceElevated,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  crewSearchInput: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 14,
+    paddingVertical: 0,
+  },
+  crewContactRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  crewContactAvatar: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  crewContactInitial: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '600' as const,
+  },
+  crewContactName: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  crewCancelBtn: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  crewCancelText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  crewManualWrap: {
+    gap: 8,
+  },
+  crewManualInput: {
+    backgroundColor: palette.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: palette.border,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    color: palette.text,
+    fontSize: 15,
+  },
+  crewManualAdd: {
+    backgroundColor: palette.surfaceElevated,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  crewManualAddDisabled: {
+    opacity: 0.4,
+  },
+  crewManualAddText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  crewFullText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontStyle: 'italic' as const,
   },
 });

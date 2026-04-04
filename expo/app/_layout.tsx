@@ -31,6 +31,7 @@ function RootLayoutNav() {
       <Stack.Screen name="history" />
       <Stack.Screen name="challenges" />
       <Stack.Screen name="settings" />
+      <Stack.Screen name="crew-invite" />
     </Stack>
   );
 }

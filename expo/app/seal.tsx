@@ -152,6 +152,14 @@ export default function SealScreen() {
             <Text style={[styles.metaValue, styles.goldValue]}>${vow.stake.amount}</Text>
           </View>
         </View>
+        {vow.crew.length > 0 ? (
+          <View style={styles.metaCell}>
+            <Text style={styles.metaLabel}>CREW</Text>
+            <Text style={styles.metaValue}>
+              {vow.crew.map((c) => c.name).join(', ')} (in the chat)
+            </Text>
+          </View>
+        ) : null}
         <View style={styles.twoCol}>
           <View style={styles.metaCell}>
             <Text style={styles.metaLabel}>DURATION</Text>

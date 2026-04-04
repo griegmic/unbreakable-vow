@@ -12,6 +12,12 @@ export interface StakeState {
   destination: string;
 }
 
+export interface CrewMember {
+  name: string;
+  inviteMethod: 'sms' | 'link';
+  phoneNumber?: string;
+}
+
 export interface VowState {
   rawInput: string;
   refinedText: string;
@@ -21,7 +27,10 @@ export interface VowState {
   stake: StakeState;
   authenticated: boolean;
   proofMode: ProofMode;
+  crew: CrewMember[];
 }
+
+const MAX_CREW = 4;
 
 const initialState: VowState = {
   rawInput: '',
@@ -36,6 +45,7 @@ const initialState: VowState = {
   },
   authenticated: false,
   proofMode: 'word',
+  crew: [],
 };
 
 export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
@@ -77,10 +87,33 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
     setVow((current) => ({ ...current, proofMode: mode }));
   }, []);
 
+  const addCrewMember = useCallback((member: CrewMember) => {
+    console.log('[VowFlow] addCrewMember', member.name);
+    setVow((current) => {
+      if (current.crew.length >= MAX_CREW) return current;
+      if (current.crew.some((c) => c.name.toLowerCase() === member.name.toLowerCase())) return current;
+      return { ...current, crew: [...current.crew, member] };
+    });
+  }, []);
+
+  const removeCrewMember = useCallback((name: string) => {
+    console.log('[VowFlow] removeCrewMember', name);
+    setVow((current) => ({
+      ...current,
+      crew: current.crew.filter((c) => c.name !== name),
+    }));
+  }, []);
+
+  const clearCrew = useCallback(() => {
+    console.log('[VowFlow] clearCrew');
+    setVow((current) => ({ ...current, crew: [] }));
+  }, []);
+
   const resetVow = useCallback(() => {
     console.log('[VowFlow] resetVow');
     setVow(initialState);
   }, []);
+
 
   const shouldSkipRefine = useCallback((input: string): boolean => {
     if (vowExamples.includes(input)) {
@@ -109,9 +142,12 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
       setStake,
       setAuthenticated,
       setProofMode,
+      addCrewMember,
+      removeCrewMember,
+      clearCrew,
       resetVow,
       shouldSkipRefine,
     }),
-    [activeVowText, analysis, resetVow, setAuthenticated, setProofMode, setRawInput, setRefinedText, setStake, setWitness, shouldSkipRefine, vow]
+    [activeVowText, addCrewMember, analysis, clearCrew, removeCrewMember, resetVow, setAuthenticated, setProofMode, setRawInput, setRefinedText, setStake, setWitness, shouldSkipRefine, vow]
   );
 });
