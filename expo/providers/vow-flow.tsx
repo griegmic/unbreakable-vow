@@ -2,7 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import { useCallback, useMemo, useState } from 'react';
 
 import type { ConsequenceType } from '@/constants/unbreakable';
-import { analyzeVow, detectVowNeeds, formalizeVow, isAlreadySharp, vowExamples } from '@/constants/unbreakable';
+import { analyzeVow, formalizeVow, vowExamples } from '@/constants/unbreakable';
 
 export type ProofMode = 'word' | 'screenshot';
 
@@ -117,10 +117,8 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
 
   const shouldSkipRefine = useCallback((input: string): boolean => {
     if (vowExamples.includes(input)) return true;
-    if (!isAlreadySharp(input)) return false;
-    const needs = detectVowNeeds(input);
-    if (needs.showFrequency || needs.showDuration) return false;
-    return true;
+    const result = analyzeVow(input);
+    return result.type === 'already_good';
   }, []);
 
   const analysis = useMemo(() => analyzeVow(vow.rawInput), [vow.rawInput]);

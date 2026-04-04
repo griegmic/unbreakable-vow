@@ -143,10 +143,8 @@ export function formalizeVow(input: string): string {
 }
 
 export interface AnalysisResult {
-  type: 'vague' | 'already_good' | 'needs_tweak';
+  type: 'vague' | 'already_good';
   suggestions?: string[];
-  sharperText?: string;
-  delta?: string;
 }
 
 function detectTimeFrame(input: string): string {
@@ -258,8 +256,106 @@ export function getContextualSuggestions(input: string): string[] {
   ], tf);
 }
 
+function normalizeWordNumbers(input: string): string {
+  const map: Record<string, string> = {
+    'one': '1', 'once': '1',
+    'two': '2', 'twice': '2',
+    'three': '3',
+    'four': '4',
+    'five': '5',
+    'six': '6',
+    'seven': '7',
+  };
+  let result = input;
+  for (const [word, digit] of Object.entries(map)) {
+    result = result.replace(new RegExp(`\\b${word}\\b`, 'gi'), digit);
+  }
+  return result;
+}
+
+export function generateSuggestion(input: string): string {
+  const lower = input.toLowerCase().trim();
+  let clean = input.trim().replace(/[.!,]$/, '');
+  clean = clean.charAt(0).toUpperCase() + clean.slice(1);
+
+  const hasTimeWindow = /(this\s+(week|month|year)|all\s+(week|month)|every|daily)/i.test(lower);
+  const hasFrequency = /\d+\s*(?:x|times?)/i.test(normalizeWordNumbers(lower));
+  const hasDeadline = /by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(lower);
+
+  if (hasTimeWindow && hasFrequency) return `${clean}.`;
+  if (hasTimeWindow && hasDeadline) return `${clean}.`;
+
+  if (/(send|submit|finish|complete|ship|launch)/i.test(lower) && !hasDeadline) {
+    return `${clean} by Friday at 5pm.`;
+  }
+
+  if (/(walk|steps|hike)/i.test(lower)) {
+    if (!hasFrequency && !hasTimeWindow) return `${clean} 10,000 steps every day this week.`;
+    if (!hasTimeWindow) return `${clean}, this week.`;
+    return `${clean}.`;
+  }
+
+  if (/(gym|exercise|workout|lift|train|yoga|stretch|swim|bike)/i.test(lower)) {
+    if (!hasFrequency && !hasTimeWindow) return `${clean} 3 times this week.`;
+    if (!hasTimeWindow) return `${clean}, this week.`;
+    return `${clean}.`;
+  }
+
+  if (/(run|jog)/i.test(lower)) {
+    if (!hasFrequency && !hasTimeWindow) return `${clean} 3 times this week.`;
+    if (!hasTimeWindow) return `${clean}, this week.`;
+    return `${clean}.`;
+  }
+
+  if (/(read|book)/i.test(lower)) {
+    if (!hasTimeWindow) return `${clean} every night this week.`;
+    return `${clean}.`;
+  }
+
+  if (/(meditat|mindful)/i.test(lower)) {
+    if (!hasTimeWindow) return `${clean} every morning this week.`;
+    return `${clean}.`;
+  }
+
+  if (/(write|code|create)/i.test(lower)) {
+    if (!hasFrequency && !hasTimeWindow) return `${clean} for 60 minutes, 4 days this week.`;
+    if (!hasTimeWindow) return `${clean}, this week.`;
+    return `${clean}.`;
+  }
+
+  if (/(study|learn|practice)/i.test(lower)) {
+    if (!hasFrequency && !hasTimeWindow) return `${clean} for 45 minutes, 4 days this week.`;
+    if (!hasTimeWindow) return `${clean}, this week.`;
+    return `${clean}.`;
+  }
+
+  if (/(eat|food|cook|takeout|diet|health)/i.test(lower)) {
+    if (!hasTimeWindow) return `${clean}, all week.`;
+    return `${clean}.`;
+  }
+
+  if (/(drink|alcohol|sober|beer|wine)/i.test(lower)) {
+    if (!hasTimeWindow) return `${clean}, all week.`;
+    return `${clean}.`;
+  }
+
+  if (/(phone|screen|social|scroll|instagram|tiktok)/i.test(lower)) {
+    if (!hasTimeWindow) return `${clean}, all week.`;
+    return `${clean}.`;
+  }
+
+  if (/(sleep|bed|wake|morning)/i.test(lower)) {
+    if (!hasTimeWindow) return `${clean} every weekday.`;
+    return `${clean}.`;
+  }
+
+  if (!hasTimeWindow) return `${clean}, this week.`;
+  return `${clean}.`;
+}
+
 export function analyzeVow(input: string): AnalysisResult {
-  const lowered = input.toLowerCase().trim();
+  const normalized = normalizeWordNumbers(input);
+  const lowered = normalized.toLowerCase().trim();
   const vagueTerms = [
     'be better',
     'be more',
@@ -282,6 +378,8 @@ export function analyzeVow(input: string): AnalysisResult {
 
   const hasNoMeasurable = !/(\d+|every|all\s+week|all\s+month|daily|no\s+|don't|stop|avoid|quit|before\s+\d|by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|by\s+end)/i.test(lowered);
 
+  const originalLower = input.toLowerCase().trim();
+
   if (hasVagueTerm || tooShort) {
     return {
       type: 'vague',
@@ -301,7 +399,7 @@ export function analyzeVow(input: string): AnalysisResult {
     return { type: 'already_good' };
   }
 
-  if (hasExplicitDate(lowered)) {
+  if (hasExplicitDate(originalLower)) {
     return { type: 'already_good' };
   }
 
@@ -317,11 +415,9 @@ export function analyzeVow(input: string): AnalysisResult {
     return { type: 'already_good' };
   }
 
-  const sharperText = buildSharper(input);
   return {
-    type: 'needs_tweak',
-    sharperText,
-    delta: getDelta(input, sharperText),
+    type: 'vague',
+    suggestions: getContextualSuggestions(input),
   };
 }
 
@@ -391,48 +487,7 @@ export function isAlreadySharp(input: string): boolean {
   return result.type === 'already_good';
 }
 
-function hasExistingTimeWindow(input: string): boolean {
-  return /(this\s+(week|month|year|quarter)|all\s+(week|month)|by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|by\s+end|through\s+sunday)/i.test(input);
-}
 
-function buildSharper(input: string): string {
-  const lowered = input.toLowerCase();
-  const clean = formalizeVow(input).replace(/[.]$/, '');
-
-  if (hasExistingTimeWindow(lowered)) {
-    return `${clean}.`;
-  }
-
-  if (/read/.test(lowered) && !/every|week|month/.test(lowered)) {
-    return `${clean}, every night this week.`;
-  }
-
-  if (/(gym|run|workout|train|exercise|jog)/.test(lowered) && !/week|month|sunday|times|x/.test(lowered)) {
-    return `${clean} this week, by Sunday 8pm.`;
-  }
-
-  if (/no\s+/.test(lowered) && !/all week|all month|week|month|every/.test(lowered)) {
-    return `${clean}, all week through Sunday midnight.`;
-  }
-
-  if (/(send|ship|finish|submit|complete)/.test(lowered) && !/by|before/.test(lowered)) {
-    return `${clean} by Friday at 5pm.`;
-  }
-
-  return `${clean}, this week.`;
-}
-
-function getDelta(original: string, sharpened: string): string {
-  if (/this week|sunday|friday/i.test(sharpened) && !/this week|sunday|friday/i.test(original)) {
-    return 'Added a weekly window so your witness knows when to settle.';
-  }
-
-  if (/every night|every weekday/i.test(sharpened) && !/every/i.test(original)) {
-    return 'Made the cadence explicit so there is no ambiguity.';
-  }
-
-  return 'Tightened the language so your witness can settle it cleanly.';
-}
 
 export function getVowDates(): { range: string; verdictLabel: string; endLabel: string } {
   const start = new Date();
