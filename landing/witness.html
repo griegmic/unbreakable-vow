@@ -590,58 +590,58 @@
   <!-- PREVIEW MODE (pre-seal) -->
   <div class="witness-container hidden" id="previewMode">
     <div class="star fade-in fade-in-d1">&#9733;</div>
-    <div class="badge fade-in fade-in-d2">You've been chosen as a witness</div>
-    <h1 class="fade-in fade-in-d2" id="previewHeading">The Vow</h1>
+    <div class="badge fade-in fade-in-d2">You've been chosen</div>
+    <h1 class="fade-in fade-in-d2" id="previewHeading">Hold them to it.</h1>
     <div class="subtitle fade-in fade-in-d3" id="previewSubtitle"></div>
     <div class="divider fade-in fade-in-d3"></div>
 
     <div class="vow-card fade-in fade-in-d3">
-      <div class="vow-card-label">The vow</div>
+      <div class="vow-card-label">They vowed</div>
       <div class="vow-card-text" id="previewVowText"></div>
     </div>
 
     <div class="fade-in fade-in-d3" style="width:100%">
       <div class="detail-row">
-        <span class="detail-label">Made by</span>
-        <span class="detail-value" id="previewMaker"></span>
-      </div>
-      <div class="detail-row">
         <span class="detail-label">Stake</span>
-        <span class="detail-value gold">$TBD</span>
+        <span class="detail-value gold">Real money on the line</span>
       </div>
       <div class="detail-row">
-        <span class="detail-label">Witness</span>
-        <span class="detail-value" id="previewWitness"></span>
+        <span class="detail-label">If broken</span>
+        <span class="detail-value">Donated to charity</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Your role</span>
+        <span class="detail-value verdict-date-highlight">The judge</span>
       </div>
     </div>
 
     <div class="steps fade-in fade-in-d4">
-      <div class="steps-title">What does a witness do?</div>
+      <div class="steps-title">Here's how it works</div>
       <div class="step">
         <div class="step-number">1</div>
-        <div class="step-text">Watch over the vow <span>— you'll know what they promised</span></div>
+        <div class="step-text">They put real money behind this vow. <span>You'll see exactly what they promised.</span></div>
       </div>
       <div class="step">
         <div class="step-number">2</div>
-        <div class="step-text">Get notified on judgment day <span>— we'll text you when it's time</span></div>
+        <div class="step-text">When the deadline hits, we text you. <span>One question: did they do it?</span></div>
       </div>
       <div class="step">
         <div class="step-number">3</div>
-        <div class="step-text">Deliver the verdict <span>— did they keep it or break it?</span></div>
+        <div class="step-text">Your call is final. <span>If they broke it, their money goes to charity. No appeals.</span></div>
       </div>
     </div>
 
     <div id="previewAcceptSection" class="fade-in fade-in-d5" style="width:100%;display:flex;flex-direction:column;align-items:center;">
       <div class="swear-row" id="swearRow" onclick="toggleSwear()">
         <div class="swear-checkbox" id="swearCheckbox"></div>
-        <div class="swear-label">I solemnly swear to judge honestly and without mercy.</div>
+        <div class="swear-label">I swear to judge honestly and without mercy.</div>
       </div>
       <button class="btn-primary" id="acceptBtn" disabled onclick="acceptWitness()">I accept — hold them to it</button>
     </div>
 
     <div id="previewConfirmation" class="hidden confirmation fade-in">
       <div class="confirmation-icon">&#9733;</div>
-      <div class="confirmation-title">You're in.</div>
+      <div class="confirmation-title">You're locked in.</div>
       <div class="confirmation-text" id="confirmationText"></div>
     </div>
   </div>
@@ -769,14 +769,12 @@
 
       const vowText = params.get('vow') || 'No vow text provided';
       const witnessName = params.get('name') || 'Witness';
-      const makerName = params.get('maker') || 'Someone';
 
       document.getElementById('previewVowText').textContent = vowText;
-      document.getElementById('previewMaker').textContent = makerName;
-      document.getElementById('previewWitness').textContent = witnessName;
-      document.getElementById('previewSubtitle').textContent = makerName + ' has made a vow and named you as witness.';
+      document.getElementById('previewSubtitle').textContent =
+        'Your friend made a vow — and put real money behind it. You decide if they follow through.';
       document.getElementById('confirmationText').textContent =
-        "You'll get a text with the official details once " + makerName + " seals the vow.";
+        "We'll text you the full details once the vow is sealed. When the deadline hits, you deliver the verdict.";
 
       previewMode.classList.remove('hidden');
     }
