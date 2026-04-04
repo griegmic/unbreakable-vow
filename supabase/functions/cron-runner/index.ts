@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
         if (vow.witness_phone) {
           const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
           const ownerName = profile?.display_name || 'Someone';
-          const verdictUrl = `${supabaseUrl}/functions/v1/verdict-page?token=${vow.witness_invite_token}`;
+          const verdictUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
           const body = verdictRequestMessage(ownerName, vow.refined_text, verdictUrl);
           const sid = await sendSMS(vow.witness_phone, body);
           await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'verdict_request', twilio_sid: sid });

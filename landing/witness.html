@@ -1,0 +1,982 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Unbreakable Vow — Witness</title>
+  <meta name="description" content="You've been chosen as a witness. Will you hold them to it?">
+  <meta property="og:title" content="Unbreakable Vow — Witness">
+  <meta property="og:description" content="You've been chosen as a witness. Will you hold them to it?">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://unbreakablevow.app/witness">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #030508;
+      --gold: #D4A24F;
+      --gold-bright: #D4A24F;
+      --text: #E8E5E0;
+      --text-muted: rgba(232,229,224,0.35);
+      --surface: #0D1117;
+      --border: rgba(232,229,224,0.08);
+      --gold-glow: rgba(212,162,79,0.3);
+      --gold-glow-strong: rgba(212,162,79,0.5);
+    }
+
+    body {
+      background: var(--bg);
+      min-height: 100vh;
+      min-height: 100dvh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--text);
+      overflow-x: hidden;
+    }
+
+    /* Ambient orb */
+    .orb {
+      position: fixed;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      background: rgba(212,162,79,0.04);
+      top: 20%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Main container */
+    .witness-container {
+      position: relative;
+      z-index: 1;
+      max-width: 520px;
+      margin: 0 auto;
+      padding: 48px 24px 64px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    /* Fade-in animation */
+    .fade-in {
+      opacity: 0;
+      transform: translateY(16px);
+      animation: fadeUp 0.6s ease forwards;
+    }
+    .fade-in-d1 { animation-delay: 0.1s; }
+    .fade-in-d2 { animation-delay: 0.25s; }
+    .fade-in-d3 { animation-delay: 0.4s; }
+    .fade-in-d4 { animation-delay: 0.55s; }
+    .fade-in-d5 { animation-delay: 0.7s; }
+    .fade-in-d6 { animation-delay: 0.85s; }
+
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(212,162,79,0.4)); }
+      50% { filter: drop-shadow(0 0 40px rgba(212,162,79,0.6)); }
+    }
+
+    /* Star */
+    .star {
+      font-size: 24px;
+      color: var(--gold);
+      filter: drop-shadow(0 0 20px var(--gold-glow));
+      animation: pulse 4s ease-in-out infinite;
+      margin-bottom: 20px;
+    }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 8px 20px;
+      border: 1px solid rgba(212,162,79,0.3);
+      border-radius: 100px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2.5px;
+      text-transform: uppercase;
+      color: var(--gold);
+      background: rgba(212,162,79,0.06);
+      margin-bottom: 32px;
+    }
+
+    /* Heading */
+    h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(28px, 7vw, 40px);
+      font-weight: 800;
+      color: var(--text);
+      text-align: center;
+      letter-spacing: -1.5px;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: var(--text-muted);
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    /* Divider */
+    .divider {
+      width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(212,162,79,0.4), transparent);
+      margin: 0 auto 32px;
+    }
+
+    /* Vow card */
+    .vow-card {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      margin-bottom: 28px;
+    }
+
+    .vow-card-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    .vow-card-text {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(18px, 4.5vw, 22px);
+      font-weight: 700;
+      color: var(--gold);
+      line-height: 1.45;
+      letter-spacing: -0.3px;
+      text-shadow: 0 4px 16px rgba(212,162,79,0.15);
+    }
+
+    /* Detail rows */
+    .detail-row {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .detail-row:last-child { border-bottom: none; }
+
+    .detail-label {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .detail-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .detail-value.gold {
+      color: var(--gold);
+    }
+
+    /* Steps */
+    .steps {
+      width: 100%;
+      margin-bottom: 32px;
+    }
+
+    .steps-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .step {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 14px 0;
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(212,162,79,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gold);
+    }
+
+    .step-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.5;
+      padding-top: 3px;
+    }
+    .step-text span {
+      color: var(--text-muted);
+    }
+
+    /* Checkbox row */
+    .swear-row {
+      width: 100%;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 24px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .swear-checkbox {
+      flex-shrink: 0;
+      width: 22px;
+      height: 22px;
+      border: 2px solid rgba(212,162,79,0.4);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+      margin-top: 1px;
+    }
+    .swear-checkbox.checked {
+      background: var(--gold);
+      border-color: var(--gold);
+    }
+    .swear-checkbox.checked::after {
+      content: '✓';
+      color: #0B0D11;
+      font-size: 14px;
+      font-weight: 800;
+    }
+
+    .swear-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      user-select: none;
+    }
+
+    /* Buttons */
+    .btn-primary {
+      width: 100%;
+      max-width: 400px;
+      min-height: 56px;
+      border: none;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #D4A24F, #B8892E, #96701F);
+      color: #0B0D11;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(212,162,79,0.35);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.2s ease;
+    }
+    .btn-primary:hover:not(:disabled) {
+      transform: scale(1.02);
+      box-shadow: 0 16px 32px rgba(212,162,79,0.45);
+    }
+    .btn-primary:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+    .btn-primary:disabled {
+      opacity: 0.35;
+      cursor: not-allowed;
+    }
+
+    .btn-verdict {
+      width: 100%;
+      min-height: 56px;
+      border: none;
+      border-radius: 18px;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-verdict:hover {
+      transform: scale(1.02);
+    }
+    .btn-verdict:active {
+      transform: scale(0.97);
+    }
+
+    .btn-kept {
+      background: linear-gradient(135deg, #D4A24F, #B8892E, #96701F);
+      color: #0B0D11;
+      box-shadow: 0 12px 24px rgba(212,162,79,0.35);
+    }
+    .btn-broken {
+      background: transparent;
+      border: 1px solid rgba(232,229,224,0.15);
+      color: var(--text);
+      box-shadow: none;
+    }
+    .btn-broken:hover {
+      border-color: rgba(232,229,224,0.3);
+    }
+
+    .verdict-buttons {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 8px;
+    }
+
+    /* Confirmation message */
+    .confirmation {
+      width: 100%;
+      text-align: center;
+      padding: 32px 16px;
+    }
+
+    .confirmation-icon {
+      font-size: 40px;
+      margin-bottom: 16px;
+    }
+
+    .confirmation-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .confirmation-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Modal overlay */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3,5,8,0.85);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .modal-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      width: 100%;
+      max-width: 400px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 32px 24px;
+      text-align: center;
+      transform: scale(0.95) translateY(10px);
+      transition: transform 0.25s ease;
+    }
+    .modal-overlay.visible .modal {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .modal-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .btn-modal-confirm {
+      width: 100%;
+      min-height: 50px;
+      border: none;
+      border-radius: 14px;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 16px;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 0.15s ease;
+    }
+    .btn-modal-confirm:hover { transform: scale(1.02); }
+    .btn-modal-confirm:active { transform: scale(0.97); }
+
+    .btn-modal-confirm.kept {
+      background: linear-gradient(135deg, #D4A24F, #B8892E);
+      color: #0B0D11;
+    }
+    .btn-modal-confirm.broken {
+      background: rgba(220,60,60,0.15);
+      border: 1px solid rgba(220,60,60,0.3);
+      color: #E85D5D;
+    }
+
+    .btn-modal-cancel {
+      width: 100%;
+      min-height: 44px;
+      border: none;
+      border-radius: 14px;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: color 0.15s ease;
+    }
+    .btn-modal-cancel:hover { color: var(--text); }
+
+    /* Loading state */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 20px;
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--border);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* Error state */
+    .error-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 16px;
+      text-align: center;
+      padding: 0 24px;
+    }
+
+    .error-icon {
+      font-size: 36px;
+      opacity: 0.5;
+    }
+
+    .error-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 22px;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .error-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* Verdict delivered state */
+    .verdict-delivered {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px 24px;
+      text-align: center;
+    }
+
+    .verdict-delivered-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .verdict-delivered-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .verdict-delivered-text {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* Hidden utility */
+    .hidden { display: none !important; }
+
+    /* Verdict date highlight */
+    .verdict-date-highlight {
+      color: var(--gold);
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="orb"></div>
+
+  <!-- LOADING STATE -->
+  <div class="witness-container" id="loadingState">
+    <div class="loading">
+      <div class="loading-spinner"></div>
+      <div class="loading-text">Loading vow...</div>
+    </div>
+  </div>
+
+  <!-- ERROR STATE -->
+  <div class="witness-container hidden" id="errorState">
+    <div class="error-state">
+      <div class="error-icon">&#9888;</div>
+      <div class="error-title">Vow not found</div>
+      <div class="error-text" id="errorMessage">This link may be expired or invalid. Ask the vow maker to resend it.</div>
+    </div>
+  </div>
+
+  <!-- PREVIEW MODE (pre-seal) -->
+  <div class="witness-container hidden" id="previewMode">
+    <div class="star fade-in fade-in-d1">&#9733;</div>
+    <div class="badge fade-in fade-in-d2">You've been chosen as a witness</div>
+    <h1 class="fade-in fade-in-d2" id="previewHeading">The Vow</h1>
+    <div class="subtitle fade-in fade-in-d3" id="previewSubtitle"></div>
+    <div class="divider fade-in fade-in-d3"></div>
+
+    <div class="vow-card fade-in fade-in-d3">
+      <div class="vow-card-label">The vow</div>
+      <div class="vow-card-text" id="previewVowText"></div>
+    </div>
+
+    <div class="fade-in fade-in-d3" style="width:100%">
+      <div class="detail-row">
+        <span class="detail-label">Made by</span>
+        <span class="detail-value" id="previewMaker"></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Stake</span>
+        <span class="detail-value gold">$TBD</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Witness</span>
+        <span class="detail-value" id="previewWitness"></span>
+      </div>
+    </div>
+
+    <div class="steps fade-in fade-in-d4">
+      <div class="steps-title">What does a witness do?</div>
+      <div class="step">
+        <div class="step-number">1</div>
+        <div class="step-text">Watch over the vow <span>— you'll know what they promised</span></div>
+      </div>
+      <div class="step">
+        <div class="step-number">2</div>
+        <div class="step-text">Get notified on judgment day <span>— we'll text you when it's time</span></div>
+      </div>
+      <div class="step">
+        <div class="step-number">3</div>
+        <div class="step-text">Deliver the verdict <span>— did they keep it or break it?</span></div>
+      </div>
+    </div>
+
+    <div id="previewAcceptSection" class="fade-in fade-in-d5" style="width:100%;display:flex;flex-direction:column;align-items:center;">
+      <div class="swear-row" id="swearRow" onclick="toggleSwear()">
+        <div class="swear-checkbox" id="swearCheckbox"></div>
+        <div class="swear-label">I solemnly swear to judge honestly and without mercy.</div>
+      </div>
+      <button class="btn-primary" id="acceptBtn" disabled onclick="acceptWitness()">I accept — hold them to it</button>
+    </div>
+
+    <div id="previewConfirmation" class="hidden confirmation fade-in">
+      <div class="confirmation-icon">&#9733;</div>
+      <div class="confirmation-title">You're in.</div>
+      <div class="confirmation-text" id="confirmationText"></div>
+    </div>
+  </div>
+
+  <!-- TOKEN MODE (post-seal) -->
+  <div class="witness-container hidden" id="tokenMode">
+    <div class="star fade-in fade-in-d1">&#9733;</div>
+    <div class="badge fade-in fade-in-d2">Witness Portal</div>
+    <h1 class="fade-in fade-in-d2">The Vow</h1>
+    <div class="subtitle fade-in fade-in-d3" id="tokenSubtitle"></div>
+    <div class="divider fade-in fade-in-d3"></div>
+
+    <div class="vow-card fade-in fade-in-d3">
+      <div class="vow-card-label">The vow</div>
+      <div class="vow-card-text" id="tokenVowText"></div>
+    </div>
+
+    <div class="fade-in fade-in-d4" style="width:100%">
+      <div class="detail-row">
+        <span class="detail-label">Made by</span>
+        <span class="detail-value" id="tokenMaker"></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Stake</span>
+        <span class="detail-value gold" id="tokenStake"></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Witness</span>
+        <span class="detail-value" id="tokenWitness"></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Verdict date</span>
+        <span class="detail-value verdict-date-highlight" id="tokenVerdictDate"></span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Status</span>
+        <span class="detail-value" id="tokenStatus"></span>
+      </div>
+    </div>
+
+    <!-- Verdict section (for active/awaiting_verdict) -->
+    <div id="verdictSection" class="hidden fade-in fade-in-d5" style="width:100%;margin-top:24px;">
+      <div class="steps-title">Deliver your verdict</div>
+      <p style="font-size:14px;color:var(--text-muted);text-align:center;margin-bottom:20px;line-height:1.6;">
+        Did they keep their vow? Your judgment is final.
+      </p>
+
+      <div class="swear-row" id="verdictSwearRow" onclick="toggleVerdictSwear()">
+        <div class="swear-checkbox" id="verdictSwearCheckbox"></div>
+        <div class="swear-label">I solemnly swear to judge honestly and without mercy.</div>
+      </div>
+
+      <div class="verdict-buttons" id="verdictButtons">
+        <button class="btn-verdict btn-kept" id="btnKept" disabled onclick="showVerdictModal('kept')">They kept it</button>
+        <button class="btn-verdict btn-broken" id="btnBroken" disabled onclick="showVerdictModal('broken')">They broke it</button>
+      </div>
+    </div>
+
+    <!-- Already submitted verdict -->
+    <div id="verdictDelivered" class="hidden fade-in fade-in-d5" style="width:100%;margin-top:24px;">
+      <div class="verdict-delivered">
+        <div class="verdict-delivered-icon">&#9878;</div>
+        <div class="verdict-delivered-title">Verdict delivered</div>
+        <div class="verdict-delivered-text" id="verdictDeliveredText">Your judgment has been recorded.</div>
+      </div>
+    </div>
+
+    <!-- Verdict just submitted confirmation -->
+    <div id="verdictConfirmation" class="hidden" style="width:100%;margin-top:24px;">
+      <div class="confirmation fade-in">
+        <div class="confirmation-icon">&#9878;</div>
+        <div class="confirmation-title" id="verdictConfirmTitle"></div>
+        <div class="confirmation-text" id="verdictConfirmText"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VERDICT CONFIRMATION MODAL -->
+  <div class="modal-overlay" id="verdictModal">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle"></div>
+      <div class="modal-text" id="modalText"></div>
+      <div class="modal-buttons">
+        <button class="btn-modal-confirm" id="modalConfirmBtn" onclick="submitVerdict()"></button>
+        <button class="btn-modal-cancel" onclick="hideVerdictModal()">Go back</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ── Configuration ──
+    const SUPABASE_URL = 'https://faufcfppnkwrxabgvknt.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdWZjZnBwbmt3cnhhYmd2a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzQyNDYsImV4cCI6MjA5MDg1MDI0Nn0.s82fzQzwSo6XvIp1tLUsomeELkZcDOs16IupjkGA4OM';
+
+    // ── State ──
+    let swearChecked = false;
+    let verdictSwearChecked = false;
+    let pendingVerdict = null;
+    let currentToken = null;
+
+    // ── DOM refs ──
+    const loadingState = document.getElementById('loadingState');
+    const errorState = document.getElementById('errorState');
+    const errorMessage = document.getElementById('errorMessage');
+    const previewMode = document.getElementById('previewMode');
+    const tokenMode = document.getElementById('tokenMode');
+
+    // ── URL parsing ──
+    const params = new URLSearchParams(window.location.search);
+    const isPreview = params.has('preview');
+    const token = params.get('token');
+
+    // ── Route ──
+    if (isPreview) {
+      initPreviewMode();
+    } else if (token) {
+      initTokenMode(token);
+    } else {
+      showError('No vow specified', 'This link is missing parameters. Make sure you have the full URL from the vow maker.');
+    }
+
+    // ── PREVIEW MODE ──
+    function initPreviewMode() {
+      loadingState.classList.add('hidden');
+
+      const vowText = params.get('vow') || 'No vow text provided';
+      const witnessName = params.get('name') || 'Witness';
+      const makerName = params.get('maker') || 'Someone';
+
+      document.getElementById('previewVowText').textContent = vowText;
+      document.getElementById('previewMaker').textContent = makerName;
+      document.getElementById('previewWitness').textContent = witnessName;
+      document.getElementById('previewSubtitle').textContent = makerName + ' has made a vow and named you as witness.';
+      document.getElementById('confirmationText').textContent =
+        "You'll get a text with the official details once " + makerName + " seals the vow.";
+
+      previewMode.classList.remove('hidden');
+    }
+
+    function toggleSwear() {
+      swearChecked = !swearChecked;
+      const cb = document.getElementById('swearCheckbox');
+      const btn = document.getElementById('acceptBtn');
+      if (swearChecked) {
+        cb.classList.add('checked');
+        btn.disabled = false;
+      } else {
+        cb.classList.remove('checked');
+        btn.disabled = true;
+      }
+    }
+
+    function acceptWitness() {
+      document.getElementById('previewAcceptSection').classList.add('hidden');
+      document.getElementById('previewConfirmation').classList.remove('hidden');
+    }
+
+    // ── TOKEN MODE ──
+    async function initTokenMode(tkn) {
+      currentToken = tkn;
+      try {
+        const res = await fetch(
+          SUPABASE_URL + '/rest/v1/vows?witness_invite_token=eq.' + encodeURIComponent(tkn) + '&select=*',
+          {
+            headers: {
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': 'Bearer ' + SUPABASE_ANON_KEY,
+              'Accept': 'application/json'
+            }
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error('Failed to fetch vow (HTTP ' + res.status + ')');
+        }
+
+        const data = await res.json();
+        if (!data || data.length === 0) {
+          showError('Vow not found', 'This witness link is invalid or has expired. Ask the vow maker to resend your invite.');
+          return;
+        }
+
+        const vow = data[0];
+        renderTokenMode(vow);
+      } catch (err) {
+        showError('Something went wrong', err.message || 'Could not load the vow. Please try again.');
+      }
+    }
+
+    function renderTokenMode(vow) {
+      loadingState.classList.add('hidden');
+
+      document.getElementById('tokenVowText').textContent = vow.vow_text || vow.description || '';
+      document.getElementById('tokenMaker').textContent = vow.maker_name || vow.user_name || 'Unknown';
+      document.getElementById('tokenStake').textContent = '$' + (vow.stake_amount || vow.amount || '0');
+      document.getElementById('tokenWitness').textContent = vow.witness_name || 'You';
+      document.getElementById('tokenSubtitle').textContent =
+        'You are the witness for ' + (vow.maker_name || vow.user_name || 'this') + "'s vow.";
+
+      // Verdict date
+      if (vow.verdict_date || vow.end_date) {
+        const d = new Date(vow.verdict_date || vow.end_date);
+        document.getElementById('tokenVerdictDate').textContent = d.toLocaleDateString('en-US', {
+          weekday: 'long', month: 'long', day: 'numeric'
+        });
+      } else {
+        document.getElementById('tokenVerdictDate').textContent = 'TBD';
+      }
+
+      // Status display
+      const status = vow.status || 'active';
+      const statusEl = document.getElementById('tokenStatus');
+      const statusLabels = {
+        'active': 'Active',
+        'awaiting_verdict': 'Awaiting your verdict',
+        'kept': 'Kept',
+        'broken': 'Broken',
+        'pending': 'Pending'
+      };
+      statusEl.textContent = statusLabels[status] || status;
+
+      // Determine what to show
+      const verdict = vow.verdict || vow.witness_verdict;
+      if (verdict) {
+        // Verdict already submitted
+        document.getElementById('verdictDelivered').classList.remove('hidden');
+        document.getElementById('verdictDeliveredText').textContent =
+          'You ruled that the vow was ' + verdict + '.';
+      } else if (status === 'active' || status === 'awaiting_verdict') {
+        // Can submit verdict
+        document.getElementById('verdictSection').classList.remove('hidden');
+      }
+
+      tokenMode.classList.remove('hidden');
+    }
+
+    function toggleVerdictSwear() {
+      verdictSwearChecked = !verdictSwearChecked;
+      const cb = document.getElementById('verdictSwearCheckbox');
+      const btnK = document.getElementById('btnKept');
+      const btnB = document.getElementById('btnBroken');
+      if (verdictSwearChecked) {
+        cb.classList.add('checked');
+        btnK.disabled = false;
+        btnB.disabled = false;
+      } else {
+        cb.classList.remove('checked');
+        btnK.disabled = true;
+        btnB.disabled = true;
+      }
+    }
+
+    // ── VERDICT MODAL ──
+    function showVerdictModal(verdict) {
+      pendingVerdict = verdict;
+      const modal = document.getElementById('verdictModal');
+      const title = document.getElementById('modalTitle');
+      const text = document.getElementById('modalText');
+      const btn = document.getElementById('modalConfirmBtn');
+
+      if (verdict === 'kept') {
+        title.textContent = 'Confirm: Vow Kept';
+        text.textContent = 'You are declaring that the vow was kept. This cannot be undone.';
+        btn.textContent = 'Yes — they kept it';
+        btn.className = 'btn-modal-confirm kept';
+      } else {
+        title.textContent = 'Confirm: Vow Broken';
+        text.textContent = 'You are declaring that the vow was broken. This cannot be undone. The stake will be forfeited.';
+        btn.textContent = 'Yes — they broke it';
+        btn.className = 'btn-modal-confirm broken';
+      }
+
+      modal.classList.add('visible');
+    }
+
+    function hideVerdictModal() {
+      document.getElementById('verdictModal').classList.remove('visible');
+      pendingVerdict = null;
+    }
+
+    async function submitVerdict() {
+      if (!pendingVerdict || !currentToken) return;
+
+      const btn = document.getElementById('modalConfirmBtn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      try {
+        const res = await fetch(SUPABASE_URL + '/functions/v1/submit-verdict', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({
+            token: currentToken,
+            verdict: pendingVerdict
+          })
+        });
+
+        if (!res.ok) {
+          const errData = await res.json().catch(function() { return {}; });
+          throw new Error(errData.error || 'Failed to submit verdict');
+        }
+
+        // Success
+        hideVerdictModal();
+        document.getElementById('verdictSection').classList.add('hidden');
+
+        const confirmTitle = document.getElementById('verdictConfirmTitle');
+        const confirmText = document.getElementById('verdictConfirmText');
+
+        if (pendingVerdict === 'kept') {
+          confirmTitle.textContent = 'Vow kept.';
+          confirmText.textContent = 'Your verdict has been recorded. The vow was honored.';
+        } else {
+          confirmTitle.textContent = 'Vow broken.';
+          confirmText.textContent = 'Your verdict has been recorded. The stake has been forfeited.';
+        }
+
+        document.getElementById('verdictConfirmation').classList.remove('hidden');
+      } catch (err) {
+        btn.disabled = false;
+        btn.textContent = pendingVerdict === 'kept' ? 'Yes — they kept it' : 'Yes — they broke it';
+        alert('Error: ' + err.message);
+      }
+    }
+
+    // ── Error handler ──
+    function showError(title, message) {
+      loadingState.classList.add('hidden');
+      document.querySelector('.error-title').textContent = title;
+      errorMessage.textContent = message;
+      errorState.classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>

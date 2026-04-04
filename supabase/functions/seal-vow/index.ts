@@ -93,7 +93,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const verdictUrl = `${supabaseUrl}/functions/v1/verdict-page?token=${vow.witness_invite_token}`;
+    const verdictUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
 
     // Send SMS #1 to witness (seal notification)
     if (vow.witness_phone) {

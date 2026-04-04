@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
     const ownerName = profile?.display_name || 'Someone';
     const amountDollars = Math.round(vow.stake_amount / 100);
     const endDate = vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'soon';
-    const verdictUrl = `${supabaseUrl}/functions/v1/verdict-page?token=${vow.witness_invite_token}`;
+    const verdictUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
 
     // Build message
     let messageBody: string;

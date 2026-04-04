@@ -8,8 +8,6 @@ import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock, V
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-
 export default function SentScreen() {
   const { activeVowText, vow } = useVowFlow();
   const dates = getVowVerdictDate(vow.rawInput);
@@ -31,7 +29,7 @@ export default function SentScreen() {
     if (Platform.OS !== 'web') {
       try {
         const verdictUrl = vow.witnessInviteToken
-          ? `${SUPABASE_URL}/functions/v1/verdict-page?token=${vow.witnessInviteToken}`
+          ? `https://unbreakablevow.app/witness?token=${vow.witnessInviteToken}`
           : '';
         const shareMsg = verdictUrl
           ? `I just made an Unbreakable Vow. Be my witness: ${verdictUrl}`
@@ -57,7 +55,7 @@ export default function SentScreen() {
             label="Preview what your witness sees"
             onPress={() => {
               if (vow.witnessInviteToken) {
-                Linking.openURL(`${SUPABASE_URL}/functions/v1/verdict-page?token=${vow.witnessInviteToken}`);
+                Linking.openURL(`https://unbreakablevow.app/witness?token=${vow.witnessInviteToken}`);
               } else {
                 router.push('/witness-invite');
               }
