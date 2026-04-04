@@ -183,13 +183,16 @@ export async function sendEmailOtp(email: string): Promise<AuthResult> {
   try {
     const { error } = await supabase.auth.signInWithOtp({ email });
     if (error) {
-      console.error('[Auth] sendEmailOtp error:', error);
-      return { success: false, error: error.message };
+      console.error('[Auth] sendEmailOtp error:', error.name, error.message, error.status);
+      const message = error.name === 'AuthRetryableFetchError'
+        ? 'Network request failed. Check your connection and try again.'
+        : error.message;
+      return { success: false, error: message };
     }
     return { success: true };
   } catch (err: unknown) {
     console.error('[Auth] sendEmailOtp unexpected:', err);
-    return { success: false, error: 'Failed to send code' };
+    return { success: false, error: 'Network request failed. Check your connection and try again.' };
   }
 }
 
