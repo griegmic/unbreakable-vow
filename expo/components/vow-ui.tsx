@@ -5,6 +5,8 @@ import { ArrowLeft, Star } from 'lucide-react-native';
 import React, { ReactNode, useMemo, useRef } from 'react';
 import {
   Animated,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -41,10 +43,15 @@ export function RitualScreen({ children, scroll = true, footer, contentStyle }: 
       />
       <View pointerEvents="none" style={styles.orbLarge} />
       <View pointerEvents="none" style={styles.orbSmall} />
-      <SafeAreaView style={styles.safeArea}>
-        {scroll ? <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">{body}</ScrollView> : body}
-        {footer ? <View style={styles.footer}>{footer}</View> : null}
-      </SafeAreaView>
+      <KeyboardAvoidingView
+        style={styles.safeArea}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          {scroll ? <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">{body}</ScrollView> : body}
+          {footer ? <View style={styles.footer}>{footer}</View> : null}
+        </SafeAreaView>
+      </KeyboardAvoidingView>
     </View>
   );
 }

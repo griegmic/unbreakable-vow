@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { ArrowLeft, Check, Mail, MoveRight, Phone, Sparkles, Star } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Keyboard, Modal, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
@@ -60,7 +60,34 @@ export default function SealScreen() {
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const otpRef = useRef<TextInput>(null);
   const authSheetFade = useRef(new Animated.Value(0)).current;
+  const keyboardOffset = useRef(new Animated.Value(0)).current;
   const pendingSealRef = useRef<boolean>(false);
+
+  // Track keyboard to shift auth sheet up
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const showSub = Keyboard.addListener(showEvent, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: -e.endCoordinates.height,
+        duration: Platform.OS === 'ios' ? e.duration : 200,
+        useNativeDriver: true,
+      }).start();
+    });
+    const hideSub = Keyboard.addListener(hideEvent, (e) => {
+      Animated.timing(keyboardOffset, {
+        toValue: 0,
+        duration: Platform.OS === 'ios' ? (e.duration ?? 200) : 200,
+        useNativeDriver: true,
+      }).start();
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [keyboardOffset]);
 
   const dates = getVowVerdictDate(vow.rawInput);
 
@@ -88,6 +115,7 @@ export default function SealScreen() {
   }, []);
 
   const dismissAuthSheet = useCallback(() => {
+    Keyboard.dismiss();
     Animated.timing(authSheetFade, { toValue: 0, duration: 200, useNativeDriver: true }).start(() => {
       setAuthSheetVisible(false);
       setAuthStep('pick');
@@ -691,12 +719,17 @@ export default function SealScreen() {
             style={[
               s.sheetContainer,
               {
-                transform: [{
-                  translateY: authSheetFade.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [SHEET_HEIGHT, 0],
-                  }),
-                }],
+                transform: [
+                  {
+                    translateY: Animated.add(
+                      authSheetFade.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [SHEET_HEIGHT, 0],
+                      }),
+                      keyboardOffset,
+                    ),
+                  },
+                ],
               },
             ]}
           >
