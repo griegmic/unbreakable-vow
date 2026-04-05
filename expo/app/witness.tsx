@@ -1,8 +1,8 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Check, Link2, MessageSquareText, Search, Shield, User, UserPlus, X } from 'lucide-react-native';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { BookUser, Check, ChevronRight, Link2, Search, Shield, X } from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
@@ -179,74 +179,102 @@ export default function WitnessScreen() {
     router.push('/stake');
   };
 
+  const inputRef = useRef<TextInput>(null);
+  const inputGlow = useRef(new Animated.Value(0)).current;
+  const [inputFocused, setInputFocused] = useState(false);
+
+  useEffect(() => {
+    Animated.timing(inputGlow, {
+      toValue: inputFocused ? 1 : 0,
+      duration: 250,
+      useNativeDriver: false,
+    }).start();
+  }, [inputFocused, inputGlow]);
+
+  const inputBorderColor = inputGlow.interpolate({
+    inputRange: [0, 1],
+    outputRange: [palette.border, palette.borderStrong],
+  });
+
+  const handleNameNext = () => {
+    if (!selectedName.trim()) return;
+    void Haptics.selectionAsync();
+    setMode('invite');
+  };
+
   // ─── Choose mode ───
   if (mode === 'choose') {
     return (
-      <RitualScreen>
+      <RitualScreen
+        footer={
+          <PrimaryButton
+            label="Next"
+            onPress={handleNameNext}
+            disabled={!selectedName.trim()}
+            testID="witness-choose-next"
+          />
+        }
+      >
         <Stack.Screen options={{ headerShown: false }} />
         <BackButton />
         <TitleBlock
-          title="Who holds you accountable?"
-          subtitle="A witness makes it real. Pick someone who won't let you off easy."
+          title="Choose your witness."
+          subtitle="Pick someone who won't let you off easy."
         />
         <VowPreview text={activeVowText} compact />
 
-        <Pressable
-          onPress={handlePickFromContacts}
-          style={styles.heroOption}
-          testID="witness-contacts"
-        >
-          {loadingContacts ? (
-            <View style={styles.heroOptionIcon}>
-              <ActivityIndicator size="small" color="#000" />
+        <View style={styles.nameInputArea}>
+          <Animated.View style={[styles.nameInputShell, { borderColor: inputBorderColor }]}>
+            <Text style={styles.nameInputLabel}>THEIR FIRST NAME</Text>
+            <View style={styles.nameInputRow}>
+              <TextInput
+                ref={inputRef}
+                style={styles.nameInput}
+                placeholder="e.g. Daniel"
+                placeholderTextColor={palette.textMuted}
+                value={selectedName}
+                onChangeText={setSelectedName}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                onSubmitEditing={handleNameNext}
+                returnKeyType="next"
+                autoCapitalize="words"
+                testID="witness-name-input"
+              />
+              <Pressable
+                onPress={handlePickFromContacts}
+                style={styles.contactsShortcut}
+                testID="witness-contacts"
+              >
+                {loadingContacts ? (
+                  <ActivityIndicator size="small" color={palette.textSecondary} />
+                ) : (
+                  <BookUser color={palette.textSecondary} size={18} />
+                )}
+              </Pressable>
             </View>
-          ) : (
-            <View style={styles.heroOptionIcon}>
-              <UserPlus color="#000" size={20} />
-            </View>
-          )}
-          <View style={styles.heroOptionCopy}>
-            <Text style={styles.heroOptionTitle}>Vow with a friend</Text>
-            <Text style={styles.heroOptionSub}>They deliver the final verdict</Text>
-          </View>
-        </Pressable>
-
-        <Pressable
-          onPress={() => setMode('manual')}
-          style={styles.secondaryOption}
-          testID="witness-manual"
-        >
-          <View style={styles.secondaryOptionIcon}>
-            <MessageSquareText color={palette.textSecondary} size={18} />
-          </View>
-          <View style={styles.heroOptionCopy}>
-            <Text style={styles.secondaryOptionTitle}>Type their name instead</Text>
-            <Text style={styles.secondaryOptionSub}>Enter a name and send them a link</Text>
-          </View>
-        </Pressable>
-
-        <View style={styles.dividerRow}>
-          <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>or go solo</Text>
-          <View style={styles.dividerLine} />
+          </Animated.View>
+          <Text style={styles.nameInputHint}>We'll send them a link to hold you accountable.</Text>
         </View>
 
-        <Pressable
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            setMode('solo-oath');
-          }}
-          style={styles.soloOption}
-          testID="witness-solo"
-        >
-          <View style={styles.soloOptionIcon}>
-            <User color={palette.textMuted} size={18} />
+        <View style={styles.soloFooter}>
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>or</Text>
+            <View style={styles.dividerLine} />
           </View>
-          <View style={styles.heroOptionCopy}>
-            <Text style={styles.soloOptionTitle}>Just me</Text>
-            <Text style={styles.soloOptionSub}>Hold yourself accountable</Text>
-          </View>
-        </Pressable>
+          <Pressable
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setMode('solo-oath');
+            }}
+            style={styles.soloLink}
+            testID="witness-solo"
+          >
+            <Text style={styles.soloLinkText}>Go solo — just me</Text>
+            <ChevronRight color={palette.textMuted} size={14} />
+          </Pressable>
+        </View>
       </RitualScreen>
     );
   }
@@ -378,48 +406,7 @@ export default function WitnessScreen() {
     );
   }
 
-  // ─── Manual name entry mode ───
-  if (mode === 'manual') {
-    return (
-      <RitualScreen
-        footer={
-          <PrimaryButton
-            label="Next"
-            onPress={() => {
-              if (selectedName.trim()) {
-                void Haptics.selectionAsync();
-                setMode('invite');
-              }
-            }}
-            disabled={!selectedName.trim()}
-            testID="witness-manual-next"
-          />
-        }
-      >
-        <Stack.Screen options={{ headerShown: false }} />
-        <BackButton />
-        <TitleBlock
-          title="Name your witness."
-          subtitle="Someone who won't go easy on you."
-        />
-        <VowPreview text={activeVowText} compact />
 
-        <View style={styles.manualInputShell}>
-          <Text style={styles.manualLabel}>THEIR FIRST NAME</Text>
-          <TextInput
-            style={styles.manualInput}
-            placeholder="e.g. Daniel"
-            placeholderTextColor={palette.textMuted}
-            value={selectedName}
-            onChangeText={setSelectedName}
-            autoFocus
-            onSubmitEditing={() => { if (selectedName.trim()) setMode('invite'); }}
-            testID="witness-name-input"
-          />
-        </View>
-      </RitualScreen>
-    );
-  }
 
   // ─── Invite mode ───
   return (
@@ -486,48 +473,39 @@ export default function WitnessScreen() {
 }
 
 const styles = StyleSheet.create({
-  heroOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: palette.goldBright,
-    borderRadius: 16,
-    padding: 18,
+  nameInputArea: {
+    gap: 10,
   },
-  heroOptionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  heroOptionCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  heroOptionTitle: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '600' as const,
-  },
-  heroOptionSub: {
-    color: 'rgba(0,0,0,0.5)',
-    fontSize: 13,
-  },
-  secondaryOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
+  nameInputShell: {
     backgroundColor: palette.surface,
     borderRadius: 16,
-    padding: 18,
     borderWidth: 1,
-    borderColor: palette.border,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 12,
+    gap: 8,
   },
-  secondaryOptionIcon: {
-    width: 44,
-    height: 44,
+  nameInputLabel: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '600' as const,
+    letterSpacing: 0.8,
+  },
+  nameInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  nameInput: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 18,
+    minHeight: 32,
+    paddingVertical: 0,
+  },
+  contactsShortcut: {
+    width: 40,
+    height: 40,
     borderRadius: 12,
     backgroundColor: palette.surfaceElevated,
     borderWidth: 1,
@@ -535,32 +513,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryOptionTitle: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '500' as const,
-  },
-  secondaryOptionSub: {
+  nameInputHint: {
     color: palette.textMuted,
     fontSize: 13,
+    lineHeight: 18,
+    paddingHorizontal: 4,
   },
-  explainerCard: {
-    backgroundColor: palette.surface,
-    borderRadius: 16,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: palette.border,
-    gap: 8,
+  soloFooter: {
+    gap: 12,
+    marginTop: 8,
   },
-  explainerTitle: {
-    color: palette.textSecondary,
+  soloLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+  },
+  soloLinkText: {
+    color: palette.textMuted,
     fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  explainerBody: {
-    color: palette.textMuted,
-    fontSize: 13,
-    lineHeight: 20,
+    fontWeight: '500' as const,
   },
   // Contact picker
   contactsHeader: {
@@ -729,37 +702,7 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     paddingHorizontal: 20,
   },
-  soloOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: 'transparent',
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: palette.border,
-    opacity: 0.7,
-  },
-  soloOptionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: palette.surface,
-    borderWidth: 1,
-    borderColor: palette.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  soloOptionTitle: {
-    color: palette.textSecondary,
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-  soloOptionSub: {
-    color: palette.textMuted,
-    fontSize: 12,
-  },
+
   dividerRow: {
     flexDirection: 'row',
     alignItems: 'center',
