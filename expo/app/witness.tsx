@@ -134,10 +134,12 @@ export default function WitnessScreen() {
 
   const handleSelectContact = useCallback((contact: ContactEntry) => {
     void Haptics.selectionAsync();
-    setSelectedName(contact.name.split(' ')[0]);
-    setPhone(contact.phone);
-    setMode('invite');
-  }, []);
+    const firstName = contact.name.split(' ')[0];
+    console.log('[WitnessScreen] contact selected:', firstName, contact.phone);
+    setWitnessType('friend');
+    setWitness(firstName, 'sms', contact.phone);
+    router.push('/stake');
+  }, [setWitnessType, setWitness]);
 
   const filteredContacts = useMemo(() => {
     if (!contactSearch.trim()) return contacts;
