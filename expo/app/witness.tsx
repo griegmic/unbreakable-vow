@@ -2,8 +2,8 @@ import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Check, ChevronRight, Search, Shield, ToggleLeft, ToggleRight, UserPlus, X } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   BackButton,
@@ -28,9 +28,6 @@ export default function WitnessScreen() {
   const params = useLocalSearchParams<{ midVow?: string }>();
   const isMidVow = params.midVow === '1' && !!vow.vowId;
   const [mode, setMode] = useState<WitnessMode>('choose');
-  const [soloSworn, setSoloSworn] = useState<boolean>(false);
-  const soloCheckScale = useRef(new Animated.Value(1)).current;
-  const soloGlow = useRef(new Animated.Value(0)).current;
   const [inlineNameText, setInlineNameText] = useState<string>('');
 
   const [contacts, setContacts] = useState<ContactEntry[]>([]);
@@ -39,7 +36,7 @@ export default function WitnessScreen() {
 
   const [pendingName, setPendingName] = useState<string>('');
   const [pendingPhone, setPendingPhone] = useState<string>('');
-  const [witnessGetsIt, setWitnessGetsIt] = useState<boolean>(true);
+  const [witnessGetsIt, setWitnessGetsIt] = useState<boolean>(false);
 
   const stakeAmount = vow.stake.amount;
 
@@ -114,7 +111,7 @@ export default function WitnessScreen() {
     console.log('[WitnessScreen] contact selected:', firstName, contact.phone);
     setPendingName(firstName);
     setPendingPhone(contact.phone);
-    setWitnessGetsIt(true);
+    setWitnessGetsIt(false);
     setMode('confirm');
   }, []);
 
@@ -162,32 +159,6 @@ export default function WitnessScreen() {
     return contacts.filter(c => c.name.toLowerCase().includes(q));
   }, [contacts, contactSearch]);
 
-  const handleSoloSwear = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSoloSworn(true);
-    Animated.parallel([
-      Animated.timing(soloGlow, { toValue: 1, duration: 600, useNativeDriver: false }),
-      Animated.sequence([
-        Animated.timing(soloCheckScale, { toValue: 1.2, duration: 150, useNativeDriver: true }),
-        Animated.spring(soloCheckScale, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 10 }),
-      ]),
-    ]).start();
-  };
-
-  const handleSoloUnswear = () => {
-    void Haptics.selectionAsync();
-    setSoloSworn(false);
-    Animated.timing(soloGlow, { toValue: 0, duration: 300, useNativeDriver: false }).start();
-  };
-
-  const handleSoloContinue = () => {
-    if (!soloSworn) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setWitnessType('self');
-    setWitness('Just me', 'link');
-    router.push('/seal');
-  };
-
   const handleInlineNameSubmit = () => {
     if (!inlineNameText.trim()) return;
     void Haptics.selectionAsync();
@@ -195,7 +166,7 @@ export default function WitnessScreen() {
     console.log('[WitnessScreen] inline name submitted:', name);
     setPendingName(name);
     setPendingPhone('');
-    setWitnessGetsIt(true);
+    setWitnessGetsIt(false);
     setMode('confirm');
   };
 
@@ -312,7 +283,7 @@ export default function WitnessScreen() {
             style={styles.soloTextLink}
             testID="witness-solo"
           >
-            <Text style={styles.soloTextLinkLabel}>I'll do this alone</Text>
+            <Text style={styles.soloTextLinkLabel}>I'll hold myself accountable</Text>
           </Pressable>
         </View>
       </RitualScreen>
@@ -320,22 +291,17 @@ export default function WitnessScreen() {
   }
 
   if (mode === 'solo-oath') {
-    const soloBorderColor = soloGlow.interpolate({
-      inputRange: [0, 1],
-      outputRange: [palette.border, palette.borderStrong],
-    });
-    const soloBgOpacity = soloGlow.interpolate({
-      inputRange: [0, 1],
-      outputRange: [0, 0.06],
-    });
-
     return (
       <RitualScreen
         footer={
           <PrimaryButton
             label="Continue"
-            onPress={handleSoloContinue}
-            disabled={!soloSworn}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              setWitnessType('self');
+              setWitness('Just me', 'link');
+              router.push('/seal');
+            }}
             testID="solo-continue"
           />
         }
@@ -356,25 +322,6 @@ export default function WitnessScreen() {
             Stay accountable to your vow. When time's up, you decide — was it kept, or was it broken?
           </Text>
         </View>
-
-        <Animated.View style={[styles.solemnCard, { borderColor: soloBorderColor }]}>
-          <Animated.View style={[styles.solemnGlowBg, { opacity: soloBgOpacity }]} />
-          <Pressable
-            onPress={soloSworn ? handleSoloUnswear : handleSoloSwear}
-            style={styles.solemnRow}
-            testID="solo-swear"
-          >
-            <Animated.View style={[styles.solemnCheckbox, soloSworn && styles.solemnCheckboxChecked, { transform: [{ scale: soloCheckScale }] }]}>
-              {soloSworn ? <Check color="#0B0D11" size={14} strokeWidth={3} /> : null}
-            </Animated.View>
-            <View style={styles.solemnCopy}>
-              <Text style={styles.solemnTitle}>I solemnly swear</Text>
-              <Text style={styles.solemnText}>
-                to judge myself honestly — no excuses.
-              </Text>
-            </View>
-          </Pressable>
-        </Animated.View>
       </RitualScreen>
     );
   }
@@ -708,56 +655,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     textAlign: 'center' as const,
-  },
-  solemnCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 20,
-    backgroundColor: palette.surface,
-    overflow: 'hidden',
-    shadowColor: palette.gold,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  solemnGlowBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: palette.goldBright,
-  },
-  solemnRow: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'flex-start',
-  },
-  solemnCheckbox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: palette.textMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  solemnCheckboxChecked: {
-    backgroundColor: palette.goldBright,
-    borderColor: palette.goldBright,
-  },
-  solemnCopy: {
-    flex: 1,
-    gap: 6,
-  },
-  solemnTitle: {
-    color: palette.goldBright,
-    fontSize: 18,
-    fontWeight: '700' as const,
-    fontFamily: serifFont,
-    letterSpacing: -0.3,
-  },
-  solemnText: {
-    color: palette.textSecondary,
-    fontSize: 14,
-    lineHeight: 21,
   },
 });

@@ -15,14 +15,16 @@ import {
 import { RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
 type VerdictChoice = 'kept' | 'broken' | null;
 
 export default function WitnessVerdictScreen() {
   const { activeVowText, vow } = useVowFlow();
+  const { displayName: makerName } = useAuth();
 
-  const displayName = vow.witnessName.split(' ')[0];
+  const displayName = makerName || 'your friend';
   const destination =
     vow.stake.consequence === 'witness'
       ? 'you'
