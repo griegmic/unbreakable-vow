@@ -278,7 +278,7 @@ export default function WitnessScreen() {
           </View>
           <Text style={styles.soloOathHeading}>How this works</Text>
           <Text style={styles.soloOathBody}>
-            When time's up, you decide: kept or broken.
+            Stay accountable to your vow. When time's up, you decide — was it kept, or was it broken?
           </Text>
         </View>
 
