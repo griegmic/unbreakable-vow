@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowRight, Shield, Sparkles, Zap } from 'lucide-react-native';
+import { ArrowRight, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -33,8 +33,6 @@ export default function HomeScreen() {
   const inputSlide = useRef(new Animated.Value(16)).current;
   const ctaFade = useRef(new Animated.Value(0)).current;
   const ctaSlide = useRef(new Animated.Value(12)).current;
-  const stepsFade = useRef(new Animated.Value(0)).current;
-  const stepsSlide = useRef(new Animated.Value(16)).current;
 
   useEffect(() => {
     console.log('[HomeScreen] mounted, starting entrance animations');
@@ -54,10 +52,6 @@ export default function HomeScreen() {
       Animated.parallel([
         Animated.timing(ctaFade, { toValue: 1, duration: 350, useNativeDriver: true }),
         Animated.timing(ctaSlide, { toValue: 0, duration: 350, useNativeDriver: true }),
-      ]),
-      Animated.parallel([
-        Animated.timing(stepsFade, { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.timing(stepsSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
       ]),
     ]).start();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -130,7 +124,7 @@ export default function HomeScreen() {
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
             <Text style={styles.heroSub}>
-              One commitment. Real money.{'\n'}Break it, and it goes to charity.
+              Make a vow to a friend. Put money on it.{'\n'}Break it, it goes to charity.
             </Text>
           </Animated.View>
 
@@ -142,7 +136,7 @@ export default function HomeScreen() {
               { opacity: inputFade, transform: [{ translateY: inputSlide }] },
             ]}
           >
-            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>YOUR VOW</Text>
+            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>YOUR UNBREAKABLE VOW</Text>
             <TextInput
               ref={inputRef}
               style={styles.input}
@@ -193,38 +187,6 @@ export default function HomeScreen() {
             </Animated.View>
           </Animated.View>
 
-          <Animated.View style={[styles.stepsCard, { opacity: stepsFade, transform: [{ translateY: stepsSlide }] }]}>
-            <Text style={styles.stepsTitle}>How it works</Text>
-            <View style={styles.stepItem}>
-              <View style={styles.stepIconWrap}>
-                <Zap color={palette.goldBright} size={15} />
-              </View>
-              <View style={styles.stepCopy}>
-                <Text style={styles.stepLabel}>Write your vow</Text>
-                <Text style={styles.stepDesc}>One specific commitment. No wiggle room.</Text>
-              </View>
-            </View>
-            <View style={styles.stepDivider} />
-            <View style={styles.stepItem}>
-              <View style={styles.stepIconWrap}>
-                <Shield color={palette.goldBright} size={15} />
-              </View>
-              <View style={styles.stepCopy}>
-                <Text style={styles.stepLabel}>Choose a witness</Text>
-                <Text style={styles.stepDesc}>They deliver the final verdict.</Text>
-              </View>
-            </View>
-            <View style={styles.stepDivider} />
-            <View style={styles.stepItem}>
-              <View style={styles.stepIconWrap}>
-                <Text style={styles.dollarIcon}>$</Text>
-              </View>
-              <View style={styles.stepCopy}>
-                <Text style={styles.stepLabel}>Put money on it</Text>
-                <Text style={styles.stepDesc}>If you fail, your stake goes to charity.</Text>
-              </View>
-            </View>
-          </Animated.View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -243,6 +205,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
     paddingTop: 8,
     paddingBottom: 40,
+    flexGrow: 1,
+    justifyContent: 'center',
   },
   ambientGlow: {
     position: 'absolute',
@@ -307,7 +271,7 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 15,
     lineHeight: 23,
-    marginBottom: 20,
+    marginBottom: 28,
   },
   inputCard: {
     backgroundColor: palette.surface,
@@ -315,7 +279,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: palette.border,
     padding: 18,
-    marginBottom: 16,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.22,
@@ -403,64 +367,5 @@ const styles = StyleSheet.create({
   },
   ctaTextDisabled: {
     color: palette.textMuted,
-  },
-  stepsCard: {
-    backgroundColor: palette.surface,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: palette.border,
-    padding: 20,
-    gap: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.18,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  stepsTitle: {
-    color: palette.text,
-    fontSize: 17,
-    fontWeight: '700' as const,
-    letterSpacing: -0.3,
-  },
-  stepItem: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'flex-start',
-  },
-  stepIconWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: 'rgba(212,162,79,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  dollarIcon: {
-    color: palette.goldBright,
-    fontSize: 15,
-    fontWeight: '800' as const,
-  },
-  stepCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  stepLabel: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  stepDesc: {
-    color: palette.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-  },
-  stepDivider: {
-    height: 1,
-    backgroundColor: palette.border,
-    marginLeft: 46,
   },
 });
