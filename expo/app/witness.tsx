@@ -1,8 +1,8 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { BookUser, Check, ChevronRight, Link2, Search, Shield, X } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Check, ChevronRight, Link2, Search, Shield, UserPlus, X } from 'lucide-react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
@@ -10,13 +10,12 @@ import {
   PrimaryButton,
   RitualScreen,
   TitleBlock,
-  VowPreview,
 } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
-type WitnessMode = 'choose' | 'contacts' | 'manual' | 'invite' | 'solo-oath';
+type WitnessMode = 'choose' | 'contacts' | 'invite' | 'solo-oath';
 
 interface ContactEntry {
   id: string;
@@ -34,9 +33,8 @@ export default function WitnessScreen() {
   const [soloSworn, setSoloSworn] = useState<boolean>(false);
   const soloCheckScale = useRef(new Animated.Value(1)).current;
   const soloGlow = useRef(new Animated.Value(0)).current;
+  const [inlineNameText, setInlineNameText] = useState<string>('');
 
-
-  // Contact picker state
   const [contacts, setContacts] = useState<ContactEntry[]>([]);
   const [contactSearch, setContactSearch] = useState('');
   const [loadingContacts, setLoadingContacts] = useState(false);
@@ -115,11 +113,8 @@ export default function WitnessScreen() {
         setLoadingContacts(false);
         Alert.alert(
           'No contacts found',
-          'We couldn\'t find contacts with phone numbers. Try typing a name instead.',
-          [
-            { text: 'Type a name', onPress: () => setMode('manual') },
-            { text: 'Cancel', style: 'cancel' },
-          ],
+          'We couldn\'t find contacts with phone numbers.',
+          [{ text: 'OK', style: 'cancel' }],
         );
         return;
       }
@@ -131,11 +126,8 @@ export default function WitnessScreen() {
       setLoadingContacts(false);
       Alert.alert(
         'Contacts unavailable',
-        'Contacts aren\'t available in this environment. Try typing a name instead.',
-        [
-          { text: 'Type a name', onPress: () => setMode('manual') },
-          { text: 'Cancel', style: 'cancel' },
-        ],
+        'Contacts aren\'t available in this environment.',
+        [{ text: 'OK', style: 'cancel' }],
       );
     }
   }, []);
@@ -179,100 +171,72 @@ export default function WitnessScreen() {
     router.push('/stake');
   };
 
-  const inputRef = useRef<TextInput>(null);
-  const inputGlow = useRef(new Animated.Value(0)).current;
-  const [inputFocused, setInputFocused] = useState(false);
-
-  useEffect(() => {
-    Animated.timing(inputGlow, {
-      toValue: inputFocused ? 1 : 0,
-      duration: 250,
-      useNativeDriver: false,
-    }).start();
-  }, [inputFocused, inputGlow]);
-
-  const inputBorderColor = inputGlow.interpolate({
-    inputRange: [0, 1],
-    outputRange: [palette.border, palette.borderStrong],
-  });
-
-  const handleNameNext = () => {
-    if (!selectedName.trim()) return;
+  const handleInlineNameSubmit = () => {
+    if (!inlineNameText.trim()) return;
     void Haptics.selectionAsync();
+    setSelectedName(inlineNameText.trim());
     setMode('invite');
   };
 
   // ─── Choose mode ───
   if (mode === 'choose') {
     return (
-      <RitualScreen
-        footer={
-          <PrimaryButton
-            label="Next"
-            onPress={handleNameNext}
-            disabled={!selectedName.trim()}
-            testID="witness-choose-next"
-          />
-        }
-      >
+      <RitualScreen>
         <Stack.Screen options={{ headerShown: false }} />
         <BackButton />
         <TitleBlock
           title="Choose your witness."
-          subtitle="Pick someone who won't let you off easy."
+          subtitle="Pick someone who'll keep you honest."
         />
-        <VowPreview text={activeVowText} compact />
 
-        <View style={styles.nameInputArea}>
-          <Animated.View style={[styles.nameInputShell, { borderColor: inputBorderColor }]}>
-            <Text style={styles.nameInputLabel}>THEIR FIRST NAME</Text>
-            <View style={styles.nameInputRow}>
-              <TextInput
-                ref={inputRef}
-                style={styles.nameInput}
-                placeholder="e.g. Daniel"
-                placeholderTextColor={palette.textMuted}
-                value={selectedName}
-                onChangeText={setSelectedName}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                onSubmitEditing={handleNameNext}
-                returnKeyType="next"
-                autoCapitalize="words"
-                testID="witness-name-input"
-              />
-              <Pressable
-                onPress={handlePickFromContacts}
-                style={styles.contactsShortcut}
-                testID="witness-contacts"
-              >
-                {loadingContacts ? (
-                  <ActivityIndicator size="small" color={palette.textSecondary} />
-                ) : (
-                  <BookUser color={palette.textSecondary} size={18} />
-                )}
-              </Pressable>
-            </View>
-          </Animated.View>
-          <Text style={styles.nameInputHint}>We'll send them a link to hold you accountable.</Text>
+        <Pressable
+          onPress={handlePickFromContacts}
+          style={({ pressed }) => [styles.heroButton, pressed && styles.heroButtonPressed]}
+          testID="witness-pick-friend"
+        >
+          <View style={styles.heroIconWrap}>
+            {loadingContacts ? (
+              <ActivityIndicator size="small" color={palette.goldBright} />
+            ) : (
+              <UserPlus color={palette.goldBright} size={22} />
+            )}
+          </View>
+          <View style={styles.heroCopy}>
+            <Text style={styles.heroTitle}>Pick a friend</Text>
+            <Text style={styles.heroSubtitle}>They'll decide if you kept your word</Text>
+          </View>
+          <ChevronRight color={palette.goldBright} size={18} />
+        </Pressable>
+
+        <View style={styles.inlineInputWrap}>
+          <TextInput
+            style={styles.inlineInput}
+            placeholder="Or type a name..."
+            placeholderTextColor={palette.textMuted}
+            value={inlineNameText}
+            onChangeText={setInlineNameText}
+            onSubmitEditing={handleInlineNameSubmit}
+            returnKeyType="go"
+            autoCapitalize="words"
+            testID="witness-inline-name"
+          />
+          {inlineNameText.trim().length > 0 && (
+            <Pressable onPress={handleInlineNameSubmit} style={styles.inlineNextBtn} testID="witness-inline-next">
+              <Text style={styles.inlineNextText}>Next</Text>
+            </Pressable>
+          )}
         </View>
 
-        <View style={styles.soloFooter}>
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.dividerLine} />
-          </View>
+        <View style={styles.soloFooterMinimal}>
           <Pressable
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               setMode('solo-oath');
             }}
-            style={styles.soloLink}
+            style={styles.soloTextLink}
             testID="witness-solo"
           >
-            <Text style={styles.soloLinkText}>Go solo — just me</Text>
-            <ChevronRight color={palette.textMuted} size={14} />
+            <Text style={styles.soloTextLinkLabel}>I'll do this alone</Text>
           </Pressable>
         </View>
       </RitualScreen>
@@ -307,7 +271,6 @@ export default function WitnessScreen() {
           title="A promise to yourself."
           subtitle="Just you and your word."
         />
-        <VowPreview text={activeVowText} compact />
 
         <View style={styles.soloOathCard}>
           <View style={styles.soloOathIconWrap}>
@@ -350,7 +313,7 @@ export default function WitnessScreen() {
           <Pressable onPress={() => setMode('choose')} style={styles.contactsBackBtn} testID="contacts-back">
             <X color={palette.textSecondary} size={18} />
           </Pressable>
-          <Text style={styles.contactsTitle}>Pick a witness</Text>
+          <Text style={styles.contactsTitle}>Pick a friend</Text>
           <View style={{ width: 36 }} />
         </View>
 
@@ -406,8 +369,6 @@ export default function WitnessScreen() {
     );
   }
 
-
-
   // ─── Invite mode ───
   return (
     <RitualScreen
@@ -423,12 +384,9 @@ export default function WitnessScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <BackButton />
       <TitleBlock
-        title={`Invite ${selectedName}`}
-        subtitle={linkShared
-          ? `Link shared! Add their number for SMS reminders, or continue.`
-          : `Share a link or add their phone number so we can reach them.`}
+        title={`Let ${selectedName} know`}
+        subtitle="Send them a link so they can accept."
       />
-      <VowPreview text={activeVowText} compact />
 
       <Pressable
         onPress={handleShareLink}
@@ -441,13 +399,13 @@ export default function WitnessScreen() {
             : <Link2 color={palette.goldBright} size={18} />}
         </View>
         <View style={styles.methodCopy}>
-          <Text style={styles.methodTitle}>{linkShared ? 'Link shared' : 'Share invite link'}</Text>
-          <Text style={styles.methodSub}>{linkShared ? 'Tap to share again' : 'Send via iMessage, WhatsApp, etc'}</Text>
+          <Text style={styles.methodTitle}>{linkShared ? 'Link sent' : 'Share invite link'}</Text>
+          <Text style={styles.methodSub}>{linkShared ? 'Tap to share again' : 'iMessage, WhatsApp, or any app'}</Text>
         </View>
       </Pressable>
 
       <View style={styles.manualInputShell}>
-        <Text style={styles.manualLabel}>PHONE NUMBER {linkShared ? '(OPTIONAL)' : ''}</Text>
+        <Text style={styles.manualLabel}>THEIR PHONE NUMBER (OPTIONAL)</Text>
         <TextInput
           style={styles.manualInput}
           placeholder="(555) 123-4567"
@@ -455,87 +413,107 @@ export default function WitnessScreen() {
           keyboardType="phone-pad"
           value={phone}
           onChangeText={setPhone}
-          autoFocus={!phone && !linkShared}
           accessibilityLabel={`Phone number for ${selectedName}`}
           testID="witness-phone-input"
         />
       </View>
 
       <Text style={styles.inviteExplainer}>
-        {hasPhone
-          ? `We'll text ${selectedName} when you seal the vow.`
-          : linkShared
-            ? `${selectedName} will get the details via the link you shared.`
-            : `Share a link or enter their number to continue.`}
+        For SMS reminders when it's due.
       </Text>
     </RitualScreen>
   );
 }
 
 const styles = StyleSheet.create({
-  nameInputArea: {
-    gap: 10,
-  },
-  nameInputShell: {
-    backgroundColor: palette.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  nameInputLabel: {
-    color: palette.textMuted,
-    fontSize: 11,
-    fontWeight: '600' as const,
-    letterSpacing: 0.8,
-  },
-  nameInputRow: {
+  heroButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 14,
+    backgroundColor: palette.surface,
+    borderRadius: 20,
+    padding: 18,
+    borderWidth: 1.5,
+    borderColor: palette.borderStrong,
+    shadowColor: palette.gold,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    elevation: 4,
   },
-  nameInput: {
-    flex: 1,
-    color: palette.text,
-    fontSize: 18,
-    minHeight: 32,
-    paddingVertical: 0,
+  heroButtonPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
   },
-  contactsShortcut: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: palette.surfaceElevated,
+  heroIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: 'rgba(212,162,79,0.1)',
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: palette.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  nameInputHint: {
-    color: palette.textMuted,
+  heroCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  heroTitle: {
+    color: palette.goldBright,
+    fontSize: 17,
+    fontWeight: '700' as const,
+    fontFamily: serifFont,
+    letterSpacing: -0.2,
+  },
+  heroSubtitle: {
+    color: palette.textSecondary,
     fontSize: 13,
     lineHeight: 18,
-    paddingHorizontal: 4,
   },
-  soloFooter: {
-    gap: 12,
-    marginTop: 8,
-  },
-  soloLink: {
+  inlineInputWrap: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: palette.border,
+    paddingVertical: 14,
+    gap: 10,
+    marginTop: 4,
+  },
+  inlineInput: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 16,
+    paddingVertical: 0,
+  },
+  inlineNextBtn: {
+    paddingHorizontal: 14,
     paddingVertical: 8,
+    borderRadius: 10,
+    backgroundColor: palette.goldBright,
   },
-  soloLinkText: {
+  inlineNextText: {
+    color: '#0B0D11',
+    fontSize: 13,
+    fontWeight: '700' as const,
+  },
+  soloFooterMinimal: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    paddingBottom: 24,
+    paddingTop: 20,
+  },
+  soloTextLink: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  soloTextLinkLabel: {
     color: palette.textMuted,
-    fontSize: 14,
-    fontWeight: '500' as const,
+    fontSize: 13,
+    fontWeight: '400' as const,
+    textAlign: 'center' as const,
   },
-  // Contact picker
   contactsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -630,7 +608,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center' as const,
   },
-  // Manual input
   manualInputShell: {
     backgroundColor: palette.surface,
     borderRadius: 16,
@@ -653,7 +630,6 @@ const styles = StyleSheet.create({
     minHeight: 28,
     paddingVertical: 0,
   },
-  // Invite method
   methodIcon: {
     width: 40,
     height: 40,
@@ -698,27 +674,8 @@ const styles = StyleSheet.create({
   inviteExplainer: {
     color: palette.textMuted,
     fontSize: 13,
-    textAlign: 'center' as const,
     lineHeight: 19,
-    paddingHorizontal: 20,
-  },
-
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingVertical: 2,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: palette.border,
-  },
-  dividerText: {
-    color: palette.textMuted,
-    fontSize: 12,
-    fontWeight: '500' as const,
-    textTransform: 'lowercase' as const,
+    paddingHorizontal: 4,
   },
   soloOathCard: {
     backgroundColor: palette.surface,
