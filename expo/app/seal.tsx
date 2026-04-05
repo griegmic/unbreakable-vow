@@ -12,7 +12,7 @@ import { BackButton, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, T
 import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { createPaymentIntent, setupPaymentSheet, showPaymentSheet } from '@/lib/stripe';
-import { createVow, voidVow } from '@/lib/vow-api';
+import { createVow, sealVow, voidVow } from '@/lib/vow-api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -115,12 +115,21 @@ export default function SealScreen() {
     });
   };
 
+  const invokeSealEdgeFunction = async (vowId: string) => {
+    console.log('[SealScreen] invoking seal-vow edge function for:', vowId);
+    const { error } = await supabase.functions.invoke('seal-vow', {
+      body: { vow_id: vowId },
+    });
+    if (error) {
+      console.warn('[SealScreen] seal-vow edge function failed, falling back to direct seal:', error);
+      await sealVow(vowId);
+    }
+  };
+
   const retrySeal = async (vowId: string) => {
     setLoading(true);
     try {
-      await supabase.functions.invoke('seal-vow', {
-        body: { vow_id: vowId },
-      });
+      await invokeSealEdgeFunction(vowId);
       setLoading(false);
       playSealAnimation();
     } catch (err) {
@@ -184,9 +193,7 @@ export default function SealScreen() {
 
       setPaidVowId(vowId);
 
-      await supabase.functions.invoke('seal-vow', {
-        body: { vow_id: vowId },
-      });
+      await invokeSealEdgeFunction(vowId);
 
       setLoading(false);
       playSealAnimation();
