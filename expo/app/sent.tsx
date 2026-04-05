@@ -4,7 +4,8 @@ import { Check, Send } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
-import { PrimaryButton, RitualCard, RitualScreen, TitleBlock, VowPreview } from '@/components/vow-ui';
+import { VowCertificate } from '@/components/vow-certificate';
+import { PrimaryButton, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
@@ -74,7 +75,15 @@ export default function SentScreen() {
       </Animated.View>
 
       <Animated.View style={{ opacity: contentFade }}>
-        <VowPreview text={activeVowText} />
+        <VowCertificate
+          vowText={activeVowText}
+          witnessName={isSelfWitness ? 'Just me' : vow.witnessName}
+          stakeAmount={vow.stake.amount}
+          consequence={brokenTarget}
+          dateRange={dates.range}
+          verdictDate={dates.endLabel}
+          isSelfWitness={isSelfWitness}
+        />
       </Animated.View>
 
       {!isSelfWitness && (
@@ -89,67 +98,6 @@ export default function SentScreen() {
           </Pressable>
         </Animated.View>
       )}
-
-      <Animated.View style={{ opacity: contentFade }}>
-        <RitualCard>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>{isSelfWitness ? 'Accountability' : 'Witness'}</Text>
-            <Text style={styles.metaValue}>{isSelfWitness ? 'Self-judged' : vow.witnessName}</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Stake</Text>
-            <Text style={styles.metaValueGold}>${vow.stake.amount}</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>If broken</Text>
-            <Text style={styles.metaValue}>{brokenTarget}</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Verdict</Text>
-            <Text style={styles.metaValue}>{dates.endLabel}</Text>
-          </View>
-        </RitualCard>
-      </Animated.View>
-
-      <Animated.View style={{ opacity: contentFade }}>
-        <RitualCard style={styles.stepsCard}>
-          {isSelfWitness ? (
-            <>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-                <Text style={styles.stepText}>Honor your vow for the full window.</Text>
-              </View>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
-                <Text style={styles.stepText}>On {dates.endLabel}, you deliver your own honest verdict.</Text>
-              </View>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-                <Text style={styles.stepText}>If broken, ${vow.stake.amount} goes to {brokenTarget}.</Text>
-              </View>
-            </>
-          ) : (
-            <>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-                <Text style={styles.stepText}>
-                  {vow.phoneNumber
-                    ? `${vow.witnessName} got a text with the details.`
-                    : `Share the invite link with ${vow.witnessName}.`}
-                </Text>
-              </View>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
-                <Text style={styles.stepText}>{vow.witnessName} delivers the verdict on {dates.endLabel}.</Text>
-              </View>
-              <View style={styles.stepRow}>
-                <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-                <Text style={styles.stepText}>If broken, ${vow.stake.amount} goes to {brokenTarget}.</Text>
-              </View>
-            </>
-          )}
-        </RitualCard>
-      </Animated.View>
     </RitualScreen>
   );
 }
@@ -172,52 +120,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 16,
     elevation: 6,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  metaLabel: {
-    color: palette.textMuted,
-    fontSize: 13,
-  },
-  metaValue: {
-    color: palette.text,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  metaValueGold: {
-    color: palette.goldBright,
-    fontSize: 14,
-    fontWeight: '700' as const,
-  },
-  stepsCard: {
-    gap: 10,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(212,162,79,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNum: {
-    color: palette.goldBright,
-    fontSize: 12,
-    fontWeight: '700' as const,
-  },
-  stepText: {
-    flex: 1,
-    color: palette.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
   },
   shareNudge: {
     flexDirection: 'row',

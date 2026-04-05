@@ -1,10 +1,11 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { AlertCircle, CheckCircle2, Clock, RefreshCw, Send, ShieldCheck, User, UserMinus } from 'lucide-react-native';
+import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Clock, RefreshCw, Send, Share2, ShieldCheck, User, UserMinus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
+import { VowCertificate } from '@/components/vow-certificate';
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
@@ -30,6 +31,7 @@ export default function LiveScreen() {
   const [resending, setResending] = useState<boolean>(false);
   const [goingSolo, setGoingSolo] = useState<boolean>(false);
   const [extending, setExtending] = useState<boolean>(false);
+  const [showCertificate, setShowCertificate] = useState<boolean>(false);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -173,6 +175,18 @@ export default function LiveScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     router.push({ pathname: '/witness', params: { midVow: '1' } });
   }, []);
+
+  const handleShareCertificate = useCallback(async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (Platform.OS !== 'web') {
+      try {
+        const msg = `I made an Unbreakable Vow: ${activeVowText}. ${vow.stake.amount} on the line. unbreakablevow.app`;
+        await Share.share({ message: msg });
+      } catch {
+        console.log('[LiveScreen] share failed');
+      }
+    }
+  }, [activeVowText, vow.stake.amount]);
 
   const handleExtendDeadline = useCallback(async () => {
     if (extending || !vow.vowId) return;
@@ -398,6 +412,46 @@ export default function LiveScreen() {
         {renderWitnessCard()}
       </RitualCard>
 
+      <Pressable
+        onPress={() => {
+          void Haptics.selectionAsync();
+          setShowCertificate((prev) => !prev);
+        }}
+        style={styles.certToggle}
+        testID="live-toggle-certificate"
+      >
+        <Text style={styles.certToggleText}>
+          {showCertificate ? 'Hide vow card' : 'View your vow'}
+        </Text>
+        {showCertificate
+          ? <ChevronUp color={palette.textMuted} size={14} />
+          : <ChevronDown color={palette.textMuted} size={14} />
+        }
+      </Pressable>
+
+      {showCertificate && (
+        <>
+          <VowCertificate
+            vowText={activeVowText}
+            witnessName={isSelfWitness ? 'Just me' : vow.witnessName}
+            stakeAmount={vow.stake.amount}
+            consequence={brokenTarget}
+            dateRange={dates.range}
+            verdictDate={dates.endLabel}
+            isSelfWitness={isSelfWitness}
+            animate={false}
+          />
+          <Pressable
+            onPress={handleShareCertificate}
+            style={({ pressed }) => [styles.shareRow, pressed && styles.shareRowPressed]}
+            testID="live-share-certificate"
+          >
+            <Share2 color={palette.goldBright} size={15} />
+            <Text style={styles.shareRowText}>Share</Text>
+          </Pressable>
+        </>
+      )}
+
       <Text style={styles.footerNote}>{dates.range} · {dates.verdictLabel}</Text>
     </RitualScreen>
   );
@@ -494,5 +548,36 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     fontSize: 13,
     textAlign: 'center' as const,
+  },
+  certToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  certToggleText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  shareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.2)',
+    backgroundColor: 'rgba(212,162,79,0.04)',
+  },
+  shareRowPressed: {
+    opacity: 0.7,
+  },
+  shareRowText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
 });
