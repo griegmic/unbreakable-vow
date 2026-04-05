@@ -40,7 +40,7 @@ function SettingsRow({ icon, label, description, onPress, trailing }: SettingsRo
 }
 
 export default function SettingsScreen() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, clearSession } = useAuth();
   const { oathToggleEnabled, setOathToggle } = useOathState();
   const { resetVow } = useVowFlow();
 
@@ -107,6 +107,7 @@ export default function SettingsScreen() {
                     } catch (err) {
                       console.warn('[Settings] signOut threw:', err);
                     }
+                    clearSession();
                     resetVow();
                     router.replace('/');
                   },

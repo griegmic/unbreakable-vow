@@ -54,6 +54,14 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
 
   const isAuthenticated = !!session;
 
+  // Force-clear local state — call this after signOut() to guarantee
+  // the UI updates even if supabase's onAuthStateChange doesn't fire.
+  const clearSession = () => {
+    console.log('[AuthProvider] clearSession called — forcing state to signed out');
+    setSession(null);
+    setDisplayName(null);
+  };
+
   // Fall back to user_metadata name fields if DB display_name not set
   const resolvedName = displayName
     || session?.user?.user_metadata?.full_name
@@ -61,7 +69,7 @@ export const [AuthProvider, useAuth] = createContextHook(() => {
     || null;
 
   return useMemo(
-    () => ({ session, isAuthenticated, loading, displayName: resolvedName }),
+    () => ({ session, isAuthenticated, loading, displayName: resolvedName, clearSession }),
     [session, isAuthenticated, loading, resolvedName]
   );
 });
