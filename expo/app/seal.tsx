@@ -274,11 +274,6 @@ export default function SealScreen() {
   const handleSeal = async () => {
     if (!sworn || loading) return;
 
-    if (IS_EXPO_GO) {
-      await handleSealFlow();
-      return;
-    }
-
     if (!isAuthenticated) {
       showAuthSheet();
       return;
