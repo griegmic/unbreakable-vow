@@ -273,7 +273,15 @@ export async function signOut(): Promise<void> {
       // May not be signed in with Google
     }
   }
-  await supabase.auth.signOut();
+  // Use 'local' scope so the sign-out always clears the local session
+  // immediately, even if the network call to revoke the server-side token
+  // fails.  With the default 'global' scope, a network error causes
+  // supabase-js to skip _removeSession() entirely — the SIGNED_OUT event
+  // never fires and isAuthenticated stays true.
+  const { error } = await supabase.auth.signOut({ scope: 'local' });
+  if (error) {
+    console.warn('[Auth] signOut error (local):', error.message);
+  }
 }
 
 export async function getCurrentSession() {

@@ -104,11 +104,10 @@ export default function SettingsScreen() {
                   onPress: async () => {
                     try {
                       await signOut();
-                    } catch {
-                      // May fail in Expo Go — that's fine
+                    } catch (err) {
+                      console.warn('[Settings] signOut threw:', err);
                     }
                     resetVow();
-                    router.dismissAll();
                     router.replace('/');
                   },
                 },
