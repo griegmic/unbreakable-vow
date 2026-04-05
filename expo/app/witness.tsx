@@ -277,7 +277,7 @@ export default function WitnessScreen() {
         <BackButton />
         <TitleBlock
           title="A promise to yourself."
-          subtitle="No witness. No one watching. Just you and your word. That makes it harder — and more meaningful."
+          subtitle="Just you and your word."
         />
         <VowPreview text={activeVowText} compact />
 
@@ -287,10 +287,7 @@ export default function WitnessScreen() {
           </View>
           <Text style={styles.soloOathHeading}>How this works</Text>
           <Text style={styles.soloOathBody}>
-            When your vow window ends, you'll judge yourself. You'll be asked to honestly declare whether you kept or broke your word — under oath.
-          </Text>
-          <Text style={styles.soloOathBody}>
-            No one can verify this but you. That's the point. This is about integrity.
+            When time's up, you decide: kept or broken.
           </Text>
         </View>
 
@@ -307,7 +304,7 @@ export default function WitnessScreen() {
             <View style={styles.solemnCopy}>
               <Text style={styles.solemnTitle}>I solemnly swear</Text>
               <Text style={styles.solemnText}>
-                to be completely honest when I judge myself. I will not bend the truth, make excuses, or let myself off easy.
+                to judge myself honestly — no excuses.
               </Text>
             </View>
           </Pressable>

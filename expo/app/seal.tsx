@@ -241,7 +241,7 @@ export default function SealScreen() {
       {!sealed ? <BackButton /> : null}
       <TitleBlock
         title={sealed ? 'Sealed.' : 'Your Unbreakable Vow'}
-        subtitle={sealed ? 'No turning back. The terms are locked.' : 'Review everything below. Once sealed, the terms cannot be changed.'}
+        subtitle={sealed ? 'The terms are locked.' : 'Review below. Once sealed, terms are final.'}
       />
 
       <View style={styles.sealCenter}>
@@ -310,7 +310,7 @@ export default function SealScreen() {
             <View style={styles.swearCopy}>
               <Text style={styles.swearTitle}>I solemnly swear</Text>
               <Text style={styles.swearText}>
-                to honor this vow, to be honest about my progress, and to accept the consequences if I fail.
+                to honor this vow and accept the consequences.
               </Text>
             </View>
           </Pressable>

@@ -35,7 +35,7 @@ export default function ChallengesScreen() {
         </View>
         <TitleBlock
           title="Group Challenges"
-          subtitle="Join hundreds of people putting money on the line for the same goal. One vow. One deadline. No excuses."
+          subtitle="Same goal. Same deadline. Money on the line."
         />
       </View>
 

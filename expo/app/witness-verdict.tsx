@@ -127,7 +127,7 @@ export default function WitnessVerdictScreen() {
             <View style={styles.copyWrap}>
               <Text style={styles.verdictTitle}>Vow broken.</Text>
               <Text style={styles.verdictDesc}>
-                ${vow.stake.amount} goes to {destination}. {displayName} would want you to be honest.
+                ${vow.stake.amount} to {destination}.
               </Text>
             </View>
           </Pressable>

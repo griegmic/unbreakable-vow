@@ -95,7 +95,7 @@ export default function RefineScreen() {
       <BackButton />
       <TitleBlock
         title="Make it stick"
-        subtitle={"Specific vows are 3x more likely to stick. Your witness has to call this \u2018kept\u2019 or \u2018broken\u2019 \u2014 make it clear."}
+        subtitle={"Your witness calls it \u2018kept\u2019 or \u2018broken\u2019 \u2014 make it clear."}
       />
 
       <VowPreview text={activeVowText} />
@@ -103,7 +103,7 @@ export default function RefineScreen() {
       <RitualCard>
         <View style={styles.guidanceHeader}>
           <Sparkles color={palette.goldBright} size={16} />
-          <Text style={styles.guidanceTitle}>The strongest vows have:</Text>
+          <Text style={styles.guidanceTitle}>Strong vows have:</Text>
         </View>
         <View style={styles.guidanceList}>
           <Text style={styles.guidanceLine}>

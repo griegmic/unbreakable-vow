@@ -84,10 +84,7 @@ export default function StakeScreen() {
       <BackButton />
       <TitleBlock
         title="Set the stakes."
-        subtitle={isSelfWitness
-          ? "You're only charged if you honestly admit you broke it. Pick an amount you'd genuinely hate to lose."
-          : "You're only charged if your witness says you broke it. Pick an amount you'd genuinely hate to lose."
-        }
+        subtitle="Pick an amount you'd hate to lose."
       />
       <VowPreview text={activeVowText} compact />
 
@@ -170,7 +167,7 @@ export default function StakeScreen() {
           <ShieldCheck color={palette.textMuted} size={16} />
         </View>
         <Text style={styles.paymentText}>
-          Secure payment via Stripe. {isSelfWitness ? 'You\'ll be refunded in full if you honestly confirm you kept your vow.' : 'You\'ll be refunded in full if your witness confirms you kept your vow.'}
+          Secure payment via Stripe. Refunded in full if you keep your vow.
         </Text>
       </View>
     </RitualScreen>

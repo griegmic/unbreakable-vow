@@ -130,7 +130,7 @@ export default function HomeScreen() {
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
             <Text style={styles.heroSub}>
-              Commit to one thing this week. Vow to a friend.{'\n'}Put money on it. Break it, it goes to charity.
+              One commitment. Real money.{'\n'}Break it, and it goes to charity.
             </Text>
           </Animated.View>
 
@@ -211,7 +211,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.stepCopy}>
                 <Text style={styles.stepLabel}>Choose a witness</Text>
-                <Text style={styles.stepDesc}>They hold you accountable and deliver the final verdict.</Text>
+                <Text style={styles.stepDesc}>They deliver the final verdict.</Text>
               </View>
             </View>
             <View style={styles.stepDivider} />
@@ -221,7 +221,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.stepCopy}>
                 <Text style={styles.stepLabel}>Put money on it</Text>
-                <Text style={styles.stepDesc}>If you fail, your stake goes to charity. Your witness decides.</Text>
+                <Text style={styles.stepDesc}>If you fail, your stake goes to charity.</Text>
               </View>
             </View>
           </Animated.View>

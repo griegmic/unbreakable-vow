@@ -73,9 +73,7 @@ export default function VowBrokenScreen() {
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
           title={isSelfWitness ? 'You were honest.' : `${firstName} called it.`}
-          subtitle={isSelfWitness
-            ? `${vow.stake.amount} goes to ${destination}. It takes real integrity to admit that.`
-            : `${vow.stake.amount} goes to ${destination}. The terms were clear, and you were honest.`}
+          subtitle={`${vow.stake.amount} goes to ${destination}.`}
         />
       </Animated.View>
 
@@ -117,7 +115,7 @@ export default function VowBrokenScreen() {
 
       <Animated.View style={[styles.redemptionHint, { opacity: receiptFade }]}>
         <ArrowRight color={palette.goldBright} size={14} />
-        <Text style={styles.redemptionText}>The best response is a new vow. Come back stronger.</Text>
+        <Text style={styles.redemptionText}>Make a new vow. Come back stronger.</Text>
       </Animated.View>
     </RitualScreen>
   );

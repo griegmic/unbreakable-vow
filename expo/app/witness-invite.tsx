@@ -82,7 +82,7 @@ export default function WitnessInviteScreen() {
 
       <TitleBlock
         title={`${makerName} made a vow and named you as their witness.`}
-        subtitle="They're putting real money on the line. Your one job: at the end of the week, decide if they kept their word."
+        subtitle="Real money is on the line. Your job: decide if they kept their word."
       />
 
       <RitualCard>
@@ -103,15 +103,15 @@ export default function WitnessInviteScreen() {
         <Text style={styles.whatTitle}>What happens when you accept</Text>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-          <Text style={styles.stepText}>You'll get an SMS when it's time to deliver your verdict.</Text>
+          <Text style={styles.stepText}>You'll get an SMS when it's verdict time.</Text>
         </View>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
-          <Text style={styles.stepText}>You don't need to check in daily — just be aware of the vow during the week.</Text>
+          <Text style={styles.stepText}>No daily check-ins — just be aware of the vow.</Text>
         </View>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-          <Text style={styles.stepText}>On {dates.endLabel}, you get a prompt: kept or broken. One tap. Their fate is in your hands.</Text>
+          <Text style={styles.stepText}>On {dates.endLabel}: kept or broken. One tap.</Text>
         </View>
       </RitualCard>
 
@@ -128,7 +128,7 @@ export default function WitnessInviteScreen() {
           <View style={styles.swearCopy}>
             <Text style={styles.swearTitle}>I solemnly swear</Text>
             <Text style={styles.swearText}>
-              to judge honestly, to hold them accountable, and to deliver a fair verdict.
+              to judge honestly and deliver a fair verdict.
             </Text>
           </View>
         </Pressable>

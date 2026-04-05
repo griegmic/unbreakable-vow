@@ -80,7 +80,7 @@ export default function SentScreen() {
           title={isSelfWitness ? 'Sealed.' : vow.phoneNumber ? 'Sealed. Invite sent.' : 'Sealed.'}
           subtitle={
             isSelfWitness
-              ? 'Your vow is locked. When the time comes, you\'ll judge yourself honestly.'
+              ? 'Your vow is locked. You\'ll judge yourself when the time comes.'
               : vow.phoneNumber
                 ? `We just texted ${vow.witnessName}. They'll get the details and choose to accept.`
                 : `Share the link with ${vow.witnessName} so they can be your witness.`

@@ -161,7 +161,7 @@ export default function LiveScreen() {
             <View style={styles.infoRow}>
               <Clock color={palette.warmAmber} size={18} />
               <Text style={styles.infoText}>
-                <Text style={styles.witnessPending}>Waiting for {vow.witnessName}</Text> to accept. Most witnesses respond within a few hours.
+                <Text style={styles.witnessPending}>Waiting for {vow.witnessName}</Text> to accept.
               </Text>
             </View>
             <View style={styles.witnessActions}>
@@ -191,7 +191,7 @@ export default function LiveScreen() {
             <View style={styles.infoRow}>
               <MessageCircleMore color={palette.goldBright} size={18} />
               <Text style={styles.infoText}>
-                {vow.witnessName} is your witness. They'll get an SMS when it's time to deliver the verdict.
+                {vow.witnessName} is your witness. They'll get an SMS at verdict time.
               </Text>
             </View>
           </>

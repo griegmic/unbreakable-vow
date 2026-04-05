@@ -137,7 +137,7 @@ export default function VowKeptScreen() {
 
       <Animated.View style={[styles.celebrateRow, { opacity: contentFade }]}>
         <PartyPopper color={palette.goldBright} size={16} />
-        <Text style={styles.celebrateText}>Keep the momentum going. Another vow, another week owned.</Text>
+        <Text style={styles.celebrateText}>Another vow, another week owned.</Text>
       </Animated.View>
     </RitualScreen>
   );

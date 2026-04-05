@@ -422,7 +422,7 @@ export default function AuthScreen() {
       <BackButton />
       <TitleBlock
         title="Sign in to seal your vow"
-        subtitle="We need to verify your identity before the money is on the line."
+        subtitle="Quick verification before your money goes on the line."
       />
       <VowPreview text={activeVowText} compact />
 

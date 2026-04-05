@@ -147,7 +147,7 @@ export default function SelfResolveScreen() {
 
           <TitleBlock
             title="Time to be honest."
-            subtitle="No one is watching. No one will know but you. That's what makes this real."
+            subtitle="No one knows but you."
           />
 
           <RitualCard>
@@ -178,7 +178,7 @@ export default function SelfResolveScreen() {
               <View style={styles.oathCopy}>
                 <Text style={styles.oathTitle}>I swear to tell the truth</Text>
                 <Text style={styles.oathText}>
-                  I will answer honestly, even if the truth costs me money.
+                  Even if it costs me money.
                 </Text>
               </View>
             </Pressable>
@@ -216,7 +216,7 @@ export default function SelfResolveScreen() {
             </View>
           ) : (
             <View style={styles.lockedHint}>
-              <Text style={styles.lockedHintText}>Take the oath above to unlock your verdict.</Text>
+              <Text style={styles.lockedHintText}>Take the oath to unlock your verdict.</Text>
             </View>
           )}
         </View>
@@ -238,7 +238,7 @@ export default function SelfResolveScreen() {
                 </View>
                 <Text style={styles.modalTitle}>You kept your word.</Text>
                 <Text style={styles.modalBody}>
-                  ${vow.stake.amount} stays safe. No charge. You honored the promise you made to yourself.
+                  ${vow.stake.amount} stays safe. No charge.
                 </Text>
               </>
             ) : (
@@ -248,7 +248,7 @@ export default function SelfResolveScreen() {
                 </View>
                 <Text style={styles.modalTitle}>Honest. Respect.</Text>
                 <Text style={styles.modalBody}>
-                  ${vow.stake.amount} will be donated to {destination}. It takes courage to admit that.
+                  ${vow.stake.amount} will be donated to {destination}.
                 </Text>
               </>
             )}

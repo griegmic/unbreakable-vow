@@ -62,7 +62,7 @@ export default function HistoryScreen() {
         </View>
       ) : error ? (
         <RitualCard>
-          <Text style={styles.emptyText}>Couldn't load your vows. Check your connection and try again.</Text>
+          <Text style={styles.emptyText}>Couldn't load your vows. Try again.</Text>
         </RitualCard>
       ) : (
         <>
@@ -108,7 +108,7 @@ export default function HistoryScreen() {
             </>
           ) : (
             <RitualCard>
-              <Text style={styles.emptyText}>No completed vows yet. Make your first vow to get started.</Text>
+              <Text style={styles.emptyText}>No completed vows yet.</Text>
             </RitualCard>
           )}
         </>
