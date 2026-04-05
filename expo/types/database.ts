@@ -67,6 +67,8 @@ export interface Database {
           ends_at: string | null;
           verdict: Verdict | null;
           verdict_at: string | null;
+          witness_accepted_at: string | null;
+          witness_declined: boolean;
           sealed_at: string | null;
           created_at: string;
         };
@@ -87,6 +89,8 @@ export interface Database {
           ends_at?: string | null;
           verdict?: Verdict | null;
           verdict_at?: string | null;
+          witness_accepted_at?: string | null;
+          witness_declined?: boolean;
           sealed_at?: string | null;
           created_at?: string;
         };
@@ -107,6 +111,8 @@ export interface Database {
           ends_at?: string | null;
           verdict?: Verdict | null;
           verdict_at?: string | null;
+          witness_accepted_at?: string | null;
+          witness_declined?: boolean;
           sealed_at?: string | null;
           created_at?: string;
         };

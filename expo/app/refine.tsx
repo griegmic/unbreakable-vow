@@ -49,7 +49,7 @@ export default function RefineScreen() {
   const continueWith = useCallback((value: string) => {
     console.log('[RefineScreen] continueWith', value);
     setRefinedText(value);
-    router.push('/witness');
+    router.push('/stake');
   }, [setRefinedText]);
 
   const handleSubmit = useCallback(() => {

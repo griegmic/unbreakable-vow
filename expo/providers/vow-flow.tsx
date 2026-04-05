@@ -74,16 +74,45 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
     setVow((current) => ({ ...current, stake }));
   }, []);
 
+  const updateConsequence = useCallback((consequence: ConsequenceType, destination: string) => {
+    console.log('[VowFlow] updateConsequence', { consequence, destination });
+    setVow((current) => ({
+      ...current,
+      stake: { ...current.stake, consequence, destination },
+    }));
+  }, []);
+
   const setVowId = useCallback((vowId: string, witnessInviteToken: string | null) => {
     console.log('[VowFlow] setVowId', vowId);
     setVow((current) => ({ ...current, vowId, witnessInviteToken }));
+  }, []);
+
+  const switchToSolo = useCallback(() => {
+    console.log('[VowFlow] switchToSolo');
+    setVow((current) => ({
+      ...current,
+      witnessType: 'self' as const,
+      witnessName: 'Just me',
+      inviteMethod: 'link' as const,
+      phoneNumber: '',
+    }));
+  }, []);
+
+  const updateWitnessMidVow = useCallback((name: string, phone: string) => {
+    console.log('[VowFlow] updateWitnessMidVow', { name, phone });
+    setVow((current) => ({
+      ...current,
+      witnessType: 'friend' as const,
+      witnessName: name,
+      inviteMethod: 'sms' as const,
+      phoneNumber: phone,
+    }));
   }, []);
 
   const resetVow = useCallback(() => {
     console.log('[VowFlow] resetVow');
     setVow(initialState);
   }, []);
-
 
   const shouldSkipRefine = useCallback((input: string): boolean => {
     if (vowExamples.includes(input)) return true;
@@ -110,10 +139,13 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
       setWitnessType,
       setWitness,
       setStake,
+      updateConsequence,
       setVowId,
+      switchToSolo,
+      updateWitnessMidVow,
       resetVow,
       shouldSkipRefine,
     }),
-    [activeVowText, analysis, isSelfWitness, resetVow, setRawInput, setRefinedText, setStake, setVowId, setWitness, setWitnessType, shouldSkipRefine, vow]
+    [activeVowText, analysis, isSelfWitness, resetVow, setRawInput, setRefinedText, setStake, setVowId, setWitness, setWitnessType, shouldSkipRefine, switchToSolo, updateConsequence, updateWitnessMidVow, vow]
   );
 });

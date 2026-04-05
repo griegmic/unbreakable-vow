@@ -1,8 +1,8 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
-import { Stack, router } from 'expo-router';
-import { Check, ChevronRight, Search, Shield, UserPlus, X } from 'lucide-react-native';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { Check, ChevronRight, Search, Shield, ToggleLeft, ToggleRight, UserPlus, X } from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
@@ -12,9 +12,10 @@ import {
   TitleBlock,
 } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
+import { updateVowWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
-type WitnessMode = 'choose' | 'contacts' | 'solo-oath';
+type WitnessMode = 'choose' | 'contacts' | 'confirm' | 'solo-oath';
 
 interface ContactEntry {
   id: string;
@@ -23,7 +24,9 @@ interface ContactEntry {
 }
 
 export default function WitnessScreen() {
-  const { setWitness, setWitnessType } = useVowFlow();
+  const { setWitness, setWitnessType, vow, updateConsequence, updateWitnessMidVow, setVowId } = useVowFlow();
+  const params = useLocalSearchParams<{ midVow?: string }>();
+  const isMidVow = params.midVow === '1' && !!vow.vowId;
   const [mode, setMode] = useState<WitnessMode>('choose');
   const [soloSworn, setSoloSworn] = useState<boolean>(false);
   const soloCheckScale = useRef(new Animated.Value(1)).current;
@@ -33,6 +36,19 @@ export default function WitnessScreen() {
   const [contacts, setContacts] = useState<ContactEntry[]>([]);
   const [contactSearch, setContactSearch] = useState('');
   const [loadingContacts, setLoadingContacts] = useState(false);
+
+  const [pendingName, setPendingName] = useState<string>('');
+  const [pendingPhone, setPendingPhone] = useState<string>('');
+  const [witnessGetsIt, setWitnessGetsIt] = useState<boolean>(true);
+
+  const stakeAmount = vow.stake.amount;
+
+  useEffect(() => {
+    if (stakeAmount <= 0) {
+      console.log('[WitnessScreen] no stake set, redirecting to /stake');
+      router.replace('/stake');
+    }
+  }, [stakeAmount]);
 
   console.log('[WitnessScreen] mode:', mode);
 
@@ -46,7 +62,7 @@ export default function WitnessScreen() {
         setLoadingContacts(false);
         Alert.alert(
           'Contacts access needed',
-          'Go to Settings → Unbreakable Vow → Contacts to allow access.',
+          'Go to Settings \u2192 Unbreakable Vow \u2192 Contacts to allow access.',
         );
         return;
       }
@@ -96,10 +112,49 @@ export default function WitnessScreen() {
     void Haptics.selectionAsync();
     const firstName = contact.name.split(' ')[0];
     console.log('[WitnessScreen] contact selected:', firstName, contact.phone);
+    setPendingName(firstName);
+    setPendingPhone(contact.phone);
+    setWitnessGetsIt(true);
+    setMode('confirm');
+  }, []);
+
+  const [updatingWitness, setUpdatingWitness] = useState<boolean>(false);
+
+  const handleConfirmWitness = useCallback(async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (isMidVow && vow.vowId) {
+      setUpdatingWitness(true);
+      const result = await updateVowWitness(vow.vowId, {
+        witnessName: pendingName,
+        witnessPhone: pendingPhone || null,
+      });
+      setUpdatingWitness(false);
+
+      if (result.success) {
+        setWitnessType('friend');
+        updateWitnessMidVow(pendingName, pendingPhone || '');
+        if (witnessGetsIt) {
+          updateConsequence('witness', pendingName);
+        }
+        if (result.witnessInviteToken) {
+          setVowId(vow.vowId, result.witnessInviteToken);
+        }
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.back();
+      } else {
+        Alert.alert('Something went wrong', result.error || 'Please try again.');
+      }
+      return;
+    }
+
     setWitnessType('friend');
-    setWitness(firstName, 'sms', contact.phone);
-    router.push('/stake');
-  }, [setWitnessType, setWitness]);
+    setWitness(pendingName, pendingPhone ? 'sms' : 'link', pendingPhone || undefined);
+    if (witnessGetsIt) {
+      updateConsequence('witness', pendingName);
+    }
+    router.push('/seal');
+  }, [pendingName, pendingPhone, witnessGetsIt, setWitnessType, setWitness, updateConsequence, isMidVow, vow.vowId, updateWitnessMidVow, setVowId]);
 
   const filteredContacts = useMemo(() => {
     if (!contactSearch.trim()) return contacts;
@@ -130,7 +185,7 @@ export default function WitnessScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setWitnessType('self');
     setWitness('Just me', 'link');
-    router.push('/stake');
+    router.push('/seal');
   };
 
   const handleInlineNameSubmit = () => {
@@ -138,20 +193,76 @@ export default function WitnessScreen() {
     void Haptics.selectionAsync();
     const name = inlineNameText.trim();
     console.log('[WitnessScreen] inline name submitted:', name);
-    setWitnessType('friend');
-    setWitness(name, 'link');
-    router.push('/stake');
+    setPendingName(name);
+    setPendingPhone('');
+    setWitnessGetsIt(true);
+    setMode('confirm');
   };
 
-  // ─── Choose mode ───
+  if (mode === 'confirm') {
+    const consequenceLabel = witnessGetsIt
+      ? `${pendingName} gets $${stakeAmount}`
+      : `$${stakeAmount} goes to ${vow.stake.destination}`;
+
+    return (
+      <RitualScreen
+        footer={
+          <PrimaryButton
+            label={updatingWitness ? 'Updating...' : 'Lock it in'}
+            onPress={handleConfirmWitness}
+            disabled={updatingWitness}
+            testID="witness-confirm-continue"
+          />
+        }
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <BackButton />
+        <TitleBlock
+          title={`${pendingName} is your witness.`}
+          subtitle="Here's what happens if you break it."
+        />
+
+        <View style={styles.consequenceCard}>
+          <Text style={styles.consequenceLabel}>IF YOU BREAK IT</Text>
+          <Text style={styles.consequenceValue}>{consequenceLabel}</Text>
+        </View>
+
+        <Pressable
+          onPress={() => {
+            void Haptics.selectionAsync();
+            setWitnessGetsIt(!witnessGetsIt);
+          }}
+          style={styles.toggleRow}
+          testID="witness-consequence-toggle"
+        >
+          {witnessGetsIt ? (
+            <ToggleRight color={palette.goldBright} size={24} />
+          ) : (
+            <ToggleLeft color={palette.textMuted} size={24} />
+          )}
+          <View style={styles.toggleCopy}>
+            <Text style={[styles.toggleTitle, witnessGetsIt && styles.toggleTitleActive]}>
+              {pendingName} gets paid if you fail
+            </Text>
+            <Text style={styles.toggleDesc}>
+              {witnessGetsIt
+                ? 'They have skin in the game. This is the viral hook.'
+                : `Money goes to ${vow.stake.destination} instead.`}
+            </Text>
+          </View>
+        </Pressable>
+      </RitualScreen>
+    );
+  }
+
   if (mode === 'choose') {
     return (
       <RitualScreen>
         <Stack.Screen options={{ headerShown: false }} />
         <BackButton />
         <TitleBlock
-          title="Choose your witness."
-          subtitle="Pick someone who'll keep you honest."
+          title={`$${stakeAmount} is on the line.`}
+          subtitle="Who's going to hold you to it?"
         />
 
         <Pressable
@@ -208,7 +319,6 @@ export default function WitnessScreen() {
     );
   }
 
-  // ─── Solo oath mode ───
   if (mode === 'solo-oath') {
     const soloBorderColor = soloGlow.interpolate({
       inputRange: [0, 1],
@@ -269,7 +379,6 @@ export default function WitnessScreen() {
     );
   }
 
-  // ─── Contact picker mode ───
   if (mode === 'contacts') {
     return (
       <RitualScreen scroll={false}>
@@ -426,6 +535,56 @@ const styles = StyleSheet.create({
     fontWeight: '400' as const,
     textAlign: 'center' as const,
   },
+  consequenceCard: {
+    backgroundColor: palette.surface,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: palette.borderStrong,
+    padding: 22,
+    alignItems: 'center',
+    gap: 8,
+  },
+  consequenceLabel: {
+    color: palette.gold,
+    fontSize: 11,
+    fontWeight: '700' as const,
+    letterSpacing: 1.3,
+  },
+  consequenceValue: {
+    color: palette.goldBright,
+    fontSize: 22,
+    fontWeight: '700' as const,
+    fontFamily: serifFont,
+    textAlign: 'center' as const,
+    letterSpacing: -0.5,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    gap: 14,
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  toggleCopy: {
+    flex: 1,
+    gap: 3,
+  },
+  toggleTitle: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    fontWeight: '600' as const,
+  },
+  toggleTitleActive: {
+    color: palette.text,
+  },
+  toggleDesc: {
+    color: palette.textMuted,
+    fontSize: 13,
+    lineHeight: 18,
+  },
   contactsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -520,7 +679,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center' as const,
   },
-
   soloOathCard: {
     backgroundColor: palette.surface,
     borderRadius: 20,

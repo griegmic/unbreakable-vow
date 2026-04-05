@@ -77,3 +77,103 @@ export async function getVowHistory() {
 
   return data ?? [];
 }
+
+export async function resendWitnessInvite(vowId: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] resendWitnessInvite for vow:', vowId);
+  try {
+    const { data, error } = await supabase.functions.invoke('resend-witness-invite', {
+      body: { vow_id: vowId },
+    });
+    if (error) {
+      console.error('[vow-api] resendWitnessInvite error:', error);
+      return { success: false, error: error.message || 'Failed to resend invite' };
+    }
+    if (data?.error === 'cooldown') {
+      return { success: false, error: 'Please wait before resending.' };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[vow-api] resendWitnessInvite exception:', err);
+    const fallback = await supabase.functions.invoke('seal-vow', {
+      body: { vow_id: vowId, resend_sms: true },
+    }).catch(() => null);
+    if (fallback?.data) return { success: true };
+    return { success: false, error: 'Could not resend invite. Try again later.' };
+  }
+}
+
+export async function switchToSoloWitness(vowId: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] switchToSoloWitness for vow:', vowId);
+  try {
+    const { error } = await supabase.from('vows').update({
+      witness_name: 'Just me',
+      witness_phone: null,
+      witness_accepted_at: null,
+      witness_declined: false,
+    }).eq('id', vowId);
+    if (error) {
+      console.error('[vow-api] switchToSoloWitness error:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[vow-api] switchToSoloWitness exception:', err);
+    return { success: false, error: 'Failed to switch to solo.' };
+  }
+}
+
+export async function updateVowWitness(vowId: string, params: {
+  witnessName: string;
+  witnessPhone: string | null;
+}): Promise<{ success: boolean; witnessInviteToken?: string; error?: string }> {
+  console.log('[vow-api] updateVowWitness for vow:', vowId, params);
+  try {
+    const newToken = crypto.randomUUID();
+    const { error } = await supabase.from('vows').update({
+      witness_name: params.witnessName,
+      witness_phone: params.witnessPhone,
+      witness_invite_token: newToken,
+      witness_accepted_at: null,
+      witness_declined: false,
+    }).eq('id', vowId);
+    if (error) {
+      console.error('[vow-api] updateVowWitness error:', error);
+      return { success: false, error: error.message };
+    }
+    if (params.witnessPhone) {
+      await supabase.functions.invoke('seal-vow', {
+        body: { vow_id: vowId, resend_sms: true },
+      }).catch((e) => console.warn('[vow-api] SMS send after witness update failed:', e));
+    }
+    return { success: true, witnessInviteToken: newToken };
+  } catch (err) {
+    console.error('[vow-api] updateVowWitness exception:', err);
+    return { success: false, error: 'Failed to update witness.' };
+  }
+}
+
+export async function extendVowDeadline(vowId: string, hours: number): Promise<{ success: boolean; newEndDate?: string; error?: string }> {
+  console.log('[vow-api] extendVowDeadline for vow:', vowId, 'by', hours, 'hours');
+  try {
+    const { data: vowData } = await supabase.from('vows')
+      .select('ends_at')
+      .eq('id', vowId)
+      .single();
+    if (!vowData?.ends_at) {
+      return { success: false, error: 'Vow not found' };
+    }
+    const currentEnd = new Date(vowData.ends_at);
+    const newEnd = new Date(currentEnd.getTime() + hours * 60 * 60 * 1000);
+    const { error } = await supabase.from('vows').update({
+      ends_at: newEnd.toISOString(),
+    }).eq('id', vowId);
+    if (error) {
+      console.error('[vow-api] extendVowDeadline error:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true, newEndDate: newEnd.toISOString() };
+  } catch (err) {
+    console.error('[vow-api] extendVowDeadline exception:', err);
+    return { success: false, error: 'Failed to extend deadline.' };
+  }
+}

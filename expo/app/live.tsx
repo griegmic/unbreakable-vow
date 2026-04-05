@@ -1,20 +1,22 @@
 import Constants from 'expo-constants';
+import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { AlertCircle, CheckCircle2, Clock, MessageCircleMore, RefreshCw, ShieldCheck, User, UserMinus } from 'lucide-react-native';
+import { AlertCircle, CheckCircle2, Clock, RefreshCw, Send, ShieldCheck, User, UserMinus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
+import { extendVowDeadline, resendWitnessInvite, switchToSoloWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
-type WitnessStatus = 'pending' | 'accepted' | 'declined' | 'unknown';
+type WitnessStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'unknown';
 
 export default function LiveScreen() {
-  const { activeVowText, vow, isSelfWitness } = useVowFlow();
+  const { activeVowText, vow, isSelfWitness, switchToSolo } = useVowFlow();
   const dates = getVowVerdictDate(vow.rawInput);
 
   const brokenTarget =
@@ -24,6 +26,11 @@ export default function LiveScreen() {
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const [witnessStatus, setWitnessStatus] = useState<WitnessStatus>(IS_EXPO_GO ? 'accepted' : 'unknown');
+  const [resendCooldown, setResendCooldown] = useState<number>(0);
+  const [resending, setResending] = useState<boolean>(false);
+  const [goingSolo, setGoingSolo] = useState<boolean>(false);
+  const [extending, setExtending] = useState<boolean>(false);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!vow.rawInput) {
@@ -32,7 +39,6 @@ export default function LiveScreen() {
     }
   }, [vow.rawInput]);
 
-  // Fetch witness acceptance status from DB
   useEffect(() => {
     if (isSelfWitness || IS_EXPO_GO || !vow.vowId) return;
 
@@ -40,14 +46,22 @@ export default function LiveScreen() {
       try {
         const { data } = await supabase
           .from('vows')
-          .select('witness_accepted_at, witness_declined')
-          .eq('id', vow.vowId)
+          .select('witness_accepted_at, witness_declined, ends_at')
+          .eq('id', vow.vowId!)
           .single();
 
         if (data?.witness_accepted_at) {
           setWitnessStatus('accepted');
         } else if (data?.witness_declined) {
           setWitnessStatus('declined');
+        } else if (data?.ends_at) {
+          const endsAt = new Date(data.ends_at);
+          const now = new Date();
+          if (now >= endsAt) {
+            setWitnessStatus('expired');
+          } else {
+            setWitnessStatus('pending');
+          }
         } else {
           setWitnessStatus('pending');
         }
@@ -56,10 +70,8 @@ export default function LiveScreen() {
       }
     }
 
-    checkWitnessStatus();
-
-    // Poll every 30s for updates
-    const interval = setInterval(checkWitnessStatus, 30000);
+    void checkWitnessStatus();
+    const interval = setInterval(() => void checkWitnessStatus(), 30000);
     return () => clearInterval(interval);
   }, [vow.vowId, isSelfWitness]);
 
@@ -74,13 +86,286 @@ export default function LiveScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  const startResendCooldown = useCallback(() => {
+    setResendCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setResendCooldown((prev) => {
+        if (prev <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
+
+  const handleResendInvite = useCallback(async () => {
+    if (resendCooldown > 0 || resending || !vow.vowId) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setResending(true);
+
+    if (IS_EXPO_GO) {
+      setTimeout(() => {
+        setResending(false);
+        startResendCooldown();
+        Alert.alert('SMS sent', `Invite resent to ${vow.witnessName}.`);
+      }, 800);
+      return;
+    }
+
+    const result = await resendWitnessInvite(vow.vowId);
+    setResending(false);
+
+    if (result.success) {
+      startResendCooldown();
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('SMS sent', `Invite resent to ${vow.witnessName}.`);
+    } else {
+      Alert.alert('Couldn\'t resend', result.error || 'Please try again later.');
+    }
+  }, [resendCooldown, resending, vow.vowId, vow.witnessName, startResendCooldown]);
+
+  const handleGoSolo = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    Alert.alert(
+      'Switch to solo?',
+      `You'll judge yourself on ${dates.endLabel}. This can't be undone.`,
+      [
+        { text: 'Keep waiting', style: 'cancel' },
+        {
+          text: 'Go solo',
+          style: 'destructive',
+          onPress: async () => {
+            setGoingSolo(true);
+
+            if (IS_EXPO_GO) {
+              switchToSolo();
+              setGoingSolo(false);
+              return;
+            }
+
+            if (vow.vowId) {
+              const result = await switchToSoloWitness(vow.vowId);
+              if (result.success) {
+                switchToSolo();
+                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              } else {
+                Alert.alert('Something went wrong', result.error || 'Please try again.');
+              }
+            } else {
+              switchToSolo();
+            }
+            setGoingSolo(false);
+          },
+        },
+      ],
+    );
+  }, [dates.endLabel, vow.vowId, switchToSolo]);
+
+  const handlePickNewWitness = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    router.push({ pathname: '/witness', params: { midVow: '1' } });
+  }, []);
+
+  const handleExtendDeadline = useCallback(async () => {
+    if (extending || !vow.vowId) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setExtending(true);
+
+    if (IS_EXPO_GO) {
+      setTimeout(() => {
+        setExtending(false);
+        setWitnessStatus('pending');
+        Alert.alert('Extended', `${vow.witnessName} has 48 more hours to respond.`);
+      }, 800);
+      return;
+    }
+
+    const result = await extendVowDeadline(vow.vowId, 48);
+    setExtending(false);
+
+    if (result.success) {
+      setWitnessStatus('pending');
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Extended', `${vow.witnessName} has 48 more hours to respond.`);
+    } else {
+      Alert.alert('Couldn\'t extend', result.error || 'Please try again.');
+    }
+  }, [extending, vow.vowId, vow.witnessName]);
+
+  const renderWitnessCard = () => {
+    if (isSelfWitness) {
+      return (
+        <View style={styles.infoRow}>
+          <ShieldCheck color={palette.goldBright} size={18} />
+          <Text style={styles.infoText}>
+            You're holding yourself accountable. On {dates.endLabel}, you'll deliver your own honest verdict.
+          </Text>
+        </View>
+      );
+    }
+
+    if (witnessStatus === 'accepted') {
+      return (
+        <View style={styles.infoRow}>
+          <CheckCircle2 color={palette.success} size={18} />
+          <Text style={styles.infoText}>
+            <Text style={styles.witnessAccepted}>{vow.witnessName} is locked in.</Text> They'll deliver the verdict on {dates.endLabel}.
+          </Text>
+        </View>
+      );
+    }
+
+    if (witnessStatus === 'declined') {
+      return (
+        <>
+          <View style={styles.infoRow}>
+            <UserMinus color={palette.warmAmber} size={18} />
+            <Text style={styles.infoText}>
+              {vow.witnessName} can't be your witness.
+            </Text>
+          </View>
+          <View style={styles.witnessActions}>
+            <Pressable
+              style={styles.witnessActionBtn}
+              onPress={handlePickNewWitness}
+              testID="live-new-witness"
+            >
+              <RefreshCw color={palette.goldBright} size={14} />
+              <Text style={styles.witnessActionText}>Pick a new witness</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.witnessActionBtn, goingSolo && styles.witnessActionBtnDisabled]}
+              onPress={handleGoSolo}
+              disabled={goingSolo}
+              testID="live-go-solo-declined"
+            >
+              {goingSolo ? (
+                <ActivityIndicator size="small" color={palette.goldBright} />
+              ) : (
+                <User color={palette.goldBright} size={14} />
+              )}
+              <Text style={styles.witnessActionText}>Go solo</Text>
+            </Pressable>
+          </View>
+        </>
+      );
+    }
+
+    if (witnessStatus === 'expired') {
+      return (
+        <>
+          <View style={styles.infoRow}>
+            <AlertCircle color={palette.warmAmber} size={18} />
+            <Text style={styles.infoText}>
+              Time's up. <Text style={styles.witnessPending}>{vow.witnessName}</Text> didn't respond.
+            </Text>
+          </View>
+          <View style={styles.witnessActions}>
+            <Pressable
+              style={styles.witnessActionBtn}
+              onPress={() => router.push('/self-resolve')}
+              testID="live-judge-myself"
+            >
+              <ShieldCheck color={palette.goldBright} size={14} />
+              <Text style={styles.witnessActionText}>Judge myself</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.witnessActionBtn, extending && styles.witnessActionBtnDisabled]}
+              onPress={handleExtendDeadline}
+              disabled={extending}
+              testID="live-extend-deadline"
+            >
+              {extending ? (
+                <ActivityIndicator size="small" color={palette.goldBright} />
+              ) : (
+                <Clock color={palette.goldBright} size={14} />
+              )}
+              <Text style={styles.witnessActionText}>Give them 48 more hours</Text>
+            </Pressable>
+          </View>
+        </>
+      );
+    }
+
+    if (witnessStatus === 'pending') {
+      return (
+        <>
+          <View style={styles.infoRow}>
+            <Clock color={palette.warmAmber} size={18} />
+            <Text style={styles.infoText}>
+              Waiting for <Text style={styles.witnessPending}>{vow.witnessName}</Text> to accept.
+            </Text>
+          </View>
+          <View style={styles.witnessActions}>
+            <Pressable
+              style={[
+                styles.witnessActionBtn,
+                (resendCooldown > 0 || resending) && styles.witnessActionBtnDisabled,
+              ]}
+              onPress={handleResendInvite}
+              disabled={resendCooldown > 0 || resending}
+              testID="live-resend-invite"
+            >
+              {resending ? (
+                <ActivityIndicator size="small" color={palette.goldBright} />
+              ) : (
+                <Send color={palette.goldBright} size={14} />
+              )}
+              <Text style={styles.witnessActionText}>
+                {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend invite'}
+              </Text>
+            </Pressable>
+            <Pressable
+              style={[styles.witnessActionBtn, goingSolo && styles.witnessActionBtnDisabled]}
+              onPress={handleGoSolo}
+              disabled={goingSolo}
+              testID="live-go-solo-pending"
+            >
+              {goingSolo ? (
+                <ActivityIndicator size="small" color={palette.goldBright} />
+              ) : (
+                <User color={palette.goldBright} size={14} />
+              )}
+              <Text style={styles.witnessActionText}>Go solo</Text>
+            </Pressable>
+          </View>
+        </>
+      );
+    }
+
+    return (
+      <View style={styles.infoRow}>
+        <Clock color={palette.textMuted} size={18} />
+        <Text style={styles.infoText}>
+          Checking witness status...
+        </Text>
+      </View>
+    );
+  };
+
   return (
     <RitualScreen
       footer={
         <>
           <PrimaryButton
-            label={isSelfWitness ? 'Deliver your verdict' : 'Preview the witness verdict'}
-            onPress={() => router.push(isSelfWitness ? '/self-resolve' : '/witness-verdict')}
+            label={
+              isSelfWitness || witnessStatus === 'expired'
+                ? 'Deliver your verdict'
+                : 'Preview the witness verdict'
+            }
+            onPress={() => router.push(
+              isSelfWitness || witnessStatus === 'expired'
+                ? '/self-resolve'
+                : '/witness-verdict'
+            )}
             testID="live-verdict"
           />
           <SecondaryButton label="View history" onPress={() => router.push('/history')} testID="live-history" />
@@ -101,7 +386,7 @@ export default function LiveScreen() {
 
       <TitleBlock
         title={activeVowText}
-        subtitle={`${vow.stake.amount} at stake \u00B7 Goes to ${brokenTarget} if broken`}
+        subtitle={`$${vow.stake.amount} at stake \u00B7 Goes to ${brokenTarget} if broken`}
       />
 
       <View style={styles.statsRow}>
@@ -110,92 +395,7 @@ export default function LiveScreen() {
       </View>
 
       <RitualCard>
-        {isSelfWitness ? (
-          <>
-            <View style={styles.infoRow}>
-              <ShieldCheck color={palette.goldBright} size={18} />
-              <Text style={styles.infoText}>
-                You're holding yourself accountable. On {dates.endLabel}, you'll deliver your own honest verdict.
-              </Text>
-            </View>
-          </>
-        ) : witnessStatus === 'accepted' ? (
-          <>
-            <View style={styles.infoRow}>
-              <CheckCircle2 color={palette.success} size={18} />
-              <Text style={styles.infoText}>
-                <Text style={styles.witnessAccepted}>{vow.witnessName} accepted!</Text> They're locked in and will deliver the verdict on {dates.endLabel}.
-              </Text>
-            </View>
-          </>
-        ) : witnessStatus === 'declined' ? (
-          <>
-            <View style={styles.infoRow}>
-              <UserMinus color={palette.warmAmber} size={18} />
-              <Text style={styles.infoText}>
-                {vow.witnessName} can't be your witness. Pick a new one or switch to solo.
-              </Text>
-            </View>
-            <View style={styles.witnessActions}>
-              <Pressable style={styles.witnessActionBtn} onPress={() => router.push('/witness')}>
-                <RefreshCw color={palette.goldBright} size={14} />
-                <Text style={styles.witnessActionText}>New witness</Text>
-              </Pressable>
-              <Pressable style={styles.witnessActionBtn} onPress={() => {
-                Alert.alert(
-                  'Switch to solo?',
-                  'Your vow continues with the same stake and deadline. You\'ll judge yourself. This can\'t be undone.',
-                  [
-                    { text: 'Keep waiting', style: 'cancel' },
-                    { text: 'Go solo', onPress: () => console.log('[LiveScreen] TODO: switch to solo mid-vow') },
-                  ]
-                );
-              }}>
-                <User color={palette.goldBright} size={14} />
-                <Text style={styles.witnessActionText}>Go solo</Text>
-              </Pressable>
-            </View>
-          </>
-        ) : witnessStatus === 'pending' ? (
-          <>
-            <View style={styles.infoRow}>
-              <Clock color={palette.warmAmber} size={18} />
-              <Text style={styles.infoText}>
-                <Text style={styles.witnessPending}>Waiting for {vow.witnessName}</Text> to accept.
-              </Text>
-            </View>
-            <View style={styles.witnessActions}>
-              <Pressable style={styles.witnessActionBtn} onPress={() => {
-                Alert.alert('Invite resent', `We sent another SMS to ${vow.witnessName}.`);
-              }}>
-                <RefreshCw color={palette.goldBright} size={14} />
-                <Text style={styles.witnessActionText}>Resend invite</Text>
-              </Pressable>
-              <Pressable style={styles.witnessActionBtn} onPress={() => {
-                Alert.alert(
-                  'Switch to solo?',
-                  'Your vow continues with the same stake and deadline. You\'ll judge yourself. This can\'t be undone.',
-                  [
-                    { text: 'Keep waiting', style: 'cancel' },
-                    { text: 'Go solo', onPress: () => console.log('[LiveScreen] TODO: switch to solo mid-vow') },
-                  ]
-                );
-              }}>
-                <User color={palette.goldBright} size={14} />
-                <Text style={styles.witnessActionText}>Go solo</Text>
-              </Pressable>
-            </View>
-          </>
-        ) : (
-          <>
-            <View style={styles.infoRow}>
-              <MessageCircleMore color={palette.goldBright} size={18} />
-              <Text style={styles.infoText}>
-                {vow.witnessName} is your witness. They'll get an SMS at verdict time.
-              </Text>
-            </View>
-          </>
-        )}
+        {renderWitnessCard()}
       </RitualCard>
 
       <Text style={styles.footerNote}>{dates.range} · {dates.verdictLabel}</Text>
@@ -276,14 +476,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     paddingVertical: 10,
+    paddingHorizontal: 6,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: palette.border,
     backgroundColor: palette.surfaceElevated,
   },
+  witnessActionBtnDisabled: {
+    opacity: 0.5,
+  },
   witnessActionText: {
     color: palette.goldBright,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600' as const,
   },
   footerNote: {

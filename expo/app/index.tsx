@@ -68,7 +68,7 @@ export default function HomeScreen() {
     if (shouldSkipRefine(trimmed)) {
       console.log('[HomeScreen] vow is already sharp, skipping refine');
       setRefinedText(trimmed);
-      router.push('/witness');
+      router.push('/stake');
     } else {
       console.log('[HomeScreen] vow needs sharpening, going to refine');
       router.push('/refine');

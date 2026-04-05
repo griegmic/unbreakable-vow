@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { CreditCard, Flame, HandCoins, HeartHandshake, ShieldCheck } from 'lucide-react-native';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { CreditCard, Flame, HeartHandshake, ShieldCheck } from 'lucide-react-native';
+import React, { useMemo, useRef, useState } from 'react';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   BackButton,
@@ -13,33 +13,26 @@ import {
   TitleBlock,
   VowPreview,
 } from '@/components/vow-ui';
-import { antiCauses, charities, consequenceOptions, palette, stakeAmounts } from '@/constants/unbreakable';
-import { useAuth } from '@/providers/auth-provider';
+import { antiCauses, charities, palette, stakeAmounts } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function StakeScreen() {
-  const { activeVowText, setStake, vow, isSelfWitness } = useVowFlow();
-  const { isAuthenticated } = useAuth();
-
-  useEffect(() => {
-    if (!vow.witnessName && !isSelfWitness) {
-      Alert.alert('Pick a witness first', 'You need to choose a witness before setting stakes.', [
-        { text: 'OK', onPress: () => router.replace('/witness') },
-      ]);
-    }
-  }, [vow.witnessName, isSelfWitness]);
+  const { activeVowText, setStake, vow } = useVowFlow();
 
   const [amount, setAmount] = useState<number>(vow.stake.amount);
-  const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(vow.stake.consequence);
-  const [destination, setDestination] = useState<string>(vow.stake.destination);
+  const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(
+    vow.stake.consequence === 'witness' ? 'charity' : vow.stake.consequence
+  );
+  const [destination, setDestination] = useState<string>(
+    vow.stake.consequence === 'witness' ? charities[0] : vow.stake.destination
+  );
 
   console.log('[StakeScreen] rendering, amount:', amount, 'consequence:', consequence);
 
   const options = useMemo(() => {
     if (consequence === 'anti') return antiCauses;
-    if (consequence === 'charity') return charities;
-    return [vow.witnessName || 'Your witness'];
-  }, [consequence, vow.witnessName]);
+    return charities;
+  }, [consequence]);
 
   const canContinue = useMemo(() => destination.trim().length > 0, [destination]);
 
@@ -47,7 +40,7 @@ export default function StakeScreen() {
     if (!canContinue) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setStake({ amount, consequence, destination });
-    router.push(isAuthenticated ? '/seal' : '/auth');
+    router.push('/witness');
   };
 
   const amountHint = useMemo(() => {
@@ -112,18 +105,18 @@ export default function StakeScreen() {
 
       <RitualCard>
         <Text style={styles.sectionTitle}>Where does it go if you fail?</Text>
-        {consequenceOptions.filter(o => !(isSelfWitness && o.id === 'witness')).map((option) => {
+        {[
+          { id: 'charity' as const, label: 'A cause you believe in', description: 'Your money does some good.', Icon: HeartHandshake },
+          { id: 'anti' as const, label: 'A cause you hate', description: 'Maximum pain. Maximum motivation.', Icon: Flame },
+        ].map((option) => {
           const active = consequence === option.id;
-          const Icon = option.id === 'charity' ? HeartHandshake : option.id === 'witness' ? HandCoins : Flame;
           return (
             <Pressable
               key={option.id}
               onPress={() => {
                 void Haptics.selectionAsync();
                 setConsequence(option.id);
-                if (option.id === 'witness') {
-                  setDestination(vow.witnessName || 'Your witness');
-                } else if (option.id === 'charity') {
+                if (option.id === 'charity') {
                   setDestination(charities[0]);
                 } else {
                   setDestination(antiCauses[0]);
@@ -135,7 +128,7 @@ export default function StakeScreen() {
               <View style={[styles.radio, active ? styles.radioActive : null]}>
                 {active ? <View style={styles.radioDot} /> : null}
               </View>
-              <Icon color={active ? palette.goldBright : palette.textSecondary} size={18} />
+              <option.Icon color={active ? palette.goldBright : palette.textSecondary} size={18} />
               <View style={styles.consequenceCopy}>
                 <Text style={[styles.consequenceTitle, active ? styles.consequenceTitleActive : null]}>{option.label}</Text>
                 <Text style={styles.consequenceDesc}>{option.description}</Text>
@@ -145,21 +138,19 @@ export default function StakeScreen() {
         })}
       </RitualCard>
 
-      {consequence !== 'witness' ? (
-        <RitualCard>
-          <Text style={styles.sectionTitle}>
-            {consequence === 'anti' ? 'Pick a cause that stings' : 'Pick a charity'}
-          </Text>
-          {consequence === 'anti' ? (
-            <Text style={styles.antiHint}>The worse it feels, the harder you'll try.</Text>
-          ) : null}
-          <View style={styles.optionWrap}>
-            {options.map((option) => (
-              <ChoiceChip key={option} label={option} active={destination === option} onPress={() => setDestination(option)} />
-            ))}
-          </View>
-        </RitualCard>
-      ) : null}
+      <RitualCard>
+        <Text style={styles.sectionTitle}>
+          {consequence === 'anti' ? 'Pick a cause that stings' : 'Pick a charity'}
+        </Text>
+        {consequence === 'anti' ? (
+          <Text style={styles.antiHint}>The worse it feels, the harder you'll try.</Text>
+        ) : null}
+        <View style={styles.optionWrap}>
+          {options.map((option) => (
+            <ChoiceChip key={option} label={option} active={destination === option} onPress={() => setDestination(option)} />
+          ))}
+        </View>
+      </RitualCard>
 
       <View style={styles.paymentHint}>
         <View style={styles.paymentIconRow}>

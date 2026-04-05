@@ -66,7 +66,9 @@ export default function SentScreen() {
           subtitle={
             isSelfWitness
               ? 'Your vow is locked. You\'ll judge yourself when the time comes.'
-              : 'Share the link so they can accept and hold you accountable.'
+              : vow.phoneNumber
+                ? `We texted ${vow.witnessName}. They'll get the details.`
+                : `Share the link so ${vow.witnessName} can accept.`
           }
         />
       </Animated.View>
@@ -130,7 +132,11 @@ export default function SentScreen() {
             <>
               <View style={styles.stepRow}>
                 <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-                <Text style={styles.stepText}>Share the invite link with {vow.witnessName}.</Text>
+                <Text style={styles.stepText}>
+                  {vow.phoneNumber
+                    ? `${vow.witnessName} got a text with the details.`
+                    : `Share the invite link with ${vow.witnessName}.`}
+                </Text>
               </View>
               <View style={styles.stepRow}>
                 <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
