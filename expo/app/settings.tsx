@@ -7,6 +7,7 @@ import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 import { BackButton, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
 import { signOut } from '@/lib/auth';
+import { useAuth } from '@/providers/auth-provider';
 import { useOathState } from '@/providers/oath-state';
 import { useVowFlow } from '@/providers/vow-flow';
 
@@ -39,6 +40,7 @@ function SettingsRow({ icon, label, description, onPress, trailing }: SettingsRo
 }
 
 export default function SettingsScreen() {
+  const { isAuthenticated } = useAuth();
   const { oathToggleEnabled, setOathToggle } = useOathState();
   const { resetVow } = useVowFlow();
 
@@ -88,32 +90,39 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <SettingsRow
-          icon={<LogOut color={palette.danger} size={18} />}
-          label="Sign out"
-          description="Log out of your account"
-          onPress={() => {
-            Alert.alert('Sign out', 'Are you sure?', [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Sign out',
-                style: 'destructive',
-                onPress: async () => {
-                  try {
-                    await signOut();
-                  } catch {
-                    // May fail in Expo Go — that's fine
-                  }
-                  resetVow();
-                  while (router.canGoBack()) {
-                    router.back();
-                  }
-                  router.replace('/');
+        {isAuthenticated ? (
+          <SettingsRow
+            icon={<LogOut color={palette.danger} size={18} />}
+            label="Sign out"
+            description="Log out of your account"
+            onPress={() => {
+              Alert.alert('Sign out', 'Are you sure?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Sign out',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await signOut();
+                    } catch {
+                      // May fail in Expo Go — that's fine
+                    }
+                    resetVow();
+                    router.dismissAll();
+                    router.replace('/');
+                  },
                 },
-              },
-            ]);
-          }}
-        />
+              ]);
+            }}
+          />
+        ) : (
+          <SettingsRow
+            icon={<Mail color={palette.textSecondary} size={18} />}
+            label="Sign in"
+            description="Sign in to seal vows with real stakes"
+            onPress={() => router.push('/auth')}
+          />
+        )}
       </View>
 
       <Text style={styles.version}>Unbreakable Vow v1.0</Text>
