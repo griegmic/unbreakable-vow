@@ -117,12 +117,20 @@ export default function SealScreen() {
 
   const invokeSealEdgeFunction = async (vowId: string) => {
     console.log('[SealScreen] invoking seal-vow edge function for:', vowId);
-    const { error } = await supabase.functions.invoke('seal-vow', {
-      body: { vow_id: vowId },
-    });
-    if (error) {
-      console.warn('[SealScreen] seal-vow edge function failed, falling back to direct seal:', error);
+    try {
+      const { data, error } = await supabase.functions.invoke('seal-vow', {
+        body: { vow_id: vowId },
+      });
+      console.log('[SealScreen] seal-vow response:', { data, error: error ? JSON.stringify(error) : null });
+      if (error) {
+        console.warn('[SealScreen] seal-vow edge function failed, falling back to direct seal:', error.message);
+        await sealVow(vowId);
+        console.log('[SealScreen] direct seal fallback succeeded');
+      }
+    } catch (invokeErr) {
+      console.warn('[SealScreen] seal-vow invoke threw, falling back to direct seal:', invokeErr);
       await sealVow(vowId);
+      console.log('[SealScreen] direct seal fallback succeeded after throw');
     }
   };
 
@@ -167,6 +175,7 @@ export default function SealScreen() {
     let vowId: string | null = null;
 
     try {
+      console.log('[SealScreen] step 1: creating vow record');
       const vowRecord = await createVow({
         rawInput: vow.rawInput,
         refinedText: activeVowText,
@@ -177,11 +186,18 @@ export default function SealScreen() {
         destination: vow.stake.destination,
       });
       vowId = vowRecord.id;
+      console.log('[SealScreen] step 1 done, vowId:', vowId);
       setVowId(vowId, vowRecord.witness_invite_token);
 
+      console.log('[SealScreen] step 2: creating payment intent');
       const { clientSecret } = await createPaymentIntent(vowId, vow.stake.amount * 100);
+      console.log('[SealScreen] step 2 done, got clientSecret');
 
+      console.log('[SealScreen] step 3: setup payment sheet');
       await setupPaymentSheet(clientSecret);
+      console.log('[SealScreen] step 3 done');
+
+      console.log('[SealScreen] step 4: showing payment sheet');
       const paid = await showPaymentSheet();
 
       if (!paid) {
@@ -198,7 +214,9 @@ export default function SealScreen() {
       setLoading(false);
       playSealAnimation();
     } catch (err) {
-      console.error('[SealScreen] seal flow error:', err);
+      const errMsg = err instanceof Error ? err.message : String(err);
+      console.error('[SealScreen] seal flow error:', errMsg);
+      console.error('[SealScreen] full error:', JSON.stringify(err, Object.getOwnPropertyNames(err instanceof Error ? err : {})));
       setLoading(false);
       if (paidVowId || (vowId && vowId === paidVowId)) {
         Alert.alert(
@@ -209,7 +227,7 @@ export default function SealScreen() {
         if (vowId) {
           await voidVow(vowId).catch(() => {});
         }
-        Alert.alert('Something went wrong', 'Please try again.');
+        Alert.alert('Something went wrong', errMsg || 'Please try again.');
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

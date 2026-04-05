@@ -9,7 +9,7 @@ const corsHeaders = {
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const serviceRoleKey = Deno.env.get('SERVICE_ROLE_KEY')!;
+const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY')!;
 
 async function sendPushNotification(pushToken: string, title: string, body: string, data?: Record<string, unknown>) {
   const response = await fetch('https://exp.host/--/api/v2/push/send', {
