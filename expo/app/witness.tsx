@@ -1,9 +1,9 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Check, ChevronRight, Link2, Search, Shield, UserPlus, X } from 'lucide-react-native';
+import { Check, ChevronRight, Search, Shield, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   BackButton,
@@ -12,10 +12,9 @@ import {
   TitleBlock,
 } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
-import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
-type WitnessMode = 'choose' | 'contacts' | 'invite' | 'solo-oath';
+type WitnessMode = 'choose' | 'contacts' | 'solo-oath';
 
 interface ContactEntry {
   id: string;
@@ -24,12 +23,8 @@ interface ContactEntry {
 }
 
 export default function WitnessScreen() {
-  const { displayName } = useAuth();
-  const { activeVowText, setWitness, setWitnessType } = useVowFlow();
+  const { setWitness, setWitnessType } = useVowFlow();
   const [mode, setMode] = useState<WitnessMode>('choose');
-  const [selectedName, setSelectedName] = useState<string>('');
-  const [phone, setPhone] = useState<string>('');
-  const [linkShared, setLinkShared] = useState(false);
   const [soloSworn, setSoloSworn] = useState<boolean>(false);
   const soloCheckScale = useRef(new Animated.Value(1)).current;
   const soloGlow = useRef(new Animated.Value(0)).current;
@@ -39,42 +34,7 @@ export default function WitnessScreen() {
   const [contactSearch, setContactSearch] = useState('');
   const [loadingContacts, setLoadingContacts] = useState(false);
 
-  console.log('[WitnessScreen] mode:', mode, 'selectedName:', selectedName);
-
-  const hasPhone = phone.replace(/\D/g, '').length >= 10;
-  const canFinish = useMemo(() => {
-    if (!selectedName.trim()) return false;
-    return hasPhone || linkShared;
-  }, [selectedName, hasPhone, linkShared]);
-
-  const handleConfirm = () => {
-    if (!selectedName.trim()) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setWitnessType('friend');
-    setWitness(selectedName, 'sms', phone);
-    router.push('/stake');
-  };
-
-  const makerName = displayName || 'Your friend';
-  const witnessUrl = `https://unbreakablevow.app/witness?preview&vow=${encodeURIComponent(activeVowText)}&name=${encodeURIComponent(selectedName)}&maker=${encodeURIComponent(makerName)}`;
-  const shareMessage = `I just made an Unbreakable Vow and I need you to hold me to it. Will you be my witness?\n\n${witnessUrl}`;
-
-  const handleShareLink = async () => {
-    if (Platform.OS !== 'web') {
-      try {
-        const result = await Share.share({
-          message: shareMessage,
-          url: witnessUrl,
-        });
-        if (result.action === Share.sharedAction) {
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          setLinkShared(true);
-        }
-      } catch {
-        console.log('[WitnessScreen] share failed');
-      }
-    }
-  };
+  console.log('[WitnessScreen] mode:', mode);
 
   const handlePickFromContacts = useCallback(async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -176,8 +136,11 @@ export default function WitnessScreen() {
   const handleInlineNameSubmit = () => {
     if (!inlineNameText.trim()) return;
     void Haptics.selectionAsync();
-    setSelectedName(inlineNameText.trim());
-    setMode('invite');
+    const name = inlineNameText.trim();
+    console.log('[WitnessScreen] inline name submitted:', name);
+    setWitnessType('friend');
+    setWitness(name, 'link');
+    router.push('/stake');
   };
 
   // ─── Choose mode ───
@@ -371,60 +334,7 @@ export default function WitnessScreen() {
     );
   }
 
-  // ─── Invite mode ───
-  return (
-    <RitualScreen
-      footer={
-        <PrimaryButton
-          label="Continue"
-          onPress={handleConfirm}
-          disabled={!canFinish}
-          testID="witness-confirm"
-        />
-      }
-    >
-      <Stack.Screen options={{ headerShown: false }} />
-      <BackButton />
-      <TitleBlock
-        title={`Let ${selectedName} know`}
-        subtitle="Send them a link so they can accept."
-      />
-
-      <Pressable
-        onPress={handleShareLink}
-        style={[styles.sharePreviewCard, linkShared && styles.sharePreviewCardDone]}
-        testID="witness-share-preview"
-      >
-        <View style={[styles.methodIcon, linkShared && styles.methodIconDone]}>
-          {linkShared
-            ? <Check color={palette.success} size={18} />
-            : <Link2 color={palette.goldBright} size={18} />}
-        </View>
-        <View style={styles.methodCopy}>
-          <Text style={styles.methodTitle}>{linkShared ? 'Link sent' : 'Share invite link'}</Text>
-          <Text style={styles.methodSub}>{linkShared ? 'Tap to share again' : 'iMessage, WhatsApp, or any app'}</Text>
-        </View>
-      </Pressable>
-
-      <View style={styles.manualInputShell}>
-        <Text style={styles.manualLabel}>THEIR PHONE NUMBER (OPTIONAL)</Text>
-        <TextInput
-          style={styles.manualInput}
-          placeholder="(555) 123-4567"
-          placeholderTextColor={palette.textMuted}
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
-          accessibilityLabel={`Phone number for ${selectedName}`}
-          testID="witness-phone-input"
-        />
-      </View>
-
-      <Text style={styles.inviteExplainer}>
-        For SMS reminders when it's due.
-      </Text>
-    </RitualScreen>
-  );
+  return null;
 }
 
 const styles = StyleSheet.create({
@@ -610,75 +520,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center' as const,
   },
-  manualInputShell: {
-    backgroundColor: palette.surface,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: palette.border,
-    paddingHorizontal: 16,
-    paddingTop: 14,
-    paddingBottom: 12,
-    gap: 8,
-  },
-  manualLabel: {
-    color: palette.textMuted,
-    fontSize: 11,
-    fontWeight: '600' as const,
-    letterSpacing: 0.8,
-  },
-  manualInput: {
-    color: palette.text,
-    fontSize: 17,
-    minHeight: 28,
-    paddingVertical: 0,
-  },
-  methodIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(212,162,79,0.08)',
-    borderWidth: 1,
-    borderColor: palette.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  methodCopy: {
-    flex: 1,
-    gap: 2,
-  },
-  methodTitle: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '500' as const,
-  },
-  methodSub: {
-    color: palette.textMuted,
-    fontSize: 13,
-  },
-  sharePreviewCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-    backgroundColor: palette.surface,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  sharePreviewCardDone: {
-    borderColor: 'rgba(82,214,154,0.25)',
-    backgroundColor: 'rgba(82,214,154,0.06)',
-  },
-  methodIconDone: {
-    backgroundColor: 'rgba(82,214,154,0.12)',
-    borderColor: 'rgba(82,214,154,0.25)',
-  },
-  inviteExplainer: {
-    color: palette.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
-    paddingHorizontal: 4,
-  },
+
   soloOathCard: {
     backgroundColor: palette.surface,
     borderRadius: 20,

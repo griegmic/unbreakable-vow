@@ -1,10 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Check, Copy } from 'lucide-react-native';
+import { Check, Send } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Linking, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
-import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock, VowPreview } from '@/components/vow-ui';
+import { PrimaryButton, RitualCard, RitualScreen, TitleBlock, VowPreview } from '@/components/vow-ui';
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
@@ -24,16 +24,16 @@ export default function SentScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleCopyLink = async () => {
-    void Haptics.selectionAsync();
+  const handleShareWithWitness = async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     if (Platform.OS !== 'web') {
       try {
-        const verdictUrl = vow.witnessInviteToken
+        const inviteUrl = vow.witnessInviteToken
           ? `https://unbreakablevow.app/witness?token=${vow.witnessInviteToken}`
           : '';
-        const shareMsg = verdictUrl
-          ? `I just made an Unbreakable Vow. Be my witness: ${verdictUrl}`
-          : `I just made an Unbreakable Vow. Can you be my witness?`;
+        const shareMsg = inviteUrl
+          ? `I just made an Unbreakable Vow \u2014 ${activeVowText}. You're my witness. ${inviteUrl}`
+          : `I just made an Unbreakable Vow. Can you hold me to it?`;
         await Share.share({ message: shareMsg });
       } catch {
         console.log('[SentScreen] share failed');
@@ -49,22 +49,7 @@ export default function SentScreen() {
   return (
     <RitualScreen
       footer={
-        <>
-          <PrimaryButton label="Got it" onPress={() => router.push('/live')} testID="sent-continue" />
-          {!isSelfWitness && (
-            <SecondaryButton
-              label="Preview what your witness sees"
-              onPress={() => {
-                if (vow.witnessInviteToken) {
-                  void Linking.openURL(`https://unbreakablevow.app/witness?token=${vow.witnessInviteToken}`);
-                } else {
-                  router.push('/witness-invite');
-                }
-              }}
-              testID="sent-witness-preview"
-            />
-          )}
-        </>
+        <PrimaryButton label="Got it" onPress={() => router.push('/live')} testID="sent-continue" />
       }
     >
       <Stack.Screen options={{ headerShown: false }} />
@@ -77,13 +62,11 @@ export default function SentScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={isSelfWitness ? 'Sealed.' : vow.phoneNumber ? 'Sealed. Invite sent.' : 'Sealed.'}
+          title={isSelfWitness ? 'Sealed.' : `Sealed. Now tell ${vow.witnessName}.`}
           subtitle={
             isSelfWitness
               ? 'Your vow is locked. You\'ll judge yourself when the time comes.'
-              : vow.phoneNumber
-                ? `We just texted ${vow.witnessName}. They'll get the details and choose to accept.`
-                : `Share the link with ${vow.witnessName} so they can be your witness.`
+              : 'Share the link so they can accept and hold you accountable.'
           }
         />
       </Animated.View>
@@ -91,6 +74,19 @@ export default function SentScreen() {
       <Animated.View style={{ opacity: contentFade }}>
         <VowPreview text={activeVowText} />
       </Animated.View>
+
+      {!isSelfWitness && (
+        <Animated.View style={{ opacity: contentFade }}>
+          <Pressable
+            onPress={handleShareWithWitness}
+            style={({ pressed }) => [styles.shareNudge, pressed && styles.shareNudgePressed]}
+            testID="sent-share-witness"
+          >
+            <Send color={palette.goldBright} size={18} />
+            <Text style={styles.shareNudgeText}>Send to {vow.witnessName}</Text>
+          </Pressable>
+        </Animated.View>
+      )}
 
       <Animated.View style={{ opacity: contentFade }}>
         <RitualCard>
@@ -134,11 +130,7 @@ export default function SentScreen() {
             <>
               <View style={styles.stepRow}>
                 <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-                <Text style={styles.stepText}>
-                  {vow.phoneNumber
-                    ? `We texted ${vow.witnessName}. They'll accept the invite.`
-                    : `Share the invite link with ${vow.witnessName}.`}
-                </Text>
+                <Text style={styles.stepText}>Share the invite link with {vow.witnessName}.</Text>
               </View>
               <View style={styles.stepRow}>
                 <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
@@ -152,15 +144,6 @@ export default function SentScreen() {
           )}
         </RitualCard>
       </Animated.View>
-
-      {!isSelfWitness ? (
-        <Animated.View style={[styles.actionsRow, { opacity: contentFade }]}>
-          <Pressable style={styles.smallAction} onPress={handleCopyLink} testID="sent-copy-link">
-            <Copy color={palette.textSecondary} size={16} />
-            <Text style={styles.smallActionText}>Share invite link</Text>
-          </Pressable>
-        </Animated.View>
-      ) : null}
     </RitualScreen>
   );
 }
@@ -230,25 +213,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
   },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  smallAction: {
-    flex: 1,
-    minHeight: 48,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.surface,
+  shareNudge: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: 'rgba(212,162,79,0.3)',
+    backgroundColor: 'rgba(212,162,79,0.06)',
   },
-  smallActionText: {
-    color: palette.textSecondary,
-    fontSize: 14,
+  shareNudgePressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
+  shareNudgeText: {
+    color: palette.goldBright,
+    fontSize: 16,
     fontWeight: '600' as const,
   },
 });
