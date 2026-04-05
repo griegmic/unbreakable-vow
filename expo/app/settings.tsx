@@ -99,8 +99,15 @@ export default function SettingsScreen() {
                 text: 'Sign out',
                 style: 'destructive',
                 onPress: async () => {
-                  await signOut();
+                  try {
+                    await signOut();
+                  } catch {
+                    // May fail in Expo Go — that's fine
+                  }
                   resetVow();
+                  while (router.canGoBack()) {
+                    router.back();
+                  }
                   router.replace('/');
                 },
               },
