@@ -1,12 +1,12 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Clock, RefreshCw, Send, Share2, ShieldCheck, User, UserMinus } from 'lucide-react-native';
+import { AlertCircle, Check, ChevronDown, ChevronUp, Clock, RefreshCw, Share2, ShieldCheck, User, UserMinus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { VowCertificate } from '@/components/vow-certificate';
-import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
+import { PrimaryButton, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
 import { extendVowDeadline, resendWitnessInvite, switchToSoloWitness } from '@/lib/vow-api';
@@ -15,6 +15,7 @@ import { useVowFlow } from '@/providers/vow-flow';
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
 type WitnessStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'unknown';
+type VowPhase = 'witness_pending' | 'vow_active' | 'verdict_due';
 
 export default function LiveScreen() {
   const { activeVowText, vow, isSelfWitness, switchToSolo } = useVowFlow();
@@ -37,6 +38,18 @@ export default function LiveScreen() {
   const [extending, setExtending] = useState<boolean>(false);
   const [showCertificate, setShowCertificate] = useState<boolean>(false);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const now = new Date();
+  const endDateStr = dates.endLabel;
+  const endDate = new Date(endDateStr);
+  const isVerdictDue = !isNaN(endDate.getTime()) && now >= endDate;
+
+  const witnessAccepted = witnessStatus === 'accepted';
+  const isWitnessPending = !isSelfWitness && !witnessAccepted && !isVerdictDue && witnessStatus !== 'declined' && witnessStatus !== 'expired';
+
+  const phase: VowPhase = isVerdictDue ? 'verdict_due' : (isWitnessPending ? 'witness_pending' : 'vow_active');
+
+  console.log('[LiveScreen] phase:', phase, '| witnessStatus:', witnessStatus, '| isSelfWitness:', isSelfWitness);
 
   useEffect(() => {
     if (!vow.rawInput) {
@@ -62,8 +75,8 @@ export default function LiveScreen() {
           setWitnessStatus('declined');
         } else if (data?.ends_at) {
           const endsAt = new Date(data.ends_at);
-          const now = new Date();
-          if (now >= endsAt) {
+          const n = new Date();
+          if (n >= endsAt) {
             setWitnessStatus('expired');
           } else {
             setWitnessStatus('pending');
@@ -124,7 +137,7 @@ export default function LiveScreen() {
     }, 1000);
   }, []);
 
-  const handleResendInvite = useCallback(async () => {
+  const _handleResendInvite = useCallback(async () => {
     if (resendCooldown > 0 || resending || !vow.vowId) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setResending(true);
@@ -246,49 +259,26 @@ export default function LiveScreen() {
     }
   }, [extending, vow.vowId, vow.witnessName]);
 
-  const renderWitnessCard = () => {
-    if (isSelfWitness) {
-      return (
-        <View style={styles.infoRow}>
-          <ShieldCheck color={palette.goldBright} size={18} />
-          <Text style={styles.infoText}>
-            You're holding yourself accountable. On {dates.endLabel}, you'll deliver your own honest verdict.
-          </Text>
-        </View>
-      );
-    }
-
-    if (witnessStatus === 'accepted') {
-      return (
-        <View style={styles.infoRow}>
-          <CheckCircle2 color={palette.success} size={18} />
-          <Text style={styles.infoText}>
-            <Text style={styles.witnessAccepted}>{vow.witnessName} is locked in.</Text> They'll deliver the verdict on {dates.endLabel}.
-          </Text>
-        </View>
-      );
-    }
-
+  const renderWitnessPendingCard = () => {
     if (witnessStatus === 'declined') {
       return (
-        <>
-          <View style={styles.infoRow}>
-            <UserMinus color={palette.warmAmber} size={18} />
-            <Text style={styles.infoText}>
-              {vow.witnessName} can't be your witness.
-            </Text>
+        <View style={styles.pendingCard}>
+          <View style={styles.pendingIconRow}>
+            <UserMinus color={palette.warmAmber} size={20} />
+            <Text style={styles.pendingTitle}>{vow.witnessName} can't be your witness.</Text>
           </View>
-          <View style={styles.witnessActions}>
+          <Text style={styles.pendingDesc}>Pick someone else or go solo — you'll judge yourself on {dates.endLabel}.</Text>
+          <View style={styles.declinedActions}>
             <Pressable
-              style={styles.witnessActionBtn}
+              style={styles.declinedActionBtn}
               onPress={handlePickNewWitness}
               testID="live-new-witness"
             >
               <RefreshCw color={palette.goldBright} size={14} />
-              <Text style={styles.witnessActionText}>Pick a new witness</Text>
+              <Text style={styles.declinedActionText}>Pick a new witness</Text>
             </Pressable>
             <Pressable
-              style={[styles.witnessActionBtn, goingSolo && styles.witnessActionBtnDisabled]}
+              style={[styles.declinedActionBtn, goingSolo && styles.declinedActionBtnDisabled]}
               onPress={handleGoSolo}
               disabled={goingSolo}
               testID="live-go-solo-declined"
@@ -298,33 +288,32 @@ export default function LiveScreen() {
               ) : (
                 <User color={palette.goldBright} size={14} />
               )}
-              <Text style={styles.witnessActionText}>Go solo</Text>
+              <Text style={styles.declinedActionText}>Go solo</Text>
             </Pressable>
           </View>
-        </>
+        </View>
       );
     }
 
     if (witnessStatus === 'expired') {
       return (
-        <>
-          <View style={styles.infoRow}>
-            <AlertCircle color={palette.warmAmber} size={18} />
-            <Text style={styles.infoText}>
-              Time's up. <Text style={styles.witnessPending}>{vow.witnessName}</Text> didn't respond.
-            </Text>
+        <View style={styles.pendingCard}>
+          <View style={styles.pendingIconRow}>
+            <AlertCircle color={palette.warmAmber} size={20} />
+            <Text style={styles.pendingTitle}>{vow.witnessName} didn't respond.</Text>
           </View>
-          <View style={styles.witnessActions}>
+          <Text style={styles.pendingDesc}>You can judge yourself or give them more time.</Text>
+          <View style={styles.declinedActions}>
             <Pressable
-              style={styles.witnessActionBtn}
+              style={styles.declinedActionBtn}
               onPress={() => router.push('/self-resolve')}
               testID="live-judge-myself"
             >
               <ShieldCheck color={palette.goldBright} size={14} />
-              <Text style={styles.witnessActionText}>Judge myself</Text>
+              <Text style={styles.declinedActionText}>Judge myself</Text>
             </Pressable>
             <Pressable
-              style={[styles.witnessActionBtn, extending && styles.witnessActionBtnDisabled]}
+              style={[styles.declinedActionBtn, extending && styles.declinedActionBtnDisabled]}
               onPress={handleExtendDeadline}
               disabled={extending}
               testID="live-extend-deadline"
@@ -334,102 +323,111 @@ export default function LiveScreen() {
               ) : (
                 <Clock color={palette.goldBright} size={14} />
               )}
-              <Text style={styles.witnessActionText}>Give them 48 more hours</Text>
+              <Text style={styles.declinedActionText}>Give 48 more hours</Text>
             </Pressable>
           </View>
-        </>
-      );
-    }
-
-    if (witnessStatus === 'pending') {
-      return (
-        <>
-          <View style={styles.infoRow}>
-            <Clock color={palette.warmAmber} size={18} />
-            <Text style={styles.infoText}>
-              Waiting for <Text style={styles.witnessPending}>{vow.witnessName}</Text> to accept.
-            </Text>
-          </View>
-          <Pressable
-            style={styles.nudgeBtn}
-            onPress={handleShareInviteLink}
-            testID="live-share-invite"
-          >
-            <Share2 color={palette.goldBright} size={15} />
-            <Text style={styles.nudgeBtnText}>Nudge {vow.witnessName}</Text>
-          </Pressable>
-          <View style={styles.witnessActions}>
-            {vow.phoneNumber ? (
-              <Pressable
-                style={[
-                  styles.witnessActionBtn,
-                  (resendCooldown > 0 || resending) && styles.witnessActionBtnDisabled,
-                ]}
-                onPress={handleResendInvite}
-                disabled={resendCooldown > 0 || resending}
-                testID="live-resend-invite"
-              >
-                {resending ? (
-                  <ActivityIndicator size="small" color={palette.goldBright} />
-                ) : (
-                  <Send color={palette.goldBright} size={14} />
-                )}
-                <Text style={styles.witnessActionText}>
-                  {resendCooldown > 0 ? `Resend SMS (${resendCooldown}s)` : 'Resend SMS'}
-                </Text>
-              </Pressable>
-            ) : null}
-            <Pressable
-              style={[styles.witnessActionBtn, goingSolo && styles.witnessActionBtnDisabled]}
-              onPress={handleGoSolo}
-              disabled={goingSolo}
-              testID="live-go-solo-pending"
-            >
-              {goingSolo ? (
-                <ActivityIndicator size="small" color={palette.goldBright} />
-              ) : (
-                <User color={palette.goldBright} size={14} />
-              )}
-              <Text style={styles.witnessActionText}>Go solo</Text>
-            </Pressable>
-          </View>
-        </>
+        </View>
       );
     }
 
     return (
-      <View style={styles.infoRow}>
-        <Clock color={palette.textMuted} size={18} />
-        <Text style={styles.infoText}>
-          Checking witness status...
+      <View style={styles.pendingCard}>
+        <View style={styles.pendingIconRow}>
+          <Clock color={palette.warmAmber} size={20} />
+          <Text style={styles.pendingTitle}>Waiting for {vow.witnessName} to accept</Text>
+        </View>
+        <Text style={styles.pendingDesc}>
+          {vow.phoneNumber
+            ? `We sent them an invite. Share the link below to nudge them personally.`
+            : `Share the invite so ${vow.witnessName} can accept and hold you to it.`
+          }
+        </Text>
+        <Pressable
+          onPress={() => { void handleShareInviteLink(); }}
+          style={({ pressed }) => [styles.shareInviteBtn, pressed && styles.shareInviteBtnPressed]}
+          testID="live-share-invite"
+        >
+          <Share2 color="#0B0D11" size={16} />
+          <Text style={styles.shareInviteText}>Share with {vow.witnessName}</Text>
+        </Pressable>
+        <Pressable
+          style={[styles.goSoloLink, goingSolo && { opacity: 0.5 }]}
+          onPress={handleGoSolo}
+          disabled={goingSolo}
+          testID="live-go-solo-pending"
+        >
+          {goingSolo ? (
+            <ActivityIndicator size="small" color={palette.textMuted} />
+          ) : (
+            <Text style={styles.goSoloText}>or go solo</Text>
+          )}
+        </Pressable>
+      </View>
+    );
+  };
+
+  const renderVowActiveCard = () => {
+    if (isSelfWitness) {
+      return (
+        <View style={styles.activeCard}>
+          <View style={styles.activeIconRow}>
+            <View style={styles.activeCheckBg}>
+              <ShieldCheck color={palette.goldBright} size={18} />
+            </View>
+            <Text style={styles.activeTitle}>You're the Vowkeeper.</Text>
+          </View>
+          <Text style={styles.activeQuote}>
+            You'll deliver your own honest verdict on {dates.endLabel}.
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.activeCard}>
+        <View style={styles.activeIconRow}>
+          <View style={styles.activeCheckBg}>
+            <Check color={palette.success} size={18} />
+          </View>
+          <Text style={styles.activeTitle}>{vow.witnessName} is watching.</Text>
+        </View>
+        <Text style={styles.activeQuote}>
+          {vow.witnessName} will deliver the verdict on {dates.endLabel}.
         </Text>
       </View>
     );
   };
 
-  return (
-    <RitualScreen
-      footer={
-        <>
-          <PrimaryButton
-            label={
-              isSelfWitness || witnessStatus === 'expired'
-                ? 'Deliver your verdict'
-                : 'Preview the witness verdict'
-            }
-            onPress={() => router.push(
-              isSelfWitness || witnessStatus === 'expired'
-                ? '/self-resolve'
-                : '/witness-verdict'
-            )}
-            testID="live-verdict"
-          />
-          <SecondaryButton label="View history" onPress={() => router.push('/history')} testID="live-history" />
-        </>
-      }
-    >
-      <Stack.Screen options={{ headerShown: false }} />
+  const renderVerdictDueCard = () => {
+    const isVowkeeper = isSelfWitness;
+    return (
+      <View style={styles.verdictCard}>
+        <Text style={styles.verdictHeadline}>Time's up.</Text>
+        <Text style={styles.verdictSub}>
+          {isVowkeeper
+            ? 'How did it go?'
+            : `${vow.witnessName}, it's your call.`
+          }
+        </Text>
+      </View>
+    );
+  };
 
+  const renderBadge = () => {
+    if (phase === 'verdict_due') {
+      return (
+        <View style={styles.statusBadgeWrap}>
+          <View style={styles.statusBadgeRow}>
+            <View style={styles.verdictBadge}>
+              <View style={styles.verdictDot} />
+              <Text style={styles.verdictBadgeText}>VERDICT DUE</Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    return (
       <View style={styles.statusBadgeWrap}>
         <View style={styles.statusBadgeRow}>
           <Animated.View style={[styles.statusPulse, { transform: [{ scale: pulseAnim }] }]} />
@@ -439,32 +437,45 @@ export default function LiveScreen() {
           </View>
         </View>
       </View>
+    );
+  };
 
-      {showSealedBanner && (
+  const renderFooter = () => {
+    if (phase === 'verdict_due') {
+      return (
+        <>
+          <PrimaryButton
+            label={isSelfWitness ? 'Deliver your verdict' : `Nudge ${vow.witnessName} to decide`}
+            onPress={() => router.push(isSelfWitness ? '/self-resolve' : '/witness-verdict')}
+            testID="live-verdict"
+          />
+          <SecondaryButton label="View history" onPress={() => router.push('/history')} testID="live-history" />
+        </>
+      );
+    }
+
+    return (
+      <SecondaryButton label="View history" onPress={() => router.push('/history')} testID="live-history" />
+    );
+  };
+
+  return (
+    <RitualScreen footer={renderFooter()}>
+      <Stack.Screen options={{ headerShown: false }} />
+
+      {renderBadge()}
+
+      {showSealedBanner && phase === 'witness_pending' && (
         <Animated.View style={[styles.sealedBanner, { opacity: sealedBannerFade, transform: [{ translateY: sealedBannerSlide }] }]}>
           <Text style={styles.sealedBannerTitle}>
-            {isSelfWitness ? 'Sealed. Your vow is locked.' : `Sealed.${vow.witnessName ? ` Now get ${vow.witnessName} on board.` : ''}`}
+            {isSelfWitness ? 'Sealed. Your vow is locked.' : `Sealed. Now get ${vow.witnessName} on board.`}
           </Text>
           <Text style={styles.sealedBannerSub}>
-            {isSelfWitness
-              ? 'You\'ll judge yourself when the time comes.'
-              : vow.phoneNumber
-                ? `We texted ${vow.witnessName}. Share the link below to nudge them personally.`
-                : `Share the invite so ${vow.witnessName} can accept and hold you to it.`
+            {vow.phoneNumber
+              ? `We texted ${vow.witnessName}. Share the link below to nudge them personally.`
+              : `Share the invite so ${vow.witnessName} can accept and hold you to it.`
             }
           </Text>
-          {!isSelfWitness && (
-            <Pressable
-              onPress={() => {
-                void handleShareInviteLink();
-              }}
-              style={({ pressed }) => [styles.sealedShareBtn, pressed && styles.sealedShareBtnPressed]}
-              testID="live-sealed-share"
-            >
-              <Share2 color="#0B0D11" size={16} />
-              <Text style={styles.sealedShareText}>Share with {vow.witnessName}</Text>
-            </Pressable>
-          )}
           <Pressable
             onPress={() => {
               void Haptics.selectionAsync();
@@ -472,10 +483,29 @@ export default function LiveScreen() {
                 setShowSealedBanner(false);
               });
             }}
-            style={styles.sealedDismiss}
+            style={styles.sealedDismissX}
             testID="live-sealed-dismiss"
           >
-            <Text style={styles.sealedDismissText}>{isSelfWitness ? 'Got it' : 'Dismiss'}</Text>
+            <Text style={styles.sealedDismissXText}>✕</Text>
+          </Pressable>
+        </Animated.View>
+      )}
+
+      {showSealedBanner && isSelfWitness && (
+        <Animated.View style={[styles.sealedBanner, { opacity: sealedBannerFade, transform: [{ translateY: sealedBannerSlide }] }]}>
+          <Text style={styles.sealedBannerTitle}>Sealed. Your vow is locked.</Text>
+          <Text style={styles.sealedBannerSub}>You'll judge yourself when the time comes.</Text>
+          <Pressable
+            onPress={() => {
+              void Haptics.selectionAsync();
+              Animated.timing(sealedBannerFade, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+                setShowSealedBanner(false);
+              });
+            }}
+            style={styles.sealedDismissX}
+            testID="live-sealed-dismiss-solo"
+          >
+            <Text style={styles.sealedDismissXText}>✕</Text>
           </Pressable>
         </Animated.View>
       )}
@@ -485,14 +515,16 @@ export default function LiveScreen() {
         subtitle={`${vow.stake.amount} at stake \u00B7 Goes to ${brokenTarget} if broken`}
       />
 
-      <View style={styles.statsRow}>
-        <StatPill value={dates.range} label="vow window" />
-        <StatPill value={dates.endLabel} label="verdict date" />
-      </View>
+      {phase !== 'verdict_due' && (
+        <View style={styles.statsRow}>
+          <StatPill value={dates.range} label="vow window" />
+          <StatPill value={dates.endLabel} label="verdict date" />
+        </View>
+      )}
 
-      <RitualCard>
-        {renderWitnessCard()}
-      </RitualCard>
+      {phase === 'witness_pending' && renderWitnessPendingCard()}
+      {phase === 'vow_active' && renderVowActiveCard()}
+      {phase === 'verdict_due' && renderVerdictDueCard()}
 
       <Pressable
         onPress={() => {
@@ -528,8 +560,6 @@ export default function LiveScreen() {
           </Pressable>
         </>
       )}
-
-      <Text style={styles.footerNote}>{dates.range} · {dates.verdictLabel}</Text>
     </RitualScreen>
   );
 }
@@ -572,35 +602,94 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     letterSpacing: 1,
   },
+  verdictBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(212,162,79,0.12)',
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+  },
+  verdictDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: palette.goldBright,
+  },
+  verdictBadgeText: {
+    color: palette.goldBright,
+    fontSize: 12,
+    fontWeight: '700' as const,
+    letterSpacing: 1,
+  },
   statsRow: {
     flexDirection: 'row',
     gap: 12,
   },
-  infoRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'flex-start',
+  pendingCard: {
+    backgroundColor: palette.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    padding: 20,
+    gap: 14,
   },
-  infoText: {
+  pendingIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  pendingTitle: {
     flex: 1,
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  pendingDesc: {
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 21,
   },
-  witnessAccepted: {
-    color: palette.success,
+  shareInviteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: palette.goldBright,
+    shadowColor: palette.gold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  shareInviteBtnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  shareInviteText: {
+    color: '#0B0D11',
+    fontSize: 15,
     fontWeight: '700' as const,
   },
-  witnessPending: {
-    color: palette.warmAmber,
-    fontWeight: '600' as const,
+  goSoloLink: {
+    alignItems: 'center',
+    paddingVertical: 4,
   },
-  witnessActions: {
+  goSoloText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  declinedActions: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 4,
   },
-  witnessActionBtn: {
+  declinedActionBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -613,17 +702,66 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     backgroundColor: palette.surfaceElevated,
   },
-  witnessActionBtnDisabled: {
+  declinedActionBtnDisabled: {
     opacity: 0.5,
   },
-  witnessActionText: {
+  declinedActionText: {
     color: palette.goldBright,
     fontSize: 12,
     fontWeight: '600' as const,
   },
-  footerNote: {
-    color: palette.textMuted,
-    fontSize: 13,
+  activeCard: {
+    backgroundColor: 'rgba(82,214,154,0.08)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(82,214,154,0.22)',
+    padding: 20,
+    gap: 12,
+  },
+  activeIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  activeCheckBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(82,214,154,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeTitle: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  activeQuote: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    fontStyle: 'italic',
+  },
+  verdictCard: {
+    backgroundColor: 'rgba(212,162,79,0.08)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    padding: 24,
+    gap: 8,
+    alignItems: 'center',
+  },
+  verdictHeadline: {
+    color: palette.text,
+    fontSize: 22,
+    fontWeight: '800' as const,
+    letterSpacing: -0.3,
+  },
+  verdictSub: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
     textAlign: 'center' as const,
   },
   sealedBanner: {
@@ -653,39 +791,21 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     textAlign: 'center' as const,
   },
-  sealedShareBtn: {
-    flexDirection: 'row',
+  sealedDismissX: {
+    position: 'absolute',
+    top: 12,
+    right: 14,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 14,
-    backgroundColor: palette.goldBright,
-    width: '100%',
-    shadowColor: palette.gold,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
+    backgroundColor: 'rgba(255,255,255,0.06)',
   },
-  sealedShareBtnPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
-  sealedShareText: {
-    color: '#0B0D11',
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  sealedDismiss: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  sealedDismissText: {
+  sealedDismissXText: {
     color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '500' as const,
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   certToggle: {
     flexDirection: 'row',
@@ -714,23 +834,6 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   shareRowText: {
-    color: palette.goldBright,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  nudgeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    borderColor: palette.warmAmberBorder,
-    backgroundColor: 'rgba(212,162,79,0.06)',
-    marginTop: 4,
-  },
-  nudgeBtnText: {
     color: palette.goldBright,
     fontSize: 14,
     fontWeight: '600' as const,
