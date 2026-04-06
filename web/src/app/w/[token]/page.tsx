@@ -43,7 +43,6 @@ export default async function WitnessInvitePage({ params }: Props) {
     .from('vows')
     .select('*')
     .eq('witness_invite_token', token)
-    .in('status', ['active', 'awaiting_verdict', 'kept', 'broken'])
     .single();
 
   if (vowError || !vow) {
