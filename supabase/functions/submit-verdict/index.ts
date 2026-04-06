@@ -1,7 +1,8 @@
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { sendSMS } from '../_shared/twilio.ts';
 import { outcomeMessage } from '../_shared/sms-templates.ts';
+
+const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -97,15 +98,19 @@ Deno.serve(async (req) => {
     // If kept: issue Stripe refund
     if (verdict === 'kept' && vow.stripe_payment_intent_id) {
       try {
-        const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
-          apiVersion: '2024-04-10',
-          httpClient: Stripe.createFetchHttpClient(),
+        const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Idempotency-Key': `refund-${vow.id}`,
+          },
+          body: new URLSearchParams({ payment_intent: vow.stripe_payment_intent_id }).toString(),
         });
-        await stripe.refunds.create({
-          payment_intent: vow.stripe_payment_intent_id,
-        }, {
-          idempotencyKey: `refund-${vow.id}`,
-        });
+        if (!refundRes.ok) {
+          const refundData = await refundRes.json();
+          throw new Error(refundData.error?.message || 'Refund failed');
+        }
       } catch (refundErr) {
         console.error('Stripe refund failed:', refundErr);
         // Flag for manual review — verdict is recorded but refund needs retry

@@ -1,4 +1,3 @@
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 
 const corsHeaders = {
@@ -6,13 +5,23 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
-  apiVersion: '2024-04-10',
-  httpClient: Stripe.createFetchHttpClient(),
-});
-
+const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY')!;
+
+async function stripePost(endpoint: string, params: Record<string, string>) {
+  const res = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(params).toString(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `Stripe error: ${res.status}`);
+  return data;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -54,31 +63,32 @@ Deno.serve(async (req) => {
       .from('users')
       .select('stripe_customer_id')
       .eq('id', user.id)
-      .single();
+      .maybeSingle();
 
     let customerId = profile?.stripe_customer_id;
     if (!customerId) {
-      const customer = await stripe.customers.create({
-        email: user.email,
-        metadata: { supabase_user_id: user.id },
+      const customer = await stripePost('customers', {
+        email: user.email || '',
+        'metadata[supabase_user_id]': user.id,
       });
       customerId = customer.id;
+      // Try to update, but don't fail if user row doesn't exist
       await supabase
         .from('users')
-        .update({ stripe_customer_id: customerId })
-        .eq('id', user.id);
+        .upsert({ id: user.id, stripe_customer_id: customerId }, { onConflict: 'id' });
     }
 
     // Create PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount,
+    const paymentIntent = await stripePost('payment_intents', {
+      amount: String(amount),
       currency: 'usd',
       customer: customerId,
       capture_method: 'manual',
-      metadata: { vow_id, user_id: user.id },
+      'metadata[vow_id]': vow_id,
+      'metadata[user_id]': user.id,
     });
 
-    // Save PI ID to vow (verify ownership)
+    // Save PI ID to vow
     await supabase
       .from('vows')
       .update({ stripe_payment_intent_id: paymentIntent.id })
@@ -93,7 +103,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error('create-payment-intent error:', err);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    return new Response(JSON.stringify({ error: err.message || 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

@@ -1,12 +1,8 @@
-import Stripe from 'https://esm.sh/stripe@14.14.0?target=deno';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
 import { sendSMS } from '../_shared/twilio.ts';
 import { sealMessage } from '../_shared/sms-templates.ts';
 
-const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
-  apiVersion: '2024-04-10',
-  httpClient: Stripe.createFetchHttpClient(),
-});
+const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,6 +11,29 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY')!;
+
+async function stripeGet(endpoint: string) {
+  const res = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
+    headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `Stripe error: ${res.status}`);
+  return data;
+}
+
+async function stripePost(endpoint: string, params?: Record<string, string>) {
+  const res = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params ? new URLSearchParams(params).toString() : '',
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `Stripe error: ${res.status}`);
+  return data;
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -32,7 +51,6 @@ Deno.serve(async (req) => {
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
-    // Verify JWT
     const { data: { user }, error: authError } = await supabase.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
@@ -51,7 +69,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify ownership and get vow
     const { data: vow, error: vowError } = await supabase
       .from('vows')
       .select('*')
@@ -66,7 +83,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Verify vow is in correct state and has payment
     if (!['draft', 'sealed'].includes(vow.status)) {
       return new Response(JSON.stringify({ error: 'Vow is not in a sealable state', status: vow.status }), {
         status: 409,
@@ -82,11 +98,10 @@ Deno.serve(async (req) => {
     }
 
     // Verify payment status and capture if needed
-    const paymentIntent = await stripe.paymentIntents.retrieve(vow.stripe_payment_intent_id);
+    const paymentIntent = await stripeGet(`payment_intents/${vow.stripe_payment_intent_id}`);
 
     if (paymentIntent.status === 'requires_capture') {
-      // Manual capture mode — capture funds now that seal is confirmed
-      await stripe.paymentIntents.capture(vow.stripe_payment_intent_id);
+      await stripePost(`payment_intents/${vow.stripe_payment_intent_id}/capture`);
     } else if (paymentIntent.status !== 'succeeded') {
       return new Response(JSON.stringify({
         error: 'Payment not confirmed',
@@ -97,7 +112,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Update vow status to active (atomic with status check)
     const now = new Date().toISOString();
     const { error: updateError, count } = await supabase
       .from('vows')
@@ -116,7 +130,6 @@ Deno.serve(async (req) => {
     }
 
     if (!count) {
-      // Vow was already sealed (status no longer draft/sealed) — idempotent return
       return new Response(JSON.stringify({ success: true, already_sealed: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -124,9 +137,7 @@ Deno.serve(async (req) => {
 
     const witnessUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
 
-    // Send SMS #1 to witness (seal notification with acceptance link)
     if (vow.witness_phone) {
-      // Get vow owner's display name
       const { data: profile } = await supabase
         .from('users')
         .select('display_name')
@@ -142,20 +153,16 @@ Deno.serve(async (req) => {
       try {
         const messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDate, witnessUrl);
         const twilioSid = await sendSMS(vow.witness_phone, messageBody);
-
         await supabase.from('sms_log').insert({
           vow_id,
           message_type: 'seal',
           twilio_sid: twilioSid,
         });
       } catch (smsErr) {
-        // Log but don't fail the seal — SMS is best-effort
-        // Do NOT insert sms_log on failure so retries aren't blocked by idempotency check
         console.error('[seal-vow] SMS send failed:', smsErr);
       }
     }
 
-    // Queue push notification to vow owner
     const amountDollarsPush = Math.round(vow.stake_amount / 100);
     await supabase.from('push_queue').insert({
       user_id: user.id,
@@ -165,14 +172,12 @@ Deno.serve(async (req) => {
       send_after: now,
     });
 
-    return new Response(JSON.stringify({
-      success: true,
-    }), {
+    return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
     console.error('seal-vow error:', err);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+    return new Response(JSON.stringify({ error: err.message || 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
