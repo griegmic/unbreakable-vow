@@ -1,9 +1,9 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { Check, ChevronRight, Search, Shield, ToggleLeft, ToggleRight, UserPlus, X } from 'lucide-react-native';
+import { ChevronRight, Link, Search, Shield, ToggleLeft, ToggleRight, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   BackButton,
@@ -255,6 +255,29 @@ export default function WitnessScreen() {
           <ChevronRight color={palette.goldBright} size={18} />
         </Pressable>
 
+        <Pressable
+          onPress={async () => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            try {
+              const vowText = vow.rawInput || 'my vow';
+              const msg = `I'm making an Unbreakable Vow: "${vowText}" — ${stakeAmount} is on the line. I need you to hold me accountable. Download the app: https://unbreakablevow.app`;
+              console.log('[WitnessScreen] sharing invite link');
+              await Share.share(
+                Platform.OS === 'ios'
+                  ? { message: msg, url: 'https://unbreakablevow.app' }
+                  : { message: msg }
+              );
+            } catch {
+              console.log('[WitnessScreen] share cancelled');
+            }
+          }}
+          style={({ pressed }) => [styles.shareLinkBtn, pressed && styles.shareLinkBtnPressed]}
+          testID="witness-share-link"
+        >
+          <Link color={palette.textSecondary} size={16} />
+          <Text style={styles.shareLinkText}>Send a link instead</Text>
+        </Pressable>
+
         <View style={styles.inlineInputWrap}>
           <TextInput
             style={styles.inlineInput}
@@ -438,6 +461,27 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 13,
     lineHeight: 18,
+  },
+  shareLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    marginTop: 2,
+  },
+  shareLinkBtnPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.98 }],
+  },
+  shareLinkText: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   inlineInputWrap: {
     flexDirection: 'row',
