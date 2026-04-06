@@ -16,7 +16,7 @@ export default function SentPage() {
   const witnessUrl = vow.witnessInviteToken && origin
     ? `${origin}/w/${vow.witnessInviteToken}`
     : '';
-  const shareText = `I just made an Unbreakable Vow — ${activeVowText} You're my witness.`;
+  const shareText = `I just made a vow: "${activeVowText.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept:`;
 
   useEffect(() => {
     setOrigin(window.location.origin);
@@ -55,11 +55,11 @@ export default function SentPage() {
 
       <FadeUp delay={0.1}>
         <TitleBlock
-          title={isSelfWitness ? 'Sealed.' : `Sealed. Now tell ${vow.witnessName}.`}
+          title={isSelfWitness ? 'Sealed.' : `${vow.witnessName} is your witness.`}
           subtitle={
             isSelfWitness
               ? "Your vow is locked. You'll judge yourself when the time comes."
-              : `Share the link so ${vow.witnessName} can accept.`
+              : `Send them a personal message so they know you're serious.`
           }
         />
       </FadeUp>
@@ -74,7 +74,7 @@ export default function SentPage() {
             <ShareButton
               url={witnessUrl}
               text={shareText}
-              buttonText={`Send to ${vow.witnessName}`}
+              buttonText={`Text ${vow.witnessName}`}
             />
             <div
               className="rounded-[16px] p-3 flex items-center gap-3"
@@ -85,6 +85,9 @@ export default function SentPage() {
               </p>
               <CopyLinkButton url={witnessUrl} />
             </div>
+            <p className="text-[12px] text-center" style={{ color: 'var(--text-muted)' }}>
+              A personal message hits harder than an automated text.
+            </p>
           </div>
         </FadeUp>
       )}
@@ -132,7 +135,7 @@ export default function SentPage() {
           <span className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>What happens next</span>
           <div className="flex flex-col gap-3">
             {[
-              { n: '1', text: isSelfWitness ? 'Live your vow for the next 7 days.' : `${vow.witnessName} gets a link to accept the witness role.` },
+              { n: '1', text: isSelfWitness ? 'Live your vow for the next 7 days.' : `${vow.witnessName} taps the link to accept.` },
               { n: '2', text: isSelfWitness ? "When time's up, you decide: kept or broken." : `Live your vow. ${vow.witnessName} is watching.` },
               { n: '3', text: isSelfWitness ? 'If broken, your stake goes to the cause.' : `On verdict day, ${vow.witnessName} calls it: kept or broken.` },
             ].map(({ n, text }) => (

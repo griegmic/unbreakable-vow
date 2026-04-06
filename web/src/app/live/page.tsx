@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { User, Scale, Calendar, RefreshCw, Shield } from 'lucide-react';
+import { User, Scale, Calendar, Shield, Clock } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp, HeaderBadge } from '@/components/ui';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
 import { useAuth } from '@/providers/auth-provider';
@@ -15,7 +15,6 @@ export default function LivePage() {
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [vow, setVow] = useState<Vow | null>(null);
   const [loading, setLoading] = useState(true);
-  const [resendCooldown, setResendCooldown] = useState(0);
   const [actionBusy, setActionBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState('');
   const [origin, setOrigin] = useState('');
@@ -55,34 +54,7 @@ export default function LivePage() {
 
   useEffect(() => { setOrigin(window.location.origin); }, []);
 
-  // Resend cooldown timer
-  useEffect(() => {
-    if (resendCooldown <= 0) return;
-    const t = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [resendCooldown]);
 
-  const handleResendInvite = async () => {
-    if (!vow || resendCooldown > 0 || actionBusy) return;
-    setActionBusy(true);
-    setActionMsg('');
-    try {
-      // Re-share the link (on web, we copy to clipboard as "resend")
-      const origin = window.location.origin;
-      const url = `${origin}/w/${vow.witness_invite_token}`;
-      if (navigator.share) {
-        await navigator.share({ text: `I made an Unbreakable Vow — ${vow.refined_text} You're my witness.`, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-      }
-      setActionMsg('Link copied — share it with your witness!');
-      setResendCooldown(60);
-    } catch {
-      // User cancelled share
-    } finally {
-      setActionBusy(false);
-    }
-  };
 
   const handleGoSolo = async () => {
     if (!vow || actionBusy) return;
@@ -142,8 +114,11 @@ export default function LivePage() {
   const witnessUrl = vow.witness_invite_token && origin ? `${origin}/w/${vow.witness_invite_token}` : '';
   const isSolo = vow.witness_name === 'Just me';
 
-  const statusLabel = isAwaiting ? 'Awaiting verdict' : 'Active';
-  const statusColor = isAwaiting ? 'var(--gold)' : 'var(--success)';
+  const witnessPending = !isSolo && !vow.witness_accepted_at && !vow.witness_declined;
+  const witnessDeclined = !isSolo && vow.witness_declined;
+  const statusLabel = isAwaiting ? 'Awaiting verdict' : witnessPending ? `Waiting for ${vow.witness_name}` : 'Active';
+  const statusColor = isAwaiting ? 'var(--gold)' : witnessPending ? 'var(--gold)' : 'var(--success)';
+  const nudgeShareText = `I made a vow: "${vow.refined_text.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept:`;
 
   return (
     <RitualScreen
@@ -152,10 +127,10 @@ export default function LivePage() {
           {isSolo && (isActive || isAwaiting) && (
             <PrimaryButton label="Deliver your verdict" onPress={() => router.push('/self-resolve')} />
           )}
-          {!isSolo && witnessUrl && (
+          {!isSolo && !witnessPending && witnessUrl && (
             <ShareButton
               url={witnessUrl}
-              text={`I made an Unbreakable Vow — ${vow.refined_text} You're my witness.`}
+              text={nudgeShareText}
               buttonText={`Share with ${vow.witness_name}`}
             />
           )}
@@ -188,8 +163,39 @@ export default function LivePage() {
         </div>
       </FadeUp>
 
-      {/* Share link */}
-      {!isSolo && witnessUrl && (
+      {/* Witness pending nudge */}
+      {witnessPending && witnessUrl && (
+        <FadeUp delay={0.18}>
+          <div
+            className="rounded-[22px] p-5 flex flex-col gap-4"
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(212,162,79,0.15)' }}>
+                <Clock className="w-5 h-5" style={{ color: 'var(--gold)' }} />
+              </div>
+              <div>
+                <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Waiting for {vow.witness_name}</span>
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>They haven&apos;t accepted yet</span>
+              </div>
+            </div>
+            <ShareButton
+              url={witnessUrl}
+              text={nudgeShareText}
+              buttonText={`Nudge ${vow.witness_name}`}
+            />
+            <div className="flex items-center gap-3">
+              <div className="rounded-[12px] p-2.5 flex-1 flex items-center gap-2" style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}>
+                <p className="flex-1 text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{witnessUrl}</p>
+                <CopyLinkButton url={witnessUrl} />
+              </div>
+            </div>
+          </div>
+        </FadeUp>
+      )}
+
+      {/* Witness accepted - show link */}
+      {!isSolo && !witnessPending && !witnessDeclined && witnessUrl && (
         <FadeUp delay={0.18}>
           <div
             className="rounded-[16px] p-3 flex items-center gap-3"
@@ -227,20 +233,8 @@ export default function LivePage() {
                     {vow.witness_accepted_at ? 'Accepted' : vow.witness_declined ? 'Declined' : 'Pending'}
                   </span>
                 </div>
-                {/* Witness action buttons when pending or declined */}
-                {!vow.witness_accepted_at && (
+                {(witnessPending || witnessDeclined) && (
                   <div className="flex gap-2 mt-1">
-                    {!vow.witness_declined && (
-                      <button
-                        onClick={handleResendInvite}
-                        disabled={resendCooldown > 0 || actionBusy}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-medium transition-opacity disabled:opacity-40"
-                        style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend invite'}
-                      </button>
-                    )}
                     <button
                       onClick={handleGoSolo}
                       disabled={actionBusy}
@@ -248,7 +242,7 @@ export default function LivePage() {
                       style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
                     >
                       <Shield className="w-3 h-3" />
-                      Go solo
+                      Go solo instead
                     </button>
                   </div>
                 )}
