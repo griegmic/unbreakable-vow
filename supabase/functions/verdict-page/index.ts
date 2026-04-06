@@ -249,7 +249,7 @@ Deno.serve(async (req) => {
   if (!vow.witness_accepted_at) {
     return new Response(null, {
       status: 302,
-      headers: { 'Location': `https://unbreakablevow.app/witness?token=${token}` },
+      headers: { 'Location': `https://unbreakablevow.app/w/${token}` },
     });
   }
 

@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const witnessUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
+    const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
 
     if (vow.witness_phone) {
       const { data: profile } = await supabase

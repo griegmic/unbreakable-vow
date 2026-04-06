@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import VerdictClient from './client';
+import VerdictNotFound from './not-found-client';
 
 interface Props {
   params: Promise<{ token: string }>;
@@ -19,14 +20,7 @@ export default async function VerdictPage({ params }: Props) {
     .single();
 
   if (!vow) {
-    return (
-      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-serif font-bold mb-2" style={{ color: 'var(--text)' }}>Vow not found</h1>
-          <p className="text-[15px]" style={{ color: 'var(--text-secondary)' }}>This link may have expired or is invalid.</p>
-        </div>
-      </div>
-    );
+    return <VerdictNotFound token={token} />;
   }
 
   if (vow.verdict) {

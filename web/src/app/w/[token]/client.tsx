@@ -33,32 +33,52 @@ export default function WitnessInviteClient({ vow, token }: { vow: Vow; token: s
     if (!oathChecked || busy) return;
     setBusy(true);
     setError(null);
-    const { error: updateError } = await supabase.from('vows')
-      .update({ witness_accepted_at: new Date().toISOString() })
-      .eq('witness_invite_token', token);
-    if (updateError) {
-      setError(updateError.message);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('accept-witness', {
+        body: { token, action: 'accept' },
+      });
+      if (fnError) {
+        setError('Failed to accept. Please try again.');
+        setBusy(false);
+        return;
+      }
+      if (data?.error) {
+        setError(data.error === 'vow_not_active' ? 'This vow is no longer active.' : 'Something went wrong. Please try again.');
+        setBusy(false);
+        return;
+      }
+      setStatus('accepted');
+    } catch {
+      setError('Network error. Please check your connection and try again.');
+    } finally {
       setBusy(false);
-      return;
     }
-    setStatus('accepted');
-    setBusy(false);
   };
 
   const handleDecline = async () => {
     if (busy) return;
     setBusy(true);
     setError(null);
-    const { error: updateError } = await supabase.from('vows')
-      .update({ witness_declined: true })
-      .eq('witness_invite_token', token);
-    if (updateError) {
-      setError(updateError.message);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke('accept-witness', {
+        body: { token, action: 'decline' },
+      });
+      if (fnError) {
+        setError('Failed to decline. Please try again.');
+        setBusy(false);
+        return;
+      }
+      if (data?.error) {
+        setError('Something went wrong. Please try again.');
+        setBusy(false);
+        return;
+      }
+      setStatus('declined');
+    } catch {
+      setError('Network error. Please check your connection and try again.');
+    } finally {
       setBusy(false);
-      return;
     }
-    setStatus('declined');
-    setBusy(false);
   };
 
   const endDate = vow.ends_at
