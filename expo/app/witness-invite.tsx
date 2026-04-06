@@ -1,27 +1,73 @@
 import * as Haptics from 'expo-haptics';
-import { Stack, router } from 'expo-router';
-import { Check, Shield } from 'lucide-react-native';
-import React, { useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { AlertCircle, Check, CheckCircle2, Shield } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
+import { palette, serifFont } from '@/constants/unbreakable';
+import { acceptWitnessInvite, declineWitnessInvite, getVowByWitnessToken, type WitnessVowData } from '@/lib/vow-api';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
+
+type ScreenState = 'loading' | 'invite' | 'accepted' | 'declined' | 'already_accepted' | 'error';
 
 export default function WitnessInviteScreen() {
   const { displayName } = useAuth();
   const { activeVowText, vow } = useVowFlow();
+  const params = useLocalSearchParams<{ token?: string }>();
+  const token = params.token;
+
+  const [screenState, setScreenState] = useState<ScreenState>(token ? 'loading' : 'invite');
+  const [remoteVow, setRemoteVow] = useState<WitnessVowData | null>(null);
   const [sworn, setSworn] = useState<boolean>(false);
+  const [accepting, setAccepting] = useState<boolean>(false);
+  const [declining, setDeclining] = useState<boolean>(false);
+  const [errorMsg, setErrorMsg] = useState<string>('');
 
-  const makerName = displayName || 'Your friend';
-  const dates = getVowVerdictDate(vow.rawInput);
-  const brokenTarget =
-    vow.stake.consequence === 'witness'
-      ? 'you'
-      : vow.stake.destination;
+  const isRemote = !!token;
+  const vowText = isRemote ? (remoteVow?.refined_text ?? '') : activeVowText;
+  const stakeAmount = isRemote ? ((remoteVow?.stake_amount ?? 0) / 100) : vow.stake.amount;
+  const makerName = isRemote ? (remoteVow?.user_display_name || 'Your friend') : (displayName || 'Your friend');
+  const consequence = isRemote ? (remoteVow?.consequence ?? 'charity') : vow.stake.consequence;
+  const destination = isRemote ? (remoteVow?.destination ?? '') : vow.stake.destination;
+  const brokenTarget = consequence === 'witness' ? 'you' : destination;
 
-  console.log('[WitnessInviteScreen] rendering for witness:', vow.witnessName);
+  const verdictDate = isRemote && remoteVow?.ends_at
+    ? new Date(remoteVow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+    : '';
+
+  console.log('[WitnessInviteScreen] token:', token, 'isRemote:', isRemote, 'screenState:', screenState);
+
+  useEffect(() => {
+    if (!token) return;
+
+    async function loadVow() {
+      console.log('[WitnessInviteScreen] fetching vow by token:', token);
+      const result = await getVowByWitnessToken(token!);
+
+      if (!result.success || !result.vow) {
+        console.log('[WitnessInviteScreen] vow not found:', result.error);
+        setErrorMsg(result.error || 'This vow link is no longer valid.');
+        setScreenState('error');
+        return;
+      }
+
+      console.log('[WitnessInviteScreen] vow loaded:', result.vow.id);
+      setRemoteVow(result.vow);
+
+      if (result.vow.witness_accepted_at) {
+        setScreenState('already_accepted');
+      } else if (result.vow.witness_declined) {
+        setErrorMsg('This invite has been declined.');
+        setScreenState('error');
+      } else {
+        setScreenState('invite');
+      }
+    }
+
+    void loadVow();
+  }, [token]);
 
   const checkboxScale = useRef(new Animated.Value(1)).current;
   const swearGlow = useRef(new Animated.Value(0)).current;
@@ -44,6 +90,66 @@ export default function WitnessInviteScreen() {
     Animated.timing(swearGlow, { toValue: 0, duration: 300, useNativeDriver: false }).start();
   };
 
+  const handleAccept = useCallback(async () => {
+    if (accepting) return;
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+    if (!isRemote) {
+      router.push('/live');
+      return;
+    }
+
+    if (!remoteVow) return;
+    setAccepting(true);
+
+    const result = await acceptWitnessInvite(remoteVow.id);
+    setAccepting(false);
+
+    if (result.success) {
+      console.log('[WitnessInviteScreen] witness accepted successfully');
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setScreenState('accepted');
+    } else {
+      Alert.alert('Something went wrong', result.error || 'Please try again.');
+    }
+  }, [accepting, isRemote, remoteVow]);
+
+  const handleDecline = useCallback(async () => {
+    if (!isRemote) {
+      router.back();
+      return;
+    }
+
+    if (!remoteVow) {
+      router.back();
+      return;
+    }
+
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    Alert.alert(
+      'Decline this invite?',
+      `${makerName} chose you to hold them accountable. Are you sure?`,
+      [
+        { text: 'Keep it', style: 'cancel' },
+        {
+          text: 'Decline',
+          style: 'destructive',
+          onPress: async () => {
+            setDeclining(true);
+            const result = await declineWitnessInvite(remoteVow.id);
+            setDeclining(false);
+            if (result.success) {
+              setScreenState('declined');
+            } else {
+              Alert.alert('Something went wrong', result.error || 'Please try again.');
+            }
+          },
+        },
+      ],
+    );
+  }, [isRemote, remoteVow, makerName]);
+
   const swearBorderColor = swearGlow.interpolate({
     inputRange: [0, 1],
     outputRange: [palette.border, palette.borderStrong],
@@ -54,20 +160,96 @@ export default function WitnessInviteScreen() {
     outputRange: [0, 0.06],
   });
 
+  if (screenState === 'loading') {
+    return (
+      <RitualScreen>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centeredWrap}>
+          <ActivityIndicator size="large" color={palette.goldBright} />
+          <Text style={styles.loadingText}>Loading vow...</Text>
+        </View>
+      </RitualScreen>
+    );
+  }
+
+  if (screenState === 'error') {
+    return (
+      <RitualScreen>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centeredWrap}>
+          <View style={styles.errorIconWrap}>
+            <AlertCircle color={palette.warmAmber} size={32} />
+          </View>
+          <Text style={styles.errorTitle}>Vow not found</Text>
+          <Text style={styles.errorBody}>{errorMsg}</Text>
+        </View>
+      </RitualScreen>
+    );
+  }
+
+  if (screenState === 'accepted') {
+    return (
+      <RitualScreen>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centeredWrap}>
+          <View style={styles.successIconWrap}>
+            <CheckCircle2 color={palette.success} size={36} />
+          </View>
+          <Text style={styles.successTitle}>You're locked in.</Text>
+          <Text style={styles.successBody}>
+            You'll be notified when it's time to deliver your verdict{verdictDate ? ` on ${verdictDate}` : ''}. Until then, keep {makerName} honest.
+          </Text>
+        </View>
+      </RitualScreen>
+    );
+  }
+
+  if (screenState === 'already_accepted') {
+    return (
+      <RitualScreen>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centeredWrap}>
+          <View style={styles.successIconWrap}>
+            <CheckCircle2 color={palette.success} size={36} />
+          </View>
+          <Text style={styles.successTitle}>Already accepted</Text>
+          <Text style={styles.successBody}>
+            You've already accepted this witness invite. You'll be notified when it's verdict time.
+          </Text>
+        </View>
+      </RitualScreen>
+    );
+  }
+
+  if (screenState === 'declined') {
+    return (
+      <RitualScreen>
+        <Stack.Screen options={{ headerShown: false }} />
+        <View style={styles.centeredWrap}>
+          <Text style={styles.declinedTitle}>Invite declined</Text>
+          <Text style={styles.declinedBody}>
+            {makerName} will be notified so they can find another witness.
+          </Text>
+        </View>
+      </RitualScreen>
+    );
+  }
+
   return (
     <RitualScreen
       footer={
         <>
           <PrimaryButton
-            label="I accept — hold them to it"
-            onPress={() => {
-              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.push('/live');
-            }}
-            disabled={!sworn}
+            label={accepting ? 'Accepting...' : 'I accept \u2014 hold them to it'}
+            onPress={handleAccept}
+            disabled={!sworn || accepting}
             testID="witness-invite-accept"
           />
-          <SecondaryButton label="Decline" onPress={() => router.back()} testID="witness-invite-decline" />
+          <SecondaryButton
+            label={declining ? 'Declining...' : 'Decline'}
+            onPress={handleDecline}
+            testID="witness-invite-decline"
+          />
         </>
       }
     >
@@ -87,15 +269,15 @@ export default function WitnessInviteScreen() {
 
       <RitualCard>
         <Text style={styles.sectionLabel}>THE VOW</Text>
-        <Text style={styles.vowText}>{activeVowText}</Text>
+        <Text style={styles.vowTextStyle}>{vowText}</Text>
         <View style={styles.rule} />
         <View style={styles.metaRow}>
           <Text style={styles.metaLabel}>At stake</Text>
-          <Text style={styles.metaValueGold}>${vow.stake.amount}</Text>
+          <Text style={styles.metaValueGold}>${stakeAmount}</Text>
         </View>
         <View style={styles.metaRow}>
           <Text style={styles.metaLabel}>If broken</Text>
-          <Text style={styles.metaValue}>${vow.stake.amount} goes to {brokenTarget}</Text>
+          <Text style={styles.metaValue}>${stakeAmount} goes to {brokenTarget}</Text>
         </View>
       </RitualCard>
 
@@ -111,7 +293,7 @@ export default function WitnessInviteScreen() {
         </View>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-          <Text style={styles.stepText}>On {dates.endLabel}: kept or broken. One tap.</Text>
+          <Text style={styles.stepText}>{verdictDate ? `On ${verdictDate}` : 'When time\'s up'}: kept or broken. One tap.</Text>
         </View>
       </RitualCard>
 
@@ -138,6 +320,75 @@ export default function WitnessInviteScreen() {
 }
 
 const styles = StyleSheet.create({
+  centeredWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    gap: 16,
+  },
+  loadingText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '500' as const,
+  },
+  errorIconWrap: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: palette.warmAmberMuted,
+    borderWidth: 1,
+    borderColor: palette.warmAmberBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorTitle: {
+    color: palette.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    textAlign: 'center' as const,
+  },
+  errorBody: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center' as const,
+  },
+  successIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: palette.successMuted,
+    borderWidth: 1,
+    borderColor: 'rgba(82,214,154,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  successTitle: {
+    color: palette.text,
+    fontSize: 22,
+    fontWeight: '700' as const,
+    fontFamily: serifFont,
+    textAlign: 'center' as const,
+  },
+  successBody: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    lineHeight: 23,
+    textAlign: 'center' as const,
+  },
+  declinedTitle: {
+    color: palette.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    textAlign: 'center' as const,
+  },
+  declinedBody: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center' as const,
+  },
   badgeWrap: {
     alignItems: 'center',
   },
@@ -164,7 +415,7 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     letterSpacing: 1.1,
   },
-  vowText: {
+  vowTextStyle: {
     color: palette.text,
     fontSize: 20,
     lineHeight: 30,

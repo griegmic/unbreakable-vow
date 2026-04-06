@@ -152,6 +152,106 @@ export async function updateVowWitness(vowId: string, params: {
   }
 }
 
+export interface WitnessVowData {
+  id: string;
+  refined_text: string;
+  witness_name: string;
+  stake_amount: number;
+  consequence: string;
+  destination: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  witness_accepted_at: string | null;
+  witness_declined: boolean;
+  status: string;
+  user_display_name: string | null;
+}
+
+export async function getVowByWitnessToken(token: string): Promise<{ success: boolean; vow?: WitnessVowData; error?: string }> {
+  console.log('[vow-api] getVowByWitnessToken:', token);
+  try {
+    const { data, error } = await supabase
+      .from('vows')
+      .select('id, refined_text, witness_name, stake_amount, consequence, destination, starts_at, ends_at, witness_accepted_at, witness_declined, status, user_id')
+      .eq('witness_invite_token', token)
+      .in('status', ['sealed', 'active', 'awaiting_verdict'])
+      .single();
+
+    if (error || !data) {
+      console.error('[vow-api] getVowByWitnessToken error:', error);
+      return { success: false, error: 'Vow not found or already resolved.' };
+    }
+
+    let userDisplayName: string | null = null;
+    try {
+      const { data: userData } = await supabase
+        .from('users')
+        .select('display_name')
+        .eq('id', data.user_id)
+        .single();
+      userDisplayName = userData?.display_name ?? null;
+    } catch {
+      console.log('[vow-api] could not fetch user display name');
+    }
+
+    return {
+      success: true,
+      vow: {
+        id: data.id,
+        refined_text: data.refined_text,
+        witness_name: data.witness_name,
+        stake_amount: data.stake_amount,
+        consequence: data.consequence,
+        destination: data.destination,
+        starts_at: data.starts_at,
+        ends_at: data.ends_at,
+        witness_accepted_at: data.witness_accepted_at,
+        witness_declined: data.witness_declined ?? false,
+        status: data.status,
+        user_display_name: userDisplayName,
+      },
+    };
+  } catch (err) {
+    console.error('[vow-api] getVowByWitnessToken exception:', err);
+    return { success: false, error: 'Something went wrong loading this vow.' };
+  }
+}
+
+export async function acceptWitnessInvite(vowId: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] acceptWitnessInvite for vow:', vowId);
+  try {
+    const { error } = await supabase.from('vows').update({
+      witness_accepted_at: new Date().toISOString(),
+      witness_declined: false,
+    }).eq('id', vowId);
+    if (error) {
+      console.error('[vow-api] acceptWitnessInvite error:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[vow-api] acceptWitnessInvite exception:', err);
+    return { success: false, error: 'Failed to accept invite.' };
+  }
+}
+
+export async function declineWitnessInvite(vowId: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] declineWitnessInvite for vow:', vowId);
+  try {
+    const { error } = await supabase.from('vows').update({
+      witness_declined: true,
+    }).eq('id', vowId);
+    if (error) {
+      console.error('[vow-api] declineWitnessInvite error:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[vow-api] declineWitnessInvite exception:', err);
+    return { success: false, error: 'Failed to decline invite.' };
+  }
+}
+
 export async function extendVowDeadline(vowId: string, hours: number): Promise<{ success: boolean; newEndDate?: string; error?: string }> {
   console.log('[vow-api] extendVowDeadline for vow:', vowId, 'by', hours, 'hours');
   try {

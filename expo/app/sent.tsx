@@ -30,7 +30,7 @@ export default function SentScreen() {
     if (Platform.OS !== 'web') {
       try {
         const inviteUrl = vow.witnessInviteToken
-          ? `https://unbreakablevow.app/witness?token=${vow.witnessInviteToken}`
+          ? `https://unbreakablevow.app/witness-invite?token=${vow.witnessInviteToken}`
           : '';
         const shareMsg = inviteUrl
           ? `I just made an Unbreakable Vow \u2014 ${activeVowText}. You're my witness. ${inviteUrl}`
@@ -41,11 +41,6 @@ export default function SentScreen() {
       }
     }
   };
-
-  const brokenTarget =
-    vow.stake.consequence === 'witness'
-      ? (isSelfWitness ? 'charity' : vow.witnessName)
-      : vow.stake.destination;
 
   return (
     <RitualScreen
@@ -77,12 +72,8 @@ export default function SentScreen() {
       <Animated.View style={{ opacity: contentFade }}>
         <VowCertificate
           vowText={activeVowText}
-          witnessName={isSelfWitness ? 'Just me' : vow.witnessName}
           stakeAmount={vow.stake.amount}
-          consequence={brokenTarget}
-          dateRange={dates.range}
-          verdictDate={dates.endLabel}
-          isSelfWitness={isSelfWitness}
+          sealDate={dates.range}
         />
       </Animated.View>
 

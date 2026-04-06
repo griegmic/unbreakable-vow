@@ -176,15 +176,31 @@ export default function LiveScreen() {
     router.push({ pathname: '/witness', params: { midVow: '1' } });
   }, []);
 
+  const handleShareInviteLink = useCallback(async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const inviteUrl = vow.witnessInviteToken
+        ? `https://unbreakablevow.app/witness-invite?token=${vow.witnessInviteToken}`
+        : 'https://unbreakablevow.app';
+      const msg = `I made an Unbreakable Vow: "${activeVowText}" — and I need you to hold me to it. ${vow.stake.amount} is on the line. ${inviteUrl}`;
+      console.log('[LiveScreen] sharing invite link:', inviteUrl);
+      await Share.share(
+        Platform.OS === 'ios'
+          ? { message: msg, url: inviteUrl }
+          : { message: msg }
+      );
+    } catch {
+      console.log('[LiveScreen] share invite failed');
+    }
+  }, [activeVowText, vow.stake.amount, vow.witnessInviteToken]);
+
   const handleShareCertificate = useCallback(async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (Platform.OS !== 'web') {
-      try {
-        const msg = `I made an Unbreakable Vow: ${activeVowText}. ${vow.stake.amount} on the line. unbreakablevow.app`;
-        await Share.share({ message: msg });
-      } catch {
-        console.log('[LiveScreen] share failed');
-      }
+    try {
+      const msg = `I made an Unbreakable Vow: ${activeVowText}. ${vow.stake.amount} on the line. unbreakablevow.app`;
+      await Share.share({ message: msg });
+    } catch {
+      console.log('[LiveScreen] share failed');
     }
   }, [activeVowText, vow.stake.amount]);
 
@@ -318,25 +334,35 @@ export default function LiveScreen() {
               Waiting for <Text style={styles.witnessPending}>{vow.witnessName}</Text> to accept.
             </Text>
           </View>
+          <Pressable
+            style={styles.nudgeBtn}
+            onPress={handleShareInviteLink}
+            testID="live-share-invite"
+          >
+            <Share2 color={palette.goldBright} size={15} />
+            <Text style={styles.nudgeBtnText}>Nudge {vow.witnessName}</Text>
+          </Pressable>
           <View style={styles.witnessActions}>
-            <Pressable
-              style={[
-                styles.witnessActionBtn,
-                (resendCooldown > 0 || resending) && styles.witnessActionBtnDisabled,
-              ]}
-              onPress={handleResendInvite}
-              disabled={resendCooldown > 0 || resending}
-              testID="live-resend-invite"
-            >
-              {resending ? (
-                <ActivityIndicator size="small" color={palette.goldBright} />
-              ) : (
-                <Send color={palette.goldBright} size={14} />
-              )}
-              <Text style={styles.witnessActionText}>
-                {resendCooldown > 0 ? `Resend (${resendCooldown}s)` : 'Resend invite'}
-              </Text>
-            </Pressable>
+            {vow.phoneNumber ? (
+              <Pressable
+                style={[
+                  styles.witnessActionBtn,
+                  (resendCooldown > 0 || resending) && styles.witnessActionBtnDisabled,
+                ]}
+                onPress={handleResendInvite}
+                disabled={resendCooldown > 0 || resending}
+                testID="live-resend-invite"
+              >
+                {resending ? (
+                  <ActivityIndicator size="small" color={palette.goldBright} />
+                ) : (
+                  <Send color={palette.goldBright} size={14} />
+                )}
+                <Text style={styles.witnessActionText}>
+                  {resendCooldown > 0 ? `Resend SMS (${resendCooldown}s)` : 'Resend SMS'}
+                </Text>
+              </Pressable>
+            ) : null}
             <Pressable
               style={[styles.witnessActionBtn, goingSolo && styles.witnessActionBtnDisabled]}
               onPress={handleGoSolo}
@@ -433,13 +459,8 @@ export default function LiveScreen() {
         <>
           <VowCertificate
             vowText={activeVowText}
-            witnessName={isSelfWitness ? 'Just me' : vow.witnessName}
             stakeAmount={vow.stake.amount}
-            consequence={brokenTarget}
-            dateRange={dates.range}
-            verdictDate={dates.endLabel}
-            isSelfWitness={isSelfWitness}
-            animate={false}
+            sealDate={dates.range}
           />
           <Pressable
             onPress={handleShareCertificate}
@@ -576,6 +597,23 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   shareRowText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  nudgeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: palette.warmAmberBorder,
+    backgroundColor: 'rgba(212,162,79,0.06)',
+    marginTop: 4,
+  },
+  nudgeBtnText: {
     color: palette.goldBright,
     fontSize: 14,
     fontWeight: '600' as const,
