@@ -34,7 +34,7 @@ export const vowExamples: string[] = [
 
 export const stakeAmounts: number[] = [10, 25, 50, 100];
 
-export type ConsequenceType = 'charity' | 'witness' | 'anti';
+export type ConsequenceType = 'charity' | 'anti';
 
 export interface ConsequenceOption {
   id: ConsequenceType;
@@ -47,11 +47,6 @@ export const consequenceOptions: ConsequenceOption[] = [
     id: 'charity',
     label: 'A cause you believe in',
     description: 'Your money does some good.',
-  },
-  {
-    id: 'witness',
-    label: 'Your witness gets it',
-    description: 'They profit from your failure.',
   },
   {
     id: 'anti',

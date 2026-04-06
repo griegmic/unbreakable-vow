@@ -25,10 +25,7 @@ export default function WitnessVerdictScreen() {
   const [submitting, setSubmitting] = useState(false);
 
   const displayName = makerName || 'your friend';
-  const destination =
-    vow.stake.consequence === 'witness'
-      ? 'you'
-      : vow.stake.destination;
+  const destination = vow.stake.destination;
 
   console.log('[WitnessVerdictScreen] rendering');
 

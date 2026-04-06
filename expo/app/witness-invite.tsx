@@ -31,7 +31,7 @@ export default function WitnessInviteScreen() {
   const makerName = isRemote ? (remoteVow?.user_display_name || 'Your friend') : (displayName || 'Your friend');
   const consequence = isRemote ? (remoteVow?.consequence ?? 'charity') : vow.stake.consequence;
   const destination = isRemote ? (remoteVow?.destination ?? '') : vow.stake.destination;
-  const brokenTarget = consequence === 'witness' ? 'you' : destination;
+  const brokenTarget = destination;
 
   const verdictDate = isRemote && remoteVow?.ends_at
     ? new Date(remoteVow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })

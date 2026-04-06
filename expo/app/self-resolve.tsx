@@ -26,10 +26,7 @@ type VerdictChoice = 'kept' | 'broken' | null;
 export default function SelfResolveScreen() {
   const { activeVowText, vow } = useVowFlow();
 
-  const destination =
-    vow.stake.consequence === 'witness'
-      ? 'charity'
-      : vow.stake.destination;
+  const destination = vow.stake.destination;
 
   console.log('[SelfResolveScreen] rendering');
 

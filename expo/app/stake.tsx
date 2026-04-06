@@ -19,12 +19,8 @@ export default function StakeScreen() {
   const { setStake, vow } = useVowFlow();
 
   const [amount, setAmount] = useState<number>(vow.stake.amount);
-  const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(
-    vow.stake.consequence === 'witness' ? 'charity' : vow.stake.consequence
-  );
-  const [destination, setDestination] = useState<string>(
-    vow.stake.consequence === 'witness' ? charities[0] : vow.stake.destination
-  );
+  const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(vow.stake.consequence);
+  const [destination, setDestination] = useState<string>(vow.stake.destination);
 
   console.log('[StakeScreen] rendering, amount:', amount, 'consequence:', consequence);
 

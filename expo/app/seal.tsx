@@ -49,12 +49,7 @@ export default function SealScreen() {
 
   const dates = getVowVerdictDate(vow.rawInput);
 
-  const brokenLabel =
-    isSelfWitness && vow.stake.consequence === 'witness'
-      ? 'Donated to charity'
-      : vow.stake.consequence === 'witness'
-        ? `${vow.witnessName} gets it`
-        : `Donated to ${vow.stake.destination}`;
+  const brokenLabel = `Donated to ${vow.stake.destination}`;
 
   const registerPush = useCallback(async () => {
     try {

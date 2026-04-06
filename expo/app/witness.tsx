@@ -1,7 +1,7 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, Link, Search, ToggleLeft, ToggleRight, UserPlus, X } from 'lucide-react-native';
+import { ChevronRight, Link, Search, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -38,7 +38,6 @@ export default function WitnessScreen() {
 
   const [pendingName, setPendingName] = useState<string>('');
   const [pendingPhone, setPendingPhone] = useState<string>('');
-  const [witnessGetsIt, setWitnessGetsIt] = useState<boolean>(false);
 
   const stakeAmount = vow.stake.amount;
 
@@ -113,7 +112,6 @@ export default function WitnessScreen() {
     console.log('[WitnessScreen] contact selected:', firstName, contact.phone);
     setPendingName(firstName);
     setPendingPhone(contact.phone);
-    setWitnessGetsIt(false);
     setMode('confirm');
   }, []);
 
@@ -133,9 +131,6 @@ export default function WitnessScreen() {
       if (result.success) {
         setWitnessType('friend');
         updateWitnessMidVow(pendingName, pendingPhone || '');
-        if (witnessGetsIt) {
-          updateConsequence('witness', pendingName);
-        }
         if (result.witnessInviteToken) {
           setVowId(vow.vowId, result.witnessInviteToken);
         }
@@ -149,11 +144,8 @@ export default function WitnessScreen() {
 
     setWitnessType('friend');
     setWitness(pendingName, pendingPhone ? 'sms' : 'link', pendingPhone || undefined);
-    if (witnessGetsIt) {
-      updateConsequence('witness', pendingName);
-    }
     router.push('/seal');
-  }, [pendingName, pendingPhone, witnessGetsIt, setWitnessType, setWitness, updateConsequence, isMidVow, vow.vowId, updateWitnessMidVow, setVowId]);
+  }, [pendingName, pendingPhone, setWitnessType, setWitness, isMidVow, vow.vowId, updateWitnessMidVow, setVowId]);
 
   const filteredContacts = useMemo(() => {
     if (!contactSearch.trim()) return contacts;
@@ -168,14 +160,11 @@ export default function WitnessScreen() {
     console.log('[WitnessScreen] inline name submitted:', name);
     setPendingName(name);
     setPendingPhone('');
-    setWitnessGetsIt(false);
     setMode('confirm');
   };
 
   if (mode === 'confirm') {
-    const consequenceLabel = witnessGetsIt
-      ? `${pendingName} gets $${stakeAmount}`
-      : `$${stakeAmount} goes to ${vow.stake.destination}`;
+    const consequenceLabel = `$${stakeAmount} goes to ${vow.stake.destination}`;
 
     return (
       <RitualScreen
@@ -199,31 +188,6 @@ export default function WitnessScreen() {
           <Text style={styles.consequenceLabel}>IF YOU BREAK IT</Text>
           <Text style={styles.consequenceValue}>{consequenceLabel}</Text>
         </View>
-
-        <Pressable
-          onPress={() => {
-            void Haptics.selectionAsync();
-            setWitnessGetsIt(!witnessGetsIt);
-          }}
-          style={styles.toggleRow}
-          testID="witness-consequence-toggle"
-        >
-          {witnessGetsIt ? (
-            <ToggleRight color={palette.goldBright} size={24} />
-          ) : (
-            <ToggleLeft color={palette.textMuted} size={24} />
-          )}
-          <View style={styles.toggleCopy}>
-            <Text style={[styles.toggleTitle, witnessGetsIt && styles.toggleTitleActive]}>
-              {pendingName} gets paid if you fail
-            </Text>
-            <Text style={styles.toggleDesc}>
-              {witnessGetsIt
-                ? 'They have skin in the game. This is the viral hook.'
-                : `Money goes to ${vow.stake.destination} instead.`}
-            </Text>
-          </View>
-        </Pressable>
       </RitualScreen>
     );
   }

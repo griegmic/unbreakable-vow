@@ -25,10 +25,7 @@ export default function LiveScreen() {
   const sealedBannerFade = useRef(new Animated.Value(0)).current;
   const sealedBannerSlide = useRef(new Animated.Value(20)).current;
 
-  const brokenTarget =
-    vow.stake.consequence === 'witness'
-      ? (isSelfWitness ? 'charity' : vow.witnessName)
-      : vow.stake.destination;
+  const brokenTarget = vow.stake.destination;
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const [witnessStatus, setWitnessStatus] = useState<WitnessStatus>(IS_EXPO_GO ? 'pending' : 'unknown');

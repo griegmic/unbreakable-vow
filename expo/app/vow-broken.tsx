@@ -11,10 +11,7 @@ import { useVowFlow } from '@/providers/vow-flow';
 export default function VowBrokenScreen() {
   const { activeVowText, resetVow, vow, isSelfWitness } = useVowFlow();
 
-  const destination =
-    vow.stake.consequence === 'witness'
-      ? vow.witnessName
-      : vow.stake.destination;
+  const destination = vow.stake.destination;
 
   const firstName = isSelfWitness ? 'You' : vow.witnessName.split(' ')[0];
 
