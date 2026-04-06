@@ -180,7 +180,7 @@ export default function LiveScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const inviteUrl = vow.witnessInviteToken
-        ? `https://unbreakablevow.app/witness-invite?token=${vow.witnessInviteToken}`
+        ? `https://unbreakablevow.app/w/${vow.witnessInviteToken}`
         : 'https://unbreakablevow.app';
       const msg = `I made an Unbreakable Vow: "${activeVowText}" — and I need you to hold me to it. ${vow.stake.amount} is on the line. ${inviteUrl}`;
       console.log('[LiveScreen] sharing invite link:', inviteUrl);

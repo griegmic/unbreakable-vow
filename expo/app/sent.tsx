@@ -43,7 +43,7 @@ export default function SentScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     try {
       const inviteUrl = vow.witnessInviteToken
-        ? `https://unbreakablevow.app/witness-invite?token=${vow.witnessInviteToken}`
+        ? `https://unbreakablevow.app/w/${vow.witnessInviteToken}`
         : 'https://unbreakablevow.app';
       const shareMsg = `I made an Unbreakable Vow: "${activeVowText}" \u2014 and I need you to hold me to it. ${vow.stake.amount} is on the line. ${inviteUrl}`;
       console.log('[SentScreen] sharing invite:', inviteUrl);
