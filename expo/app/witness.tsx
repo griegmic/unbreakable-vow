@@ -29,6 +29,8 @@ export default function WitnessScreen() {
   const isMidVow = params.midVow === '1' && !!vow.vowId;
   const [mode, setMode] = useState<WitnessMode>('choose');
   const [inlineNameText, setInlineNameText] = useState<string>('');
+  const [showNameAfterShare, setShowNameAfterShare] = useState<boolean>(false);
+  const nameInputRef = React.useRef<TextInput>(null);
 
   const [contacts, setContacts] = useState<ContactEntry[]>([]);
   const [contactSearch, setContactSearch] = useState('');
@@ -260,13 +262,18 @@ export default function WitnessScreen() {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             try {
               const vowText = vow.rawInput || 'my vow';
-              const msg = `I'm making an Unbreakable Vow: "${vowText}" — ${stakeAmount} is on the line. I need you to hold me accountable. Download the app: https://unbreakablevow.app`;
+              const msg = `I'm making an Unbreakable Vow: "${vowText}" — ${stakeAmount} is on the line. I need you to hold me accountable. I'll send you the official witness link once it's sealed!`;
               console.log('[WitnessScreen] sharing invite link');
-              await Share.share(
+              const result = await Share.share(
                 Platform.OS === 'ios'
-                  ? { message: msg, url: 'https://unbreakablevow.app' }
+                  ? { message: msg }
                   : { message: msg }
               );
+              if (result.action !== Share.dismissedAction) {
+                console.log('[WitnessScreen] share completed, showing name input');
+                setShowNameAfterShare(true);
+                setTimeout(() => nameInputRef.current?.focus(), 300);
+              }
             } catch {
               console.log('[WitnessScreen] share cancelled');
             }
@@ -278,10 +285,17 @@ export default function WitnessScreen() {
           <Text style={styles.shareLinkText}>Send a link instead</Text>
         </Pressable>
 
+        {showNameAfterShare && (
+          <View style={styles.namePromptCard}>
+            <Text style={styles.namePromptText}>Link shared! Who did you send it to?</Text>
+          </View>
+        )}
+
         <View style={styles.inlineInputWrap}>
           <TextInput
+            ref={nameInputRef}
             style={styles.inlineInput}
-            placeholder="Or type a name..."
+            placeholder={showNameAfterShare ? "Their first name..." : "Or type a name..."}
             placeholderTextColor={palette.textMuted}
             value={inlineNameText}
             onChangeText={setInlineNameText}
@@ -448,6 +462,21 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     fontWeight: '500' as const,
+  },
+  namePromptCard: {
+    backgroundColor: 'rgba(82,214,154,0.08)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(82,214,154,0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginTop: 6,
+  },
+  namePromptText: {
+    color: palette.success,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
   },
   inlineInputWrap: {
     flexDirection: 'row',
