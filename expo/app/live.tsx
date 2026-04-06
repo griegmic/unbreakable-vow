@@ -1,7 +1,8 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
+import * as Linking from 'expo-linking';
 import { Stack, router } from 'expo-router';
-import { AlertCircle, Check, Clock, RefreshCw, Share2, ShieldCheck, User, UserMinus } from 'lucide-react-native';
+import { AlertCircle, Check, Clock, ExternalLink, FastForward, RefreshCw, Share2, ShieldCheck, User, UserMinus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -224,6 +225,30 @@ export default function LiveScreen() {
     }
   }, [extending, vow.vowId, vow.witnessName]);
 
+  const handleFastForward = useCallback(async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    if (vow.vowId) {
+      await supabase.from('vows').update({
+        status: 'awaiting_verdict',
+        ends_at: new Date(Date.now() - 60000).toISOString(),
+        witness_accepted_at: new Date().toISOString(),
+      }).eq('id', vow.vowId);
+      setWitnessStatus('accepted');
+    }
+    router.push('/witness-verdict');
+  }, [vow.vowId]);
+
+  const witnessWebUrl = vow.witnessInviteToken
+    ? `https://unbreakablevow.app/w/${vow.witnessInviteToken}`
+    : null;
+
+  const handleViewWitnessScreen = useCallback(() => {
+    if (witnessWebUrl) {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      Linking.openURL(witnessWebUrl);
+    }
+  }, [witnessWebUrl]);
+
   const renderWitnessPendingCard = () => {
     if (witnessStatus === 'declined') {
       return (
@@ -420,7 +445,15 @@ export default function LiveScreen() {
     }
 
     return (
-      <SecondaryButton label="View history" onPress={() => router.push('/history')} testID="live-history" />
+      <>
+        {IS_EXPO_GO && (
+          <Pressable style={styles.testSkipBtn} onPress={handleFastForward} testID="live-fast-forward">
+            <FastForward color={palette.warmAmber} size={14} />
+            <Text style={styles.testSkipText}>Fast-forward to verdict (test mode)</Text>
+          </Pressable>
+        )}
+        <SecondaryButton label="View history" onPress={() => router.push('/history')} testID="live-history" />
+      </>
     );
   };
 
@@ -438,6 +471,13 @@ export default function LiveScreen() {
       {phase === 'witness_pending' && renderWitnessPendingCard()}
       {phase === 'vow_active' && renderVowActiveCard()}
       {phase === 'verdict_due' && renderVerdictDueCard()}
+
+      {witnessWebUrl && (
+        <Pressable style={styles.witnessLinkRow} onPress={handleViewWitnessScreen}>
+          <ExternalLink color={palette.goldBright} size={16} />
+          <Text style={styles.witnessLinkText}>View witness screen</Text>
+        </Pressable>
+      )}
     </RitualScreen>
   );
 }
@@ -637,5 +677,38 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     textAlign: 'center' as const,
+  },
+  witnessLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(212,162,79,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.15)',
+  },
+  witnessLinkText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  testSkipBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    borderRadius: 14,
+    backgroundColor: 'rgba(212,162,79,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.15)',
+    borderStyle: 'dashed',
+  },
+  testSkipText: {
+    color: palette.warmAmber,
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
 });
