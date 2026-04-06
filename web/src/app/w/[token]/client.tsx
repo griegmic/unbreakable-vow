@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Shield, DollarSign, Sparkles } from 'lucide-react';
+import { Shield, DollarSign, Sparkles, Calendar } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
 
@@ -90,7 +90,7 @@ export default function WitnessInviteClient({ vow, token, makerName }: { vow: Vo
         <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
         <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
       </div>
-      <p className="text-[17px] font-serif font-medium" style={{ color: 'var(--text)' }}>{vow.refined_text}</p>
+      <p className="text-[20px] font-serif font-medium leading-[28px]" style={{ color: 'var(--text)' }}>"{vow.refined_text}"</p>
       <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -102,6 +102,13 @@ export default function WitnessInviteClient({ vow, token, makerName }: { vow: Vo
       <div className="flex items-center justify-between">
         <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
         <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4" style={{ color: 'var(--gold)' }} />
+          <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Your verdict</span>
+        </div>
+        <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{endDate}</span>
       </div>
     </RitualCard>
   );
@@ -168,8 +175,8 @@ export default function WitnessInviteClient({ vow, token, makerName }: { vow: Vo
 
       <FadeUp delay={0.1}>
         <TitleBlock
-          title={`${makerName} made a vow and needs a witness.`}
-          subtitle={`$${vow.stake_amount / 100} is on the line. On ${endDate}, you decide: kept or broken.`}
+          title={`${makerName} made an Unbreakable Vow.`}
+          subtitle="Real money is on the line. You decide if they kept their word."
         />
       </FadeUp>
 
