@@ -23,10 +23,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (!vow) return { title: 'Unbreakable Vow' };
 
   return {
-    title: "You've been chosen as a witness",
+    title: `${vow.witness_name}, you've been named as a witness`,
     description: `"${vow.refined_text}" — $${vow.stake_amount / 100} is on the line. Accept your role as witness.`,
     openGraph: {
-      title: "You've been chosen as a witness",
+      title: `${vow.witness_name}, you've been named as a witness`,
       description: `"${vow.refined_text}" — $${vow.stake_amount / 100} is on the line.`,
     },
   };
@@ -50,5 +50,18 @@ export default async function WitnessInvitePage({ params }: Props) {
     return <WitnessNotFound token={token} />;
   }
 
-  return <WitnessInviteClient vow={vow} token={token} />;
+  // Try to get the vow maker's display name
+  let makerName = 'Your friend';
+  if (vow.user_id) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('display_name')
+      .eq('id', vow.user_id)
+      .single();
+    if (user?.display_name) {
+      makerName = user.display_name;
+    }
+  }
+
+  return <WitnessInviteClient vow={vow} token={token} makerName={makerName} />;
 }

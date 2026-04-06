@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
-import { Shield, DollarSign, Calendar, Sparkles } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, VowPreview, PrimaryButton, SecondaryButton, OathCheckbox, FadeUp, HeaderBadge } from '@/components/ui';
+import { Shield, DollarSign, Sparkles } from 'lucide-react';
+import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -21,8 +21,7 @@ interface Vow {
   status: string;
 }
 
-export default function WitnessInviteClient({ vow, token }: { vow: Vow; token: string }) {
-  const [oathChecked, setOathChecked] = useState(false);
+export default function WitnessInviteClient({ vow, token, makerName }: { vow: Vow; token: string; makerName: string }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<'pending' | 'accepted' | 'declined'>(
@@ -30,7 +29,7 @@ export default function WitnessInviteClient({ vow, token }: { vow: Vow; token: s
   );
 
   const handleAccept = async () => {
-    if (!oathChecked || busy) return;
+    if (busy) return;
     setBusy(true);
     setError(null);
     try {
@@ -85,6 +84,28 @@ export default function WitnessInviteClient({ vow, token }: { vow: Vow; token: s
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : 'TBD';
 
+  const vowCard = (
+    <RitualCard>
+      <div className="flex items-center gap-2 mb-1">
+        <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
+        <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
+      </div>
+      <p className="text-[17px] font-serif font-medium" style={{ color: 'var(--text)' }}>{vow.refined_text}</p>
+      <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <DollarSign className="w-4 h-4" style={{ color: 'var(--gold)' }} />
+          <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
+        </div>
+        <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake_amount / 100}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
+        <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
+      </div>
+    </RitualCard>
+  );
+
   if (status === 'accepted') {
     return (
       <RitualScreen
@@ -106,8 +127,11 @@ export default function WitnessInviteClient({ vow, token }: { vow: Vow; token: s
         <FadeUp delay={0.15}>
           <TitleBlock
             title="You're the witness."
-            subtitle={`When the time comes, you'll decide: kept or broken. Check back on ${endDate}.`}
+            subtitle={`On ${endDate}, you decide: kept or broken. One tap.`}
           />
+        </FadeUp>
+        <FadeUp delay={0.2}>
+          {vowCard}
         </FadeUp>
       </RitualScreen>
     );
@@ -134,7 +158,6 @@ export default function WitnessInviteClient({ vow, token }: { vow: Vow; token: s
           <PrimaryButton
             label="I accept — hold them to it"
             onPress={handleAccept}
-            disabled={!oathChecked}
             loading={busy}
           />
           <SecondaryButton label="Decline" onPress={handleDecline} />
@@ -143,64 +166,15 @@ export default function WitnessInviteClient({ vow, token }: { vow: Vow; token: s
     >
       <FadeUp><HeaderBadge /></FadeUp>
 
-      {/* Badge */}
-      <FadeUp delay={0.05}>
-        <div className="flex items-center gap-2.5 px-4 py-3 rounded-2xl self-start" style={{ backgroundColor: 'rgba(212,162,79,0.1)', border: '1px solid var(--border-strong)' }}>
-          <Shield className="w-4 h-4" style={{ color: 'var(--gold)' }} />
-          <span className="text-[12px] font-bold tracking-[1px] uppercase" style={{ color: 'var(--gold)' }}>
-            YOU&apos;VE BEEN CHOSEN AS A WITNESS
-          </span>
-        </div>
-      </FadeUp>
-
       <FadeUp delay={0.1}>
         <TitleBlock
-          title={`Someone made a vow and named you as their witness.`}
-          subtitle="Real money is on the line. Your job: decide if they kept their word."
+          title={`${makerName} made a vow and needs a witness.`}
+          subtitle={`$${vow.stake_amount / 100} is on the line. On ${endDate}, you decide: kept or broken.`}
         />
       </FadeUp>
 
       <FadeUp delay={0.15}>
-        <RitualCard>
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-            <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
-          </div>
-          <p className="text-[17px] font-serif font-medium" style={{ color: 'var(--text)' }}>{vow.refined_text}</p>
-          <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" style={{ color: 'var(--gold)' }} />
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
-            </div>
-            <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake_amount / 100}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
-            <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
-          </div>
-        </RitualCard>
-      </FadeUp>
-
-      {/* What happens */}
-      <FadeUp delay={0.2}>
-        <RitualCard>
-          <span className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>What happens</span>
-          <div className="flex flex-col gap-3">
-            {[
-              { n: '1', text: "You'll get a text when it's verdict time." },
-              { n: '2', text: "No daily check-ins — just be aware of the vow." },
-              { n: '3', text: `On ${endDate}: kept or broken. One tap.` },
-            ].map(({ n, text }) => (
-              <div key={n} className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold" style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--gold)' }}>
-                  {n}
-                </div>
-                <span className="text-[14px] leading-5" style={{ color: 'var(--text-secondary)' }}>{text}</span>
-              </div>
-            ))}
-          </div>
-        </RitualCard>
+        {vowCard}
       </FadeUp>
 
       {error && (
@@ -210,14 +184,6 @@ export default function WitnessInviteClient({ vow, token }: { vow: Vow; token: s
           </div>
         </FadeUp>
       )}
-
-      <FadeUp delay={0.25}>
-        <OathCheckbox
-          checked={oathChecked}
-          onChange={setOathChecked}
-          label="I solemnly swear to judge honestly and deliver a fair verdict."
-        />
-      </FadeUp>
     </RitualScreen>
   );
 }
