@@ -2,6 +2,16 @@ import 'react-native-get-random-values';
 
 import { supabase } from './supabase';
 
+/** UUID v4 using the polyfilled crypto.getRandomValues */
+function generateUUID(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant 1
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 export async function createVow(params: {
   rawInput: string;
   refinedText: string;
@@ -23,7 +33,7 @@ export async function createVow(params: {
     refined_text: params.refinedText,
     witness_name: params.witnessName,
     witness_phone: params.witnessPhone,
-    witness_invite_token: crypto.randomUUID(),
+    witness_invite_token: generateUUID(),
     stake_amount: params.stakeAmount * 100,
     consequence: params.consequence,
     destination: params.destination,
@@ -128,7 +138,7 @@ export async function updateVowWitness(vowId: string, params: {
 }): Promise<{ success: boolean; witnessInviteToken?: string; error?: string }> {
   console.log('[vow-api] updateVowWitness for vow:', vowId, params);
   try {
-    const newToken = crypto.randomUUID();
+    const newToken = generateUUID();
     const { error } = await supabase.from('vows').update({
       witness_name: params.witnessName,
       witness_phone: params.witnessPhone,
