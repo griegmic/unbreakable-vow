@@ -110,7 +110,7 @@ export default function SealScreen() {
 
       setTimeout(() => {
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        router.push('/certificate');
+        router.push('/sent');
       }, 1600);
     });
   };

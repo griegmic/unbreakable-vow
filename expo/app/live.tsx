@@ -26,7 +26,7 @@ export default function LiveScreen() {
       : vow.stake.destination;
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  const [witnessStatus, setWitnessStatus] = useState<WitnessStatus>(IS_EXPO_GO ? 'accepted' : 'unknown');
+  const [witnessStatus, setWitnessStatus] = useState<WitnessStatus>(IS_EXPO_GO ? 'pending' : 'unknown');
   const [resendCooldown, setResendCooldown] = useState<number>(0);
   const [resending, setResending] = useState<boolean>(false);
   const [goingSolo, setGoingSolo] = useState<boolean>(false);
