@@ -1,4 +1,10 @@
 export function redirectSystemPath({ path }: { path: string; initial: boolean }) {
+  // Handle /w/{token} witness invite URLs — redirect to witness-invite screen with token param
+  const witnessMatch = path.match(/^\/w\/([^/?]+)/);
+  if (witnessMatch) {
+    return `/witness-invite?token=${witnessMatch[1]}`;
+  }
+
   const knownRoutes = [
     '/refine', '/witness', '/stake', '/auth', '/seal', '/sent',
     '/live', '/witness-invite', '/witness-verdict',

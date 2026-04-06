@@ -37,11 +37,19 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
     if (!choice || busy) return;
     setBusy(true);
     setError('');
-    const { error: fnError } = await supabase.functions.invoke('submit-verdict', {
+    const { data, error: fnError } = await supabase.functions.invoke('submit-verdict', {
       body: { token, verdict: choice },
     });
     if (fnError) {
       setError('Failed to submit verdict. Please try again.');
+      setBusy(false);
+      return;
+    }
+    if (data?.error) {
+      const msg = data.error === 'already_judged' ? 'This vow has already been judged.'
+        : data.error === 'vow_not_active' ? 'This vow is no longer active.'
+        : typeof data.error === 'string' ? data.error : 'Something went wrong.';
+      setError(msg);
       setBusy(false);
       return;
     }

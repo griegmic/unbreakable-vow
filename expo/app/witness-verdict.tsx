@@ -1,8 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Check, CircleDollarSign } from 'lucide-react-native';
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
+  Alert,
   Pressable,
   StyleSheet,
   Text,
@@ -11,6 +13,7 @@ import {
 
 import { RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
+import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
@@ -19,6 +22,7 @@ type VerdictChoice = 'kept' | 'broken' | null;
 export default function WitnessVerdictScreen() {
   const { activeVowText, vow } = useVowFlow();
   const { displayName: makerName } = useAuth();
+  const [submitting, setSubmitting] = useState(false);
 
   const displayName = makerName || 'your friend';
   const destination =
@@ -28,18 +32,40 @@ export default function WitnessVerdictScreen() {
 
   console.log('[WitnessVerdictScreen] rendering');
 
-  const handleCardTap = useCallback((choice: VerdictChoice) => {
+  const handleCardTap = useCallback(async (choice: VerdictChoice) => {
+    if (!choice || submitting) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
-    if (choice === 'kept') {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } else {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    }
+    setSubmitting(true);
 
-    const route = choice === 'kept' ? '/vow-kept' : '/vow-broken';
-    setTimeout(() => router.push(route as never), 150);
-  }, []);
+    try {
+      const { data, error } = await supabase.functions.invoke('submit-verdict', {
+        body: { token: vow.witnessInviteToken, verdict: choice },
+      });
+
+      if (error || data?.error) {
+        const detail = data?.error || error?.message || 'Unknown error';
+        console.error('[WitnessVerdictScreen] verdict submission failed:', detail);
+        Alert.alert('Verdict failed', typeof detail === 'string' ? detail : JSON.stringify(detail));
+        setSubmitting(false);
+        return;
+      }
+
+      if (choice === 'kept') {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      } else {
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      }
+
+      const route = choice === 'kept' ? '/vow-kept' : '/vow-broken';
+      setTimeout(() => router.push(route as never), 150);
+    } catch (err) {
+      console.error('[WitnessVerdictScreen] verdict exception:', err);
+      Alert.alert('Network error', 'Please check your connection and try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [submitting, vow.witnessInviteToken]);
 
   return (
     <RitualScreen scroll={false}>
@@ -63,10 +89,18 @@ export default function WitnessVerdictScreen() {
           </View>
         </RitualCard>
 
-        <View style={styles.buttonColumn}>
+        {submitting && (
+          <View style={styles.submittingRow}>
+            <ActivityIndicator size="small" color={palette.goldBright} />
+            <Text style={styles.submittingText}>Submitting verdict...</Text>
+          </View>
+        )}
+
+        <View style={[styles.buttonColumn, submitting && { opacity: 0.5 }]}>
           <Pressable
             style={[styles.verdictButton, styles.keepButtonWitness]}
             onPress={() => handleCardTap('kept')}
+            disabled={submitting}
             testID="verdict-kept"
           >
             <View style={[styles.iconCircle, styles.iconCircleKept]}>
@@ -83,6 +117,7 @@ export default function WitnessVerdictScreen() {
           <Pressable
             style={[styles.verdictButton, styles.breakButtonWitness]}
             onPress={() => handleCardTap('broken')}
+            disabled={submitting}
             testID="verdict-broken"
           >
             <View style={[styles.iconCircle, styles.iconCircleBroken]}>
@@ -196,6 +231,17 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 20,
+  },
+  submittingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  submittingText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '600' as const,
   },
   disclaimer: {
     color: palette.textMuted,

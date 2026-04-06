@@ -87,7 +87,14 @@ export default function WitnessInviteClient({ vow, token }: { vow: Vow; token: s
 
   if (status === 'accepted') {
     return (
-      <RitualScreen>
+      <RitualScreen
+        footer={
+          <PrimaryButton
+            label="Deliver your verdict"
+            onPress={() => window.location.href = `/w/${token}/verdict`}
+          />
+        }
+      >
         <FadeUp><HeaderBadge /></FadeUp>
         <FadeUp delay={0.1}>
           <div className="flex justify-center mt-8">
