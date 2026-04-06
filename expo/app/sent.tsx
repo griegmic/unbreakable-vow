@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Check, Send } from 'lucide-react-native';
-import React, { useEffect, useRef } from 'react';
+import { Check, Share2 } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { VowCertificate } from '@/components/vow-certificate';
@@ -15,6 +15,8 @@ export default function SentScreen() {
   const checkScale = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
 
+  const hasSMS = !!vow.phoneNumber;
+
   useEffect(() => {
     console.log('[SentScreen] vow sealed, playing success animation');
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -25,22 +27,35 @@ export default function SentScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleShareWithWitness = async () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    if (Platform.OS !== 'web') {
-      try {
-        const inviteUrl = vow.witnessInviteToken
-          ? `https://unbreakablevow.app/witness-invite?token=${vow.witnessInviteToken}`
-          : '';
-        const shareMsg = inviteUrl
-          ? `I just made an Unbreakable Vow \u2014 ${activeVowText}. You're my witness. ${inviteUrl}`
-          : `I just made an Unbreakable Vow. Can you hold me to it?`;
-        await Share.share({ message: shareMsg });
-      } catch {
-        console.log('[SentScreen] share failed');
-      }
-    }
+  const getTitle = (): string => {
+    if (isSelfWitness) return 'Sealed.';
+    if (hasSMS) return `Sealed. ${vow.witnessName} has been notified.`;
+    return `Sealed. Send it to ${vow.witnessName}.`;
   };
+
+  const getSubtitle = (): string => {
+    if (isSelfWitness) return 'Your vow is locked. You\'ll judge yourself when the time comes.';
+    if (hasSMS) return `We sent them a text with the details. Share the link below if they need it again.`;
+    return `Share the invite link so ${vow.witnessName} can accept and hold you to it.`;
+  };
+
+  const handleShareInvite = useCallback(async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    try {
+      const inviteUrl = vow.witnessInviteToken
+        ? `https://unbreakablevow.app/witness-invite?token=${vow.witnessInviteToken}`
+        : 'https://unbreakablevow.app';
+      const shareMsg = `I made an Unbreakable Vow: "${activeVowText}" \u2014 and I need you to hold me to it. ${vow.stake.amount} is on the line. ${inviteUrl}`;
+      console.log('[SentScreen] sharing invite:', inviteUrl);
+      await Share.share(
+        Platform.OS === 'ios'
+          ? { message: shareMsg, url: inviteUrl }
+          : { message: shareMsg }
+      );
+    } catch {
+      console.log('[SentScreen] share failed');
+    }
+  }, [activeVowText, vow.stake.amount, vow.witnessInviteToken]);
 
   return (
     <RitualScreen
@@ -58,14 +73,8 @@ export default function SentScreen() {
 
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
-          title={isSelfWitness ? 'Sealed.' : `Sealed. Now tell ${vow.witnessName}.`}
-          subtitle={
-            isSelfWitness
-              ? 'Your vow is locked. You\'ll judge yourself when the time comes.'
-              : vow.phoneNumber
-                ? `We texted ${vow.witnessName}. They'll get the details.`
-                : `Share the link so ${vow.witnessName} can accept.`
-          }
+          title={getTitle()}
+          subtitle={getSubtitle()}
         />
       </Animated.View>
 
@@ -80,12 +89,12 @@ export default function SentScreen() {
       {!isSelfWitness && (
         <Animated.View style={{ opacity: contentFade }}>
           <Pressable
-            onPress={handleShareWithWitness}
+            onPress={handleShareInvite}
             style={({ pressed }) => [styles.shareNudge, pressed && styles.shareNudgePressed]}
             testID="sent-share-witness"
           >
-            <Send color={palette.goldBright} size={18} />
-            <Text style={styles.shareNudgeText}>Send to {vow.witnessName}</Text>
+            <Share2 color={palette.goldBright} size={18} />
+            <Text style={styles.shareNudgeText}>Share invite link</Text>
           </Pressable>
         </Animated.View>
       )}

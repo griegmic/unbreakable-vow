@@ -35,7 +35,7 @@ function RootLayoutNav() {
       <Stack.Screen name="witness" />
       <Stack.Screen name="stake" />
       <Stack.Screen name="seal" />
-      <Stack.Screen name="certificate" />
+
       <Stack.Screen name="sent" />
       <Stack.Screen name="live" />
       <Stack.Screen name="witness-invite" />
@@ -88,7 +88,7 @@ export default function RootLayout() {
         if (session) {
           router.push(data.route as never);
         } else {
-          router.push('/auth' as never);
+          router.push('/' as never);
         }
       }
     });

@@ -233,8 +233,10 @@ export default function SealScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, paidVowId, vow, activeVowText]);
 
+  const canSeal = isSelfWitness ? sworn : true;
+
   const handleSeal = async () => {
-    if (!sworn || loading) return;
+    if (!canSeal || loading) return;
 
     if (!isAuthenticated) {
       setAuthSheetVisible(true);
@@ -297,7 +299,7 @@ export default function SealScreen() {
       footer={
         sealed ? null : (
           <>
-            <PrimaryButton label={loading ? 'Processing...' : 'Seal this vow'} onPress={handleSeal} disabled={!sworn || loading} testID="seal-primary" />
+            <PrimaryButton label={loading ? 'Processing...' : 'Seal this vow'} onPress={handleSeal} disabled={!canSeal || loading} testID="seal-primary" />
             <SecondaryButton label="Back" onPress={() => router.back()} testID="seal-back" />
           </>
         )
@@ -356,13 +358,13 @@ export default function SealScreen() {
         </View>
       </RitualCard>
 
-      {sealed ? (
+      {sealed && isSelfWitness ? (
         <Animated.View style={[styles.oathFlash, { opacity: oathFlashOpacity }]} pointerEvents="none">
           <Text style={styles.oathFlashText}>I solemnly swear{"\n"}to keep my word this week.</Text>
         </Animated.View>
       ) : null}
 
-      {!sealed ? (
+      {!sealed && isSelfWitness ? (
         <Animated.View style={[styles.swearCard, { borderColor: swearBorderColor }]}>
           <Animated.View style={[styles.swearGlowBg, { opacity: swearBgOpacity }]} />
           <Text style={styles.oathHeroText}>I solemnly swear{"\n"}to keep my word this week.</Text>
