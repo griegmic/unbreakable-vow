@@ -1,11 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Check, CircleDollarSign } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback } from 'react';
 import {
-  ActivityIndicator,
-  Alert,
-  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -14,7 +11,6 @@ import {
 
 import { RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
-import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
@@ -32,52 +28,18 @@ export default function WitnessVerdictScreen() {
 
   console.log('[WitnessVerdictScreen] rendering');
 
-  const [confirmVisible, setConfirmVisible] = useState<boolean>(false);
-  const [pendingVerdict, setPendingVerdict] = useState<VerdictChoice>(null);
-  const [submitting, setSubmitting] = useState(false);
-
   const handleCardTap = useCallback((choice: VerdictChoice) => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setPendingVerdict(choice);
-    setTimeout(() => setConfirmVisible(true), 100);
-  }, []);
 
-  const handleConfirm = useCallback(async () => {
-    if (submitting) return;
-    setSubmitting(true);
-
-    // Call submit-verdict edge function if we have a token
-    if (vow.witnessInviteToken) {
-      try {
-        await supabase.functions.invoke('submit-verdict', {
-          body: { token: vow.witnessInviteToken, verdict: pendingVerdict },
-        });
-      } catch (err) {
-        console.error('[WitnessVerdict] submit error:', err);
-        setSubmitting(false);
-        setConfirmVisible(false);
-        Alert.alert('Something went wrong', 'Please try again.');
-        return;
-      }
-    }
-
-    setSubmitting(false);
-    setConfirmVisible(false);
-
-    if (pendingVerdict === 'kept') {
+    if (choice === 'kept') {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.push('/vow-kept');
     } else {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      router.push('/vow-broken');
     }
-  }, [pendingVerdict, submitting, vow.witnessInviteToken]);
 
-  const handleCancel = useCallback(() => {
-    if (submitting) return;
-    setConfirmVisible(false);
-    setPendingVerdict(null);
-  }, [submitting]);
+    const route = choice === 'kept' ? '/vow-kept' : '/vow-broken';
+    setTimeout(() => router.push(route as never), 150);
+  }, []);
 
   return (
     <RitualScreen scroll={false}>
@@ -140,66 +102,7 @@ export default function WitnessVerdictScreen() {
         </Text>
       </View>
 
-      <Modal
-        visible={confirmVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={handleCancel}
-      >
-        <View style={styles.modalOverlay}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={handleCancel} />
-          <View style={styles.modalCard}>
-            {pendingVerdict === 'kept' ? (
-              <>
-                <View style={[styles.modalIconWrap, styles.modalIconKept]}>
-                  <Check color={palette.success} size={24} />
-                </View>
-                <Text style={styles.modalTitle}>
-                  {`Confirm: ${displayName} kept the vow?`}
-                </Text>
-                <Text style={styles.modalBody}>
-                  ${vow.stake.amount} stays safe. No charge.
-                </Text>
-              </>
-            ) : (
-              <>
-                <View style={[styles.modalIconWrap, styles.modalIconBroken]}>
-                  <CircleDollarSign color={palette.warmAmber} size={24} />
-                </View>
-                <Text style={styles.modalTitle}>
-                  {`Confirm: ${displayName} broke the vow?`}
-                </Text>
-                <Text style={styles.modalBody}>
-                  ${vow.stake.amount} will be donated to {destination}.
-                </Text>
-              </>
-            )}
 
-            <Pressable
-              style={[
-                styles.confirmButton,
-                pendingVerdict === 'kept'
-                  ? styles.confirmButtonKept
-                  : styles.confirmButtonBroken,
-                submitting && { opacity: 0.6 },
-              ]}
-              onPress={handleConfirm}
-              disabled={submitting}
-              testID="verdict-confirm"
-            >
-              {submitting ? (
-                <ActivityIndicator color={palette.text} size="small" />
-              ) : (
-                <Text style={styles.confirmButtonText}>Confirm</Text>
-              )}
-            </Pressable>
-
-            <Pressable onPress={handleCancel} style={styles.cancelButton} testID="verdict-cancel">
-              <Text style={styles.cancelButtonText}>Go back</Text>
-            </Pressable>
-          </View>
-        </View>
-      </Modal>
     </RitualScreen>
   );
 }
@@ -299,89 +202,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center' as const,
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 28,
-  },
-  modalCard: {
-    width: '100%',
-    backgroundColor: palette.surfaceElevated,
-    borderRadius: 24,
-    padding: 28,
-    alignItems: 'center',
-    gap: 14,
-    borderWidth: 1,
-    borderColor: palette.border,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 20 },
-    shadowOpacity: 0.5,
-    shadowRadius: 40,
-    elevation: 20,
-  },
-  modalIconWrap: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
-  },
-  modalIconKept: {
-    backgroundColor: 'rgba(82,214,154,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(82,214,154,0.24)',
-  },
-  modalIconBroken: {
-    backgroundColor: palette.warmAmberMuted,
-    borderWidth: 1,
-    borderColor: palette.warmAmberBorder,
-  },
-  modalTitle: {
-    color: palette.text,
-    fontSize: 20,
-    fontWeight: '700' as const,
-    textAlign: 'center' as const,
-  },
-  modalBody: {
-    color: palette.textSecondary,
-    fontSize: 15,
-    lineHeight: 22,
-    textAlign: 'center' as const,
-  },
-  confirmButton: {
-    width: '100%',
-    minHeight: 52,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 6,
-  },
-  confirmButtonKept: {
-    backgroundColor: 'rgba(82,214,154,0.18)',
-    borderWidth: 1,
-    borderColor: 'rgba(82,214,154,0.3)',
-  },
-  confirmButtonBroken: {
-    backgroundColor: palette.warmAmberMuted,
-    borderWidth: 1,
-    borderColor: palette.warmAmberBorder,
-  },
-  confirmButtonText: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  cancelButton: {
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cancelButtonText: {
-    color: palette.textMuted,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
+
 });

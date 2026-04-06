@@ -365,6 +365,8 @@ export default function SealScreen() {
       {!sealed ? (
         <Animated.View style={[styles.swearCard, { borderColor: swearBorderColor }]}>
           <Animated.View style={[styles.swearGlowBg, { opacity: swearBgOpacity }]} />
+          <Text style={styles.oathHeroText}>I solemnly swear{"\n"}to keep my word this week.</Text>
+          <View style={styles.oathDivider} />
           <Pressable
             onPress={sworn ? handleUnswear : handleSwear}
             style={styles.swearRow}
@@ -478,6 +480,22 @@ const styles = StyleSheet.create({
   swearGlowBg: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: palette.goldBright,
+  },
+  oathHeroText: {
+    color: palette.goldBright,
+    fontSize: 22,
+    fontWeight: '700' as const,
+    fontFamily: serifFont,
+    textAlign: 'center' as const,
+    lineHeight: 34,
+    marginBottom: 16,
+  },
+  oathDivider: {
+    height: 1,
+    width: '60%',
+    alignSelf: 'center' as const,
+    backgroundColor: 'rgba(212,162,79,0.2)',
+    marginBottom: 16,
   },
   swearRow: {
     flexDirection: 'row',

@@ -1,258 +1,118 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import { Shield } from 'lucide-react-native';
-import React, { useEffect, useRef } from 'react';
-import { Animated, Platform, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { Platform, StyleSheet, Text, View } from 'react-native';
 
 import { palette, serifFont } from '@/constants/unbreakable';
 
 interface VowCertificateProps {
   vowText: string;
-  witnessName: string;
   stakeAmount: number;
-  consequence: string;
-  dateRange: string;
-  verdictDate: string;
-  isSelfWitness: boolean;
-  animate?: boolean;
+  sealDate: string;
 }
 
-export const VowCertificate = React.memo(function VowCertificate({
-  vowText,
-  witnessName,
-  stakeAmount,
-  consequence,
-  dateRange,
-  verdictDate,
-  isSelfWitness,
-  animate = true,
-}: VowCertificateProps) {
-  const fadeIn = useRef(new Animated.Value(animate ? 0 : 1)).current;
-  const scaleIn = useRef(new Animated.Value(animate ? 0.95 : 1)).current;
-  const sealSpin = useRef(new Animated.Value(animate ? 0 : 1)).current;
-  const glowPulse = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!animate) return;
-
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeIn, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleIn, {
-          toValue: 1,
-          speed: 6,
-          bounciness: 8,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.spring(sealSpin, {
-        toValue: 1,
-        speed: 4,
-        bounciness: 14,
-        useNativeDriver: true,
-      }),
-    ]).start();
-
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(glowPulse, {
-          toValue: 1,
-          duration: 2400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(glowPulse, {
-          toValue: 0,
-          duration: 2400,
-          useNativeDriver: true,
-        }),
-      ]),
-    ).start();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const sealRotation = sealSpin.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['-15deg', '0deg'],
-  });
-
-  const glowOpacity = glowPulse.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.15, 0.35],
-  });
-
-  const sealScale = sealSpin.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.3, 1.1, 1],
-  });
-
-  const displayConsequence = isSelfWitness ? 'charity' : consequence;
-
-  return (
-    <Animated.View
-      style={[
-        styles.outer,
-        {
-          opacity: fadeIn,
-          transform: [{ scale: scaleIn }],
-        },
-      ]}
-      testID="vow-certificate"
-    >
-      <View style={styles.card}>
+export const VowCertificate = React.forwardRef<View, VowCertificateProps>(
+  function VowCertificate({ vowText, stakeAmount, sealDate }, ref) {
+    return (
+      <View ref={ref} style={styles.container} collapsable={false}>
         <LinearGradient
-          colors={['#0D1117', '#0F1520', '#111826']}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
+          colors={[palette.bg, '#080C14', '#0A0F18', palette.bg]}
+          locations={[0, 0.3, 0.7, 1]}
           style={StyleSheet.absoluteFill}
         />
 
-        <Animated.View
-          style={[
-            styles.cornerGlow,
-            { opacity: glowOpacity },
-          ]}
-        />
-        <Animated.View
-          style={[
-            styles.cornerGlowBottom,
-            { opacity: glowOpacity },
-          ]}
-        />
+        <View style={styles.topFiber} pointerEvents="none" />
+        <View style={styles.bottomFiber} pointerEvents="none" />
 
-        <View style={styles.borderInner}>
-          <View style={styles.headerRow}>
-            <View style={styles.ruleLeft} />
-            <Text style={styles.headerText}>UNBREAKABLE VOW</Text>
-            <View style={styles.ruleRight} />
+        <View style={styles.glow} pointerEvents="none" />
+
+        <View style={styles.inner}>
+          <View style={styles.topSection}>
+            <View style={styles.headerRuleRow}>
+              <View style={styles.headerRule} />
+              <Text style={styles.headerText}>UNBREAKABLE VOW</Text>
+              <View style={styles.headerRule} />
+            </View>
           </View>
 
-          <View style={styles.vowBlock}>
-            <View style={styles.quoteAccent} />
+          <View style={styles.centerSection}>
             <Text style={styles.vowText}>{vowText}</Text>
           </View>
 
-          <View style={styles.dividerRow}>
-            <View style={styles.dividerDot} />
-            <View style={styles.dividerLine} />
-            <View style={styles.dividerDot} />
+          <View style={styles.bottomSection}>
+            <View style={styles.goldRule} />
+
+            <Text style={styles.stakeText}>${stakeAmount} at stake</Text>
+            <Text style={styles.dateText}>Sealed {sealDate}</Text>
+
+            <Text style={styles.watermark}>unbreakablevow.app</Text>
           </View>
-
-          <View style={styles.detailsGrid}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>STAKE</Text>
-              <Text style={styles.detailValueGold}>${stakeAmount}</Text>
-            </View>
-            <View style={styles.detailDivider} />
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>{isSelfWitness ? 'JUDGE' : 'WITNESS'}</Text>
-              <Text style={styles.detailValue}>{witnessName}</Text>
-            </View>
-          </View>
-
-          <View style={styles.detailsGrid}>
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>IF BROKEN</Text>
-              <Text style={styles.detailValueMuted}>${stakeAmount} → {displayConsequence}</Text>
-            </View>
-            <View style={styles.detailDivider} />
-            <View style={styles.detailItem}>
-              <Text style={styles.detailLabel}>VERDICT</Text>
-              <Text style={styles.detailValueMuted}>{verdictDate}</Text>
-            </View>
-          </View>
-
-          <View style={styles.sealRow}>
-            <Animated.View
-              style={[
-                styles.sealContainer,
-                {
-                  transform: [
-                    { rotate: sealRotation },
-                    { scale: sealScale },
-                  ],
-                },
-              ]}
-            >
-              <LinearGradient
-                colors={['#D4A24F', '#C4923F', '#8C6423']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.sealGradient}
-              >
-                <Shield color="#0B0D11" fill="#0B0D11" size={18} />
-              </LinearGradient>
-            </Animated.View>
-            <Text style={styles.sealLabel}>SEALED</Text>
-          </View>
-
-          <Text style={styles.dateRange}>{dateRange}</Text>
-
-          <Text style={styles.watermark}>unbreakablevow.app</Text>
         </View>
       </View>
-    </Animated.View>
-  );
-});
+    );
+  },
+);
+
+const ASPECT_WIDTH = 1080;
+const ASPECT_HEIGHT = 1920;
+const DISPLAY_WIDTH = 300;
+const DISPLAY_HEIGHT = (DISPLAY_WIDTH / ASPECT_WIDTH) * ASPECT_HEIGHT;
 
 const styles = StyleSheet.create({
-  outer: {
-    shadowColor: '#D4A24F',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 32,
-    elevation: 16,
-  },
-  card: {
-    borderRadius: 20,
+  container: {
+    width: DISPLAY_WIDTH,
+    height: DISPLAY_HEIGHT,
+    borderRadius: 16,
     overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.25)',
+    alignSelf: 'center' as const,
   },
-  borderInner: {
-    margin: 1,
-    borderRadius: 19,
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.08)',
-    padding: 24,
-    paddingTop: 20,
-    gap: 16,
+  inner: {
+    flex: 1,
+    paddingHorizontal: 28,
+    paddingTop: 60,
+    paddingBottom: 40,
+    justifyContent: 'space-between',
   },
-  cornerGlow: {
+  glow: {
     position: 'absolute',
-    top: -40,
+    top: '35%',
+    left: '50%',
+    marginLeft: -150,
+    width: 300,
+    height: 300,
+    borderRadius: 300,
+    backgroundColor: 'rgba(212,162,79,0.15)',
+  },
+  topFiber: {
+    position: 'absolute',
+    top: -60,
     right: -40,
-    width: 160,
-    height: 160,
-    borderRadius: 80,
-    backgroundColor: 'rgba(212,162,79,0.2)',
+    width: 180,
+    height: 180,
+    borderRadius: 180,
+    backgroundColor: 'rgba(212,162,79,0.04)',
   },
-  cornerGlowBottom: {
+  bottomFiber: {
     position: 'absolute',
-    bottom: -30,
+    bottom: -40,
     left: -30,
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: 'rgba(212,162,79,0.1)',
+    width: 140,
+    height: 140,
+    borderRadius: 140,
+    backgroundColor: 'rgba(212,162,79,0.03)',
   },
-  headerRow: {
+  topSection: {
+    alignItems: 'center',
+  },
+  headerRuleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
   },
-  ruleLeft: {
+  headerRule: {
     flex: 1,
     height: 1,
-    backgroundColor: 'rgba(212,162,79,0.2)',
-  },
-  ruleRight: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(212,162,79,0.2)',
+    backgroundColor: 'rgba(212,162,79,0.18)',
   },
   headerText: {
     color: palette.goldBright,
@@ -260,116 +120,47 @@ const styles = StyleSheet.create({
     fontWeight: '800' as const,
     letterSpacing: 3,
   },
-  vowBlock: {
-    flexDirection: 'row',
-    alignItems: 'stretch',
-  },
-  quoteAccent: {
-    width: 3,
-    borderRadius: 2,
-    backgroundColor: palette.gold,
-    marginRight: 14,
+  centerSection: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
   },
   vowText: {
-    flex: 1,
-    color: palette.text,
-    fontSize: 18,
-    lineHeight: 26,
-    fontFamily: serifFont,
-    fontWeight: '400' as const,
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-  },
-  dividerDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(212,162,79,0.3)',
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(212,162,79,0.1)',
-  },
-  detailsGrid: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  detailItem: {
-    flex: 1,
-    gap: 4,
-  },
-  detailDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: 'rgba(212,162,79,0.12)',
-    marginHorizontal: 16,
-  },
-  detailLabel: {
-    color: palette.textMuted,
-    fontSize: 10,
-    fontWeight: '700' as const,
-    letterSpacing: 1.5,
-  },
-  detailValueGold: {
     color: palette.goldBright,
     fontSize: 22,
-    fontWeight: '800' as const,
-    letterSpacing: -0.5,
+    lineHeight: 34,
+    fontFamily: serifFont,
+    textAlign: 'center' as const,
+    fontWeight: '400' as const,
   },
-  detailValue: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '600' as const,
+  bottomSection: {
+    alignItems: 'center',
+    gap: 14,
   },
-  detailValueMuted: {
-    color: palette.textSecondary,
+  goldRule: {
+    width: '40%',
+    height: 1,
+    backgroundColor: 'rgba(212,162,79,0.3)',
+  },
+  stakeText: {
+    color: palette.goldBright,
+    fontSize: 18,
+    fontWeight: '700' as const,
+    letterSpacing: -0.3,
+  },
+  dateText: {
+    color: palette.textMuted,
     fontSize: 13,
     fontWeight: '500' as const,
-  },
-  sealRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingTop: 4,
-  },
-  sealContainer: {
-    shadowColor: '#D4A24F',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
-    elevation: 8,
-  },
-  sealGradient: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sealLabel: {
-    color: palette.gold,
-    fontSize: 12,
-    fontWeight: '700' as const,
-    letterSpacing: 2.5,
-  },
-  dateRange: {
-    color: palette.textMuted,
-    fontSize: 12,
-    textAlign: 'center' as const,
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   watermark: {
-    color: 'rgba(212,162,79,0.2)',
+    color: palette.textMuted,
     fontSize: 10,
-    textAlign: 'center' as const,
     letterSpacing: 1,
     fontWeight: '600' as const,
+    opacity: 0.6,
+    marginTop: 6,
     ...Platform.select({
       web: { userSelect: 'none' as const },
       default: {},

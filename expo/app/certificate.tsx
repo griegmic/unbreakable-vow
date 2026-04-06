@@ -5,7 +5,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { Alert, Platform, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
-import { ShareCertificate } from '@/components/share-certificate';
+import { VowCertificate } from '@/components/vow-certificate';
 import { PrimaryButton, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -55,7 +55,7 @@ export default function CertificateScreen() {
 
   const handleContinue = useCallback(() => {
     void Haptics.selectionAsync();
-    router.push('/sent');
+    router.push('/live');
   }, []);
 
   return (
@@ -84,7 +84,7 @@ export default function CertificateScreen() {
       />
 
       <View style={styles.certWrapper}>
-        <ShareCertificate
+        <VowCertificate
           ref={certRef}
           vowText={activeVowText}
           stakeAmount={vow.stake.amount}

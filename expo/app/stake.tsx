@@ -11,13 +11,12 @@ import {
   RitualCard,
   RitualScreen,
   TitleBlock,
-  VowPreview,
 } from '@/components/vow-ui';
 import { antiCauses, charities, palette, stakeAmounts } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function StakeScreen() {
-  const { activeVowText, setStake, vow } = useVowFlow();
+  const { setStake, vow } = useVowFlow();
 
   const [amount, setAmount] = useState<number>(vow.stake.amount);
   const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(
@@ -79,8 +78,6 @@ export default function StakeScreen() {
         title="Set the stakes."
         subtitle="Pick an amount you'd hate to lose."
       />
-      <VowPreview text={activeVowText} compact />
-
       <RitualCard>
         <Animated.View style={[styles.amountDisplay, { transform: [{ scale: scaleAnim }] }]}>
           <Text style={styles.amountBig}>${amount}</Text>
