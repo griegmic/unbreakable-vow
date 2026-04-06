@@ -1,13 +1,12 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, Link, Search, UserPlus, X } from 'lucide-react-native';
+import { ChevronRight, Search, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
   BackButton,
-  PrimaryButton,
   RitualScreen,
   TitleBlock,
 } from '@/components/vow-ui';
@@ -15,7 +14,7 @@ import { palette, serifFont } from '@/constants/unbreakable';
 import { updateVowWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
-type WitnessMode = 'choose' | 'contacts' | 'confirm';
+type WitnessMode = 'choose' | 'contacts';
 
 interface ContactEntry {
   id: string;
@@ -24,20 +23,14 @@ interface ContactEntry {
 }
 
 export default function WitnessScreen() {
-  const { setWitness, setWitnessType, vow, updateConsequence, updateWitnessMidVow, setVowId } = useVowFlow();
+  const { setWitness, setWitnessType, vow, updateWitnessMidVow, setVowId } = useVowFlow();
   const params = useLocalSearchParams<{ midVow?: string }>();
   const isMidVow = params.midVow === '1' && !!vow.vowId;
   const [mode, setMode] = useState<WitnessMode>('choose');
-  const [inlineNameText, setInlineNameText] = useState<string>('');
-  const [showNameAfterShare, setShowNameAfterShare] = useState<boolean>(false);
-  const nameInputRef = React.useRef<TextInput>(null);
 
   const [contacts, setContacts] = useState<ContactEntry[]>([]);
   const [contactSearch, setContactSearch] = useState('');
   const [loadingContacts, setLoadingContacts] = useState(false);
-
-  const [pendingName, setPendingName] = useState<string>('');
-  const [pendingPhone, setPendingPhone] = useState<string>('');
 
   const stakeAmount = vow.stake.amount;
 
@@ -106,91 +99,45 @@ export default function WitnessScreen() {
     }
   }, []);
 
-  const handleSelectContact = useCallback((contact: ContactEntry) => {
+  const handleSelectContact = useCallback(async (contact: ContactEntry) => {
     void Haptics.selectionAsync();
     const firstName = contact.name.split(' ')[0];
     console.log('[WitnessScreen] contact selected:', firstName, contact.phone);
-    setPendingName(firstName);
-    setPendingPhone(contact.phone);
-    setMode('confirm');
-  }, []);
-
-  const [updatingWitness, setUpdatingWitness] = useState<boolean>(false);
-
-  const handleConfirmWitness = useCallback(async () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (isMidVow && vow.vowId) {
-      setUpdatingWitness(true);
-      const result = await updateVowWitness(vow.vowId, {
-        witnessName: pendingName,
-        witnessPhone: pendingPhone || null,
-      });
-      setUpdatingWitness(false);
+      try {
+        const result = await updateVowWitness(vow.vowId, {
+          witnessName: firstName,
+          witnessPhone: contact.phone || null,
+        });
 
-      if (result.success) {
-        setWitnessType('friend');
-        updateWitnessMidVow(pendingName, pendingPhone || '');
-        if (result.witnessInviteToken) {
-          setVowId(vow.vowId, result.witnessInviteToken);
+        if (result.success) {
+          setWitnessType('friend');
+          updateWitnessMidVow(firstName, contact.phone || '');
+          if (result.witnessInviteToken) {
+            setVowId(vow.vowId, result.witnessInviteToken);
+          }
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          router.back();
+        } else {
+          Alert.alert('Something went wrong', result.error || 'Please try again.');
         }
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.back();
-      } else {
-        Alert.alert('Something went wrong', result.error || 'Please try again.');
+      } catch {
+        Alert.alert('Something went wrong', 'Please try again.');
       }
       return;
     }
 
     setWitnessType('friend');
-    setWitness(pendingName, pendingPhone ? 'sms' : 'link', pendingPhone || undefined);
+    setWitness(firstName, contact.phone ? 'sms' : 'link', contact.phone || undefined);
     router.push('/seal');
-  }, [pendingName, pendingPhone, setWitnessType, setWitness, isMidVow, vow.vowId, updateWitnessMidVow, setVowId]);
+  }, [setWitnessType, setWitness, isMidVow, vow.vowId, updateWitnessMidVow, setVowId]);
 
   const filteredContacts = useMemo(() => {
     if (!contactSearch.trim()) return contacts;
     const q = contactSearch.toLowerCase();
     return contacts.filter(c => c.name.toLowerCase().includes(q));
   }, [contacts, contactSearch]);
-
-  const handleInlineNameSubmit = () => {
-    if (!inlineNameText.trim()) return;
-    void Haptics.selectionAsync();
-    const name = inlineNameText.trim();
-    console.log('[WitnessScreen] inline name submitted:', name);
-    setPendingName(name);
-    setPendingPhone('');
-    setMode('confirm');
-  };
-
-  if (mode === 'confirm') {
-    const consequenceLabel = `$${stakeAmount} goes to ${vow.stake.destination}`;
-
-    return (
-      <RitualScreen
-        footer={
-          <PrimaryButton
-            label={updatingWitness ? 'Updating...' : 'Lock it in'}
-            onPress={handleConfirmWitness}
-            disabled={updatingWitness}
-            testID="witness-confirm-continue"
-          />
-        }
-      >
-        <Stack.Screen options={{ headerShown: false }} />
-        <BackButton />
-        <TitleBlock
-          title={`${pendingName} is your witness.`}
-          subtitle="Here's what happens if you break it."
-        />
-
-        <View style={styles.consequenceCard}>
-          <Text style={styles.consequenceLabel}>IF YOU BREAK IT</Text>
-          <Text style={styles.consequenceValue}>{consequenceLabel}</Text>
-        </View>
-      </RitualScreen>
-    );
-  }
 
   if (mode === 'choose') {
     return (
@@ -215,65 +162,11 @@ export default function WitnessScreen() {
             )}
           </View>
           <View style={styles.heroCopy}>
-            <Text style={styles.heroTitle}>Pick a friend</Text>
+            <Text style={styles.heroTitle}>Text a friend</Text>
             <Text style={styles.heroSubtitle}>They'll decide if you kept your word</Text>
           </View>
           <ChevronRight color={palette.goldBright} size={18} />
         </Pressable>
-
-        <Pressable
-          onPress={async () => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            try {
-              const vowText = vow.rawInput || 'my vow';
-              const msg = `I'm making an Unbreakable Vow: "${vowText}" — ${stakeAmount} is on the line. I need you to hold me accountable. I'll send you the official witness link once it's sealed!`;
-              console.log('[WitnessScreen] sharing invite link');
-              const result = await Share.share(
-                Platform.OS === 'ios'
-                  ? { message: msg }
-                  : { message: msg }
-              );
-              if (result.action !== Share.dismissedAction) {
-                console.log('[WitnessScreen] share completed, showing name input');
-                setShowNameAfterShare(true);
-                setTimeout(() => nameInputRef.current?.focus(), 300);
-              }
-            } catch {
-              console.log('[WitnessScreen] share cancelled');
-            }
-          }}
-          style={({ pressed }) => [styles.shareLinkBtn, pressed && styles.shareLinkBtnPressed]}
-          testID="witness-share-link"
-        >
-          <Link color={palette.textSecondary} size={16} />
-          <Text style={styles.shareLinkText}>Send a link instead</Text>
-        </Pressable>
-
-        {showNameAfterShare && (
-          <View style={styles.namePromptCard}>
-            <Text style={styles.namePromptText}>Link shared! Who did you send it to?</Text>
-          </View>
-        )}
-
-        <View style={styles.inlineInputWrap}>
-          <TextInput
-            ref={nameInputRef}
-            style={styles.inlineInput}
-            placeholder={showNameAfterShare ? "Their first name..." : "Or type a name..."}
-            placeholderTextColor={palette.textMuted}
-            value={inlineNameText}
-            onChangeText={setInlineNameText}
-            onSubmitEditing={handleInlineNameSubmit}
-            returnKeyType="go"
-            autoCapitalize="words"
-            testID="witness-inline-name"
-          />
-          {inlineNameText.trim().length > 0 && (
-            <Pressable onPress={handleInlineNameSubmit} style={styles.inlineNextBtn} testID="witness-inline-next">
-              <Text style={styles.inlineNextText}>Next</Text>
-            </Pressable>
-          )}
-        </View>
 
         <View style={styles.soloFooterMinimal}>
           <Pressable
@@ -406,68 +299,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
   },
-  shareLinkBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    marginTop: 2,
-  },
-  shareLinkBtnPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.98 }],
-  },
-  shareLinkText: {
-    color: palette.textSecondary,
-    fontSize: 14,
-    fontWeight: '500' as const,
-  },
-  namePromptCard: {
-    backgroundColor: 'rgba(82,214,154,0.08)',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(82,214,154,0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginTop: 6,
-  },
-  namePromptText: {
-    color: palette.success,
-    fontSize: 14,
-    fontWeight: '600' as const,
-    textAlign: 'center' as const,
-  },
-  inlineInputWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: palette.border,
-    paddingVertical: 14,
-    gap: 10,
-    marginTop: 4,
-  },
-  inlineInput: {
-    flex: 1,
-    color: palette.text,
-    fontSize: 16,
-    paddingVertical: 0,
-  },
-  inlineNextBtn: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 10,
-    backgroundColor: palette.goldBright,
-  },
-  inlineNextText: {
-    color: '#0B0D11',
-    fontSize: 13,
-    fontWeight: '700' as const,
-  },
   soloFooterMinimal: {
     flex: 1,
     justifyContent: 'flex-end',
@@ -484,56 +315,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '400' as const,
     textAlign: 'center' as const,
-  },
-  consequenceCard: {
-    backgroundColor: palette.surface,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: palette.borderStrong,
-    padding: 22,
-    alignItems: 'center',
-    gap: 8,
-  },
-  consequenceLabel: {
-    color: palette.gold,
-    fontSize: 11,
-    fontWeight: '700' as const,
-    letterSpacing: 1.3,
-  },
-  consequenceValue: {
-    color: palette.goldBright,
-    fontSize: 22,
-    fontWeight: '700' as const,
-    fontFamily: serifFont,
-    textAlign: 'center' as const,
-    letterSpacing: -0.5,
-  },
-  toggleRow: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  toggleCopy: {
-    flex: 1,
-    gap: 3,
-  },
-  toggleTitle: {
-    color: palette.textSecondary,
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  toggleTitleActive: {
-    color: palette.text,
-  },
-  toggleDesc: {
-    color: palette.textMuted,
-    fontSize: 13,
-    lineHeight: 18,
   },
   contactsHeader: {
     flexDirection: 'row',

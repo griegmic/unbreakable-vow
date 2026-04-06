@@ -180,7 +180,7 @@ export default function HomeScreen() {
                   end={{ x: 1, y: 1 }}
                   style={styles.ctaGradient}
                 >
-                  <Text style={[styles.ctaText, !canContinue && styles.ctaTextDisabled]}>Set the terms</Text>
+                  <Text style={[styles.ctaText, !canContinue && styles.ctaTextDisabled]}>I vow it</Text>
                   {canContinue ? <ArrowRight color="#0B0D11" size={18} /> : null}
                 </LinearGradient>
               </Pressable>
