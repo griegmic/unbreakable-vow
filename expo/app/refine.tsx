@@ -11,7 +11,6 @@ import {
   RitualScreen,
   SecondaryButton,
   TitleBlock,
-  VowPreview,
 } from '@/components/vow-ui';
 import {
   analyzeVow,
@@ -22,7 +21,7 @@ import {
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function RefineScreen() {
-  const { activeVowText, vow, setRefinedText } = useVowFlow();
+  const { vow, setRefinedText } = useVowFlow();
 
   const contextualSuggestions = useMemo(() => getContextualSuggestions(vow.rawInput), [vow.rawInput]);
   const initialSuggestion = useMemo(() => generateSuggestion(vow.rawInput), [vow.rawInput]);
@@ -98,7 +97,27 @@ export default function RefineScreen() {
         subtitle={"Your witness calls it \u2018kept\u2019 or \u2018broken\u2019 \u2014 make it clear."}
       />
 
-      <VowPreview text={activeVowText} />
+      <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
+        <View style={styles.vagueInputShell}>
+          <Text style={styles.vagueInputLabel}>YOUR VOW</Text>
+          <TextInput
+            ref={inputRef}
+            style={styles.vagueInputField}
+            value={suggestionText}
+            onChangeText={(text) => {
+              setSuggestionText(text);
+              if (vagueError) setVagueError('');
+            }}
+            placeholder="Type your vow here"
+            placeholderTextColor={palette.textMuted}
+            onSubmitEditing={handleSubmit}
+            returnKeyType="go"
+            multiline
+            testID="refine-input"
+          />
+        </View>
+      </Animated.View>
+      {vagueError ? <Text style={styles.vagueErrorText}>{vagueError}</Text> : null}
 
       <RitualCard>
         <View style={styles.guidanceHeader}>
@@ -117,29 +136,6 @@ export default function RefineScreen() {
           </Text>
         </View>
       </RitualCard>
-
-      <Animated.View style={{ transform: [{ translateX: shakeAnim }] }}>
-        <View style={styles.vagueInputShell}>
-          <Text style={styles.vagueInputLabel}>YOUR VOW</Text>
-          <TextInput
-            ref={inputRef}
-            style={styles.vagueInputField}
-            value={suggestionText}
-            onChangeText={(text) => {
-              setSuggestionText(text);
-              if (vagueError) setVagueError('');
-            }}
-            placeholder="Type your vow here"
-            placeholderTextColor={palette.textMuted}
-            onSubmitEditing={handleSubmit}
-            returnKeyType="go"
-            autoFocus
-            multiline
-            testID="refine-input"
-          />
-        </View>
-      </Animated.View>
-      {vagueError ? <Text style={styles.vagueErrorText}>{vagueError}</Text> : null}
 
       <View style={styles.dividerRow}>
         <View style={styles.dividerLine} />
