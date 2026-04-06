@@ -39,13 +39,15 @@ export default async function WitnessInvitePage({ params }: Props) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const { data: vow } = await supabase
+  const { data: vow, error: vowError } = await supabase
     .from('vows')
     .select('*')
     .eq('witness_invite_token', token)
+    .in('status', ['active', 'awaiting_verdict', 'kept', 'broken'])
     .single();
 
-  if (!vow) {
+  if (vowError || !vow) {
+    console.error('[WitnessInvitePage] vow lookup failed:', vowError?.message, 'token:', token);
     return <WitnessNotFound token={token} />;
   }
 

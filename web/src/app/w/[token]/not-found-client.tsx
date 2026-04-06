@@ -8,8 +8,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const MAX_RETRIES = 8;
-const RETRY_INTERVAL = 2500;
+const MAX_RETRIES = 3;
+const RETRY_INTERVAL = 2000;
 
 export default function WitnessNotFound({ token }: { token: string }) {
   const [vow, setVow] = useState<any>(null);

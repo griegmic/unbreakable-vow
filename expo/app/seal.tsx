@@ -160,8 +160,29 @@ export default function SealScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
     if (IS_EXPO_GO) {
-      console.log('[SealScreen] Expo Go dev mode — skipping backend, simulating seal');
-      setVowId('dev-' + Date.now(), 'dev-token-' + Date.now());
+      console.log('[SealScreen] Expo Go dev mode — creating real vow, skipping payment');
+      try {
+        const vowRecord = await createVow({
+          rawInput: vow.rawInput,
+          refinedText: activeVowText,
+          witnessName: vow.witnessName,
+          witnessPhone: vow.phoneNumber ? formatE164(vow.phoneNumber) : null,
+          stakeAmount: vow.stake.amount,
+          consequence: vow.stake.consequence,
+          destination: vow.stake.destination,
+        });
+        // Mark as active directly (skip payment)
+        await supabase.from('vows').update({
+          status: 'active',
+          sealed_at: new Date().toISOString(),
+          stripe_payment_intent_id: 'dev_bypass_' + Date.now(),
+        }).eq('id', vowRecord.id);
+        setVowId(vowRecord.id, vowRecord.witness_invite_token);
+      } catch (err) {
+        console.error('[SealScreen] Expo Go dev mode vow creation failed:', err);
+        // Fallback to fake IDs if DB fails (e.g. no auth)
+        setVowId('dev-' + Date.now(), 'dev-token-' + Date.now());
+      }
       setLoading(false);
       playSealAnimation();
       return;

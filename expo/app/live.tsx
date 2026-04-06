@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { AlertCircle, Check, ChevronDown, ChevronUp, Clock, RefreshCw, Share2, ShieldCheck, User, UserMinus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Easing, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { VowCertificate } from '@/components/vow-certificate';
 import { PrimaryButton, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
@@ -213,11 +213,7 @@ export default function LiveScreen() {
         : 'https://unbreakablevow.app';
       const msg = `I made an Unbreakable Vow: "${activeVowText}" — and I need you to hold me to it. ${vow.stake.amount} is on the line. ${inviteUrl}`;
       console.log('[LiveScreen] sharing invite link:', inviteUrl);
-      await Share.share(
-        Platform.OS === 'ios'
-          ? { message: msg, url: inviteUrl }
-          : { message: msg }
-      );
+      await Share.share({ message: msg });
     } catch {
       console.log('[LiveScreen] share invite failed');
     }
