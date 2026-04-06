@@ -61,26 +61,48 @@ export default function SelfResolvePage() {
   };
 
   const handleConfirm = async () => {
-    if (!choice || busy || !vow?.witness_invite_token) return;
+    if (!choice || busy || !vow) return;
     setBusy(true);
     setError('');
 
-    const { error: fnError } = await supabase.functions.invoke('submit-verdict', {
-      body: { token: vow.witness_invite_token, verdict: choice },
-    });
+    try {
+      const response = await supabase.functions.invoke('submit-verdict', {
+        body: { token: vow.witness_invite_token, verdict: choice },
+      });
 
-    if (fnError) {
-      setError('Failed to submit verdict. Please try again.');
+      const fnError = response.error;
+      const fnData = response.data;
+
+      if (fnError) {
+        const detail = fnData?.error || fnError.message || 'Unknown error';
+        console.error('Verdict submission error:', detail, fnData);
+        setError(`Failed to submit verdict: ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`);
+        setBusy(false);
+        return;
+      }
+
+      if (fnData?.error) {
+        console.error('Verdict response error:', fnData.error);
+        setError(`Verdict error: ${fnData.error}`);
+        setBusy(false);
+        return;
+      }
+    } catch (err) {
+      console.error('Verdict exception:', err);
+      setError('Network error. Please try again.');
       setBusy(false);
       return;
     }
 
     setBusy(false);
 
+    const amountDollars = Math.round(vow.stake_amount / 100);
+    const text = encodeURIComponent(vow.refined_text || 'Your vow');
+    const dest = encodeURIComponent(vow.destination || '');
     if (choice === 'kept') {
-      router.push(`/vow-kept?amount=${vow.stake_amount}&destination=${encodeURIComponent(vow.destination || '')}`);
+      router.push(`/vow-kept?amount=${amountDollars}&text=${text}&destination=${dest}`);
     } else {
-      router.push(`/vow-broken?amount=${vow.stake_amount}&destination=${encodeURIComponent(vow.destination || '')}`);
+      router.push(`/vow-broken?amount=${amountDollars}&text=${text}&destination=${dest}`);
     }
   };
 

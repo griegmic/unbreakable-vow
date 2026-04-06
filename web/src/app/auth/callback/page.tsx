@@ -10,8 +10,21 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
 
+    // Check if we have vow flow state to return to
+    const hasVowState = (() => {
+      try {
+        const stored = sessionStorage.getItem('unbreakable-vow-flow');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          return !!parsed.rawInput;
+        }
+      } catch {}
+      return false;
+    })();
+
+    const redirectTo = hasVowState ? '/seal' : '/';
+
     const handleCallback = async () => {
-      // Supabase client auto-parses the hash/query params via detectSessionInUrl
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
       if (sessionError) {
@@ -21,22 +34,20 @@ export default function AuthCallbackPage() {
       }
 
       if (session) {
-        router.replace('/seal');
+        router.replace(redirectTo);
         return;
       }
 
-      // If no session after a short wait, something went wrong
       timeout = setTimeout(() => {
         setError('Sign-in timed out. Redirecting...');
         setTimeout(() => router.replace('/'), 2000);
       }, 5000);
     };
 
-    // Listen for auth state change (covers the case where session isn't ready yet)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         clearTimeout(timeout);
-        router.replace('/seal');
+        router.replace(redirectTo);
       }
     });
 
