@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { AlertCircle, CheckCircle2, ChevronDown, ChevronUp, Clock, RefreshCw, Send, Share2, ShieldCheck, User, UserMinus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
@@ -18,7 +18,11 @@ type WitnessStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'unknown'
 
 export default function LiveScreen() {
   const { activeVowText, vow, isSelfWitness, switchToSolo } = useVowFlow();
+  const params = useLocalSearchParams<{ justSealed?: string }>();
+  const [showSealedBanner, setShowSealedBanner] = useState<boolean>(params.justSealed === '1');
   const dates = getVowVerdictDate(vow.rawInput);
+  const sealedBannerFade = useRef(new Animated.Value(0)).current;
+  const sealedBannerSlide = useRef(new Animated.Value(20)).current;
 
   const brokenTarget =
     vow.stake.consequence === 'witness'
@@ -76,6 +80,18 @@ export default function LiveScreen() {
     const interval = setInterval(() => void checkWitnessStatus(), 30000);
     return () => clearInterval(interval);
   }, [vow.vowId, isSelfWitness]);
+
+  useEffect(() => {
+    if (showSealedBanner) {
+      console.log('[LiveScreen] just sealed, showing celebration banner');
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Animated.parallel([
+        Animated.timing(sealedBannerFade, { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.spring(sealedBannerSlide, { toValue: 0, useNativeDriver: true, speed: 12, bounciness: 8 }),
+      ]).start();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     console.log('[LiveScreen] vow active:', activeVowText);
@@ -424,9 +440,49 @@ export default function LiveScreen() {
         </View>
       </View>
 
+      {showSealedBanner && (
+        <Animated.View style={[styles.sealedBanner, { opacity: sealedBannerFade, transform: [{ translateY: sealedBannerSlide }] }]}>
+          <Text style={styles.sealedBannerTitle}>
+            {isSelfWitness ? 'Sealed. Your vow is locked.' : `Sealed.${vow.witnessName ? ` Now get ${vow.witnessName} on board.` : ''}`}
+          </Text>
+          <Text style={styles.sealedBannerSub}>
+            {isSelfWitness
+              ? 'You\'ll judge yourself when the time comes.'
+              : vow.phoneNumber
+                ? `We texted ${vow.witnessName}. Share the link below to nudge them personally.`
+                : `Share the invite so ${vow.witnessName} can accept and hold you to it.`
+            }
+          </Text>
+          {!isSelfWitness && (
+            <Pressable
+              onPress={() => {
+                void handleShareInviteLink();
+              }}
+              style={({ pressed }) => [styles.sealedShareBtn, pressed && styles.sealedShareBtnPressed]}
+              testID="live-sealed-share"
+            >
+              <Share2 color="#0B0D11" size={16} />
+              <Text style={styles.sealedShareText}>Share with {vow.witnessName}</Text>
+            </Pressable>
+          )}
+          <Pressable
+            onPress={() => {
+              void Haptics.selectionAsync();
+              Animated.timing(sealedBannerFade, { toValue: 0, duration: 300, useNativeDriver: true }).start(() => {
+                setShowSealedBanner(false);
+              });
+            }}
+            style={styles.sealedDismiss}
+            testID="live-sealed-dismiss"
+          >
+            <Text style={styles.sealedDismissText}>{isSelfWitness ? 'Got it' : 'Dismiss'}</Text>
+          </Pressable>
+        </Animated.View>
+      )}
+
       <TitleBlock
         title={activeVowText}
-        subtitle={`$${vow.stake.amount} at stake \u00B7 Goes to ${brokenTarget} if broken`}
+        subtitle={`${vow.stake.amount} at stake \u00B7 Goes to ${brokenTarget} if broken`}
       />
 
       <View style={styles.statsRow}>
@@ -569,6 +625,67 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     fontSize: 13,
     textAlign: 'center' as const,
+  },
+  sealedBanner: {
+    backgroundColor: palette.surface,
+    borderRadius: 22,
+    borderWidth: 1.5,
+    borderColor: 'rgba(82,214,154,0.25)',
+    padding: 22,
+    gap: 12,
+    alignItems: 'center',
+    shadowColor: palette.success,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 20,
+    elevation: 6,
+  },
+  sealedBannerTitle: {
+    color: palette.text,
+    fontSize: 20,
+    fontWeight: '700' as const,
+    textAlign: 'center' as const,
+    letterSpacing: -0.3,
+  },
+  sealedBannerSub: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    textAlign: 'center' as const,
+  },
+  sealedShareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    backgroundColor: palette.goldBright,
+    width: '100%',
+    shadowColor: palette.gold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  sealedShareBtnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  sealedShareText: {
+    color: '#0B0D11',
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  sealedDismiss: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  sealedDismissText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '500' as const,
   },
   certToggle: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
 import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, Link, Search, Shield, ToggleLeft, ToggleRight, UserPlus, X } from 'lucide-react-native';
+import { ChevronRight, Link, Search, ToggleLeft, ToggleRight, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Platform, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
@@ -15,7 +15,7 @@ import { palette, serifFont } from '@/constants/unbreakable';
 import { updateVowWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
-type WitnessMode = 'choose' | 'contacts' | 'confirm' | 'solo-oath';
+type WitnessMode = 'choose' | 'contacts' | 'confirm';
 
 interface ContactEntry {
   id: string;
@@ -301,49 +301,15 @@ export default function WitnessScreen() {
           <Pressable
             onPress={() => {
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              setMode('solo-oath');
+              setWitnessType('self');
+              setWitness('Just me', 'link');
+              router.push('/seal');
             }}
             style={styles.soloTextLink}
             testID="witness-solo"
           >
             <Text style={styles.soloTextLinkLabel}>I'll hold myself accountable</Text>
           </Pressable>
-        </View>
-      </RitualScreen>
-    );
-  }
-
-  if (mode === 'solo-oath') {
-    return (
-      <RitualScreen
-        footer={
-          <PrimaryButton
-            label="Continue"
-            onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-              setWitnessType('self');
-              setWitness('Just me', 'link');
-              router.push('/seal');
-            }}
-            testID="solo-continue"
-          />
-        }
-      >
-        <Stack.Screen options={{ headerShown: false }} />
-        <BackButton />
-        <TitleBlock
-          title="A promise to yourself."
-          subtitle="Just you and your word."
-        />
-
-        <View style={styles.soloOathCard}>
-          <View style={styles.soloOathIconWrap}>
-            <Shield color={palette.goldBright} size={24} />
-          </View>
-          <Text style={styles.soloOathHeading}>How this works</Text>
-          <Text style={styles.soloOathBody}>
-            Stay accountable to your vow. When time's up, you decide — was it kept, or was it broken?
-          </Text>
         </View>
       </RitualScreen>
     );
@@ -670,34 +636,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: 'center' as const,
   },
-  soloOathCard: {
-    backgroundColor: palette.surface,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: palette.border,
-    padding: 20,
-    gap: 12,
-    alignItems: 'center',
-  },
-  soloOathIconWrap: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(212,162,79,0.1)',
-    borderWidth: 1,
-    borderColor: palette.borderStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  soloOathHeading: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  soloOathBody: {
-    color: palette.textSecondary,
-    fontSize: 14,
-    lineHeight: 21,
-    textAlign: 'center' as const,
-  },
+
 });

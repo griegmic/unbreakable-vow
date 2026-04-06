@@ -36,7 +36,6 @@ function RootLayoutNav() {
       <Stack.Screen name="stake" />
       <Stack.Screen name="seal" />
 
-      <Stack.Screen name="sent" />
       <Stack.Screen name="live" />
       <Stack.Screen name="witness-invite" />
       <Stack.Screen name="witness-verdict" />
