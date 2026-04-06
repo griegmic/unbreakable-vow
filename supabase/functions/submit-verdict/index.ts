@@ -51,7 +51,9 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!['active', 'awaiting_verdict'].includes(vow.status)) {
+    // Accept 'sealed' as well — the sealVow() fallback sets this when the seal-vow edge function fails
+    const acceptableStatuses = ['active', 'awaiting_verdict', 'sealed'];
+    if (!acceptableStatuses.includes(vow.status)) {
       return new Response(JSON.stringify({ error: 'invalid_status', status: vow.status }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -61,7 +63,7 @@ Deno.serve(async (req) => {
     const now = new Date().toISOString();
 
     // Atomic update with status guard to prevent race conditions
-    const { error: updateError, count } = await supabase
+    const { data: updated, error: updateError } = await supabase
       .from('vows')
       .update({
         verdict,
@@ -69,19 +71,21 @@ Deno.serve(async (req) => {
         status: verdict,
       })
       .eq('id', vow.id)
-      .in('status', ['active', 'awaiting_verdict']);
-
-    if (count === 0) {
-      return new Response(JSON.stringify({ error: 'already_judged' }), {
-        status: 409,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+      .in('status', acceptableStatuses)
+      .select('id')
+      .maybeSingle();
 
     if (updateError) {
       console.error('Failed to update vow:', updateError);
       return new Response(JSON.stringify({ error: 'update_failed' }), {
         status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (!updated) {
+      return new Response(JSON.stringify({ error: 'already_judged' }), {
+        status: 409,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

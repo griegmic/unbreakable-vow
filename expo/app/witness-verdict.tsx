@@ -40,10 +40,22 @@ export default function WitnessVerdictScreen() {
         body: { token: vow.witnessInviteToken, verdict: choice },
       });
 
-      if (error || data?.error) {
-        const detail = data?.error || error?.message || 'Unknown error';
+      if (error) {
+        // When edge function returns non-2xx, data is null and error.context has the response
+        let detail = error.message || 'Unknown error';
+        try {
+          const body = await error.context?.json?.();
+          if (body?.error) detail = body.error;
+        } catch {}
         console.error('[WitnessVerdictScreen] verdict submission failed:', detail);
-        Alert.alert('Verdict failed', typeof detail === 'string' ? detail : JSON.stringify(detail));
+        Alert.alert('Verdict failed', detail === 'already_judged' ? 'This vow has already been judged.' : detail);
+        setSubmitting(false);
+        return;
+      }
+
+      if (data?.error) {
+        console.error('[WitnessVerdictScreen] verdict submission failed:', data.error);
+        Alert.alert('Verdict failed', data.error === 'already_judged' ? 'This vow has already been judged.' : data.error);
         setSubmitting(false);
         return;
       }

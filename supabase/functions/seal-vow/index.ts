@@ -113,14 +113,16 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date().toISOString();
-    const { error: updateError, count } = await supabase
+    const { data: updated, error: updateError } = await supabase
       .from('vows')
       .update({
         status: 'active',
         sealed_at: now,
       })
       .eq('id', vow_id)
-      .in('status', ['draft', 'sealed']);
+      .in('status', ['draft', 'sealed'])
+      .select('id')
+      .maybeSingle();
 
     if (updateError) {
       return new Response(JSON.stringify({ error: 'Failed to update vow' }), {
@@ -129,7 +131,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!count) {
+    if (!updated) {
       return new Response(JSON.stringify({ success: true, already_sealed: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

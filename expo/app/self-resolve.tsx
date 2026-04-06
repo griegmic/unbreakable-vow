@@ -83,9 +83,30 @@ export default function SelfResolveScreen() {
       console.log('[SelfResolve] Expo Go dev mode — skipping backend, simulating verdict:', selectedVerdict);
     } else if (vow.witnessInviteToken) {
       try {
-        await supabase.functions.invoke('submit-verdict', {
+        const { data, error } = await supabase.functions.invoke('submit-verdict', {
           body: { token: vow.witnessInviteToken, verdict: selectedVerdict },
         });
+
+        if (error) {
+          let detail = error.message || 'Unknown error';
+          try {
+            const body = await error.context?.json?.();
+            if (body?.error) detail = body.error;
+          } catch {}
+          console.error('[SelfResolve] submit error:', detail);
+          setSubmitting(false);
+          setConfirmVisible(false);
+          Alert.alert('Something went wrong', detail === 'already_judged' ? 'This vow has already been judged.' : 'Please try again.');
+          return;
+        }
+
+        if (data?.error) {
+          console.error('[SelfResolve] submit error:', data.error);
+          setSubmitting(false);
+          setConfirmVisible(false);
+          Alert.alert('Something went wrong', data.error === 'already_judged' ? 'This vow has already been judged.' : 'Please try again.');
+          return;
+        }
       } catch (err) {
         console.error('[SelfResolve] submit error:', err);
         setSubmitting(false);
