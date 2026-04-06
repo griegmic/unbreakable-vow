@@ -78,14 +78,6 @@ export default function SentScreen() {
         />
       </Animated.View>
 
-      <Animated.View style={{ opacity: contentFade }}>
-        <VowCertificate
-          vowText={activeVowText}
-          stakeAmount={vow.stake.amount}
-          sealDate={dates.range}
-        />
-      </Animated.View>
-
       {!isSelfWitness && (
         <Animated.View style={{ opacity: contentFade }}>
           <Pressable
@@ -94,10 +86,18 @@ export default function SentScreen() {
             testID="sent-share-witness"
           >
             <Share2 color={palette.goldBright} size={18} />
-            <Text style={styles.shareNudgeText}>Share invite link</Text>
+            <Text style={styles.shareNudgeText}>Share with {vow.witnessName}</Text>
           </Pressable>
         </Animated.View>
       )}
+
+      <Animated.View style={{ opacity: contentFade }}>
+        <VowCertificate
+          vowText={activeVowText}
+          stakeAmount={vow.stake.amount}
+          sealDate={dates.range}
+        />
+      </Animated.View>
     </RitualScreen>
   );
 }
