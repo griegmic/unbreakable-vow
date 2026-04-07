@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { DollarSign, Sparkles, Calendar, Clock, Shield, Eye } from 'lucide-react';
+import { DollarSign, Sparkles, Calendar, Clock, Shield, Eye, MessageCircle } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
 
@@ -142,6 +142,22 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     setCalendarAdded(true);
   };
 
+  const handleTextMaker = () => {
+    setJustAccepted(false);
+    const message = encodeURIComponent("Just accepted your vow. I'm watching. 👀");
+    if (makerPhone) {
+      // Sanitize phone: keep only digits, +, and hyphens
+      const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
+      // Use &body= (not ?body=) when recipient is present — required for iOS Safari
+      window.location.href = `sms:${cleanPhone}&body=${message}`;
+    } else {
+      window.location.href = `sms:?body=${message}`;
+    }
+  };
+
+  // Use lowercase "your friend" mid-sentence when name is the fallback
+  const makerLabel = makerName === 'Your friend' ? 'your friend' : makerName;
+
   const endDate = vow.ends_at
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : 'TBD';
@@ -203,6 +219,35 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 <p className="text-[14px] leading-[21px] font-serif" style={{ color: 'var(--text)' }}>
                   &ldquo;{vow.refined_text}&rdquo;
                 </p>
+              </div>
+            </FadeUp>
+            <FadeUp delay={0.45}>
+              <div className="flex flex-col gap-2.5">
+                {makerPhone && (
+                  <button
+                    type="button"
+                    onClick={handleTextMaker}
+                    className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                      boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                    }}
+                  >
+                    <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
+                      <MessageCircle className="w-[18px] h-[18px]" color="#0B0D11" />
+                      <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                        Tell {makerLabel} you&apos;re watching
+                      </span>
+                    </div>
+                  </button>
+                )}
+                <a
+                  href="https://unbreakablevow.app"
+                  className="block text-center text-[13px] py-3 transition-opacity hover:opacity-80"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  Make a vow of your own &rarr;
+                </a>
               </div>
             </FadeUp>
           </>
@@ -277,12 +322,35 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               </FadeUp>
             )}
 
+            {/* Text maker CTA — above calendar, hidden when verdict due or no phone */}
+            {!isVerdictDue && makerPhone && (
+              <FadeUp delay={0.2}>
+                <button
+                  type="button"
+                  onClick={handleTextMaker}
+                  className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    border: '1px solid var(--border-strong)',
+                  }}
+                >
+                  <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
+                    <MessageCircle className="w-[16px] h-[16px]" style={{ color: 'var(--gold-bright)' }} />
+                    <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                      Tell {makerLabel} you&apos;re watching
+                    </span>
+                  </div>
+                </button>
+              </FadeUp>
+            )}
+
             {/* Calendar reminder CTA */}
             {!isVerdictDue && (
-              <FadeUp delay={0.2}>
+              <FadeUp delay={makerPhone ? 0.25 : 0.2}>
                 <div className="flex flex-col gap-3">
                   {vow.ends_at ? (
                     <button
+                      type="button"
                       onClick={handleAddToCalendar}
                       className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
                       style={{
@@ -316,6 +384,17 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 </div>
               </FadeUp>
             )}
+
+            {/* Tertiary: make your own vow */}
+            <FadeUp delay={makerPhone ? 0.3 : 0.25}>
+              <a
+                href="https://unbreakablevow.app"
+                className="block text-center text-[13px] py-3 transition-opacity hover:opacity-80"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Make a vow of your own &rarr;
+              </a>
+            </FadeUp>
           </>
         )}
       </RitualScreen>
