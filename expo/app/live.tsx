@@ -574,7 +574,7 @@ export default function LiveScreen() {
       {phase === 'vow_active' && renderVowActiveCard()}
       {phase === 'verdict_due' && renderVerdictDueCard()}
 
-      {witnessWebUrl && !isSelfWitness && (
+      {witnessWebUrl && !isSelfWitness && witnessAccepted && (
         <Pressable style={styles.witnessLinkRow} onPress={handleViewWitnessScreen}>
           <ExternalLink color={palette.goldBright} size={16} />
           <Text style={styles.witnessLinkText}>View witness screen</Text>

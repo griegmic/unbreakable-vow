@@ -15,7 +15,7 @@ export default async function VerdictPage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('*')
+    .select('id, refined_text, stake_amount, destination, witness_name, status, verdict')
     .eq('witness_invite_token', token)
     .single();
 

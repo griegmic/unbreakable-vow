@@ -41,7 +41,7 @@ export default async function WitnessInvitePage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('*')
+    .select('id, refined_text, stake_amount, destination, witness_name, witness_accepted_at, witness_declined, ends_at, status, user_id')
     .eq('witness_invite_token', token)
     .single();
 
