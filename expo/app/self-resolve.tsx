@@ -24,7 +24,7 @@ const IS_EXPO_GO = Constants.appOwnership === 'expo';
 type VerdictChoice = 'kept' | 'broken' | null;
 
 export default function SelfResolveScreen() {
-  const { activeVowText, vow } = useVowFlow();
+  const { activeVowText, vow, setVowId } = useVowFlow();
 
   const destination = vow.stake.destination;
 
@@ -81,10 +81,34 @@ export default function SelfResolveScreen() {
 
     if (IS_EXPO_GO) {
       console.log('[SelfResolve] Expo Go dev mode — skipping backend, simulating verdict:', selectedVerdict);
-    } else if (vow.witnessInviteToken) {
+    } else {
+      // Fetch token from DB if missing from in-memory state
+      let token = vow.witnessInviteToken;
+      if (!token && vow.vowId) {
+        console.log('[SelfResolve] token missing, fetching from DB for vowId:', vow.vowId);
+        const { data: vowData } = await supabase
+          .from('vows')
+          .select('witness_invite_token')
+          .eq('id', vow.vowId)
+          .single();
+        token = vowData?.witness_invite_token ?? null;
+        if (token) {
+          setVowId(vow.vowId, token);
+        }
+      }
+
+      if (!token) {
+        console.error('[SelfResolve] no token available after DB fetch');
+        setSubmitting(false);
+        setConfirmVisible(false);
+        Alert.alert('Something went wrong', 'Could not find the invite token. Please restart the app and try again.');
+        return;
+      }
+
       try {
+        console.log('[SelfResolve] submitting verdict with token:', token);
         const { data, error } = await supabase.functions.invoke('submit-verdict', {
-          body: { token: vow.witnessInviteToken, verdict: selectedVerdict },
+          body: { token, verdict: selectedVerdict },
         });
 
         if (error) {
@@ -114,12 +138,6 @@ export default function SelfResolveScreen() {
         Alert.alert('Something went wrong', 'Please try again.');
         return;
       }
-    } else {
-      console.warn('[SelfResolve] No witnessInviteToken and not in Expo Go — cannot submit verdict');
-      setSubmitting(false);
-      setConfirmVisible(false);
-      Alert.alert('Something went wrong', 'Missing invite token. Please try again.');
-      return;
     }
 
     setSubmitting(false);
@@ -132,7 +150,7 @@ export default function SelfResolveScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       router.push('/vow-broken');
     }
-  }, [selectedVerdict, submitting, vow.witnessInviteToken]);
+  }, [selectedVerdict, submitting, vow.witnessInviteToken, vow.vowId, setVowId]);
 
   const handleCancel = useCallback(() => {
     if (submitting) return;

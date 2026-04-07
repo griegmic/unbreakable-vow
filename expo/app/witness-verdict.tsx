@@ -20,14 +20,14 @@ import { useVowFlow } from '@/providers/vow-flow';
 type VerdictChoice = 'kept' | 'broken' | null;
 
 export default function WitnessVerdictScreen() {
-  const { activeVowText, vow } = useVowFlow();
+  const { activeVowText, vow, setVowId } = useVowFlow();
   const { displayName: makerName } = useAuth();
   const [submitting, setSubmitting] = useState(false);
 
   const displayName = makerName || 'your friend';
   const destination = vow.stake.destination;
 
-  console.log('[WitnessVerdictScreen] rendering');
+  console.log('[WitnessVerdictScreen] rendering, token:', vow.witnessInviteToken, 'vowId:', vow.vowId);
 
   const handleCardTap = useCallback(async (choice: VerdictChoice) => {
     if (!choice || submitting) return;
@@ -36,8 +36,31 @@ export default function WitnessVerdictScreen() {
     setSubmitting(true);
 
     try {
+      // If token is missing from in-memory state, fetch it from DB
+      let token = vow.witnessInviteToken;
+      if (!token && vow.vowId) {
+        console.log('[WitnessVerdictScreen] token missing, fetching from DB for vowId:', vow.vowId);
+        const { data: vowData } = await supabase
+          .from('vows')
+          .select('witness_invite_token')
+          .eq('id', vow.vowId)
+          .single();
+        token = vowData?.witness_invite_token ?? null;
+        if (token) {
+          setVowId(vow.vowId, token);
+        }
+      }
+
+      if (!token) {
+        console.error('[WitnessVerdictScreen] no token available after DB fetch');
+        Alert.alert('Something went wrong', 'Could not find the invite token. Please restart the app and try again.');
+        setSubmitting(false);
+        return;
+      }
+
+      console.log('[WitnessVerdictScreen] submitting verdict with token:', token);
       const { data, error } = await supabase.functions.invoke('submit-verdict', {
-        body: { token: vow.witnessInviteToken, verdict: choice },
+        body: { token, verdict: choice },
       });
 
       if (error) {
@@ -74,7 +97,7 @@ export default function WitnessVerdictScreen() {
     } finally {
       setSubmitting(false);
     }
-  }, [submitting, vow.witnessInviteToken]);
+  }, [submitting, vow.witnessInviteToken, vow.vowId, setVowId]);
 
   return (
     <RitualScreen scroll={false}>
