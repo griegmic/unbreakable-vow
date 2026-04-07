@@ -50,18 +50,22 @@ export default async function WitnessInvitePage({ params }: Props) {
     return <WitnessNotFound token={token} />;
   }
 
-  // Try to get the vow maker's display name
+  // Try to get the vow maker's display name and phone
   let makerName = 'Your friend';
+  let makerPhone: string | null = null;
   if (vow.user_id) {
     const { data: user } = await supabase
       .from('users')
-      .select('display_name')
+      .select('display_name, phone')
       .eq('id', vow.user_id)
       .single();
     if (user?.display_name) {
       makerName = user.display_name;
     }
+    if (user?.phone) {
+      makerPhone = user.phone;
+    }
   }
 
-  return <WitnessInviteClient vow={vow} token={token} makerName={makerName} />;
+  return <WitnessInviteClient vow={vow} token={token} makerName={makerName} makerPhone={makerPhone} />;
 }
