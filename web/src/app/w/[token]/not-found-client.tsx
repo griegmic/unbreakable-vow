@@ -49,7 +49,7 @@ export default function WitnessNotFound({ token }: { token: string }) {
   }, [token]);
 
   if (vow) {
-    return <WitnessInviteClient vow={vow} token={token} />;
+    return <WitnessInviteClient vow={vow} token={token} makerName="Your friend" makerPhone={null} />;
   }
 
   if (gaveUp) {

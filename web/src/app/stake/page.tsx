@@ -70,7 +70,7 @@ export default function StakePage() {
 
       <FadeUp delay={0.2}>
         <div className="flex flex-col gap-2.5">
-          {consequenceOptions.filter(o => o.id !== 'witness').map((option) => {
+          {consequenceOptions.map((option) => {
             const Icon = consequenceIcons[option.id];
             const active = vow.stake.consequence === option.id;
             return (
