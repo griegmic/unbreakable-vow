@@ -1,6 +1,6 @@
 'use client';
-import { useMemo, useState, useEffect } from 'react';
-import { DollarSign, Sparkles, Calendar, MessageCircle, Clock, Check, Shield, Eye, Zap } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { DollarSign, Sparkles, Calendar, Clock, Shield, Eye } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
 
@@ -21,32 +21,51 @@ interface Vow {
   status: string;
 }
 
-const NUDGE_MESSAGES = [
-  "Hey, how's the vow going? I'm watching... 👀",
-  "Don't think I forgot about the $AMOUNT...",
-  "The clock is ticking on your vow...",
-  "Just doing my witness duties. How's it going?",
-  "I have the power to break you. No pressure. 😈",
-  "Checking in. The vow remembers even if you forget.",
-  "Your $AMOUNT says you can do this. Can you?",
-  "Witness check-in. Still on track?",
-  "I will be fair but I will not be merciful.",
-  "Tick tock. How's the vow holding up? ⏰",
-];
+function generateICS(vow: Vow, token: string, makerName: string): string {
+  const end = new Date(vow.ends_at!);
+  // Set to 9 AM on verdict day
+  end.setHours(9, 0, 0, 0);
+  const endTime = new Date(end.getTime() + 30 * 60 * 1000); // 30 min duration
+
+  const fmt = (d: Date) => {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+  };
+
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const verdictUrl = `https://unbreakablevow.app/w/${token}/verdict`;
+  const now = new Date();
+
+  return [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Unbreakable Vow//EN',
+    'BEGIN:VEVENT',
+    `DTSTART;TZID=${tz}:${fmt(end)}`,
+    `DTEND;TZID=${tz}:${fmt(endTime)}`,
+    `DTSTAMP:${fmt(now)}Z`,
+    `UID:vow-${vow.id}@unbreakablevow.app`,
+    `SUMMARY:Deliver your verdict — ${makerName}'s vow`,
+    `DESCRIPTION:Time to decide: did ${makerName} keep their vow?\\nTap here to deliver your verdict: ${verdictUrl}`,
+    `URL:${verdictUrl}`,
+    'BEGIN:VALARM',
+    'TRIGGER:-PT15M',
+    'ACTION:DISPLAY',
+    `DESCRIPTION:${makerName}'s vow verdict is due`,
+    'END:VALARM',
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].join('\r\n');
+}
 
 export default function WitnessInviteClient({ vow, token, makerName, makerPhone }: { vow: Vow; token: string; makerName: string; makerPhone: string | null }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
   const [status, setStatus] = useState<'pending' | 'accepted' | 'declined'>(
     vow.witness_accepted_at ? 'accepted' : vow.witness_declined ? 'declined' : 'pending'
   );
   const [justAccepted, setJustAccepted] = useState(false);
-
-  const nudgeMessage = useMemo(() => {
-    const msg = NUDGE_MESSAGES[Math.floor(Math.random() * NUDGE_MESSAGES.length)];
-    return msg.replace(/\$AMOUNT/g, `$${vow.stake_amount / 100}`);
-  }, [vow.stake_amount]);
+  const [calendarAdded, setCalendarAdded] = useState(false);
 
   useEffect(() => {
     if (justAccepted) {
@@ -108,13 +127,24 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     }
   };
 
+  const handleAddToCalendar = () => {
+    if (!vow.ends_at) return;
+    const icsContent = generateICS(vow, token, makerName);
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'vow-verdict.ics';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setCalendarAdded(true);
+  };
+
   const endDate = vow.ends_at
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : 'TBD';
-
-  const startDate = vow.ends_at
-    ? new Date(new Date(vow.ends_at).getTime() - 7 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-    : null;
 
   // ─── ACCEPTED STATE ───
   if (status === 'accepted') {
@@ -128,18 +158,6 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       : daysLeft <= 0 ? "Time's up"
       : daysLeft === 1 ? 'Last day'
       : `${daysLeft} days left`;
-
-    const handleMessage = () => {
-      if (makerPhone) {
-        const encoded = encodeURIComponent(nudgeMessage);
-        window.location.href = `sms:${makerPhone}?body=${encoded}`;
-      } else {
-        navigator.clipboard.writeText(nudgeMessage).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 2000);
-        });
-      }
-    };
 
     return (
       <RitualScreen
@@ -183,7 +201,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               >
                 <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--gold)' }} />
                 <p className="text-[14px] leading-[21px] font-serif" style={{ color: 'var(--text)' }}>
-                  "{vow.refined_text}"
+                  &ldquo;{vow.refined_text}&rdquo;
                 </p>
               </div>
             </FadeUp>
@@ -234,7 +252,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 <div className="w-[3px] shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
                 <div className="flex-1 py-3 px-3.5">
                   <p className="text-[16px] leading-[23px] font-serif font-medium" style={{ color: 'var(--text)' }}>
-                    "{vow.refined_text}"
+                    &ldquo;{vow.refined_text}&rdquo;
                   </p>
                   <p className="text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
                     ${vow.stake_amount / 100} at stake &middot; {vow.destination} if broken
@@ -259,38 +277,41 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               </FadeUp>
             )}
 
-            {/* Nudge CTA — the main action */}
+            {/* Calendar reminder CTA */}
             {!isVerdictDue && (
               <FadeUp delay={0.2}>
                 <div className="flex flex-col gap-3">
-                  <button
-                    onClick={handleMessage}
-                    className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-                    style={{
-                      background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                      boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                    }}
-                  >
-                    <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-                      {copied ? (
-                        <>
-                          <Check className="w-[18px] h-[18px]" color="#0B0D11" />
-                          <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                            Copied! Paste in your chat
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          <Zap className="w-[18px] h-[18px]" color="#0B0D11" />
-                          <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                            Nudge {makerName}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </button>
+                  {vow.ends_at ? (
+                    <button
+                      onClick={handleAddToCalendar}
+                      className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                      style={{
+                        background: calendarAdded
+                          ? 'var(--surface)'
+                          : 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                        boxShadow: calendarAdded ? 'none' : '0 12px 24px rgba(212,162,79,0.28)',
+                        border: calendarAdded ? '1px solid var(--border-strong)' : 'none',
+                      }}
+                    >
+                      <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
+                        <Calendar
+                          className="w-[18px] h-[18px]"
+                          color={calendarAdded ? 'var(--success)' : '#0B0D11'}
+                        />
+                        <span
+                          className="text-[15px] font-extrabold tracking-[0.2px]"
+                          style={{ color: calendarAdded ? 'var(--success)' : '#0B0D11' }}
+                        >
+                          {calendarAdded ? 'Added to calendar' : 'Remind me on verdict day'}
+                        </span>
+                      </div>
+                    </button>
+                  ) : null}
                   <p className="text-center text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                    {makerPhone ? 'Opens a pre-written text to keep them honest' : 'Copies a message to send them'}
+                    {vow.ends_at
+                      ? `You'll deliver your verdict here on ${endDate}`
+                      : 'Verdict date: TBD'
+                    }
                   </p>
                 </div>
               </FadeUp>
@@ -345,7 +366,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
             <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
           </div>
-          <p className="text-[20px] font-serif font-medium leading-[28px]" style={{ color: 'var(--text)' }}>"{vow.refined_text}"</p>
+          <p className="text-[20px] font-serif font-medium leading-[28px]" style={{ color: 'var(--text)' }}>&ldquo;{vow.refined_text}&rdquo;</p>
           <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
