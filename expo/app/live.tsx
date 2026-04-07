@@ -2,12 +2,12 @@ import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { Stack, router } from 'expo-router';
-import { AlertCircle, Check, Clock, ExternalLink, FastForward, RefreshCw, Share2, ShieldCheck, User, UserMinus } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Easing, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { AlertCircle, Check, Clock, ExternalLink, FastForward, Flame, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, User, UserMinus, Zap } from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { getVowVerdictDate, palette } from '@/constants/unbreakable';
+import { getDailyNudge, getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
 import { extendVowDeadline, resendWitnessInvite, switchToSoloWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -361,35 +361,107 @@ export default function LiveScreen() {
     );
   };
 
+  const dailyNudge = useMemo(() => getDailyNudge(), []);
+
+  const handleTextWitness = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const phone = vow.phoneNumber;
+    const vowText = activeVowText;
+    const body = encodeURIComponent(`Hey! Just checking in on my vow: "${vowText}" — keeping at it 💪`);
+    if (phone) {
+      const smsUrl = Platform.OS === 'ios'
+        ? `sms:${phone}&body=${body}`
+        : `sms:${phone}?body=${body}`;
+      console.log('[LiveScreen] opening SMS to witness:', smsUrl);
+      Linking.openURL(smsUrl).catch(() => {
+        console.log('[LiveScreen] failed to open SMS');
+      });
+    } else {
+      const shareMsg = `Hey! Just checking in on my vow: "${vowText}" — keeping at it 💪`;
+      Share.share({ message: shareMsg }).catch(() => {
+        console.log('[LiveScreen] share failed');
+      });
+    }
+  }, [vow.phoneNumber, activeVowText]);
+
+  const handleSendNudgeToSelf = useCallback(() => {
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    Alert.alert('You got this 🔥', dailyNudge);
+  }, [dailyNudge]);
+
   const renderVowActiveCard = () => {
     if (isSelfWitness) {
       return (
-        <View style={styles.activeCard}>
-          <View style={styles.activeIconRow}>
-            <View style={styles.activeCheckBg}>
-              <ShieldCheck color={palette.goldBright} size={18} />
+        <>
+          <View style={styles.activeCard}>
+            <View style={styles.activeIconRow}>
+              <View style={styles.activeCheckBg}>
+                <ShieldCheck color={palette.goldBright} size={18} />
+              </View>
+              <Text style={styles.activeTitle}>You're the Vowkeeper.</Text>
             </View>
-            <Text style={styles.activeTitle}>You're the Vowkeeper.</Text>
+            <Text style={styles.activeQuote}>
+              You'll deliver your own honest verdict on {dates.endLabel}.
+            </Text>
           </View>
-          <Text style={styles.activeQuote}>
-            You'll deliver your own honest verdict on {dates.endLabel}.
-          </Text>
-        </View>
+
+          <View style={styles.nudgeCard}>
+            <Sparkles color={palette.goldBright} size={16} />
+            <Text style={styles.nudgeText}>{dailyNudge}</Text>
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [styles.inspirationBtn, pressed && styles.inspirationBtnPressed]}
+            onPress={handleSendNudgeToSelf}
+            testID="live-self-nudge"
+          >
+            <Flame color={palette.goldBright} size={16} />
+            <Text style={styles.inspirationBtnText}>Get a boost</Text>
+          </Pressable>
+        </>
       );
     }
 
     return (
-      <View style={styles.activeCard}>
-        <View style={styles.activeIconRow}>
-          <View style={styles.activeCheckBg}>
-            <Check color={palette.success} size={18} />
+      <>
+        <View style={styles.activeCard}>
+          <View style={styles.activeIconRow}>
+            <View style={styles.activeCheckBg}>
+              <Check color={palette.success} size={18} />
+            </View>
+            <View style={styles.activeTextCol}>
+              <Text style={styles.activeTitle}>{vow.witnessName} is watching.</Text>
+              <Text style={styles.activeQuote}>
+                Verdict on {dates.endLabel}
+              </Text>
+            </View>
           </View>
-          <Text style={styles.activeTitle}>{vow.witnessName} is watching.</Text>
         </View>
-        <Text style={styles.activeQuote}>
-          {vow.witnessName} will deliver the verdict on {dates.endLabel}.
-        </Text>
-      </View>
+
+        <View style={styles.engagementRow}>
+          <Pressable
+            style={({ pressed }) => [styles.engageBtn, styles.engageBtnPrimary, pressed && styles.engageBtnPressed]}
+            onPress={handleTextWitness}
+            testID="live-text-witness"
+          >
+            <MessageCircle color="#0B0D11" size={18} />
+            <Text style={styles.engageBtnPrimaryText}>Text {vow.witnessName}</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.engageBtn, styles.engageBtnSecondary, pressed && styles.engageBtnPressed]}
+            onPress={handleSendNudgeToSelf}
+            testID="live-get-boost"
+          >
+            <Zap color={palette.goldBright} size={18} />
+            <Text style={styles.engageBtnSecondaryText}>Boost</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.nudgeCard}>
+          <Sparkles color={palette.goldBright} size={16} />
+          <Text style={styles.nudgeText}>{dailyNudge}</Text>
+        </View>
+      </>
     );
   };
 
@@ -784,6 +856,88 @@ const styles = StyleSheet.create({
     color: palette.goldBright,
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  activeTextCol: {
+    flex: 1,
+    gap: 2,
+  },
+  engagementRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  engageBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 16,
+  },
+  engageBtnPrimary: {
+    backgroundColor: palette.goldBright,
+    shadowColor: palette.gold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  engageBtnSecondary: {
+    backgroundColor: 'rgba(212,162,79,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.2)',
+  },
+  engageBtnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  engageBtnPrimaryText: {
+    color: '#0B0D11',
+    fontSize: 15,
+    fontWeight: '700' as const,
+  },
+  engageBtnSecondaryText: {
+    color: palette.goldBright,
+    fontSize: 15,
+    fontWeight: '700' as const,
+  },
+  nudgeCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    backgroundColor: 'rgba(212,162,79,0.06)',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.12)',
+    padding: 16,
+  },
+  nudgeText: {
+    flex: 1,
+    color: palette.textSecondary,
+    fontSize: 14,
+    lineHeight: 21,
+    fontFamily: serifFont,
+    fontStyle: 'italic',
+  },
+  inspirationBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(212,162,79,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.2)',
+  },
+  inspirationBtnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.98 }],
+  },
+  inspirationBtnText: {
+    color: palette.goldBright,
+    fontSize: 15,
+    fontWeight: '700' as const,
   },
   testSkipBtn: {
     flexDirection: 'row',

@@ -632,6 +632,30 @@ export interface Challenge {
   emoji: string;
 }
 
+export const vowNudges: string[] = [
+  "Discipline is choosing between what you want now and what you want most.",
+  "You don't have to be extreme, just consistent.",
+  "The pain of discipline weighs ounces. The pain of regret weighs tons.",
+  "Small daily improvements are the key to staggering long-term results.",
+  "You're not just doing this for you. Someone's watching.",
+  "The best time to start was yesterday. The second best time is now.",
+  "A vow isn't a wish. It's a contract with yourself.",
+  "Show up today. Tomorrow's you will thank you.",
+  "Motivation gets you started. Commitment keeps you going.",
+  "Every day you keep your word, you become harder to break.",
+];
+
+export function getRandomNudge(seed?: number): string {
+  const idx = seed !== undefined ? seed % vowNudges.length : Math.floor(Math.random() * vowNudges.length);
+  return vowNudges[idx];
+}
+
+export function getDailyNudge(): string {
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  return getRandomNudge(seed);
+}
+
 export const upcomingChallenges: Challenge[] = [
   {
     id: 'dry-april',
