@@ -7,7 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { getVowVerdictDate, palette } from '@/constants/unbreakable';
+import { getDailyNudge, getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
 import { extendVowDeadline, resendWitnessInvite, switchToSoloWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -427,10 +427,14 @@ export default function LiveScreen() {
   const handleTextWitness = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const phone = vow.phoneNumber;
+    const stakeLabel = vow.stake.amount ? `$${vow.stake.amount / 100}` : '';
+    const body = encodeURIComponent(
+      `Still holding my vow: "${activeVowText}"${stakeLabel ? ` — ${stakeLabel} on the line` : ''}. Just checking in 👀`
+    );
     if (phone) {
       const smsUrl = Platform.OS === 'ios'
-        ? `sms:${phone}`
-        : `sms:${phone}`;
+        ? `sms:${phone}&body=${body}`
+        : `sms:${phone}?body=${body}`;
       console.log('[LiveScreen] opening SMS to witness:', smsUrl);
       Linking.openURL(smsUrl).catch(() => {
         console.log('[LiveScreen] failed to open SMS');
@@ -440,7 +444,7 @@ export default function LiveScreen() {
         console.log('[LiveScreen] share failed');
       });
     }
-  }, [vow.phoneNumber, activeVowText]);
+  }, [vow.phoneNumber, vow.stake.amount, activeVowText]);
 
   const getCountdownTint = useCallback((days: number | null) => {
     if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
@@ -450,26 +454,13 @@ export default function LiveScreen() {
     return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
   }, []);
 
-  const renderVowActiveCard = () => {
-    if (isSelfWitness) {
-      return (
-        <>
-          <View style={styles.activeCard}>
-            <View style={styles.activeIconRow}>
-              <View style={styles.activeCheckBg}>
-                <ShieldCheck color={palette.goldBright} size={18} />
-              </View>
-              <Text style={styles.activeTitle}>You're the Vowkeeper.</Text>
-            </View>
-            <Text style={styles.activeQuote}>
-              You'll deliver your own honest verdict on {dates.endLabel}.
-            </Text>
-          </View>
-        </>
-      );
-    }
+  const dailyNudge = useMemo(() => getDailyNudge(), []);
 
+  const renderVowActiveCard = () => {
     const tint = getCountdownTint(daysLeft);
+    const witnessLabel = isSelfWitness
+      ? "You're the judge"
+      : `${vow.witnessName} is watching`;
 
     return (
       <>
@@ -481,18 +472,21 @@ export default function LiveScreen() {
           <Text style={styles.unifiedCountdownDate}>Verdict day: {dates.endLabel}</Text>
           <View style={styles.unifiedWitnessRow}>
             <View style={styles.unifiedWitnessDot} />
-            <Text style={styles.unifiedWitnessText}>{vow.witnessName} is watching</Text>
+            <Text style={styles.unifiedWitnessText}>{witnessLabel}</Text>
           </View>
+          <Text style={styles.dailyNudgeText}>{dailyNudge}</Text>
         </View>
 
-        <Pressable
-          style={({ pressed }) => [styles.smsActionBtn, pressed && styles.smsActionBtnPressed]}
-          onPress={handleTextWitness}
-          testID="live-text-witness"
-        >
-          <MessageCircle color="#0B0D11" size={18} />
-          <Text style={styles.smsActionBtnText}>{todaysLabel}</Text>
-        </Pressable>
+        {!isSelfWitness && (
+          <Pressable
+            style={({ pressed }) => [styles.smsActionBtn, pressed && styles.smsActionBtnPressed]}
+            onPress={handleTextWitness}
+            testID="live-text-witness"
+          >
+            <MessageCircle color="#0B0D11" size={18} />
+            <Text style={styles.smsActionBtnText}>{todaysLabel}</Text>
+          </Pressable>
+        )}
       </>
     );
   };
@@ -820,6 +814,13 @@ const styles = StyleSheet.create({
     color: palette.success,
     fontSize: 13,
     fontWeight: '600' as const,
+  },
+  dailyNudgeText: {
+    color: 'rgba(255,255,255,0.4)',
+    fontSize: 12,
+    fontStyle: 'italic' as const,
+    marginTop: 10,
+    lineHeight: 17,
   },
   smsActionBtn: {
     flexDirection: 'row' as const,
