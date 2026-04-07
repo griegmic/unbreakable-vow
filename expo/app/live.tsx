@@ -589,7 +589,7 @@ export default function LiveScreen() {
       )}
       {phase === 'verdict_due' && renderVerdictDueCard()}
 
-      {witnessWebUrl && (
+      {witnessWebUrl && !isSelfWitness && (
         <Pressable style={styles.witnessLinkRow} onPress={handleViewWitnessScreen}>
           <ExternalLink color={palette.goldBright} size={16} />
           <Text style={styles.witnessLinkText}>View witness screen</Text>
