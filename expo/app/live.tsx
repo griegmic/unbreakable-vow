@@ -51,7 +51,7 @@ export default function LiveScreen() {
   }, [vow.rawInput]);
 
   useEffect(() => {
-    if (isSelfWitness || IS_EXPO_GO || !vow.vowId) return;
+    if (isSelfWitness || !vow.vowId) return;
 
     async function checkWitnessStatus() {
       try {
@@ -62,7 +62,12 @@ export default function LiveScreen() {
           .single();
 
         if (data?.witness_accepted_at) {
-          setWitnessStatus('accepted');
+          setWitnessStatus((prev) => {
+            if (prev !== 'accepted') {
+              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+            }
+            return 'accepted';
+          });
         } else if (data?.witness_declined) {
           setWitnessStatus('declined');
         } else if (data?.ends_at) {
@@ -82,7 +87,7 @@ export default function LiveScreen() {
     }
 
     void checkWitnessStatus();
-    const interval = setInterval(() => void checkWitnessStatus(), 30000);
+    const interval = setInterval(() => void checkWitnessStatus(), 5000);
     return () => clearInterval(interval);
   }, [vow.vowId, isSelfWitness]);
 
