@@ -37,7 +37,8 @@ export default function LiveScreen() {
   const isVerdictDue = !isNaN(endDate.getTime()) && now >= endDate;
 
   const witnessAccepted = witnessStatus === 'accepted';
-  const isWitnessPending = !isSelfWitness && !witnessAccepted && !isVerdictDue && witnessStatus !== 'declined' && witnessStatus !== 'expired';
+  const witnessStatusKnown = witnessStatus !== 'unknown';
+  const isWitnessPending = !isSelfWitness && !witnessAccepted && !isVerdictDue && witnessStatus !== 'declined' && witnessStatus !== 'expired' && witnessStatusKnown;
 
   const phase: VowPhase = isVerdictDue ? 'verdict_due' : (isWitnessPending ? 'witness_pending' : 'vow_active');
 
@@ -50,21 +51,56 @@ export default function LiveScreen() {
     }
   }, [vow.rawInput]);
 
-  // Hydrate witnessInviteToken from DB if missing (e.g. after app restart)
+  // Hydrate witnessInviteToken and witness status from DB on mount
   useEffect(() => {
-    if (!vow.vowId || vow.witnessInviteToken) return;
-    supabase
-      .from('vows')
-      .select('witness_invite_token')
-      .eq('id', vow.vowId)
-      .single()
-      .then(({ data }) => {
-        if (data?.witness_invite_token) {
+    if (!vow.vowId) return;
+
+    async function hydrateFromDb() {
+      try {
+        const { data } = await supabase
+          .from('vows')
+          .select('witness_invite_token, witness_accepted_at, witness_declined, ends_at')
+          .eq('id', vow.vowId!)
+          .single();
+
+        if (!data) return;
+
+        // Hydrate token if missing
+        if (!vow.witnessInviteToken && data.witness_invite_token) {
           setVowId(vow.vowId!, data.witness_invite_token);
         }
-      });
-  }, [vow.vowId, vow.witnessInviteToken, setVowId]);
 
+        // Set witness status from DB (eliminates pending→active flash)
+        if (!isSelfWitness) {
+          if (data.witness_accepted_at) {
+            setWitnessStatus((prev) => {
+              if (prev !== 'accepted') {
+                void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              }
+              return 'accepted';
+            });
+          } else if (data.witness_declined) {
+            setWitnessStatus('declined');
+          } else if (data.ends_at) {
+            const endsAt = new Date(data.ends_at);
+            if (new Date() >= endsAt) {
+              setWitnessStatus('expired');
+            } else {
+              setWitnessStatus('pending');
+            }
+          } else {
+            setWitnessStatus('pending');
+          }
+        }
+      } catch {
+        // Fallback to pending on error
+      }
+    }
+
+    void hydrateFromDb();
+  }, [vow.vowId, vow.witnessInviteToken, setVowId, isSelfWitness]);
+
+  // Poll for witness status changes (acceptance, decline)
   useEffect(() => {
     if (isSelfWitness || !vow.vowId) return;
 
@@ -87,8 +123,7 @@ export default function LiveScreen() {
           setWitnessStatus('declined');
         } else if (data?.ends_at) {
           const endsAt = new Date(data.ends_at);
-          const n = new Date();
-          if (n >= endsAt) {
+          if (new Date() >= endsAt) {
             setWitnessStatus('expired');
           } else {
             setWitnessStatus('pending');
@@ -101,7 +136,6 @@ export default function LiveScreen() {
       }
     }
 
-    void checkWitnessStatus();
     const interval = setInterval(() => void checkWitnessStatus(), 5000);
     return () => clearInterval(interval);
   }, [vow.vowId, isSelfWitness]);
