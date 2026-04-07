@@ -37,24 +37,46 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
     if (!choice || busy) return;
     setBusy(true);
     setError('');
-    const { data, error: fnError } = await supabase.functions.invoke('submit-verdict', {
-      body: { token, verdict: choice },
-    });
-    if (fnError) {
-      setError('Failed to submit verdict. Please try again.');
+
+    try {
+      const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/submit-verdict`;
+      const res = await fetch(fnUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        body: JSON.stringify({ token, verdict: choice }),
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const detail = data?.error || `HTTP ${res.status}`;
+        const msg = detail === 'already_judged' ? 'This vow has already been judged.'
+          : detail === 'invalid_token' ? 'Could not find this vow. The link may have expired.'
+          : detail === 'invalid_status' ? 'This vow is not ready for a verdict yet.'
+          : typeof detail === 'string' ? detail : 'Something went wrong.';
+        setError(msg);
+        setBusy(false);
+        return;
+      }
+
+      if (data?.error) {
+        const msg = data.error === 'already_judged' ? 'This vow has already been judged.'
+          : typeof data.error === 'string' ? data.error : 'Something went wrong.';
+        setError(msg);
+        setBusy(false);
+        return;
+      }
+
+      setView('done');
+    } catch {
+      setError('Network error. Please check your connection and try again.');
+    } finally {
       setBusy(false);
-      return;
     }
-    if (data?.error) {
-      const msg = data.error === 'already_judged' ? 'This vow has already been judged.'
-        : data.error === 'vow_not_active' ? 'This vow is no longer active.'
-        : typeof data.error === 'string' ? data.error : 'Something went wrong.';
-      setError(msg);
-      setBusy(false);
-      return;
-    }
-    setView('done');
-    setBusy(false);
   };
 
   if (view === 'done') {

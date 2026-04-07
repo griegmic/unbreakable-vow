@@ -11,11 +11,17 @@ import {
   View,
 } from 'react-native';
 
+import Constants from 'expo-constants';
+
 import { RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
+
+const extra = Constants.expoConfig?.extra;
+const SUPABASE_URL = extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://faufcfppnkwrxabgvknt.supabase.co';
+const SUPABASE_ANON_KEY = extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdWZjZnBwbmt3cnhhYmd2a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzQyNDYsImV4cCI6MjA5MDg1MDI0Nn0.s82fzQzwSo6XvIp1tLUsomeELkZcDOs16IupjkGA4OM';
 
 type VerdictChoice = 'kept' | 'broken' | null;
 
@@ -58,26 +64,41 @@ export default function WitnessVerdictScreen() {
         return;
       }
 
-      console.log('[WitnessVerdictScreen] submitting verdict with token:', token);
-      const { data, error } = await supabase.functions.invoke('submit-verdict', {
-        body: { token, verdict: choice },
+      console.log('[WitnessVerdictScreen] submitting verdict with token:', token, 'verdict:', choice);
+
+      // Use direct fetch instead of supabase.functions.invoke to get proper error bodies
+      const fnUrl = `${SUPABASE_URL}/functions/v1/submit-verdict`;
+      console.log('[WitnessVerdictScreen] calling:', fnUrl);
+
+      const res = await fetch(fnUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+          'apikey': SUPABASE_ANON_KEY,
+        },
+        body: JSON.stringify({ token, verdict: choice }),
       });
 
-      if (error) {
-        // When edge function returns non-2xx, data is null and error.context has the response
-        let detail = error.message || 'Unknown error';
-        try {
-          const body = await error.context?.json?.();
-          if (body?.error) detail = body.error;
-        } catch {}
-        console.error('[WitnessVerdictScreen] verdict submission failed:', detail);
-        Alert.alert('Verdict failed', detail === 'already_judged' ? 'This vow has already been judged.' : detail);
+      const data = await res.json().catch(() => null);
+      console.log('[WitnessVerdictScreen] response status:', res.status, 'body:', JSON.stringify(data));
+
+      if (!res.ok) {
+        const detail = data?.error || `HTTP ${res.status}`;
+        console.error('[WitnessVerdictScreen] verdict submission failed:', detail, 'full response:', JSON.stringify(data));
+        Alert.alert(
+          'Verdict failed',
+          detail === 'already_judged' ? 'This vow has already been judged.'
+            : detail === 'invalid_token' ? 'Could not find this vow. Please go back and try again.'
+            : detail === 'invalid_status' ? `Vow is in "${data?.status}" state and can't be judged yet.`
+            : detail
+        );
         setSubmitting(false);
         return;
       }
 
       if (data?.error) {
-        console.error('[WitnessVerdictScreen] verdict submission failed:', data.error);
+        console.error('[WitnessVerdictScreen] verdict error in body:', data.error);
         Alert.alert('Verdict failed', data.error === 'already_judged' ? 'This vow has already been judged.' : data.error);
         setSubmitting(false);
         return;
