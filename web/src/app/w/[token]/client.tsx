@@ -1,7 +1,7 @@
 'use client';
-import { useMemo, useState } from 'react';
-import { DollarSign, Sparkles, Calendar, MessageCircle, Clock, Check } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge } from '@/components/ui';
+import { useMemo, useState, useEffect } from 'react';
+import { DollarSign, Sparkles, Calendar, MessageCircle, Clock, Check, Shield, Eye, Zap } from 'lucide-react';
+import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
@@ -22,16 +22,16 @@ interface Vow {
 }
 
 const NUDGE_MESSAGES = [
-  "Hey, how's the vow going? I'm watching...",
+  "Hey, how's the vow going? I'm watching... 👀",
   "Don't think I forgot about the $AMOUNT...",
   "The clock is ticking on your vow...",
   "Just doing my witness duties. How's it going?",
-  "I have the power to break you. No pressure.",
+  "I have the power to break you. No pressure. 😈",
   "Checking in. The vow remembers even if you forget.",
   "Your $AMOUNT says you can do this. Can you?",
   "Witness check-in. Still on track?",
   "I will be fair but I will not be merciful.",
-  "Tick tock. How's the vow holding up?",
+  "Tick tock. How's the vow holding up? ⏰",
 ];
 
 export default function WitnessInviteClient({ vow, token, makerName, makerPhone }: { vow: Vow; token: string; makerName: string; makerPhone: string | null }) {
@@ -41,11 +41,19 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   const [status, setStatus] = useState<'pending' | 'accepted' | 'declined'>(
     vow.witness_accepted_at ? 'accepted' : vow.witness_declined ? 'declined' : 'pending'
   );
+  const [justAccepted, setJustAccepted] = useState(false);
 
   const nudgeMessage = useMemo(() => {
     const msg = NUDGE_MESSAGES[Math.floor(Math.random() * NUDGE_MESSAGES.length)];
     return msg.replace(/\$AMOUNT/g, `$${vow.stake_amount / 100}`);
   }, [vow.stake_amount]);
+
+  useEffect(() => {
+    if (justAccepted) {
+      const timer = setTimeout(() => setJustAccepted(false), 2400);
+      return () => clearTimeout(timer);
+    }
+  }, [justAccepted]);
 
   const handleAccept = async () => {
     if (busy) return;
@@ -65,6 +73,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         setBusy(false);
         return;
       }
+      setJustAccepted(true);
       setStatus('accepted');
     } catch {
       setError('Network error. Please check your connection and try again.');
@@ -103,42 +112,20 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : 'TBD';
 
-  const vowCard = (
-    <RitualCard>
-      <div className="flex items-center gap-2 mb-1">
-        <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-        <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
-      </div>
-      <p className="text-[20px] font-serif font-medium leading-[28px]" style={{ color: 'var(--text)' }}>"{vow.refined_text}"</p>
-      <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <DollarSign className="w-4 h-4" style={{ color: 'var(--gold)' }} />
-          <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
-        </div>
-        <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake_amount / 100}</span>
-      </div>
-      <div className="flex items-center justify-between">
-        <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
-        <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
-      </div>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4" style={{ color: 'var(--gold)' }} />
-          <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Your verdict</span>
-        </div>
-        <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{endDate}</span>
-      </div>
-    </RitualCard>
-  );
+  const startDate = vow.ends_at
+    ? new Date(new Date(vow.ends_at).getTime() - 7 * 86400000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : null;
 
+  // ─── ACCEPTED STATE ───
   if (status === 'accepted') {
     const now = new Date();
     const end = vow.ends_at ? new Date(vow.ends_at) : null;
     const isVerdictDue = end ? now >= end : false;
+    const totalDays = 7;
     const daysLeft = end ? Math.ceil((end.getTime() - now.getTime()) / 86400000) : null;
+    const dayNumber = daysLeft !== null ? Math.max(1, totalDays - daysLeft + 1) : null;
     const countdownLabel = daysLeft === null ? null
-      : daysLeft <= 0 ? "Today's the day"
+      : daysLeft <= 0 ? "Time's up"
       : daysLeft === 1 ? 'Last day'
       : `${daysLeft} days left`;
 
@@ -167,146 +154,169 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       >
         <FadeUp><HeaderBadge /></FadeUp>
 
-        {/* Status badge */}
-        <FadeUp delay={0.05}>
-          <div className="flex justify-center">
-            <div
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full"
-              style={{
-                backgroundColor: isVerdictDue ? 'rgba(212,162,79,0.12)' : 'var(--success-muted)',
-                border: isVerdictDue ? '1px solid var(--border-strong)' : '1px solid rgba(82,214,154,0.22)',
-              }}
-            >
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
-              />
-              <span
-                className="text-[12px] font-bold tracking-[1px] uppercase"
-                style={{ color: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
-              >
-                {isVerdictDue ? 'VERDICT DUE' : 'VOW ACTIVE'}
-              </span>
-            </div>
-          </div>
-        </FadeUp>
-
-        {/* Title */}
-        <FadeUp delay={0.1}>
-          <TitleBlock
-            title="You're the witness."
-            subtitle={isVerdictDue
-              ? `Time's up. It's your call — kept or broken.`
-              : `${makerName} is counting on your honesty.`
-            }
-          />
-        </FadeUp>
-
-        {/* Countdown */}
-        {countdownLabel && !isVerdictDue && (
-          <FadeUp delay={0.15}>
-            <div
-              className="rounded-[20px] p-6 flex flex-col items-center gap-1"
-              style={{
-                backgroundColor: 'rgba(82,214,154,0.06)',
-                border: '1px solid rgba(82,214,154,0.18)',
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <Clock className="w-4 h-4" style={{ color: 'var(--success)' }} />
-                <span className="text-[28px] font-extrabold tracking-[-0.5px]" style={{ color: 'var(--text)' }}>
-                  {countdownLabel}
-                </span>
+        {justAccepted ? (
+          <>
+            <FadeUp delay={0.05}>
+              <div className="flex justify-center pt-6 pb-2">
+                <div
+                  className="w-20 h-20 rounded-full flex items-center justify-center animate-scale-in"
+                  style={{
+                    background: 'linear-gradient(135deg, rgba(82,214,154,0.2), rgba(82,214,154,0.08))',
+                    border: '2px solid rgba(82,214,154,0.3)',
+                    boxShadow: '0 0 40px rgba(82,214,154,0.15)',
+                  }}
+                >
+                  <Eye className="w-9 h-9" style={{ color: 'var(--success)' }} />
+                </div>
               </div>
-              <span className="text-[14px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-                Verdict day: {endDate}
-              </span>
-            </div>
-          </FadeUp>
+            </FadeUp>
+            <FadeUp delay={0.15}>
+              <TitleBlock
+                title="You're locked in."
+                subtitle={`${makerName} has been notified. The vow is real now.`}
+              />
+            </FadeUp>
+            <FadeUp delay={0.3}>
+              <div
+                className="rounded-[16px] px-5 py-4 flex items-start gap-3"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--gold)' }} />
+                <p className="text-[14px] leading-[21px] font-serif" style={{ color: 'var(--text)' }}>
+                  "{vow.refined_text}"
+                </p>
+              </div>
+            </FadeUp>
+          </>
+        ) : (
+          <>
+            {/* Status badge */}
+            <FadeUp delay={0.05}>
+              <div className="flex justify-center">
+                <div
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full"
+                  style={{
+                    backgroundColor: isVerdictDue ? 'rgba(212,162,79,0.12)' : 'var(--success-muted)',
+                    border: isVerdictDue ? '1px solid var(--border-strong)' : '1px solid rgba(82,214,154,0.22)',
+                  }}
+                >
+                  <div
+                    className="w-2 h-2 rounded-full"
+                    style={{ backgroundColor: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
+                  />
+                  <span
+                    className="text-[12px] font-bold tracking-[1px] uppercase"
+                    style={{ color: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
+                  >
+                    {isVerdictDue ? 'VERDICT DUE' : 'VOW ACTIVE'}
+                  </span>
+                </div>
+              </div>
+            </FadeUp>
+
+            {/* Title */}
+            <FadeUp delay={0.1}>
+              <TitleBlock
+                title={isVerdictDue ? "Time's up." : "You're watching."}
+                subtitle={isVerdictDue
+                  ? `Did ${makerName} keep the vow? Your call.`
+                  : `${makerName} is counting on your honesty.`
+                }
+              />
+            </FadeUp>
+
+            {/* Vow quote — compact, not a full card */}
+            <FadeUp delay={0.13}>
+              <div
+                className="flex items-stretch overflow-hidden rounded-[14px]"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+              >
+                <div className="w-[3px] shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
+                <div className="flex-1 py-3 px-3.5">
+                  <p className="text-[16px] leading-[23px] font-serif font-medium" style={{ color: 'var(--text)' }}>
+                    "{vow.refined_text}"
+                  </p>
+                  <p className="text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                    ${vow.stake_amount / 100} at stake &middot; {vow.destination} if broken
+                  </p>
+                </div>
+              </div>
+            </FadeUp>
+
+            {/* Stats row */}
+            {!isVerdictDue && (
+              <FadeUp delay={0.16}>
+                <div className="flex gap-3">
+                  <StatPill
+                    value={dayNumber !== null ? `Day ${Math.min(dayNumber, totalDays)}` : '—'}
+                    label={`of ${totalDays}`}
+                  />
+                  <StatPill
+                    value={countdownLabel || '—'}
+                    label={`Verdict: ${endDate}`}
+                  />
+                </div>
+              </FadeUp>
+            )}
+
+            {/* Nudge CTA — the main action */}
+            {!isVerdictDue && (
+              <FadeUp delay={0.2}>
+                <div className="flex flex-col gap-3">
+                  <button
+                    onClick={handleMessage}
+                    className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                    style={{
+                      background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                      boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                    }}
+                  >
+                    <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
+                      {copied ? (
+                        <>
+                          <Check className="w-[18px] h-[18px]" color="#0B0D11" />
+                          <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                            Copied! Paste in your chat
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <Zap className="w-[18px] h-[18px]" color="#0B0D11" />
+                          <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                            Nudge {makerName}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </button>
+                  <p className="text-center text-[12px]" style={{ color: 'var(--text-muted)' }}>
+                    {makerPhone ? 'Opens a pre-written text to keep them honest' : 'Copies a message to send them'}
+                  </p>
+                </div>
+              </FadeUp>
+            )}
+          </>
         )}
-
-        {/* Vow card */}
-        <FadeUp delay={0.2}>
-          {vowCard}
-        </FadeUp>
-
-        {/* Message button */}
-        <FadeUp delay={0.25}>
-          <button
-            onClick={handleMessage}
-            className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-            style={{
-              background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-              boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-            }}
-          >
-            <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-              {copied ? (
-                <>
-                  <Check className="w-[18px] h-[18px]" color="#0B0D11" />
-                  <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                    Copied! Paste in your chat
-                  </span>
-                </>
-              ) : (
-                <>
-                  <MessageCircle className="w-[18px] h-[18px]" color="#0B0D11" />
-                  <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                    Message {makerName}
-                  </span>
-                </>
-              )}
-            </div>
-          </button>
-          {!makerPhone && !copied && (
-            <p className="text-center text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-              Copies a nudge to your clipboard
-            </p>
-          )}
-        </FadeUp>
-
-        {/* Nudge preview */}
-        <FadeUp delay={0.3}>
-          <div
-            className="rounded-[14px] px-4 py-3 flex items-start gap-3"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <MessageCircle className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--text-muted)' }} />
-            <p className="text-[13px] leading-[19px] italic" style={{ color: 'var(--text-secondary)' }}>
-              "{nudgeMessage}"
-            </p>
-          </div>
-        </FadeUp>
-
-        {/* Coming soon teaser */}
-        <FadeUp delay={0.35}>
-          <div
-            className="rounded-[14px] px-4 py-3.5 text-center"
-            style={{ backgroundColor: 'rgba(94,124,250,0.06)', border: '1px solid rgba(94,124,250,0.1)' }}
-          >
-            <p className="text-[12px] font-medium" style={{ color: 'var(--text-muted)' }}>
-              Group accountability is coming soon. You'll be able to hold them accountable right in your group chat.
-            </p>
-          </div>
-        </FadeUp>
       </RitualScreen>
     );
   }
 
+  // ─── DECLINED STATE ───
   if (status === 'declined') {
     return (
       <RitualScreen>
         <FadeUp><HeaderBadge /></FadeUp>
         <FadeUp delay={0.1}>
           <TitleBlock
-            title="Declined"
-            subtitle="You've declined the witness role. The vow maker will be notified."
+            title="Declined."
+            subtitle={`${makerName} will be notified. The vow continues without a witness.`}
           />
         </FadeUp>
       </RitualScreen>
     );
   }
 
+  // ─── PENDING STATE (accept/decline) ───
   return (
     <RitualScreen
       footer={
@@ -322,15 +332,63 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     >
       <FadeUp><HeaderBadge /></FadeUp>
 
-      <FadeUp delay={0.1}>
+      <FadeUp delay={0.08}>
         <TitleBlock
-          title={`${makerName} made an Unbreakable Vow.`}
-          subtitle="Real money is on the line. You decide if they kept their word."
+          title={`${makerName} named you their witness.`}
+          subtitle="They put real money on the line. You hold the power."
         />
       </FadeUp>
 
-      <FadeUp delay={0.15}>
-        {vowCard}
+      <FadeUp delay={0.14}>
+        <RitualCard>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
+            <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
+          </div>
+          <p className="text-[20px] font-serif font-medium leading-[28px]" style={{ color: 'var(--text)' }}>"{vow.refined_text}"</p>
+          <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4" style={{ color: 'var(--gold)' }} />
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
+            </div>
+            <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake_amount / 100}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
+            <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4" style={{ color: 'var(--gold)' }} />
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Your verdict by</span>
+            </div>
+            <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{endDate}</span>
+          </div>
+        </RitualCard>
+      </FadeUp>
+
+      {/* What this means */}
+      <FadeUp delay={0.2}>
+        <div className="flex flex-col gap-3 px-1">
+          {[
+            { icon: Eye, text: `Watch whether ${makerName} follows through.` },
+            { icon: Shield, text: `On ${endDate}, you call it: kept or broken.` },
+            { icon: DollarSign, text: `If broken, $${vow.stake_amount / 100} goes to ${vow.destination}.` },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-3">
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
+                style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.12)' }}
+              >
+                <item.icon className="w-4 h-4" style={{ color: 'var(--gold)' }} />
+              </div>
+              <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>
+                {item.text}
+              </span>
+            </div>
+          ))}
+        </div>
       </FadeUp>
 
       {error && (

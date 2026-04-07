@@ -78,10 +78,10 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
         </FadeUp>
         <FadeUp delay={0.15}>
           <TitleBlock
-            title={isKept ? 'Verdict: Kept' : 'Verdict: Broken'}
+            title={isKept ? 'Verdict: Kept.' : 'Verdict: Broken.'}
             subtitle={isKept
-              ? 'The vow was honored. Money stays safe.'
-              : `$${vow.stake_amount / 100} goes to ${vow.destination}.`
+              ? 'The vow was honored. Their money stays safe.'
+              : `${vow.stake_amount / 100} will be donated to ${vow.destination}.`
             }
           />
         </FadeUp>
@@ -136,10 +136,10 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
         </FadeUp>
         <FadeUp delay={0.15}>
           <TitleBlock
-            title={isKept ? 'Confirm: Vow kept?' : 'Confirm: Vow broken?'}
+            title={isKept ? 'Confirm: Kept.' : 'Are you sure?'}
             subtitle={isKept
-              ? `They did what they said. $${vow.stake_amount / 100} stays safe.`
-              : `$${vow.stake_amount / 100} will go to ${vow.destination}. This cannot be undone.`
+              ? `They followed through. ${vow.stake_amount / 100} stays safe.`
+              : `This is final. ${vow.stake_amount / 100} goes to ${vow.destination}. No take-backs.`
             }
           />
         </FadeUp>
@@ -153,7 +153,7 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
 
       <FadeUp delay={0.05}>
         <TitleBlock
-          title="Did they keep the vow?"
+          title="Did they keep it?"
           subtitle="Be honest. That's the whole point."
         />
       </FadeUp>
