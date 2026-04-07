@@ -2,12 +2,12 @@ import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { Stack, router } from 'expo-router';
-import { AlertCircle, Check, Clock, ExternalLink, FastForward, Flame, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, User, UserMinus, Zap } from 'lucide-react-native';
+import { AlertCircle, Clock, ExternalLink, FastForward, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, User, UserMinus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { getDailyNudge, getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
+import { getVowVerdictDate, palette } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
 import { extendVowDeadline, resendWitnessInvite, switchToSoloWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -376,33 +376,45 @@ export default function LiveScreen() {
     );
   };
 
-  const dailyNudge = useMemo(() => getDailyNudge(), []);
+  const cheekyLabels = useMemo(() => [
+    `Report to ${vow.witnessName}`,
+    `Tell ${vow.witnessName} you showed up`,
+    `Prove it to ${vow.witnessName}`,
+    `${vow.witnessName}'s watching. Say something.`,
+    `Confess to ${vow.witnessName}`,
+    `${vow.witnessName} demands an update`,
+  ], [vow.witnessName]);
+
+  const todaysLabel = useMemo(() => {
+    const dayIndex = Math.floor(Date.now() / 86400000) % cheekyLabels.length;
+    return cheekyLabels[dayIndex];
+  }, [cheekyLabels]);
 
   const handleTextWitness = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const phone = vow.phoneNumber;
-    const vowText = activeVowText;
-    const body = encodeURIComponent(`Hey! Just checking in on my vow: "${vowText}" — keeping at it 💪`);
     if (phone) {
       const smsUrl = Platform.OS === 'ios'
-        ? `sms:${phone}&body=${body}`
-        : `sms:${phone}?body=${body}`;
+        ? `sms:${phone}`
+        : `sms:${phone}`;
       console.log('[LiveScreen] opening SMS to witness:', smsUrl);
       Linking.openURL(smsUrl).catch(() => {
         console.log('[LiveScreen] failed to open SMS');
       });
     } else {
-      const shareMsg = `Hey! Just checking in on my vow: "${vowText}" — keeping at it 💪`;
-      Share.share({ message: shareMsg }).catch(() => {
+      Share.share({ message: `Checking in on my vow: "${activeVowText}"` }).catch(() => {
         console.log('[LiveScreen] share failed');
       });
     }
   }, [vow.phoneNumber, activeVowText]);
 
-  const handleSendNudgeToSelf = useCallback(() => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('You got this 🔥', dailyNudge);
-  }, [dailyNudge]);
+  const getCountdownTint = useCallback((days: number | null) => {
+    if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
+    if (days <= 0) return { bg: 'rgba(255,123,123,0.10)', border: 'rgba(255,123,123,0.25)' };
+    if (days === 1) return { bg: 'rgba(255,180,80,0.10)', border: 'rgba(255,180,80,0.25)' };
+    if (days <= 3) return { bg: 'rgba(212,162,79,0.08)', border: 'rgba(212,162,79,0.20)' };
+    return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
+  }, []);
 
   const renderVowActiveCard = () => {
     if (isSelfWitness) {
@@ -419,63 +431,34 @@ export default function LiveScreen() {
               You'll deliver your own honest verdict on {dates.endLabel}.
             </Text>
           </View>
-
-          <View style={styles.nudgeCard}>
-            <Sparkles color={palette.goldBright} size={16} />
-            <Text style={styles.nudgeText}>{dailyNudge}</Text>
-          </View>
-
-          <Pressable
-            style={({ pressed }) => [styles.inspirationBtn, pressed && styles.inspirationBtnPressed]}
-            onPress={handleSendNudgeToSelf}
-            testID="live-self-nudge"
-          >
-            <Flame color={palette.goldBright} size={16} />
-            <Text style={styles.inspirationBtnText}>Get a boost</Text>
-          </Pressable>
         </>
       );
     }
 
+    const tint = getCountdownTint(daysLeft);
+
     return (
       <>
-        <View style={styles.activeCard}>
-          <View style={styles.activeIconRow}>
-            <View style={styles.activeCheckBg}>
-              <Check color={palette.success} size={18} />
-            </View>
-            <View style={styles.activeTextCol}>
-              <Text style={styles.activeTitle}>{vow.witnessName} is watching.</Text>
-              <Text style={styles.activeQuote}>
-                Verdict on {dates.endLabel}
-              </Text>
-            </View>
+        <View style={[
+          styles.unifiedCountdownCard,
+          { backgroundColor: tint.bg, borderColor: tint.border },
+        ]}>
+          <Text style={styles.unifiedCountdownBig}>{countdownLabel ?? 'Vow active'}</Text>
+          <Text style={styles.unifiedCountdownDate}>Verdict day: {dates.endLabel}</Text>
+          <View style={styles.unifiedWitnessRow}>
+            <View style={styles.unifiedWitnessDot} />
+            <Text style={styles.unifiedWitnessText}>{vow.witnessName} is watching</Text>
           </View>
         </View>
 
-        <View style={styles.engagementRow}>
-          <Pressable
-            style={({ pressed }) => [styles.engageBtn, styles.engageBtnPrimary, pressed && styles.engageBtnPressed]}
-            onPress={handleTextWitness}
-            testID="live-text-witness"
-          >
-            <MessageCircle color="#0B0D11" size={18} />
-            <Text style={styles.engageBtnPrimaryText}>Text {vow.witnessName}</Text>
-          </Pressable>
-          <Pressable
-            style={({ pressed }) => [styles.engageBtn, styles.engageBtnSecondary, pressed && styles.engageBtnPressed]}
-            onPress={handleSendNudgeToSelf}
-            testID="live-get-boost"
-          >
-            <Zap color={palette.goldBright} size={18} />
-            <Text style={styles.engageBtnSecondaryText}>Boost</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.nudgeCard}>
-          <Sparkles color={palette.goldBright} size={16} />
-          <Text style={styles.nudgeText}>{dailyNudge}</Text>
-        </View>
+        <Pressable
+          style={({ pressed }) => [styles.smsActionBtn, pressed && styles.smsActionBtnPressed]}
+          onPress={handleTextWitness}
+          testID="live-text-witness"
+        >
+          <MessageCircle color="#0B0D11" size={18} />
+          <Text style={styles.smsActionBtnText}>{todaysLabel}</Text>
+        </Pressable>
       </>
     );
   };
@@ -506,15 +489,7 @@ export default function LiveScreen() {
     : daysLeft === 1 ? 'Last day'
     : `${daysLeft} days left`;
 
-  const renderCountdownCard = () => {
-    if (!countdownLabel) return null;
-    return (
-      <View style={styles.countdownCard}>
-        <Text style={styles.countdownNumber}>{countdownLabel}</Text>
-        <Text style={styles.countdownDate}>Verdict day: {dates.endLabel}</Text>
-      </View>
-    );
-  };
+
 
   const renderBadge = () => {
     if (phase === 'verdict_due') {
@@ -596,12 +571,7 @@ export default function LiveScreen() {
       />
 
       {phase === 'witness_pending' && renderWitnessPendingCard()}
-      {phase === 'vow_active' && (
-        <>
-          {renderCountdownCard()}
-          {renderVowActiveCard()}
-        </>
-      )}
+      {phase === 'vow_active' && renderVowActiveCard()}
       {phase === 'verdict_due' && renderVerdictDueCard()}
 
       {witnessWebUrl && !isSelfWitness && (
@@ -782,25 +752,63 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600' as const,
   },
-  countdownCard: {
-    backgroundColor: 'rgba(82,214,154,0.06)',
+  unifiedCountdownCard: {
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: 'rgba(82,214,154,0.18)',
     padding: 24,
-    gap: 4,
-    alignItems: 'center',
+    gap: 6,
+    alignItems: 'center' as const,
   },
-  countdownNumber: {
+  unifiedCountdownBig: {
     color: palette.text,
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: '800' as const,
     letterSpacing: -0.5,
   },
-  countdownDate: {
+  unifiedCountdownDate: {
     color: palette.textSecondary,
     fontSize: 14,
     fontWeight: '500' as const,
+  },
+  unifiedWitnessRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    marginTop: 8,
+  },
+  unifiedWitnessDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: palette.success,
+  },
+  unifiedWitnessText: {
+    color: palette.success,
+    fontSize: 13,
+    fontWeight: '600' as const,
+  },
+  smsActionBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 10,
+    minHeight: 52,
+    borderRadius: 16,
+    backgroundColor: palette.goldBright,
+    shadowColor: palette.gold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  smsActionBtnPressed: {
+    opacity: 0.85,
+    transform: [{ scale: 0.97 }],
+  },
+  smsActionBtnText: {
+    color: '#0B0D11',
+    fontSize: 15,
+    fontWeight: '700' as const,
   },
   activeCard: {
     backgroundColor: 'rgba(82,214,154,0.08)',
@@ -872,88 +880,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
   },
-  activeTextCol: {
-    flex: 1,
-    gap: 2,
-  },
-  engagementRow: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  engageBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 16,
-  },
-  engageBtnPrimary: {
-    backgroundColor: palette.goldBright,
-    shadowColor: palette.gold,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  engageBtnSecondary: {
-    backgroundColor: 'rgba(212,162,79,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.2)',
-  },
-  engageBtnPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
-  engageBtnPrimaryText: {
-    color: '#0B0D11',
-    fontSize: 15,
-    fontWeight: '700' as const,
-  },
-  engageBtnSecondaryText: {
-    color: palette.goldBright,
-    fontSize: 15,
-    fontWeight: '700' as const,
-  },
-  nudgeCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    backgroundColor: 'rgba(212,162,79,0.06)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.12)',
-    padding: 16,
-  },
-  nudgeText: {
-    flex: 1,
-    color: palette.textSecondary,
-    fontSize: 14,
-    lineHeight: 21,
-    fontFamily: serifFont,
-    fontStyle: 'italic',
-  },
-  inspirationBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 16,
-    backgroundColor: 'rgba(212,162,79,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.2)',
-  },
-  inspirationBtnPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
-  inspirationBtnText: {
-    color: palette.goldBright,
-    fontSize: 15,
-    fontWeight: '700' as const,
-  },
+
   testSkipBtn: {
     flexDirection: 'row',
     alignItems: 'center',
