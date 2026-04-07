@@ -403,6 +403,27 @@ export default function LiveScreen() {
     );
   };
 
+  const daysLeft = (() => {
+    if (isNaN(endDate.getTime())) return null;
+    const ms = endDate.getTime() - now.getTime();
+    return Math.ceil(ms / 86400000);
+  })();
+
+  const countdownLabel = daysLeft === null ? null
+    : daysLeft <= 0 ? "Today's the day"
+    : daysLeft === 1 ? 'Last day'
+    : `${daysLeft} days left`;
+
+  const renderCountdownCard = () => {
+    if (!countdownLabel) return null;
+    return (
+      <View style={styles.countdownCard}>
+        <Text style={styles.countdownNumber}>{countdownLabel}</Text>
+        <Text style={styles.countdownDate}>Verdict day: {dates.endLabel}</Text>
+      </View>
+    );
+  };
+
   const renderBadge = () => {
     if (phase === 'verdict_due') {
       return (
@@ -411,6 +432,20 @@ export default function LiveScreen() {
             <View style={styles.verdictBadge}>
               <View style={styles.verdictDot} />
               <Text style={styles.verdictBadgeText}>VERDICT DUE</Text>
+            </View>
+          </View>
+        </View>
+      );
+    }
+
+    if (phase === 'witness_pending') {
+      return (
+        <View style={styles.statusBadgeWrap}>
+          <View style={styles.statusBadgeRow}>
+            <Animated.View style={[styles.statusPulse, styles.pendingPulse, { transform: [{ scale: pulseAnim }] }]} />
+            <View style={styles.pendingBadge}>
+              <View style={styles.pendingDot} />
+              <Text style={styles.pendingBadgeText}>VOW PENDING</Text>
             </View>
           </View>
         </View>
@@ -446,7 +481,7 @@ export default function LiveScreen() {
 
     return (
       <>
-        {IS_EXPO_GO && (
+        {IS_EXPO_GO && phase === 'vow_active' && (
           <Pressable style={styles.testSkipBtn} onPress={handleFastForward} testID="live-fast-forward">
             <FastForward color={palette.warmAmber} size={14} />
             <Text style={styles.testSkipText}>Fast-forward to verdict (test mode)</Text>
@@ -469,7 +504,12 @@ export default function LiveScreen() {
       />
 
       {phase === 'witness_pending' && renderWitnessPendingCard()}
-      {phase === 'vow_active' && renderVowActiveCard()}
+      {phase === 'vow_active' && (
+        <>
+          {renderCountdownCard()}
+          {renderVowActiveCard()}
+        </>
+      )}
       {phase === 'verdict_due' && renderVerdictDueCard()}
 
       {witnessWebUrl && (
@@ -496,6 +536,32 @@ const styles = StyleSheet.create({
     height: 32,
     borderRadius: 16,
     backgroundColor: 'rgba(82,214,154,0.1)',
+  },
+  pendingPulse: {
+    backgroundColor: 'rgba(212,162,79,0.1)',
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(212,162,79,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.2)',
+  },
+  pendingDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: palette.goldBright,
+  },
+  pendingBadgeText: {
+    color: palette.goldBright,
+    fontSize: 12,
+    fontWeight: '700' as const,
+    letterSpacing: 1,
   },
   statusBadge: {
     flexDirection: 'row',
@@ -623,6 +689,26 @@ const styles = StyleSheet.create({
     color: palette.goldBright,
     fontSize: 12,
     fontWeight: '600' as const,
+  },
+  countdownCard: {
+    backgroundColor: 'rgba(82,214,154,0.06)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(82,214,154,0.18)',
+    padding: 24,
+    gap: 4,
+    alignItems: 'center',
+  },
+  countdownNumber: {
+    color: palette.text,
+    fontSize: 28,
+    fontWeight: '800' as const,
+    letterSpacing: -0.5,
+  },
+  countdownDate: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '500' as const,
   },
   activeCard: {
     backgroundColor: 'rgba(82,214,154,0.08)',
