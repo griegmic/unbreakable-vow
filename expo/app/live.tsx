@@ -18,7 +18,7 @@ type WitnessStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'unknown'
 type VowPhase = 'witness_pending' | 'vow_active' | 'verdict_due';
 
 export default function LiveScreen() {
-  const { activeVowText, vow, isSelfWitness, switchToSolo } = useVowFlow();
+  const { activeVowText, vow, isSelfWitness, switchToSolo, setVowId } = useVowFlow();
   const dates = getVowVerdictDate(vow.rawInput);
 
   const brokenTarget = vow.stake.destination;
@@ -49,6 +49,21 @@ export default function LiveScreen() {
       router.replace('/');
     }
   }, [vow.rawInput]);
+
+  // Hydrate witnessInviteToken from DB if missing (e.g. after app restart)
+  useEffect(() => {
+    if (!vow.vowId || vow.witnessInviteToken) return;
+    supabase
+      .from('vows')
+      .select('witness_invite_token')
+      .eq('id', vow.vowId)
+      .single()
+      .then(({ data }) => {
+        if (data?.witness_invite_token) {
+          setVowId(vow.vowId!, data.witness_invite_token);
+        }
+      });
+  }, [vow.vowId, vow.witnessInviteToken, setVowId]);
 
   useEffect(() => {
     if (isSelfWitness || !vow.vowId) return;
