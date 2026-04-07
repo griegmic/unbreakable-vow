@@ -1,6 +1,6 @@
 'use client';
 import { useMemo, useState } from 'react';
-import { Shield, DollarSign, Sparkles, Calendar, MessageCircle, Clock, Copy, Check } from 'lucide-react';
+import { DollarSign, Sparkles, Calendar, MessageCircle, Clock, Check } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
 
