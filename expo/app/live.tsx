@@ -436,19 +436,38 @@ export default function LiveScreen() {
     }
   }, [witnessWebUrl]);
 
-  const cheekyLabels = useMemo(() => [
-    `Report to ${vow.witnessName}`,
-    `Tell ${vow.witnessName} you showed up`,
-    `Prove it to ${vow.witnessName}`,
-    `${vow.witnessName}'s watching. Say something.`,
-    `Confess to ${vow.witnessName}`,
-    `${vow.witnessName} demands an update`,
+  const witnessMessages = useMemo(() => [
+    { label: `Report to ${vow.witnessName}`, emoji: '📣', subtext: 'Let them know you showed up' },
+    { label: `Tell ${vow.witnessName} you crushed it`, emoji: '💪', subtext: "They're rooting for you" },
+    { label: `Prove it to ${vow.witnessName}`, emoji: '🔥', subtext: 'Actions speak louder' },
+    { label: `${vow.witnessName} is waiting`, emoji: '👀', subtext: 'Don\'t leave them hanging' },
+    { label: `Confess to ${vow.witnessName}`, emoji: '🫣', subtext: 'Honesty builds trust' },
+    { label: `${vow.witnessName} demands proof`, emoji: '⚡', subtext: 'Show, don\'t tell' },
+    { label: `Check in with ${vow.witnessName}`, emoji: '🤝', subtext: 'Accountability is a two-way street' },
+    { label: `Update ${vow.witnessName}`, emoji: '📱', subtext: 'A quick text goes a long way' },
   ], [vow.witnessName]);
 
-  const todaysLabel = useMemo(() => {
-    const dayIndex = Math.floor(Date.now() / 86400000) % cheekyLabels.length;
-    return cheekyLabels[dayIndex];
-  }, [cheekyLabels]);
+  const todaysMessage = useMemo(() => {
+    const dayIndex = Math.floor(Date.now() / 86400000) % witnessMessages.length;
+    return witnessMessages[dayIndex];
+  }, [witnessMessages]);
+
+  const witnessInitial = useMemo(() => {
+    return (vow.witnessName || '?').charAt(0).toUpperCase();
+  }, [vow.witnessName]);
+
+  const witnessBtnScale = useRef(new Animated.Value(1)).current;
+  const witnessGlowAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(witnessGlowAnim, { toValue: 1, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        Animated.timing(witnessGlowAnim, { toValue: 0, duration: 2000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+      ])
+    ).start();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleTextWitness = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -689,14 +708,45 @@ export default function LiveScreen() {
         </View>
 
         {!isSelfWitness ? (
-          <Pressable
-            style={({ pressed }) => [styles.smsActionBtn, pressed && styles.smsActionBtnPressed]}
-            onPress={handleTextWitness}
-            testID="live-text-witness"
-          >
-            <MessageCircle color="#0B0D11" size={18} />
-            <Text style={styles.smsActionBtnText}>{todaysLabel}</Text>
-          </Pressable>
+          <View style={styles.witnessConnectionCard}>
+            <View style={styles.witnessConnectionHeader}>
+              <View style={styles.witnessAvatarWrap}>
+                <Animated.View style={[
+                  styles.witnessAvatarGlow,
+                  { opacity: witnessGlowAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 0.8] }) },
+                ]} />
+                <View style={styles.witnessAvatar}>
+                  <Text style={styles.witnessAvatarText}>{witnessInitial}</Text>
+                </View>
+                <View style={styles.witnessOnlineDot} />
+              </View>
+              <View style={styles.witnessConnectionInfo}>
+                <Text style={styles.witnessConnectionName}>{vow.witnessName}</Text>
+                <Text style={styles.witnessConnectionRole}>Your witness</Text>
+              </View>
+              <Text style={styles.witnessConnectionEmoji}>{todaysMessage.emoji}</Text>
+            </View>
+
+            <View style={styles.witnessConnectionDivider} />
+
+            <Animated.View style={{ transform: [{ scale: witnessBtnScale }] }}>
+              <Pressable
+                style={({ pressed }) => [styles.smsActionBtn, pressed && styles.smsActionBtnPressed]}
+                onPress={() => {
+                  Animated.sequence([
+                    Animated.timing(witnessBtnScale, { toValue: 0.92, duration: 80, useNativeDriver: true }),
+                    Animated.spring(witnessBtnScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 15 }),
+                  ]).start();
+                  handleTextWitness();
+                }}
+                testID="live-text-witness"
+              >
+                <MessageCircle color="#0B0D11" size={18} />
+                <Text style={styles.smsActionBtnText}>{todaysMessage.label}</Text>
+              </Pressable>
+            </Animated.View>
+            <Text style={styles.witnessSubtext}>{todaysMessage.subtext}</Text>
+          </View>
         ) : (
           <Pressable
             style={({ pressed }) => [styles.shareProgressBtn, pressed && styles.shareProgressBtnPressed]}
@@ -1133,6 +1183,81 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     textAlign: 'center' as const,
   },
+  witnessConnectionCard: {
+    backgroundColor: palette.surface,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    padding: 18,
+    gap: 14,
+  },
+  witnessConnectionHeader: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+  },
+  witnessAvatarWrap: {
+    position: 'relative' as const,
+  },
+  witnessAvatarGlow: {
+    position: 'absolute' as const,
+    top: -4,
+    left: -4,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: palette.goldGlow,
+  },
+  witnessAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(212,162,79,0.15)',
+    borderWidth: 2,
+    borderColor: palette.goldBright,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  witnessAvatarText: {
+    color: palette.goldBright,
+    fontSize: 18,
+    fontWeight: '800' as const,
+    fontFamily: serifFont,
+  },
+  witnessOnlineDot: {
+    position: 'absolute' as const,
+    bottom: 0,
+    right: 0,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: palette.success,
+    borderWidth: 2,
+    borderColor: palette.surface,
+  },
+  witnessConnectionInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  witnessConnectionName: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  witnessConnectionRole: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '500' as const,
+    letterSpacing: 0.3,
+  },
+  witnessConnectionEmoji: {
+    fontSize: 24,
+  },
+  witnessConnectionDivider: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginHorizontal: -2,
+  },
   smsActionBtn: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
@@ -1148,13 +1273,19 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   smsActionBtnPressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.97 }],
+    opacity: 0.9,
   },
   smsActionBtnText: {
     color: '#0B0D11',
     fontSize: 15,
     fontWeight: '700' as const,
+  },
+  witnessSubtext: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '500' as const,
+    textAlign: 'center' as const,
+    marginTop: -4,
   },
   shareProgressBtn: {
     flexDirection: 'row' as const,
