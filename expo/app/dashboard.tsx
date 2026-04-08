@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router } from 'expo-router';
-import { Plus, Sparkles } from 'lucide-react-native';
+import { Stack, router, useNavigation } from 'expo-router';
+import { ArrowLeft, Plus, Sparkles } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   ActivityIndicator,
@@ -31,6 +31,8 @@ interface Section {
 export default function DashboardScreen() {
   const { displayName, isAuthenticated } = useAuth();
   const queryClient = useQueryClient();
+  const navigation = useNavigation();
+  const canGoBack = navigation.canGoBack();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
 
@@ -162,6 +164,20 @@ export default function DashboardScreen() {
       <SafeAreaView style={styles.safe}>
         <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={styles.headerSection}>
+            {canGoBack && (
+              <Pressable
+                onPress={() => {
+                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.back();
+                }}
+                style={styles.backButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                testID="dashboard-back"
+              >
+                <ArrowLeft color={palette.textSecondary} size={20} />
+                <Text style={styles.backText}>Back</Text>
+              </Pressable>
+            )}
             <Text style={styles.greeting}>Hey {firstName}</Text>
             <View style={styles.statsRow}>
               {activeCount > 0 && (
@@ -256,6 +272,18 @@ const styles = StyleSheet.create({
     borderRadius: 240,
     backgroundColor: 'rgba(212,162,79,0.12)',
     opacity: 0.6,
+  },
+  backButton: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    paddingVertical: 6,
+    marginBottom: 2,
+  },
+  backText: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    fontWeight: '500' as const,
   },
   headerSection: {
     paddingHorizontal: 20,
