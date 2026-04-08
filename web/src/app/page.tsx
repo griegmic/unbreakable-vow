@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, User } from 'lucide-react';
 import { RitualScreen, HeaderBadge, PrimaryButton, FadeUp } from '@/components/ui';
@@ -10,8 +10,24 @@ import { vowExamples, analyzeVow } from '@/lib/vow-logic';
 export default function HomePage() {
   const router = useRouter();
   const { setRawInput, setRefinedText } = useVowFlow();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const [input, setInput] = useState('');
+
+  useEffect(() => {
+    if (!loading && isAuthenticated) {
+      router.replace('/dashboard');
+    }
+  }, [isAuthenticated, loading, router]);
+
+  if (!loading && isAuthenticated) {
+    return (
+      <RitualScreen>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
+        </div>
+      </RitualScreen>
+    );
+  }
 
   const handleContinue = () => {
     if (!input.trim()) return;

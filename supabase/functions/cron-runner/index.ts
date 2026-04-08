@@ -1,6 +1,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
-import { witnessReminderMessage, warmupMessage, verdictRequestMessage, outcomeMessage } from '../_shared/sms-templates.ts';
+import { sealMessage, witnessReminderMessage, warmupMessage, verdictRequestMessage, outcomeMessage, challengeMessage } from '../_shared/sms-templates.ts';
+import { createAuditEvent } from '../_shared/audit.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 
@@ -37,7 +38,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const now = new Date();
-  const results = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, push: 0, errors: [] as string[] };
+  const results = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, sms_retry: 0, refund_retry: 0, push: 0, errors: [] as string[] };
 
   try {
     // === TASK 0: Send witness acceptance reminders ===
@@ -189,21 +190,49 @@ Deno.serve(async (req) => {
 
         if (!resolved) continue; // Already resolved by witness or another cron run
 
-        // Stripe refund
-        if (vow.stripe_payment_intent_id) {
+        // Stripe refund — check PI status first (skip non-real PIs like dev_bypass_)
+        if (vow.stripe_payment_intent_id && vow.stripe_payment_intent_id.startsWith('pi_')) {
           try {
-            const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Idempotency-Key': `refund-${vow.id}`,
-              },
-              body: new URLSearchParams({ payment_intent: vow.stripe_payment_intent_id }).toString(),
+            const piRes = await fetch(`https://api.stripe.com/v1/payment_intents/${vow.stripe_payment_intent_id}`, {
+              headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
             });
-            if (!refundRes.ok) {
-              const refundData = await refundRes.json();
-              throw new Error(refundData.error?.message || 'Refund failed');
+            if (!piRes.ok) {
+              throw new Error(`Failed to fetch PI status: HTTP ${piRes.status}`);
+            }
+            const piData = await piRes.json();
+            const piStatus = piData.status;
+            console.log(`[cron-runner] auto-resolve PI ${vow.stripe_payment_intent_id} status: ${piStatus}`);
+
+            if (piStatus === 'requires_capture') {
+              const cancelRes = await fetch(`https://api.stripe.com/v1/payment_intents/${vow.stripe_payment_intent_id}/cancel`, {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                },
+              });
+              if (!cancelRes.ok) {
+                const cancelData = await cancelRes.json();
+                throw new Error(cancelData.error?.message || 'Cancel failed');
+              }
+            } else if (piStatus === 'succeeded') {
+              const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+                method: 'POST',
+                headers: {
+                  'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+                  'Content-Type': 'application/x-www-form-urlencoded',
+                  'Idempotency-Key': `refund-${vow.id}`,
+                },
+                body: new URLSearchParams({ payment_intent: vow.stripe_payment_intent_id }).toString(),
+              });
+              if (!refundRes.ok) {
+                const refundData = await refundRes.json();
+                throw new Error(refundData.error?.message || 'Refund failed');
+              }
+            } else if (piStatus === 'canceled' || piStatus === 'requires_payment_method') {
+              // Already cancelled or never authorized — nothing to do
+            } else {
+              throw new Error(`Cannot process refund: PI in ${piStatus} state`);
             }
           } catch (refundErr) {
             results.errors.push(`refund ${vow.id}: ${refundErr}`);
@@ -212,13 +241,17 @@ Deno.serve(async (req) => {
         }
 
         const amountDollars = Math.round(vow.stake_amount / 100);
+        const hasRealPI = vow.stripe_payment_intent_id && vow.stripe_payment_intent_id.startsWith('pi_');
+        const noRealPayment = vow.stake_amount === 0 || !hasRealPI;
 
         // SMS #4 to witness
         if (vow.witness_phone) {
           try {
             const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
             const ownerName = profile?.display_name || 'Someone';
-            const body = `No verdict received. ${ownerName}'s vow auto-resolved as kept. $${amountDollars} refunded.`;
+            const body = noRealPayment
+              ? `No verdict received. ${ownerName}'s vow auto-resolved as kept.`
+              : `No verdict received. ${ownerName}'s vow auto-resolved as kept. $${amountDollars} refunded.`;
             const sid = await sendSMS(vow.witness_phone, body);
             await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'outcome', twilio_sid: sid });
           } catch (smsErr) {
@@ -230,7 +263,9 @@ Deno.serve(async (req) => {
         await supabase.from('push_queue').insert({
           user_id: vow.user_id,
           title: 'Vow auto-resolved: Kept!',
-          body: `No verdict was received, so your vow was auto-resolved as kept. $${amountDollars} refunded.`,
+          body: noRealPayment
+            ? 'No verdict was received, so your vow was auto-resolved as kept.'
+            : `No verdict was received, so your vow was auto-resolved as kept. $${amountDollars} refunded.`,
           data: { vow_id: vow.id, verdict: 'kept' },
           send_after: now.toISOString(),
         });
@@ -239,6 +274,136 @@ Deno.serve(async (req) => {
       } catch (err) {
         results.errors.push(`auto_resolve ${vow.id}: ${err}`);
       }
+    }
+
+    // === TASK 5: Retry failed SMS ===
+    try {
+      const { data: smsFailed } = await supabase
+        .from('vows')
+        .select('*')
+        .eq('sms_failed', true)
+        .gte('sealed_at', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
+
+      for (const vow of smsFailed || []) {
+        const { count } = await supabase
+          .from('sms_log')
+          .select('*', { count: 'exact', head: true })
+          .eq('vow_id', vow.id)
+          .eq('message_type', 'seal');
+
+        if ((count || 0) >= 3) {
+          // Give up — push notification to maker
+          await supabase.from('push_queue').insert({
+            user_id: vow.user_id,
+            title: 'Witness invite failed',
+            body: `We couldn't text your witness. Share the link manually.`,
+            data: { route: '/live', vowId: vow.id },
+            send_after: new Date().toISOString(),
+          });
+          await supabase.from('vows').update({ sms_failed: false }).eq('id', vow.id);
+          await createAuditEvent(supabase, vow.id, 'sms_failed', 'system', null, { reason: 'max_retries_exceeded' });
+          continue;
+        }
+
+        // Retry SMS
+        try {
+          const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
+          const ownerName = profile?.display_name || 'Someone';
+          const amountDollars = Math.round(vow.stake_amount / 100);
+          const endDate = vow.ends_at
+            ? new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+            : 'soon';
+
+          let body: string;
+          if (vow.vow_type === 'challenge' && vow.challenge_invite_token) {
+            const challengeUrl = `https://unbreakablevow.app/c/${vow.challenge_invite_token}`;
+            body = challengeMessage(ownerName, vow.refined_text, vow.stake_amount, endDate, challengeUrl);
+          } else {
+            const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
+            body = sealMessage(ownerName, vow.refined_text, amountDollars, endDate, witnessUrl);
+          }
+          const sid = await sendSMS(vow.witness_phone!, body);
+          await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'seal', twilio_sid: sid });
+          await supabase.from('vows').update({ sms_failed: false }).eq('id', vow.id);
+          await createAuditEvent(supabase, vow.id, 'sms_retried', 'system');
+        } catch (smsErr) {
+          // Leave flag, will retry next cron run
+          console.error(`[cron-runner] SMS retry failed for ${vow.id}:`, smsErr);
+        }
+        results.sms_retry++;
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.errors.push(`sms_retry: ${msg}`);
+    }
+
+    // === TASK 6: Retry failed refunds ===
+    try {
+      const { data: refundFailed } = await supabase
+        .from('vows')
+        .select('*')
+        .eq('refund_failed', true);
+
+      for (const vow of refundFailed || []) {
+        if (!vow.stripe_payment_intent_id || !vow.stripe_payment_intent_id.startsWith('pi_')) {
+          // No real Stripe PI — clear the flag (dev/test bypass)
+          await supabase.from('vows').update({ refund_failed: false }).eq('id', vow.id);
+          continue;
+        }
+
+        try {
+          // Check PI status before deciding how to return money
+          const piRes = await fetch(`https://api.stripe.com/v1/payment_intents/${vow.stripe_payment_intent_id}`, {
+            headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
+          });
+          if (!piRes.ok) {
+            throw new Error(`Failed to fetch PI status: HTTP ${piRes.status}`);
+          }
+          const piData = await piRes.json();
+          const piStatus = piData.status;
+          console.log(`[cron-runner] refund_retry PI ${vow.stripe_payment_intent_id} status: ${piStatus}`);
+
+          let success = false;
+          if (piStatus === 'requires_capture') {
+            const cancelRes = await fetch(`https://api.stripe.com/v1/payment_intents/${vow.stripe_payment_intent_id}/cancel`, {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+              },
+            });
+            success = cancelRes.ok;
+          } else if (piStatus === 'succeeded') {
+            const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Idempotency-Key': `refund-${vow.id}`,
+              },
+              body: new URLSearchParams({ payment_intent: vow.stripe_payment_intent_id }).toString(),
+            });
+            success = refundRes.ok;
+          } else if (piStatus === 'canceled') {
+            // Already cancelled — clear the flag
+            success = true;
+          }
+
+          if (success) {
+            await supabase.from('vows')
+              .update({ refund_failed: false })
+              .eq('id', vow.id);
+            await createAuditEvent(supabase, vow.id, 'refund_issued', 'system');
+          }
+          results.refund_retry++;
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          results.errors.push(`refund_retry ${vow.id}: ${msg}`);
+        }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.errors.push(`refund_retry: ${msg}`);
     }
 
     // === TASK 4: Process push notification queue ===

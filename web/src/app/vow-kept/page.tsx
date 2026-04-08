@@ -39,8 +39,12 @@ function VowKeptContent() {
     fetchStats();
   }, [session?.user?.id]);
 
+  const isZeroStake = !amount || amount === '0';
+
   const handleShare = () => {
-    const text = `I kept my vow: "${vowText}" — $${amount} was on the line. 💪 unbreakablevow.app`;
+    const text = isZeroStake
+      ? `I kept my vow: "${vowText}" 💪 unbreakablevow.app`
+      : `I kept my vow: "${vowText}" — $${amount} was on the line. 💪 unbreakablevow.app`;
     if (navigator.share) {
       navigator.share({ text }).catch(() => {});
     } else {
@@ -74,7 +78,7 @@ function VowKeptContent() {
       <FadeUp delay={0.1}>
         <TitleBlock
           title="Vow kept."
-          subtitle="You did what you said. Your money stays safe."
+          subtitle={isZeroStake ? "You did what you said. Word honored." : "You did what you said. Your money stays safe."}
         />
       </FadeUp>
 
@@ -83,7 +87,7 @@ function VowKeptContent() {
           <p className="text-[17px] font-serif font-medium text-center" style={{ color: 'var(--text)' }}>{vowText}</p>
           <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
           <div className="flex justify-center">
-            <span className="text-2xl font-bold" style={{ color: 'var(--success)' }}>${amount} saved</span>
+            <span className="text-2xl font-bold" style={{ color: 'var(--success)' }}>{isZeroStake ? 'Vow honored' : `$${amount} saved`}</span>
           </div>
         </RitualCard>
       </FadeUp>

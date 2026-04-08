@@ -1,6 +1,7 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
-import { sealMessage } from '../_shared/sms-templates.ts';
+import { sealMessage, challengeMessage } from '../_shared/sms-templates.ts';
+import { createAuditEvent } from '../_shared/audit.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 
@@ -90,26 +91,33 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (!vow.stripe_payment_intent_id) {
-      return new Response(JSON.stringify({ error: 'Payment not yet captured' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
+    if (vow.stake_amount > 0) {
+      // === EXISTING STRIPE LOGIC — DO NOT MODIFY ===
+      if (!vow.stripe_payment_intent_id) {
+        return new Response(JSON.stringify({ error: 'Payment not yet captured' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
 
-    // Verify payment status and capture if needed
-    const paymentIntent = await stripeGet(`payment_intents/${vow.stripe_payment_intent_id}`);
+      // Verify payment status and capture if needed
+      const paymentIntent = await stripeGet(`payment_intents/${vow.stripe_payment_intent_id}`);
 
-    if (paymentIntent.status === 'requires_capture') {
-      await stripePost(`payment_intents/${vow.stripe_payment_intent_id}/capture`);
-    } else if (paymentIntent.status !== 'succeeded') {
-      return new Response(JSON.stringify({
-        error: 'Payment not confirmed',
-        payment_status: paymentIntent.status,
-      }), {
-        status: 402,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      if (paymentIntent.status === 'requires_capture') {
+        await stripePost(`payment_intents/${vow.stripe_payment_intent_id}/capture`);
+      } else if (paymentIntent.status !== 'succeeded') {
+        return new Response(JSON.stringify({
+          error: 'Payment not confirmed',
+          payment_status: paymentIntent.status,
+        }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // === END EXISTING LOGIC ===
+    } else {
+      // $0 vow — skip Stripe entirely
+      console.log('$0 vow — skipping Stripe');
     }
 
     const now = new Date().toISOString();
@@ -137,22 +145,59 @@ Deno.serve(async (req) => {
       });
     }
 
-    const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
+    // Audit: vow sealed
+    await createAuditEvent(supabase, vow.id, 'vow_sealed', 'maker', user.id);
 
-    if (vow.witness_phone) {
-      const { data: profile } = await supabase
-        .from('users')
-        .select('display_name')
-        .eq('id', user.id)
-        .single();
+    const { data: profile } = await supabase
+      .from('users')
+      .select('display_name')
+      .eq('id', user.id)
+      .single();
 
-      const ownerName = profile?.display_name || 'Someone';
-      const amountDollars = Math.round(vow.stake_amount / 100);
-      const endDate = vow.ends_at
-        ? new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : 'soon';
+    const ownerName = profile?.display_name || 'Someone';
+    const amountDollars = Math.round(vow.stake_amount / 100);
+    const endDateStr = vow.ends_at
+      ? new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      : 'soon';
 
-      const messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDate, witnessUrl);
+    if (vow.vow_type === 'challenge' && vow.target_phone) {
+      // Challenge vow: send challenge SMS to target
+      const acceptUrl = `https://unbreakablevow.app/c/${vow.challenge_invite_token}`;
+      const messageBody = challengeMessage(ownerName, vow.refined_text, vow.stake_amount, endDateStr, acceptUrl);
+      let smsSent = false;
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
+          const twilioSid = await sendSMS(vow.target_phone, messageBody);
+          await supabase.from('sms_log').insert({
+            vow_id,
+            message_type: 'challenge_invite',
+            twilio_sid: twilioSid,
+          });
+          smsSent = true;
+          break;
+        } catch (smsErr) {
+          console.error(`[seal-vow] Challenge SMS attempt ${attempt + 1} failed:`, smsErr);
+        }
+      }
+
+      if (!smsSent) {
+        await supabase.from('vows').update({ sms_failed: true }).eq('id', vow_id);
+        await supabase.from('push_queue').insert({
+          user_id: user.id,
+          title: 'Challenge text failed',
+          body: `We couldn't text the challenge target. Share the link manually.`,
+          data: { route: '/live', vow_id, event: 'sms_failed' },
+          send_after: now,
+        });
+      }
+
+      await createAuditEvent(supabase, vow.id, 'challenge_sent', 'maker', user.id);
+    } else if (vow.witness_phone) {
+      // Standard vow: send witness SMS
+      const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
+      const messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDateStr, witnessUrl);
       let smsSent = false;
 
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -181,13 +226,18 @@ Deno.serve(async (req) => {
           send_after: now,
         });
       }
+
+      await createAuditEvent(supabase, vow.id, 'witness_invited', 'system', null);
     }
 
     const amountDollarsPush = Math.round(vow.stake_amount / 100);
+    const pushBody = vow.stake_amount > 0
+      ? `Your vow is active. $${amountDollarsPush} is on the line.`
+      : 'Your vow is active. Your word is on the line.';
     await supabase.from('push_queue').insert({
       user_id: user.id,
       title: 'Vow sealed!',
-      body: `Your vow is active. $${amountDollarsPush} is on the line.`,
+      body: pushBody,
       data: { route: '/live', vow_id },
       send_after: now,
     });

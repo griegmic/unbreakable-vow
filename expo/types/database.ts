@@ -17,7 +17,23 @@ export type VowStatus =
 
 export type Verdict = 'kept' | 'broken';
 
+export type VowType = 'self' | 'challenge';
+
+export type ChallengeStatus = 'pending' | 'accepted' | 'declined';
+
+export type ActorType = 'maker' | 'witness' | 'target' | 'system';
+
 export type SmsMessageType = 'seal' | 'warmup' | 'verdict_request' | 'outcome';
+
+export interface AuditEvent {
+  id: string;
+  vow_id: string;
+  event_type: string;
+  actor_type: ActorType;
+  actor_id: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+}
 
 export interface Database {
   public: {
@@ -70,6 +86,12 @@ export interface Database {
           witness_accepted_at: string | null;
           witness_declined: boolean;
           sealed_at: string | null;
+          vow_type?: VowType;
+          target_user_id?: string | null;
+          target_phone?: string | null;
+          challenge_status?: ChallengeStatus | null;
+          challenge_invite_token?: string | null;
+          witness_user_id?: string | null;
           created_at: string;
         };
         Insert: {
@@ -92,6 +114,12 @@ export interface Database {
           witness_accepted_at?: string | null;
           witness_declined?: boolean;
           sealed_at?: string | null;
+          vow_type?: VowType;
+          target_user_id?: string | null;
+          target_phone?: string | null;
+          challenge_status?: ChallengeStatus | null;
+          challenge_invite_token?: string | null;
+          witness_user_id?: string | null;
           created_at?: string;
         };
         Update: {
@@ -114,6 +142,40 @@ export interface Database {
           witness_accepted_at?: string | null;
           witness_declined?: boolean;
           sealed_at?: string | null;
+          vow_type?: VowType;
+          target_user_id?: string | null;
+          target_phone?: string | null;
+          challenge_status?: ChallengeStatus | null;
+          challenge_invite_token?: string | null;
+          witness_user_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      audit_events: {
+        Row: {
+          id: string;
+          vow_id: string;
+          event_type: string;
+          actor_type: ActorType;
+          actor_id: string | null;
+          metadata: Record<string, unknown>;
+          created_at: string;
+        };
+        Insert: {
+          vow_id: string;
+          event_type: string;
+          actor_type: ActorType;
+          actor_id?: string | null;
+          metadata?: Record<string, unknown>;
+        };
+        Update: {
+          id?: string;
+          vow_id?: string;
+          event_type?: string;
+          actor_type?: ActorType;
+          actor_id?: string | null;
+          metadata?: Record<string, unknown>;
           created_at?: string;
         };
         Relationships: [];

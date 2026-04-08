@@ -91,6 +91,7 @@ export default function WitnessVerdictScreen() {
           detail === 'already_judged' ? 'This vow has already been judged.'
             : detail === 'invalid_token' ? 'Could not find this vow. Please go back and try again.'
             : detail === 'invalid_status' ? `Vow is in "${data?.status}" state and can't be judged yet.`
+            : detail === 'refund_failed' ? 'Refund could not be processed right now. Please try again in a moment.'
             : detail
         );
         setSubmitting(false);

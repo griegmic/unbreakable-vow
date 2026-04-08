@@ -1,5 +1,6 @@
 import 'react-native-get-random-values';
 
+import type { AuditEvent } from '@/types/database';
 import { supabase } from './supabase';
 
 /** UUID v4 using the polyfilled crypto.getRandomValues */
@@ -46,14 +47,12 @@ export async function createVow(params: {
   return data;
 }
 
-export async function sealVow(vowId: string) {
-  const { error } = await supabase.from('vows').update({
-    status: 'sealed',
-    sealed_at: new Date().toISOString(),
-  }).eq('id', vowId);
-  if (error) throw error;
+/** @deprecated Use the seal-vow edge function instead. Direct DB writes skip Stripe capture. */
+async function sealVow(_vowId: string) {
+  throw new Error('sealVow() is disabled. Use the seal-vow edge function.');
 }
 
+/** @deprecated Use voidVowV2() which calls the void-vow edge function with proper Stripe handling. */
 export async function voidVow(vowId: string) {
   const { error } = await supabase.from('vows').update({
     status: 'voided',
@@ -453,5 +452,167 @@ export async function extendVowDeadline(vowId: string, hours: number): Promise<{
   } catch (err) {
     console.error('[vow-api] extendVowDeadline exception:', err);
     return { success: false, error: 'Failed to extend deadline.' };
+  }
+}
+
+// ─── Dashboard query functions ───────────────────────────────────────────────
+
+export async function getMyVows() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getWitnessingVows() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('witness_user_id', session.user.id)
+    .in('status', ['active', 'awaiting_verdict'])
+    .order('ends_at', { ascending: true });
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getIncomingChallenges() {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('target_user_id', session.user.id)
+    .eq('challenge_status', 'pending');
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getRecentVows(limit = 10) {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .in('status', ['kept', 'broken', 'voided'])
+    .order('verdict_at', { ascending: false })
+    .limit(limit);
+
+  if (error) throw error;
+  return data ?? [];
+}
+
+export async function getVowDetail(vowId: string) {
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('id', vowId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+export async function getVowTimeline(vowId: string): Promise<AuditEvent[]> {
+  const { data, error } = await supabase.from('audit_events')
+    .select('*')
+    .eq('vow_id', vowId)
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return (data ?? []) as AuditEvent[];
+}
+
+export async function submitCheckIn(vowId: string, type: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] submitCheckIn for vow:', vowId, 'type:', type);
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { success: false, error: 'Not authenticated' };
+
+    const { error } = await supabase.from('audit_events').insert({
+      vow_id: vowId,
+      event_type: 'check_in',
+      actor_type: 'maker',
+      actor_id: session.user.id,
+      metadata: { type },
+    });
+
+    if (error) {
+      console.error('[vow-api] submitCheckIn error:', error);
+      return { success: false, error: error.message };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[vow-api] submitCheckIn exception:', err);
+    return { success: false, error: 'Failed to submit check-in.' };
+  }
+}
+
+export async function acceptChallenge(token: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] acceptChallenge with token:', token);
+  try {
+    const { data, error } = await supabase.functions.invoke('accept-challenge', {
+      body: { token, action: 'accept' },
+    });
+    if (error) {
+      console.error('[vow-api] acceptChallenge error:', error);
+      return { success: false, error: error.message || 'Failed to accept challenge' };
+    }
+    if (data?.error) {
+      return { success: false, error: data.error };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[vow-api] acceptChallenge exception:', err);
+    return { success: false, error: 'Failed to accept challenge.' };
+  }
+}
+
+export async function declineChallenge(token: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] declineChallenge with token:', token);
+  try {
+    const { data, error } = await supabase.functions.invoke('accept-challenge', {
+      body: { token, action: 'decline' },
+    });
+    if (error) {
+      console.error('[vow-api] declineChallenge error:', error);
+      return { success: false, error: error.message || 'Failed to decline challenge' };
+    }
+    if (data?.error) {
+      return { success: false, error: data.error };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[vow-api] declineChallenge exception:', err);
+    return { success: false, error: 'Failed to decline challenge.' };
+  }
+}
+
+export async function voidVowV2(vowId: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] voidVowV2 for vow:', vowId);
+  try {
+    const { data, error } = await supabase.functions.invoke('void-vow', {
+      body: { vow_id: vowId },
+    });
+    if (error) {
+      console.error('[vow-api] voidVowV2 error:', error);
+      return { success: false, error: error.message || 'Failed to void vow' };
+    }
+    if (data?.error) {
+      return { success: false, error: data.error };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[vow-api] voidVowV2 exception:', err);
+    return { success: false, error: 'Failed to void vow.' };
   }
 }

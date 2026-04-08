@@ -12,7 +12,7 @@ import { BackButton, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, T
 import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { createPaymentIntent, setupPaymentSheet, showPaymentSheet } from '@/lib/stripe';
-import { createVow, sealVow, voidVow } from '@/lib/vow-api';
+import { createVow, voidVowV2 } from '@/lib/vow-api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -112,20 +112,14 @@ export default function SealScreen() {
 
   const invokeSealEdgeFunction = async (vowId: string) => {
     console.log('[SealScreen] invoking seal-vow edge function for:', vowId);
-    try {
-      const { data, error } = await supabase.functions.invoke('seal-vow', {
-        body: { vow_id: vowId },
-      });
-      console.log('[SealScreen] seal-vow response:', { data, error: error ? JSON.stringify(error) : null });
-      if (error) {
-        console.warn('[SealScreen] seal-vow edge function failed, falling back to direct seal:', error.message);
-        await sealVow(vowId);
-        console.log('[SealScreen] direct seal fallback succeeded');
-      }
-    } catch (invokeErr) {
-      console.warn('[SealScreen] seal-vow invoke threw, falling back to direct seal:', invokeErr);
-      await sealVow(vowId);
-      console.log('[SealScreen] direct seal fallback succeeded after throw');
+    const { data, error } = await supabase.functions.invoke('seal-vow', {
+      body: { vow_id: vowId },
+    });
+    console.log('[SealScreen] seal-vow response:', { data, error: error ? JSON.stringify(error) : null });
+    if (error) {
+      // Do NOT fall back to direct DB write — that skips Stripe capture and causes
+      // refund failures later. Propagate the error so the caller can retry or alert.
+      throw new Error(`seal-vow failed: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -166,11 +160,10 @@ export default function SealScreen() {
           consequence: vow.stake.consequence,
           destination: vow.stake.destination,
         });
-        // Mark as active directly (skip payment)
+        // Mark as active directly (skip payment — no fake Stripe IDs)
         await supabase.from('vows').update({
           status: 'active',
           sealed_at: new Date().toISOString(),
-          stripe_payment_intent_id: 'dev_bypass_' + Date.now(),
         }).eq('id', vowRecord.id);
         setVowId(vowRecord.id, vowRecord.witness_invite_token);
       } catch (err) {
@@ -189,6 +182,7 @@ export default function SealScreen() {
     }
 
     let vowId: string | null = null;
+    let paymentCaptured = false;
 
     try {
       console.log('[SealScreen] step 1: creating vow record');
@@ -217,12 +211,13 @@ export default function SealScreen() {
       const paid = await showPaymentSheet();
 
       if (!paid) {
-        await voidVow(vowId);
+        await voidVowV2(vowId).catch(() => {});
         setLoading(false);
         Alert.alert('Payment cancelled', 'No charge was made. You can try again whenever you\'re ready.');
         return;
       }
 
+      paymentCaptured = true;
       setPaidVowId(vowId);
 
       await invokeSealEdgeFunction(vowId);
@@ -234,14 +229,16 @@ export default function SealScreen() {
       console.error('[SealScreen] seal flow error:', errMsg);
       console.error('[SealScreen] full error:', JSON.stringify(err, Object.getOwnPropertyNames(err instanceof Error ? err : {})));
       setLoading(false);
-      if (paidVowId || (vowId && vowId === paidVowId)) {
+      if (paidVowId || paymentCaptured) {
+        // Payment was captured — don't void, let user retry the seal step
+        setPaidVowId(vowId || paidVowId);
         Alert.alert(
           'Almost there',
           'Your payment went through but we couldn\'t finish sealing. Tap "Seal this vow" to try again.',
         );
       } else {
         if (vowId) {
-          await voidVow(vowId).catch(() => {});
+          await voidVowV2(vowId).catch(() => {});
         }
         Alert.alert('Something went wrong', errMsg || 'Please try again.');
       }

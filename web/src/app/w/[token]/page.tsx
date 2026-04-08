@@ -26,10 +26,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   return {
     title: `${vow.witness_name}, you've been named as a witness`,
-    description: `"${vow.refined_text}" — $${vow.stake_amount / 100} is on the line. Accept your role as witness.`,
+    description: vow.stake_amount > 0
+      ? `"${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} is on the line. Accept your role as witness.`
+      : `"${vow.refined_text}" — Accept your role as witness.`,
     openGraph: {
       title: `${vow.witness_name}, you've been named as a witness`,
-      description: `"${vow.refined_text}" — $${vow.stake_amount / 100} is on the line.`,
+      description: vow.stake_amount > 0
+        ? `"${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} is on the line.`
+        : `"${vow.refined_text}" — Their word is on the line.`,
     },
   };
 }
@@ -43,7 +47,7 @@ export default async function WitnessInvitePage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('id, refined_text, stake_amount, destination, witness_name, witness_accepted_at, witness_declined, ends_at, status, user_id')
+    .select('id, refined_text, stake_amount, destination, witness_name, witness_accepted_at, witness_declined, starts_at, ends_at, status, user_id')
     .eq('witness_invite_token', token)
     .single();
 

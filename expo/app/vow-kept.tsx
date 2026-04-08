@@ -104,7 +104,7 @@ export default function VowKeptScreen() {
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
           title={isSelfWitness ? 'You kept your word.' : `${firstName} confirmed: vow kept.`}
-          subtitle={`Your word held. ${vow.stake.amount} stays safe \u2014 you won\u2019t be charged.`}
+          subtitle={vow.stake.amount > 0 ? `Your word held. $${vow.stake.amount} stays safe \u2014 you won\u2019t be charged.` : 'Your word held. Vow honored.'}
         />
       </Animated.View>
 

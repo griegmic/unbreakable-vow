@@ -142,7 +142,8 @@ export default function SelfResolvePage() {
 
   if (!vow) return null;
 
-  const stakeDisplay = `$${vow.stake_amount / 100}`;
+  const isZeroStake = vow.stake_amount === 0;
+  const stakeDisplay = isZeroStake ? '' : `$${Math.round(vow.stake_amount / 100)}`;
   const destination = vow.destination || 'charity';
 
   // Confirmation view
@@ -190,8 +191,8 @@ export default function SelfResolvePage() {
           <TitleBlock
             title={isKept ? 'You kept your word.' : 'Honest. Respect.'}
             subtitle={isKept
-              ? `${stakeDisplay} stays safe. No charge.`
-              : `${stakeDisplay} will be donated to ${destination}. This cannot be undone.`
+              ? (isZeroStake ? 'Word honored.' : `${stakeDisplay} stays safe. No charge.`)
+              : (isZeroStake ? 'The record stands. This cannot be undone.' : `${stakeDisplay} will be donated to ${destination}. This cannot be undone.`)
             }
           />
         </FadeUp>
@@ -282,7 +283,7 @@ export default function SelfResolvePage() {
               <div>
                 <span className="text-[17px] font-semibold block" style={{ color: 'var(--success)' }}>Vow kept</span>
                 <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-                  {stakeDisplay} stays safe.
+                  {isZeroStake ? 'Word honored.' : `${stakeDisplay} stays safe.`}
                 </span>
               </div>
             </button>
@@ -301,7 +302,7 @@ export default function SelfResolvePage() {
               <div>
                 <span className="text-[17px] font-semibold block" style={{ color: 'var(--warm-amber)' }}>Vow broken</span>
                 <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-                  {stakeDisplay} goes to {destination}.
+                  {isZeroStake ? 'The record stands.' : `${stakeDisplay} goes to ${destination}.`}
                 </span>
               </div>
             </button>

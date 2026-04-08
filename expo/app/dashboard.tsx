@@ -1,10 +1,10 @@
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack, router, useNavigation } from 'expo-router';
-import { ArrowLeft, Plus, Sparkles } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useRef } from 'react';
+import { router, Stack, useFocusEffect } from 'expo-router';
+import { History, Settings } from 'lucide-react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   Animated,
   FlatList,
   Pressable,
@@ -14,391 +14,807 @@ import {
   Text,
   View,
 } from 'react-native';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 
-import VowCard from '@/components/vow-card';
 import { palette, serifFont } from '@/constants/unbreakable';
-import { getIncomingChallenges, getMyVows, getRecentVows, getWitnessingVows } from '@/lib/vow-api';
-import type { VowRow } from '@/lib/vow-api';
+import { acceptChallenge, declineChallenge, getIncomingChallenges, getMyVows, getRecentVows, getWitnessingVows } from '@/lib/vow-api';
 import { useAuth } from '@/providers/auth-provider';
 
-interface Section {
-  key: string;
-  title: string;
-  data: { vow: VowRow; role: 'maker' | 'witness' | 'challenge' }[];
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface Vow {
+  id: string;
+  refined_text: string;
+  raw_input: string;
+  status: string;
+  vow_type: string;
+  witness_name: string;
+  witness_user_id: string | null;
+  stake_amount: number;
+  starts_at: string | null;
+  ends_at: string | null;
+  challenge_status: string | null;
+  challenge_invite_token: string | null;
+  created_at: string;
+  verdict: string | null;
+  verdict_at: string | null;
 }
 
-export default function DashboardScreen() {
-  const { displayName, isAuthenticated } = useAuth();
-  const queryClient = useQueryClient();
-  const navigation = useNavigation();
-  const canGoBack = navigation.canGoBack();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
+type SectionId = 'attention' | 'yours' | 'witnessing' | 'recent';
 
-  const myVowsQuery = useQuery({ queryKey: ['myVows'], queryFn: getMyVows, enabled: isAuthenticated });
-  const witnessingQuery = useQuery({ queryKey: ['witnessingVows'], queryFn: getWitnessingVows, enabled: isAuthenticated });
-  const challengesQuery = useQuery({ queryKey: ['challenges'], queryFn: getIncomingChallenges, enabled: isAuthenticated });
-  const recentQuery = useQuery({ queryKey: ['recentVows'], queryFn: () => getRecentVows(5), enabled: isAuthenticated });
+interface SectionHeader {
+  type: 'header';
+  sectionId: SectionId;
+  title: string;
+}
 
-  const isLoading = myVowsQuery.isLoading || witnessingQuery.isLoading;
-  const isRefreshing = myVowsQuery.isRefetching || witnessingQuery.isRefetching || challengesQuery.isRefetching || recentQuery.isRefetching;
+interface SectionItem {
+  type: 'item';
+  sectionId: SectionId;
+  vow: Vow;
+}
 
-  useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 500, useNativeDriver: true }),
-    ]).start();
-  }, [fadeAnim, slideAnim]);
+type ListItem = SectionHeader | SectionItem;
 
-  const myVows = myVowsQuery.data ?? [];
-  const witnessingVows = witnessingQuery.data ?? [];
-  const challenges = challengesQuery.data ?? [];
-  const recentVows = recentQuery.data ?? [];
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
 
-  const activeCount = myVows.filter(v => v.status === 'active').length;
-  const keptCount = recentVows.filter(v => v.verdict === 'kept').length;
+function clamp(v: number, min: number, max: number) {
+  return Math.min(Math.max(v, min), max);
+}
 
-  const needsAttention = useMemo(() => {
-    const items: { vow: VowRow; role: 'maker' | 'witness' | 'challenge' }[] = [];
-    myVows.filter(v => v.status === 'awaiting_verdict').forEach(v => items.push({ vow: v, role: 'maker' }));
-    witnessingVows.filter(v => v.status === 'awaiting_verdict').forEach(v => items.push({ vow: v, role: 'witness' }));
-    challenges.forEach(v => items.push({ vow: v, role: 'challenge' }));
-    return items;
-  }, [myVows, witnessingVows, challenges]);
+function getProgress(startsAt: string | null, endsAt: string | null): number | null {
+  if (!startsAt || !endsAt) return null;
+  const start = new Date(startsAt).getTime();
+  const end = new Date(endsAt).getTime();
+  if (isNaN(start) || isNaN(end) || end <= start) return null;
+  const now = Date.now();
+  return clamp((now - start) / (end - start), 0, 1);
+}
 
-  const activeVows = useMemo(() => {
-    return myVows
-      .filter(v => v.status === 'active' || v.status === 'sealed')
-      .sort((a, b) => {
-        if (!a.ends_at) return 1;
-        if (!b.ends_at) return -1;
-        return new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime();
-      })
-      .map(v => ({ vow: v, role: 'maker' as const }));
-  }, [myVows]);
+function getProgressColor(progress: number): string {
+  if (progress < 0.5) return palette.gold;
+  if (progress < 0.8) return palette.warmAmber;
+  return palette.danger;
+}
 
-  const witnessItems = useMemo(() => {
-    return witnessingVows
-      .filter(v => v.status === 'active')
-      .sort((a, b) => {
-        if (!a.ends_at) return 1;
-        if (!b.ends_at) return -1;
-        return new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime();
-      })
-      .map(v => ({ vow: v, role: 'witness' as const }));
-  }, [witnessingVows]);
+function getCountdownText(endsAt: string | null): string | null {
+  if (!endsAt) return null;
+  const end = new Date(endsAt).getTime();
+  if (isNaN(end)) return null;
+  const diff = end - Date.now();
+  if (diff <= 0) {
+    const hoursAgo = Math.abs(Math.floor(diff / 3600000));
+    if (hoursAgo < 1) return "Time's up";
+    return `Ended ${hoursAgo}h ago`;
+  }
+  const days = Math.ceil(diff / 86400000);
+  if (days === 1) return '1 day left';
+  return `${days} days left`;
+}
 
-  const recentItems = useMemo(() => {
-    return recentVows.map(v => ({ vow: v, role: 'maker' as const }));
-  }, [recentVows]);
+function getStatusConfig(vow: Vow, sectionId: SectionId): { color: string; label: string } {
+  if (sectionId === 'attention' && vow.challenge_status === 'pending') {
+    return { color: '#FF8C00', label: 'Challenge received' };
+  }
+  switch (vow.status) {
+    case 'active': return { color: palette.success, label: 'Active' };
+    case 'sealed': return { color: palette.gold, label: 'Sealed' };
+    case 'awaiting_verdict': return { color: palette.warmAmber, label: 'Verdict due' };
+    case 'kept': return { color: palette.success, label: 'Kept \u2713' };
+    case 'broken': return { color: palette.danger, label: 'Broken \u2717' };
+    case 'voided': return { color: palette.textMuted, label: 'Withdrawn' };
+    default: return { color: palette.textMuted, label: vow.status };
+  }
+}
 
-  const sections = useMemo(() => {
-    const s: Section[] = [];
-    if (needsAttention.length > 0) s.push({ key: 'attention', title: 'NEEDS ATTENTION', data: needsAttention });
-    if (activeVows.length > 0) s.push({ key: 'active', title: 'YOUR VOWS', data: activeVows });
-    if (witnessItems.length > 0) s.push({ key: 'witnessing', title: 'WITNESSING', data: witnessItems });
-    if (recentItems.length > 0) s.push({ key: 'recent', title: 'RECENT', data: recentItems });
-    return s;
-  }, [needsAttention, activeVows, witnessItems, recentItems]);
+// ---------------------------------------------------------------------------
+// VowCard
+// ---------------------------------------------------------------------------
 
-  const flatData = useMemo(() => {
-    const items: ({ type: 'header'; title: string; key: string } | { type: 'card'; vow: VowRow; role: 'maker' | 'witness' | 'challenge'; key: string })[] = [];
-    for (const section of sections) {
-      items.push({ type: 'header', title: section.title, key: `header-${section.key}` });
-      for (const item of section.data) {
-        items.push({ type: 'card', vow: item.vow, role: item.role, key: `card-${item.vow.id}-${item.role}` });
-      }
+function VowCard({
+  vow,
+  sectionId,
+  onAcceptChallenge,
+  onDeclineChallenge,
+}: {
+  vow: Vow;
+  sectionId: SectionId;
+  onAcceptChallenge: (token: string) => void;
+  onDeclineChallenge: (token: string) => void;
+}) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const statusConfig = getStatusConfig(vow, sectionId);
+  const progress = getProgress(vow.starts_at, vow.ends_at);
+  const countdown = getCountdownText(vow.ends_at);
+  const stakeLabel = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} stake` : 'no stake';
+  const isChallenge = sectionId === 'attention' && vow.challenge_status === 'pending';
+  const personLabel = sectionId === 'witnessing' ? "You're witnessing" : vow.witness_name;
+
+  const handlePressIn = () => {
+    Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true, speed: 40, bounciness: 4 }).start();
+  };
+  const handlePressOut = () => {
+    Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
+  };
+  const handlePress = () => {
+    router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
+  };
+
+  return (
+    <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+      <Pressable
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.card}
+      >
+        {/* Vow text */}
+        <Text style={styles.cardText} numberOfLines={2}>
+          {vow.refined_text || vow.raw_input}
+        </Text>
+
+        {/* Status row */}
+        <View style={styles.statusRow}>
+          <View style={[styles.statusDot, { backgroundColor: statusConfig.color }]} />
+          <Text style={[styles.statusLabel, { color: statusConfig.color }]}>{statusConfig.label}</Text>
+          {countdown ? (
+            <Text style={styles.countdown}>{countdown}</Text>
+          ) : null}
+        </View>
+
+        {/* Progress bar */}
+        {progress !== null ? (
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${Math.round(progress * 100)}%`,
+                  backgroundColor: getProgressColor(progress),
+                },
+              ]}
+            />
+          </View>
+        ) : null}
+
+        {/* Meta row */}
+        <View style={styles.metaRow}>
+          {personLabel ? <Text style={styles.metaText}>{personLabel}</Text> : null}
+          {personLabel ? <Text style={styles.metaDot}>{'\u00B7'}</Text> : null}
+          <Text style={styles.metaText}>{stakeLabel}</Text>
+        </View>
+
+        {/* Challenge accept/decline buttons */}
+        {isChallenge && vow.challenge_invite_token ? (
+          <View style={styles.challengeActions}>
+            <Pressable
+              style={styles.acceptBtn}
+              onPress={() => onAcceptChallenge(vow.challenge_invite_token!)}
+              accessibilityLabel="Accept challenge"
+            >
+              <Text style={styles.acceptBtnText}>Accept</Text>
+            </Pressable>
+            <Pressable
+              style={styles.declineBtn}
+              onPress={() => onDeclineChallenge(vow.challenge_invite_token!)}
+              accessibilityLabel="Decline challenge"
+            >
+              <Text style={styles.declineBtnText}>Decline</Text>
+            </Pressable>
+          </View>
+        ) : null}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Dashboard Screen
+// ---------------------------------------------------------------------------
+
+export default function VowDashboard() {
+  const { displayName } = useAuth();
+
+  const [myVows, setMyVows] = useState<Vow[]>([]);
+  const [witnessingVows, setWitnessingVows] = useState<Vow[]>([]);
+  const [challenges, setChallenges] = useState<Vow[]>([]);
+  const [recentVows, setRecentVows] = useState<Vow[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
+
+  const fetchAll = useCallback(async () => {
+    try {
+      const [my, witnessing, incoming, recent] = await Promise.all([
+        getMyVows(),
+        getWitnessingVows(),
+        getIncomingChallenges(),
+        getRecentVows(5),
+      ]);
+      setMyVows(my as Vow[]);
+      setWitnessingVows(witnessing as Vow[]);
+      setChallenges(incoming as Vow[]);
+      setRecentVows(recent as Vow[]);
+      setFetchError(false);
+    } catch (e) {
+      console.log('[Dashboard] fetch error:', e);
+      setFetchError(true);
     }
-    return items;
-  }, [sections]);
-
-  const handleRefresh = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: ['myVows'] });
-    void queryClient.invalidateQueries({ queryKey: ['witnessingVows'] });
-    void queryClient.invalidateQueries({ queryKey: ['challenges'] });
-    void queryClient.invalidateQueries({ queryKey: ['recentVows'] });
-  }, [queryClient]);
-
-  const handleNewVow = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/');
   }, []);
 
-  const firstName = displayName?.split(' ')[0] ?? 'there';
-  const isEmpty = sections.length === 0 && !isLoading;
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchAll().finally(() => setLoading(false));
+    }, [fetchAll])
+  );
 
-  const renderItem = useCallback(({ item }: { item: typeof flatData[number] }) => {
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    await fetchAll();
+    setRefreshing(false);
+  }, [fetchAll]);
+
+  const handleAcceptChallenge = useCallback(async (token: string) => {
+    try {
+      const result = await acceptChallenge(token);
+      if (result.success) {
+        await fetchAll();
+      } else {
+        Alert.alert('Error', result.error || 'Could not accept challenge.');
+      }
+    } catch {
+      Alert.alert('Error', 'Something went wrong.');
+    }
+  }, [fetchAll]);
+
+  const handleDeclineChallenge = useCallback(async (token: string) => {
+    Alert.alert('Decline challenge?', 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Decline',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const result = await declineChallenge(token);
+            if (result.success) {
+              await fetchAll();
+            } else {
+              Alert.alert('Error', result.error || 'Could not decline challenge.');
+            }
+          } catch {
+            Alert.alert('Error', 'Something went wrong.');
+          }
+        },
+      },
+    ]);
+  }, [fetchAll]);
+
+  // ---------------------------------------------------------------------------
+  // Build sections
+  // ---------------------------------------------------------------------------
+
+  const listData: ListItem[] = useMemo(() => {
+    const attentionItems: Vow[] = [
+      ...myVows.filter((v) => v.status === 'awaiting_verdict'),
+      ...witnessingVows.filter((v) => v.status === 'awaiting_verdict'),
+      ...challenges,
+    ];
+
+    const yourVowItems = myVows
+      .filter((v) => v.status === 'sealed' || v.status === 'active')
+      .sort((a, b) => {
+        if (!a.ends_at) return 1;
+        if (!b.ends_at) return -1;
+        return new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime();
+      });
+
+    const witnessItems = witnessingVows.filter((v) => v.status === 'active');
+
+    const recentItems = recentVows.slice(0, 5);
+
+    const data: ListItem[] = [];
+
+    if (attentionItems.length > 0) {
+      data.push({ type: 'header', sectionId: 'attention', title: 'NEEDS ATTENTION' });
+      attentionItems.forEach((vow) => data.push({ type: 'item', sectionId: 'attention', vow }));
+    }
+    if (yourVowItems.length > 0) {
+      data.push({ type: 'header', sectionId: 'yours', title: 'YOUR VOWS' });
+      yourVowItems.forEach((vow) => data.push({ type: 'item', sectionId: 'yours', vow }));
+    }
+    if (witnessItems.length > 0) {
+      data.push({ type: 'header', sectionId: 'witnessing', title: 'WITNESSING' });
+      witnessItems.forEach((vow) => data.push({ type: 'item', sectionId: 'witnessing', vow }));
+    }
+    if (recentItems.length > 0) {
+      data.push({ type: 'header', sectionId: 'recent', title: 'RECENT' });
+      recentItems.forEach((vow) => data.push({ type: 'item', sectionId: 'recent', vow }));
+    }
+
+    return data;
+  }, [myVows, witnessingVows, challenges, recentVows]);
+
+  const isEmpty = listData.length === 0;
+
+  // ---------------------------------------------------------------------------
+  // Stats
+  // ---------------------------------------------------------------------------
+
+  const activeCount = myVows.filter((v) => v.status === 'active' || v.status === 'sealed' || v.status === 'awaiting_verdict').length;
+  const keptCount = myVows.filter((v) => v.status === 'kept').length;
+  // Streak: consecutive kept vows from most recent
+  let streakCount = 0;
+  const sorted = [...myVows]
+    .filter((v) => v.status === 'kept' || v.status === 'broken')
+    .sort((a, b) => {
+      const aDate = a.verdict_at || a.created_at;
+      const bDate = b.verdict_at || b.created_at;
+      return new Date(bDate).getTime() - new Date(aDate).getTime();
+    });
+  for (const v of sorted) {
+    if (v.status === 'kept') streakCount++;
+    else break;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Render
+  // ---------------------------------------------------------------------------
+
+  const renderItem = ({ item }: { item: ListItem }) => {
     if (item.type === 'header') {
       return (
-        <View style={styles.sectionHeader}>
-          <Text style={[
-            styles.sectionTitle,
-            item.title === 'NEEDS ATTENTION' && styles.sectionTitleAttention,
-          ]}>{item.title}</Text>
+        <View style={styles.sectionHeaderWrap}>
+          <Text style={styles.sectionHeader}>{item.title}</Text>
         </View>
       );
     }
     return (
-      <View style={styles.cardWrapper}>
-        <VowCard vow={item.vow} role={item.role} />
+      <View style={styles.cardWrap}>
+        <VowCard
+          vow={item.vow}
+          sectionId={item.sectionId}
+          onAcceptChallenge={handleAcceptChallenge}
+          onDeclineChallenge={handleDeclineChallenge}
+        />
       </View>
     );
-  }, []);
+  };
 
-  const keyExtractor = useCallback((item: typeof flatData[number]) => item.key, []);
+  const keyExtractor = (item: ListItem) =>
+    item.type === 'header' ? `header-${item.sectionId}` : `item-${item.sectionId}-${item.vow.id}`;
 
-  const btnScale = useRef(new Animated.Value(1)).current;
+  const ListHeader = () => (
+    <View style={styles.headerArea}>
+      {/* Nav row */}
+      <View style={styles.navRow}>
+        <View style={{ flex: 1 }} />
+        <Pressable
+          style={styles.navBtn}
+          onPress={() => router.push('/history')}
+          hitSlop={8}
+          accessibilityLabel="History"
+        >
+          <History color={palette.textSecondary} size={20} />
+        </Pressable>
+        <Pressable
+          style={styles.navBtn}
+          onPress={() => router.push('/settings')}
+          hitSlop={8}
+          accessibilityLabel="Settings"
+        >
+          <Settings color={palette.textSecondary} size={20} />
+        </Pressable>
+      </View>
+
+      {/* Greeting */}
+      <Text style={styles.greeting}>
+        {displayName ? `Hey ${displayName}` : 'Your Vows'}
+      </Text>
+
+      {/* Stats */}
+      {!isEmpty ? (
+        <Text style={styles.statsText}>
+          {activeCount} active{' \u00B7 '}{keptCount} kept{' \u00B7 '}{streakCount} streak
+        </Text>
+      ) : null}
+    </View>
+  );
+
+  const ListFooter = () => {
+    if (isEmpty) return null;
+    return (
+      <View style={styles.footerWrap}>
+        <Pressable
+          style={({ pressed }) => [styles.makeVowBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+          onPress={() => router.push('/')}
+        >
+          <LinearGradient
+            colors={[palette.goldBright, palette.gold, palette.goldDeep]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.makeVowBtnGradient}
+          >
+            <Text style={styles.makeVowBtnText}>+ Make a Vow</Text>
+          </LinearGradient>
+        </Pressable>
+      </View>
+    );
+  };
+
+  const EmptyState = () => (
+    <View style={styles.emptyWrap}>
+      <Text style={styles.emptyTitle}>No vows yet</Text>
+      <Text style={styles.emptySubtitle}>
+        Make your first vow and put something on the line.
+      </Text>
+      <Pressable
+        style={({ pressed }) => [styles.makeVowBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+        onPress={() => router.push('/')}
+      >
+        <LinearGradient
+          colors={[palette.goldBright, palette.gold, palette.goldDeep]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.makeVowBtnGradient}
+        >
+          <Text style={styles.makeVowBtnText}>Make a Vow</Text>
+        </LinearGradient>
+      </Pressable>
+    </View>
+  );
+
+  if (loading && listData.length === 0) {
+    return (
+      <View style={styles.screen}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <LinearGradient
+          colors={[palette.bg, '#08101A', palette.bgSecondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <SafeAreaView style={styles.loadingWrap}>
+          <ActivityIndicator color={palette.gold} size="large" />
+        </SafeAreaView>
+      </View>
+    );
+  }
+
+  if (fetchError && listData.length === 0) {
+    return (
+      <View style={styles.screen}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <LinearGradient
+          colors={[palette.bg, '#08101A', palette.bgSecondary]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+        <SafeAreaView style={styles.loadingWrap}>
+          <Text style={styles.errorTitle}>Something went wrong</Text>
+          <Text style={styles.errorSubtitle}>Could not load your vows. Please try again.</Text>
+          <Pressable
+            style={styles.retryBtn}
+            onPress={() => {
+              setLoading(true);
+              setFetchError(false);
+              fetchAll().finally(() => setLoading(false));
+            }}
+            accessibilityLabel="Retry loading vows"
+          >
+            <Text style={styles.retryBtnText}>Retry</Text>
+          </Pressable>
+        </SafeAreaView>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ headerShown: false }} />
       <LinearGradient
-        colors={['#05070B', '#080E18', '#0A0D12']}
+        colors={[palette.bg, '#08101A', palette.bgSecondary]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
       />
-      <View pointerEvents="none" style={styles.ambientOrb} />
-
-      <SafeAreaView style={styles.safe}>
-        <Animated.View style={{ flex: 1, opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <View style={styles.headerSection}>
-            {canGoBack && (
-              <Pressable
-                onPress={() => {
-                  void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.back();
-                }}
-                style={styles.backButton}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                testID="dashboard-back"
-              >
-                <ArrowLeft color={palette.textSecondary} size={20} />
-                <Text style={styles.backText}>Back</Text>
-              </Pressable>
-            )}
-            <Text style={styles.greeting}>Hey {firstName}</Text>
-            <View style={styles.statsRow}>
-              {activeCount > 0 && (
-                <View style={styles.statChip}>
-                  <View style={[styles.statDot, { backgroundColor: '#52D69A' }]} />
-                  <Text style={styles.statText}>{activeCount} active</Text>
-                </View>
-              )}
-              {keptCount > 0 && (
-                <View style={styles.statChip}>
-                  <View style={[styles.statDot, { backgroundColor: palette.gold }]} />
-                  <Text style={styles.statText}>{keptCount} kept</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {isLoading ? (
-            <View style={styles.loadingWrap}>
-              <ActivityIndicator color={palette.goldBright} size="large" />
-            </View>
-          ) : isEmpty ? (
-            <View style={styles.emptyWrap}>
-              <View style={styles.emptyIconWrap}>
-                <Sparkles color={palette.goldBright} size={32} />
-              </View>
-              <Text style={styles.emptyTitle}>No vows yet</Text>
-              <Text style={styles.emptyDesc}>Make your first vow and put something on the line.</Text>
-            </View>
-          ) : (
-            <FlatList
-              data={flatData}
-              renderItem={renderItem}
-              keyExtractor={keyExtractor}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-              refreshControl={
-                <RefreshControl
-                  refreshing={isRefreshing}
-                  onRefresh={handleRefresh}
-                  tintColor={palette.goldBright}
-                  colors={[palette.goldBright]}
-                />
-              }
+      <View pointerEvents="none" style={styles.orbLarge} />
+      <View pointerEvents="none" style={styles.orbSmall} />
+      <SafeAreaView style={{ flex: 1 }}>
+        <FlatList
+          data={listData}
+          renderItem={renderItem}
+          keyExtractor={keyExtractor}
+          ListHeaderComponent={ListHeader}
+          ListFooterComponent={isEmpty ? EmptyState : ListFooter}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={palette.gold}
             />
-          )}
-        </Animated.View>
-
-        <View style={styles.fabWrap}>
-          <Animated.View style={{ transform: [{ scale: btnScale }] }}>
-            <Pressable
-              onPress={handleNewVow}
-              onPressIn={() => {
-                Animated.spring(btnScale, { toValue: 0.92, useNativeDriver: true, speed: 40, bounciness: 4 }).start();
-              }}
-              onPressOut={() => {
-                Animated.spring(btnScale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
-              }}
-              testID="dashboard-new-vow"
-            >
-              <LinearGradient
-                colors={[palette.goldBright, palette.gold, palette.goldDeep]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.fabGradient}
-              >
-                <Plus color="#0B0D11" size={18} strokeWidth={3} />
-                <Text style={styles.fabText}>Make a Vow</Text>
-              </LinearGradient>
-            </Pressable>
-          </Animated.View>
-        </View>
+          }
+        />
       </SafeAreaView>
     </View>
   );
 }
 
+// ---------------------------------------------------------------------------
+// Styles
+// ---------------------------------------------------------------------------
+
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#030508',
+    backgroundColor: palette.bg,
   },
-  safe: {
-    flex: 1,
-  },
-  ambientOrb: {
+  orbLarge: {
     position: 'absolute',
-    top: -60,
-    right: -30,
-    width: 240,
-    height: 240,
-    borderRadius: 240,
-    backgroundColor: 'rgba(212,162,79,0.12)',
-    opacity: 0.6,
+    top: -90,
+    right: -40,
+    width: 260,
+    height: 260,
+    borderRadius: 260,
+    backgroundColor: palette.goldGlow,
+    opacity: 0.7,
   },
-  backButton: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    gap: 4,
-    paddingVertical: 6,
-    marginBottom: 2,
-  },
-  backText: {
-    color: palette.textSecondary,
-    fontSize: 15,
-    fontWeight: '500' as const,
-  },
-  headerSection: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 16,
-    gap: 10,
-  },
-  greeting: {
-    color: '#F5F5F7',
-    fontSize: 28,
-    fontWeight: '700' as const,
-    fontFamily: serifFont,
-    letterSpacing: -0.8,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  statChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.06)',
-  },
-  statDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  statText: {
-    color: '#8A8A8E',
-    fontSize: 13,
-    fontWeight: '500' as const,
+  orbSmall: {
+    position: 'absolute',
+    top: 180,
+    left: -50,
+    width: 160,
+    height: 160,
+    borderRadius: 160,
+    backgroundColor: 'rgba(94,124,250,0.12)',
   },
   loadingWrap: {
     flex: 1,
-    alignItems: 'center',
     justifyContent: 'center',
-  },
-  emptyWrap: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 40,
     gap: 12,
   },
-  emptyIconWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
-    backgroundColor: 'rgba(212,162,79,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 4,
+  errorTitle: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '700',
+    fontFamily: serifFont,
+    textAlign: 'center',
   },
-  emptyTitle: {
-    color: '#F5F5F7',
-    fontSize: 20,
-    fontWeight: '700' as const,
+  errorSubtitle: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    textAlign: 'center',
+    paddingHorizontal: 40,
+    marginBottom: 8,
   },
-  emptyDesc: {
-    color: '#8A8A8E',
+  retryBtn: {
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 14,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  retryBtnText: {
+    color: palette.text,
     fontSize: 15,
-    textAlign: 'center' as const,
-    lineHeight: 22,
+    fontWeight: '600',
   },
   listContent: {
-    paddingBottom: 100,
+    paddingBottom: 40,
   },
-  sectionHeader: {
+
+  // Header
+  headerArea: {
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 8,
+  },
+  navRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginBottom: 16,
+  },
+  navBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  greeting: {
+    color: palette.text,
+    fontSize: 24,
+    fontWeight: '700',
+    fontFamily: serifFont,
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  statsText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 8,
+  },
+
+  // Sections
+  sectionHeaderWrap: {
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 10,
   },
-  sectionTitle: {
-    color: '#8A8A8E',
-    fontSize: 12,
-    fontWeight: '700' as const,
-    letterSpacing: 1.2,
+  sectionHeader: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
   },
-  sectionTitleAttention: {
-    color: '#F0C86E',
-  },
-  cardWrapper: {
-    paddingHorizontal: 16,
+
+  // Cards
+  cardWrap: {
+    paddingHorizontal: 20,
     paddingBottom: 10,
   },
-  fabWrap: {
-    position: 'absolute',
-    bottom: 32,
-    left: 20,
-    right: 20,
+  card: {
+    backgroundColor: palette.whiteOverlay,
+    borderColor: palette.border,
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 16,
+    gap: 10,
   },
-  fabGradient: {
+  cardText: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: serifFont,
+    lineHeight: 22,
+  },
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 8,
-    minHeight: 56,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  countdown: {
+    color: palette.textSecondary,
+    fontSize: 13,
+    fontWeight: '500',
+    marginLeft: 'auto',
+  },
+
+  // Progress bar
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
+  },
+
+  // Meta
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  metaText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  metaDot: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+
+  // Challenge actions
+  challengeActions: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 4,
+  },
+  acceptBtn: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: 'rgba(82,214,154,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(82,214,154,0.25)',
+  },
+  acceptBtnText: {
+    color: palette.success,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  declineBtn: {
+    flex: 1,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  declineBtnText: {
+    color: palette.textMuted,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  // Empty state
+  emptyWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    alignItems: 'center',
+    gap: 12,
+  },
+  emptyTitle: {
+    color: palette.text,
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: serifFont,
+  },
+  emptySubtitle: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+
+  // Make a vow button
+  footerWrap: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 8,
+  },
+  makeVowBtn: {
     borderRadius: 18,
+    overflow: 'hidden',
     shadowColor: palette.gold,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.28,
+    shadowRadius: 24,
     elevation: 10,
   },
-  fabText: {
+  makeVowBtnGradient: {
+    minHeight: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  makeVowBtnText: {
     color: '#0B0D11',
-    fontSize: 16,
-    fontWeight: '800' as const,
+    fontSize: 15,
+    fontWeight: '800',
     letterSpacing: 0.2,
   },
 });

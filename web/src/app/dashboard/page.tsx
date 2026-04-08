@@ -1,0 +1,306 @@
+'use client';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { Settings, Plus } from 'lucide-react';
+import { RitualScreen, HeaderBadge, SectionLabel, StatPill, PrimaryButton, FadeUp } from '@/components/ui';
+import VowCard from '@/components/vow-card';
+import { useAuth } from '@/providers/auth-provider';
+import { supabase } from '@/lib/supabase';
+import type { Database } from '@/lib/types';
+
+type VowRow = Database['public']['Tables']['vows']['Row'];
+
+export default function DashboardPage() {
+  const router = useRouter();
+  const { isAuthenticated, loading: authLoading, displayName } = useAuth();
+  const [myVows, setMyVows] = useState<VowRow[]>([]);
+  const [witnessingVows, setWitnessingVows] = useState<VowRow[]>([]);
+  const [challenges, setChallenges] = useState<VowRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const fetchData = useCallback(async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+
+    const [myRes, witnessRes, challengeRes] = await Promise.all([
+      supabase
+        .from('vows')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('vows')
+        .select('*')
+        .eq('witness_user_id', session.user.id)
+        .in('status', ['active', 'awaiting_verdict'])
+        .order('ends_at', { ascending: true }),
+      supabase
+        .from('vows')
+        .select('*')
+        .eq('target_user_id', session.user.id)
+        .eq('challenge_status', 'pending')
+        .order('created_at', { ascending: false }),
+    ]);
+
+    setMyVows(myRes.data ?? []);
+    setWitnessingVows(witnessRes.data ?? []);
+    setChallenges(challengeRes.data ?? []);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      router.replace('/');
+      return;
+    }
+    fetchData();
+    intervalRef.current = setInterval(fetchData, 30000);
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [isAuthenticated, authLoading, router, fetchData]);
+
+  // Section derivations
+  const needsAttention = [
+    ...myVows.filter(v => v.status === 'awaiting_verdict'),
+    ...witnessingVows.filter(v => v.status === 'awaiting_verdict'),
+    ...challenges,
+  ];
+  const active = myVows
+    .filter(v => ['active', 'sealed'].includes(v.status))
+    .sort((a, b) => (a.ends_at ?? '').localeCompare(b.ends_at ?? ''));
+  const witnessing = witnessingVows.filter(v => v.status === 'active');
+  const recent = myVows.filter(v => ['kept', 'broken', 'voided'].includes(v.status)).slice(0, 5);
+
+  // Stats
+  const activeCount = myVows.filter(v => ['active', 'sealed', 'awaiting_verdict'].includes(v.status)).length;
+  const keptCount = myVows.filter(v => v.status === 'kept').length;
+  const streak = (() => {
+    const completed = myVows.filter(v => ['kept', 'broken'].includes(v.status));
+    let count = 0;
+    for (const v of completed) {
+      if (v.status === 'kept') count++;
+      else break;
+    }
+    return count;
+  })();
+
+  const handleAcceptChallenge = async (vowId: string) => {
+    setActionBusy(vowId);
+    try {
+      const vow = challenges.find(v => v.id === vowId);
+      if (!vow?.challenge_invite_token) return;
+      await supabase.functions.invoke('accept-challenge', {
+        body: { token: vow.challenge_invite_token, action: 'accept' },
+      });
+      await fetchData();
+    } catch (err) {
+      console.error('Accept challenge failed:', err);
+    } finally {
+      setActionBusy(null);
+    }
+  };
+
+  const handleDeclineChallenge = async (vowId: string) => {
+    if (!confirm('Decline this challenge? The vow will be withdrawn.')) return;
+    setActionBusy(vowId);
+    try {
+      const vow = challenges.find(v => v.id === vowId);
+      if (!vow?.challenge_invite_token) return;
+      await supabase.functions.invoke('accept-challenge', {
+        body: { token: vow.challenge_invite_token, action: 'decline' },
+      });
+      await fetchData();
+    } catch (err) {
+      console.error('Decline challenge failed:', err);
+    } finally {
+      setActionBusy(null);
+    }
+  };
+
+  const getRoleForVow = (vow: VowRow, section: 'mine' | 'witnessing' | 'challenge'): 'maker' | 'witness' | 'target' => {
+    if (section === 'witnessing') return 'witness';
+    if (section === 'challenge') return 'target';
+    return 'maker';
+  };
+
+  if (loading || authLoading) {
+    return (
+      <RitualScreen>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
+        </div>
+      </RitualScreen>
+    );
+  }
+
+  const isEmpty = myVows.length === 0 && witnessingVows.length === 0 && challenges.length === 0;
+
+  if (isEmpty) {
+    return (
+      <RitualScreen
+        footer={<PrimaryButton label="+ Make a Vow" onPress={() => router.push('/create')} />}
+      >
+        <FadeUp>
+          <div className="flex items-center justify-between">
+            <HeaderBadge />
+            <button
+              onClick={() => router.push('/settings')}
+              aria-label="Settings"
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--text-secondary)' }} />
+            </button>
+          </div>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <div className="flex flex-col items-center justify-center min-h-[50vh] gap-5">
+            <p className="text-[20px] font-serif font-bold text-center" style={{ color: 'var(--text)' }}>
+              No vows yet.
+            </p>
+            <p className="text-[15px] text-center" style={{ color: 'var(--text-secondary)' }}>
+              Make your first commitment.
+            </p>
+            <div className="flex flex-wrap justify-center gap-2 mt-2">
+              {['No phone in bed', 'Exercise 3x/week', 'Read 20 pages/day'].map(ex => (
+                <div
+                  key={ex}
+                  className="px-3.5 py-2.5 rounded-full"
+                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+                >
+                  <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>{ex}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </FadeUp>
+      </RitualScreen>
+    );
+  }
+
+  return (
+    <RitualScreen
+      footer={
+        <button
+          onClick={() => router.push('/create')}
+          className="w-full rounded-[18px] min-h-[56px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"
+          style={{
+            background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+            boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+          }}
+        >
+          <Plus className="w-5 h-5" color="#0B0D11" />
+          <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>Make a Vow</span>
+        </button>
+      }
+    >
+      {/* Header */}
+      <FadeUp>
+        <div className="flex items-center justify-between">
+          <HeaderBadge />
+          <div className="flex items-center gap-3">
+            {displayName && (
+              <span className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                {displayName}
+              </span>
+            )}
+            <button
+              onClick={() => router.push('/settings')}
+              aria-label="Settings"
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--text-secondary)' }} />
+            </button>
+          </div>
+        </div>
+      </FadeUp>
+
+      {/* Stats */}
+      <FadeUp delay={0.05}>
+        <div className="flex gap-3">
+          <StatPill value={String(activeCount)} label="Active" />
+          <StatPill value={String(keptCount)} label="Kept" tone="success" />
+          <StatPill value={streak > 0 ? `${streak}` : '—'} label="Streak" />
+        </div>
+      </FadeUp>
+
+      {/* Needs Attention */}
+      {needsAttention.length > 0 && (
+        <FadeUp delay={0.1}>
+          <div className="flex flex-col gap-3">
+            <SectionLabel>Needs Attention</SectionLabel>
+            {needsAttention.map(v => {
+              const isChallenge = challenges.some(c => c.id === v.id);
+              const isWitnessing = witnessingVows.some(w => w.id === v.id);
+              const role = isChallenge ? 'target' : isWitnessing ? 'witness' : 'maker';
+              return (
+                <VowCard
+                  key={v.id}
+                  vow={v}
+                  role={role}
+                  onTap={() => router.push(`/vow/${v.id}`)}
+                  onAcceptChallenge={() => handleAcceptChallenge(v.id)}
+                  onDeclineChallenge={() => handleDeclineChallenge(v.id)}
+                />
+              );
+            })}
+          </div>
+        </FadeUp>
+      )}
+
+      {/* Active */}
+      {active.length > 0 && (
+        <FadeUp delay={0.15}>
+          <div className="flex flex-col gap-3">
+            <SectionLabel>Active</SectionLabel>
+            {active.map(v => (
+              <VowCard
+                key={v.id}
+                vow={v}
+                role="maker"
+                onTap={() => router.push(`/vow/${v.id}`)}
+              />
+            ))}
+          </div>
+        </FadeUp>
+      )}
+
+      {/* Witnessing */}
+      {witnessing.length > 0 && (
+        <FadeUp delay={0.2}>
+          <div className="flex flex-col gap-3">
+            <SectionLabel>Witnessing</SectionLabel>
+            {witnessing.map(v => (
+              <VowCard
+                key={v.id}
+                vow={v}
+                role="witness"
+                onTap={() => router.push(`/vow/${v.id}`)}
+              />
+            ))}
+          </div>
+        </FadeUp>
+      )}
+
+      {/* Recent */}
+      {recent.length > 0 && (
+        <FadeUp delay={0.25}>
+          <div className="flex flex-col gap-3">
+            <SectionLabel>Recent</SectionLabel>
+            {recent.map(v => (
+              <VowCard
+                key={v.id}
+                vow={v}
+                role="maker"
+                onTap={() => router.push(`/vow/${v.id}`)}
+              />
+            ))}
+          </div>
+        </FadeUp>
+      )}
+    </RitualScreen>
+  );
+}

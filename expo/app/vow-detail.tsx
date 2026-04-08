@@ -1,451 +1,608 @@
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
-import * as Linking from 'expo-linking';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import {
-  ArrowLeft,
-  CheckCircle,
-  Clock,
-  MessageCircle,
-  Share2,
-  ShieldOff,
-  XCircle,
-} from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Animated,
-  Platform,
+  Easing,
   Pressable,
+  SafeAreaView,
   ScrollView,
   Share,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { palette, serifFont } from '@/constants/unbreakable';
-import {
-  getVowDetail,
-  getVowTimeline,
-  submitCheckIn,
-  voidVowV2,
-} from '@/lib/vow-api';
-import type { AuditEvent, VowRow } from '@/lib/vow-api';
+import { getVowDetail, getVowTimeline, submitCheckIn, voidVowV2 } from '@/lib/vow-api';
 import { useAuth } from '@/providers/auth-provider';
+import type { AuditEvent } from '@/types/database';
 
-const EVENT_ICONS: Record<string, string> = {
-  vow_sealed: '🔒',
-  witness_invited: '📩',
-  witness_accepted: '✅',
-  challenge_sent: '⚔️',
-  challenge_accepted: '✅',
-  check_in: '📋',
-  verdict_submitted: '⚖️',
-  vow_voided: '🚫',
-  refund_issued: '💰',
+type VowRow = {
+  id: string;
+  user_id: string;
+  raw_input: string;
+  refined_text: string;
+  status: string;
+  vow_type?: string;
+  witness_name: string;
+  witness_phone: string | null;
+  witness_accepted_at: string | null;
+  witness_declined: boolean;
+  stake_amount: number;
+  consequence: string;
+  destination: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  verdict: string | null;
+  verdict_at: string | null;
+  sealed_at: string | null;
+  created_at: string;
 };
 
-function eventDescription(event: AuditEvent): string {
-  const meta = event.metadata ?? {};
-  switch (event.event_type) {
-    case 'vow_sealed': return 'Vow sealed';
-    case 'witness_invited': return 'Witness invited';
-    case 'witness_accepted': return `${meta.name ?? 'Witness'} accepted`;
-    case 'challenge_sent': return 'Challenge sent';
-    case 'challenge_accepted': return 'Challenge accepted';
-    case 'check_in': return `Checked in: ${meta.type ?? 'update'}`;
-    case 'verdict_submitted': return `Verdict: ${meta.verdict ?? 'unknown'}`;
-    case 'vow_voided': return 'Vow withdrawn';
-    case 'refund_issued': return 'Refund issued';
-    default: return event.event_type.replace(/_/g, ' ');
-  }
-}
+const EVENT_META: Record<string, { emoji: string; label: string }> = {
+  vow_sealed: { emoji: '\u{1F512}', label: 'Vow sealed' },
+  witness_invited: { emoji: '\u{1F4E9}', label: 'Witness invited' },
+  witness_accepted: { emoji: '\u2705', label: 'Witness accepted' },
+  witness_declined: { emoji: '\u274C', label: 'Witness declined' },
+  challenge_sent: { emoji: '\u2694\uFE0F', label: 'Challenge sent' },
+  challenge_accepted: { emoji: '\u2705', label: 'Challenge accepted' },
+  challenge_declined: { emoji: '\u274C', label: 'Challenge declined' },
+  check_in: { emoji: '\u{1F4CB}', label: 'Checked in' },
+  verdict_submitted: { emoji: '\u2696\uFE0F', label: 'Verdict' },
+  vow_voided: { emoji: '\u{1F6AB}', label: 'Vow withdrawn' },
+  refund_issued: { emoji: '\u{1F4B0}', label: 'Refund issued' },
+};
 
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days === 1) return 'yesterday';
-  return `${days}d ago`;
+  const seconds = Math.floor(diff / 1000);
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return '—';
-  return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  if (!dateStr) return '--';
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
 }
 
-function getStatusInfo(vow: VowRow) {
-  switch (vow.status) {
-    case 'active': return { color: '#52D69A', label: 'Active', bg: 'rgba(82,214,154,0.08)' };
-    case 'awaiting_verdict': return { color: '#F0C86E', label: 'Verdict due', bg: 'rgba(240,200,110,0.08)' };
-    case 'kept': return { color: '#52D69A', label: 'Kept', bg: 'rgba(82,214,154,0.08)' };
-    case 'broken': return { color: '#FF7B7B', label: 'Broken', bg: 'rgba(255,123,123,0.08)' };
-    case 'voided': return { color: '#667085', label: 'Withdrawn', bg: 'rgba(102,112,133,0.08)' };
-    default: return { color: '#667085', label: vow.status, bg: 'rgba(102,112,133,0.08)' };
+function getEventLabel(event: AuditEvent, vow: VowRow | null): string {
+  const meta = EVENT_META[event.event_type];
+  if (!meta) return event.event_type;
+
+  if (event.event_type === 'check_in' && event.metadata?.type) {
+    return `Checked in: ${event.metadata.type}`;
+  }
+  if (event.event_type === 'verdict_submitted') {
+    const v = event.metadata?.verdict || vow?.verdict || '';
+    return v ? `Verdict: ${v}` : 'Verdict submitted';
+  }
+  return meta.label;
+}
+
+function getEventEmoji(eventType: string): string {
+  return EVENT_META[eventType]?.emoji ?? '\u{1F4CC}';
+}
+
+// --- Status helpers ---
+
+type StatusConfig = {
+  color: string;
+  label: string;
+  pulse: boolean;
+};
+
+function getStatusConfig(status: string): StatusConfig {
+  switch (status) {
+    case 'active':
+      return { color: palette.success, label: 'Active', pulse: false };
+    case 'awaiting_verdict':
+      return { color: palette.warmAmber, label: 'Awaiting verdict', pulse: true };
+    case 'kept':
+      return { color: palette.success, label: 'Kept', pulse: false };
+    case 'broken':
+      return { color: palette.danger, label: 'Broken', pulse: false };
+    case 'voided':
+      return { color: palette.textMuted, label: 'Withdrawn', pulse: false };
+    default:
+      return { color: palette.textSecondary, label: status, pulse: false };
   }
 }
 
-function getProgress(vow: VowRow): number {
-  if (!vow.starts_at || !vow.ends_at) return 0;
-  const start = new Date(vow.starts_at).getTime();
-  const end = new Date(vow.ends_at).getTime();
-  if (end <= start) return 100;
-  return Math.max(0, Math.min(100, ((Date.now() - start) / (end - start)) * 100));
-}
-
 function getProgressColor(pct: number): string {
-  if (pct < 50) return palette.gold;
-  if (pct < 80) return '#F0C86E';
-  return '#FF7B7B';
-}
-
-function getCountdown(vow: VowRow): string {
-  if (!vow.ends_at) return '';
-  const diff = new Date(vow.ends_at).getTime() - Date.now();
-  if (diff <= 0) return 'Time\'s up';
-  const days = Math.ceil(diff / 86400000);
-  if (days === 1) return 'Last day';
-  return `${days} days left`;
+  if (pct < 50) return palette.goldBright;
+  if (pct < 80) return palette.warmAmber;
+  return palette.danger;
 }
 
 function getWitnessBadge(vow: VowRow): { label: string; color: string } {
-  if (vow.witness_accepted_at) return { label: 'Accepted', color: '#52D69A' };
-  if (vow.witness_declined) return { label: 'Declined', color: '#FF7B7B' };
-  return { label: 'Pending', color: '#F0C86E' };
+  if (vow.witness_accepted_at) return { label: 'accepted', color: palette.success };
+  if (vow.witness_declined) return { label: 'declined', color: palette.danger };
+  return { label: 'pending', color: palette.warmAmber };
 }
+
+// 4-hour cooldown in ms
+const CHECK_IN_COOLDOWN = 4 * 60 * 60 * 1000;
 
 export default function VowDetailScreen() {
   const { vowId } = useLocalSearchParams<{ vowId: string }>();
   const { session } = useAuth();
-  const insets = useSafeAreaInsets();
-  const queryClient = useQueryClient();
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [lastCheckIn, setLastCheckIn] = useState<number>(0);
 
-  const vowQuery = useQuery({
-    queryKey: ['vowDetail', vowId],
-    queryFn: () => getVowDetail(vowId!),
-    enabled: !!vowId,
-  });
+  const [vow, setVow] = useState<VowRow | null>(null);
+  const [timeline, setTimeline] = useState<AuditEvent[]>([]);
+  const [loadError, setLoadError] = useState(false);
+  const [checkingIn, setCheckingIn] = useState(false);
+  const [withdrawing, setWithdrawing] = useState(false);
 
-  const timelineQuery = useQuery({
-    queryKey: ['vowTimeline', vowId],
-    queryFn: () => getVowTimeline(vowId!),
-    enabled: !!vowId,
-  });
+  // Pulse animation for awaiting_verdict
+  const pulseAnim = React.useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 450, useNativeDriver: true }).start();
-  }, [fadeAnim]);
+    if (vowId) {
+      getVowDetail(vowId)
+        .then((data) => {
+          if (data) setVow(data as unknown as VowRow);
+          else setLoadError(true);
+        })
+        .catch(() => setLoadError(true));
+      getVowTimeline(vowId)
+        .then(setTimeline)
+        .catch(console.error);
+    }
+  }, [vowId]);
 
-  const vow = vowQuery.data;
-  const timeline = timelineQuery.data ?? [];
-  const isMaker = vow?.user_id === session?.user?.id;
-  const isActive = vow?.status === 'active';
-  const canCheckIn = isMaker && isActive && (Date.now() - lastCheckIn > 4 * 3600000);
+  useEffect(() => {
+    if (vow?.status === 'awaiting_verdict') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 0.4, duration: 1000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1000, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+        ])
+      ).start();
+    }
+  }, [vow?.status, pulseAnim]);
 
-  const checkInMutation = useMutation({
-    mutationFn: (type: string) => submitCheckIn(vowId!, type),
-    onSuccess: () => {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setLastCheckIn(Date.now());
-      void queryClient.invalidateQueries({ queryKey: ['vowTimeline', vowId] });
-    },
-  });
+  const isMaker = session?.user?.id === vow?.user_id;
 
-  const voidMutation = useMutation({
-    mutationFn: () => voidVowV2(vowId!),
-    onSuccess: (result) => {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      void queryClient.invalidateQueries({ queryKey: ['vowDetail', vowId] });
-      void queryClient.invalidateQueries({ queryKey: ['myVows'] });
-      Alert.alert('Vow withdrawn', result.refunded ? 'Your stake will be refunded.' : 'This vow has been voided.');
-    },
-  });
+  // Calculate progress
+  const progress = useMemo(() => {
+    if (!vow?.starts_at || !vow?.ends_at) return 0;
+    const start = new Date(vow.starts_at).getTime();
+    const end = new Date(vow.ends_at).getTime();
+    const now = Date.now();
+    if (end <= start) return 100;
+    const pct = ((now - start) / (end - start)) * 100;
+    return Math.max(0, Math.min(100, pct));
+  }, [vow?.starts_at, vow?.ends_at]);
 
-  const handleWithdraw = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  // Countdown text
+  const countdown = useMemo(() => {
+    if (!vow?.ends_at) return 'No end date';
+    const end = new Date(vow.ends_at).getTime();
+    const now = Date.now();
+    if (vow.status === 'kept' || vow.status === 'broken' || vow.status === 'voided') return 'Ended';
+    if (now >= end) return "Time's up";
+    const daysLeft = Math.ceil((end - now) / 86400000);
+    return daysLeft === 1 ? '1 day left' : `${daysLeft} days left`;
+  }, [vow?.ends_at, vow?.status]);
+
+  // Check-in cooldown
+  const canCheckIn = useMemo(() => {
+    if (!isMaker || vow?.status !== 'active') return false;
+    const lastCheckIn = [...timeline].reverse().find((e) => e.event_type === 'check_in');
+    if (!lastCheckIn) return true;
+    return Date.now() - new Date(lastCheckIn.created_at).getTime() > CHECK_IN_COOLDOWN;
+  }, [isMaker, vow?.status, timeline]);
+
+  const cooldownRemaining = useMemo(() => {
+    if (canCheckIn) return null;
+    const lastCheckIn = [...timeline].reverse().find((e) => e.event_type === 'check_in');
+    if (!lastCheckIn) return null;
+    const elapsed = Date.now() - new Date(lastCheckIn.created_at).getTime();
+    const remaining = CHECK_IN_COOLDOWN - elapsed;
+    if (remaining <= 0) return null;
+    const hours = Math.floor(remaining / 3600000);
+    const minutes = Math.floor((remaining % 3600000) / 60000);
+    return `${hours}h ${minutes}m`;
+  }, [canCheckIn, timeline]);
+
+  const handleCheckIn = async (type: string) => {
+    if (!vowId || checkingIn || !canCheckIn) return;
+    setCheckingIn(true);
+    try {
+      const result = await submitCheckIn(vowId, type);
+      setCheckingIn(false);
+      if (result.success) {
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        const updated = await getVowTimeline(vowId);
+        setTimeline(updated);
+      } else {
+        Alert.alert('Check-in failed', result.error || 'Please try again.');
+      }
+    } catch (err: any) {
+      setCheckingIn(false);
+      Alert.alert('Check-in failed', err?.message || 'An unexpected error occurred.');
+    }
+  };
+
+  const handleWithdraw = () => {
+    if (!vowId) return;
     Alert.alert(
       'Withdraw this vow?',
-      'This action cannot be undone. Any stake may be refunded.',
+      vow && vow.stake_amount > 0
+        ? 'This cannot be undone. Your stake will be refunded.'
+        : 'This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Withdraw', style: 'destructive', onPress: () => voidMutation.mutate() },
-      ],
+        {
+          text: 'Withdraw',
+          style: 'destructive',
+          onPress: async () => {
+            setWithdrawing(true);
+            const result = await voidVowV2(vowId);
+            setWithdrawing(false);
+            if (result.success) {
+              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              router.back();
+            } else {
+              Alert.alert('Failed', result.error || 'Could not withdraw vow.');
+            }
+          },
+        },
+      ]
     );
-  }, [voidMutation]);
+  };
 
-  const handleShare = useCallback(async () => {
+  const handleShare = async () => {
     if (!vow) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      await Share.share({
-        message: `I made an Unbreakable Vow: "${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} on the line.`,
-      });
-    } catch {
-      console.log('[VowDetail] share failed');
-    }
-  }, [vow]);
+    const stakeText = vow.stake_amount > 0 ? ` with $${vow.stake_amount / 100} on the line` : '';
+    await Share.share({
+      message: `I made an Unbreakable Vow: "${vow.refined_text}"${stakeText}. Witness: ${vow.witness_name}.`,
+    });
+  };
 
-  const handleTextPerson = useCallback(() => {
-    if (!vow) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const phone = vow.witness_phone;
-    if (phone) {
-      const smsUrl = Platform.OS === 'ios' ? `sms:${phone}` : `sms:${phone}`;
-      Linking.openURL(smsUrl).catch(() => console.log('[VowDetail] SMS failed'));
-    }
-  }, [vow]);
+  // --- Render ---
 
-  const handleCheckIn = useCallback((type: string) => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    checkInMutation.mutate(type);
-  }, [checkInMutation]);
-
-  if (vowQuery.isLoading || !vow) {
+  if (!vowId) {
     return (
-      <View style={[styles.screen, { paddingTop: insets.top }]}>
+      <SafeAreaView style={styles.centered}>
         <Stack.Screen options={{ headerShown: false }} />
-        <View style={styles.loadingWrap}>
-          <ActivityIndicator color={palette.goldBright} size="large" />
-        </View>
-      </View>
+        <Text style={styles.errorText}>No vow ID provided.</Text>
+      </SafeAreaView>
     );
   }
 
-  const statusInfo = getStatusInfo(vow);
-  const progress = getProgress(vow);
-  const progressColor = getProgressColor(progress);
-  const countdown = getCountdown(vow);
+  if (loadError) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <Text style={styles.errorText}>Vow not found.</Text>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backBtnText}>Go back</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  if (!vow) {
+    return (
+      <SafeAreaView style={styles.centered}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <ActivityIndicator size="large" color={palette.goldBright} />
+      </SafeAreaView>
+    );
+  }
+
+  const statusCfg = getStatusConfig(vow.status);
   const witnessBadge = getWitnessBadge(vow);
-  const stakeAmount = Math.round(vow.stake_amount / 100);
-  const canWithdraw = isMaker && (vow.status === 'active' || vow.status === 'awaiting_verdict');
+  const showCheckIn = isMaker && vow.status === 'active';
+  const showWithdraw = isMaker && (vow.status === 'active' || vow.status === 'awaiting_verdict');
+
+  // Future verdict marker
+  const showFutureVerdict =
+    vow.status === 'active' && vow.ends_at && new Date(vow.ends_at).getTime() > Date.now();
 
   return (
-    <View style={styles.screen}>
+    <SafeAreaView style={styles.screen}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient
-        colors={['#05070B', '#080E18', '#0A0D12']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
-
-      <Animated.View style={[styles.container, { opacity: fadeAnim, paddingTop: insets.top }]}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Back button */}
         <Pressable
-          onPress={() => { void Haptics.selectionAsync(); router.back(); }}
-          style={styles.backBtn}
-          testID="detail-back"
+          onPress={() => {
+            void Haptics.selectionAsync();
+            router.back();
+          }}
+          style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
+          testID="vow-detail-back"
+          accessibilityLabel="Go back"
         >
-          <ArrowLeft color="#F5F5F7" size={18} />
+          <Text style={styles.backArrow}>{'\u2190'}</Text>
         </Pressable>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <Text style={styles.vowTitle}>{vow.refined_text || vow.raw_input}</Text>
+        {/* Vow text */}
+        <View style={styles.vowTextBlock}>
+          <Text style={styles.goldQuote}>{'\u201C'}</Text>
+          <Text style={styles.vowText}>{vow.refined_text}</Text>
+          <Text style={styles.goldQuote}>{'\u201D'}</Text>
+        </View>
 
-          <View style={[styles.statusBlock, { backgroundColor: statusInfo.bg }]}>
-            <View style={styles.statusTopRow}>
-              <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
-              <Text style={[styles.statusLabel, { color: statusInfo.color }]}>{statusInfo.label}</Text>
-              {countdown ? <Text style={styles.countdownText}>{countdown}</Text> : null}
-            </View>
-            {(vow.status === 'active' || vow.status === 'awaiting_verdict') && vow.starts_at && vow.ends_at && (
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${progress}%`, backgroundColor: progressColor }]} />
-              </View>
-            )}
-            <View style={styles.dateRow}>
-              <Text style={styles.dateText}>Started: {formatDate(vow.starts_at)}</Text>
-              <Text style={styles.dateText}>Ends: {formatDate(vow.ends_at)}</Text>
-            </View>
-          </View>
-
-          <View style={styles.peopleBlock}>
-            <Text style={styles.blockTitle}>PEOPLE</Text>
-            <View style={styles.personRow}>
-              <Text style={styles.personLabel}>Maker</Text>
-              <Text style={styles.personValue}>{isMaker ? 'You' : 'Someone'}</Text>
-            </View>
-            <View style={styles.personRow}>
-              <Text style={styles.personLabel}>Witness</Text>
-              <View style={styles.witnessValueRow}>
-                <Text style={styles.personValue}>{vow.witness_name || 'None'}</Text>
-                <View style={[styles.witnessBadge, { borderColor: witnessBadge.color + '40' }]}>
-                  <Text style={[styles.witnessBadgeText, { color: witnessBadge.color }]}>{witnessBadge.label}</Text>
-                </View>
-              </View>
-            </View>
-            {stakeAmount > 0 ? (
-              <View style={styles.personRow}>
-                <Text style={styles.personLabel}>Stake</Text>
-                <Text style={styles.personValue}>${stakeAmount} → {vow.destination || 'charity'}</Text>
-              </View>
+        {/* Status block */}
+        <View style={styles.card}>
+          {/* Status pill */}
+          <View style={styles.statusRow}>
+            {statusCfg.pulse ? (
+              <Animated.View style={[styles.statusDot, { backgroundColor: statusCfg.color, opacity: pulseAnim }]} />
             ) : (
-              <View style={styles.personRow}>
-                <Text style={styles.personLabel}>Stake</Text>
-                <Text style={styles.personValueMuted}>No stake</Text>
-              </View>
+              <View style={[styles.statusDot, { backgroundColor: statusCfg.color }]} />
             )}
+            <Text style={[styles.statusLabel, { color: statusCfg.color }]}>{statusCfg.label}</Text>
           </View>
 
-          {canCheckIn && (
-            <View style={styles.checkInBlock}>
-              <Text style={styles.blockTitle}>HOW'S IT GOING?</Text>
-              <View style={styles.checkInRow}>
-                {(['On track', 'Struggling', 'Done early'] as const).map((type) => (
-                  <Pressable
-                    key={type}
-                    style={({ pressed }) => [
-                      styles.checkInBtn,
-                      pressed && styles.checkInBtnPressed,
-                      checkInMutation.isPending && styles.checkInBtnDisabled,
-                    ]}
-                    onPress={() => handleCheckIn(type.toLowerCase().replace(' ', '_'))}
-                    disabled={checkInMutation.isPending}
-                    testID={`checkin-${type.toLowerCase().replace(' ', '-')}`}
-                  >
-                    {type === 'On track' && <CheckCircle color="#52D69A" size={16} />}
-                    {type === 'Struggling' && <Clock color="#F0C86E" size={16} />}
-                    {type === 'Done early' && <CheckCircle color={palette.goldBright} size={16} />}
-                    <Text style={styles.checkInText}>{type}</Text>
-                  </Pressable>
-                ))}
+          {/* Progress bar */}
+          <View style={styles.progressTrack}>
+            <View
+              style={[
+                styles.progressFill,
+                {
+                  width: `${Math.round(progress)}%` as any,
+                  backgroundColor: getProgressColor(progress),
+                },
+              ]}
+            />
+          </View>
+
+          {/* Countdown */}
+          <Text style={styles.countdownText}>{countdown}</Text>
+
+          {/* Dates */}
+          <View style={styles.datesRow}>
+            <Text style={styles.dateText}>Started: {formatDate(vow.starts_at)}</Text>
+            <Text style={styles.dateText}>Ends: {formatDate(vow.ends_at)}</Text>
+          </View>
+        </View>
+
+        {/* People block */}
+        <View style={styles.card}>
+          <View style={styles.peopleRow}>
+            <Text style={styles.peopleLabel}>Witness</Text>
+            <View style={styles.witnessInfo}>
+              <Text style={styles.witnessName}>{vow.witness_name}</Text>
+              <View style={[styles.witnessBadge, { backgroundColor: `${witnessBadge.color}20` }]}>
+                <Text style={[styles.witnessBadgeText, { color: witnessBadge.color }]}>
+                  {witnessBadge.label}
+                </Text>
               </View>
-              {!canCheckIn && isMaker && isActive && (
-                <Text style={styles.checkInCooldown}>Check in available in a few hours</Text>
-              )}
             </View>
-          )}
+          </View>
 
-          {timeline.length > 0 && (
-            <View style={styles.timelineBlock}>
-              <Text style={styles.blockTitle}>TIMELINE</Text>
-              {timeline.map((event, index) => (
-                <View key={event.id} style={styles.timelineItem}>
-                  <View style={styles.timelineLine}>
-                    <View style={styles.timelineNode} />
-                    {index < timeline.length - 1 && <View style={styles.timelineConnector} />}
-                  </View>
-                  <View style={styles.timelineContent}>
-                    <View style={styles.timelineRow}>
-                      <Text style={styles.timelineIcon}>{EVENT_ICONS[event.event_type] ?? '📌'}</Text>
-                      <Text style={styles.timelineDesc}>{eventDescription(event)}</Text>
-                    </View>
-                    <Text style={styles.timelineTime}>{relativeTime(event.created_at)}</Text>
-                  </View>
-                </View>
-              ))}
-              {isActive && vow.ends_at && (
-                <View style={styles.timelineItem}>
-                  <View style={styles.timelineLine}>
-                    <View style={[styles.timelineNode, styles.timelineFutureNode]} />
-                  </View>
-                  <View style={styles.timelineContent}>
-                    <View style={styles.timelineRow}>
-                      <Text style={styles.timelineIcon}>⏳</Text>
-                      <Text style={styles.timelineDescFuture}>Verdict day — {formatDate(vow.ends_at)}</Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-            </View>
-          )}
+          <View style={styles.divider} />
 
-          <View style={styles.actionsBlock}>
-            <Text style={styles.blockTitle}>ACTIONS</Text>
-            <Pressable style={styles.actionRow} onPress={() => { void handleShare(); }} testID="detail-share">
-              <Share2 color={palette.goldBright} size={18} />
-              <Text style={styles.actionText}>Share vow</Text>
-            </Pressable>
-            {vow.witness_phone && (
-              <Pressable style={styles.actionRow} onPress={handleTextPerson} testID="detail-text">
-                <MessageCircle color={palette.goldBright} size={18} />
-                <Text style={styles.actionText}>Text {vow.witness_name || 'witness'}</Text>
-              </Pressable>
+          <View style={styles.peopleRow}>
+            <Text style={styles.peopleLabel}>Stake</Text>
+            <Text style={styles.stakeText}>
+              {vow.stake_amount > 0
+                ? `$${vow.stake_amount / 100} \u2192 ${vow.destination}`
+                : 'No stake \u2014 accountability only'}
+            </Text>
+          </View>
+
+          {vow.vow_type === 'challenge' && (
+            <>
+              <View style={styles.divider} />
+              <View style={styles.typeBadge}>
+                <Text style={styles.typeBadgeText}>CHALLENGE</Text>
+              </View>
+            </>
+          )}
+        </View>
+
+        {/* Check-in block */}
+        {showCheckIn && (
+          <View style={styles.card}>
+            <Text style={styles.checkInLabel}>How's it going?</Text>
+            {cooldownRemaining && (
+              <Text style={styles.cooldownText}>
+                Next check-in available in {cooldownRemaining}
+              </Text>
             )}
-            {canWithdraw && (
+            <View style={styles.checkInRow}>
               <Pressable
-                style={[styles.actionRow, styles.actionRowDanger]}
-                onPress={handleWithdraw}
-                disabled={voidMutation.isPending}
-                testID="detail-withdraw"
+                style={[styles.checkInBtn, styles.checkInGreen, (!canCheckIn || checkingIn) && styles.checkInDisabled]}
+                onPress={() => void handleCheckIn('on_track')}
+                disabled={!canCheckIn || checkingIn}
+                testID="checkin-on-track"
+                accessibilityLabel="Check in as on track"
               >
-                {voidMutation.isPending ? (
-                  <ActivityIndicator color="#FF7B7B" size="small" />
-                ) : (
-                  <ShieldOff color="#FF7B7B" size={18} />
-                )}
-                <Text style={styles.actionTextDanger}>Withdraw vow</Text>
+                <Text style={styles.checkInBtnText}>On track</Text>
               </Pressable>
+              <Pressable
+                style={[styles.checkInBtn, styles.checkInAmber, (!canCheckIn || checkingIn) && styles.checkInDisabled]}
+                onPress={() => void handleCheckIn('struggling')}
+                disabled={!canCheckIn || checkingIn}
+                testID="checkin-struggling"
+                accessibilityLabel="Check in as struggling"
+              >
+                <Text style={styles.checkInBtnText}>Struggling</Text>
+              </Pressable>
+              <Pressable
+                style={[styles.checkInBtn, styles.checkInGold, (!canCheckIn || checkingIn) && styles.checkInDisabled]}
+                onPress={() => void handleCheckIn('done_early')}
+                disabled={!canCheckIn || checkingIn}
+                testID="checkin-done-early"
+                accessibilityLabel="Check in as done early"
+              >
+                <Text style={styles.checkInBtnText}>Done early</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Timeline block */}
+        <View style={styles.timelineSection}>
+          <Text style={styles.sectionLabel}>TIMELINE</Text>
+          <View style={styles.timelineList}>
+            {timeline.map((event, idx) => (
+              <View key={event.id} style={styles.timelineItem}>
+                {/* Vertical line */}
+                {idx < timeline.length - 1 && <View style={styles.timelineLine} />}
+                {/* Dot */}
+                <View style={styles.timelineDotWrap}>
+                  <Text style={styles.timelineEmoji}>{getEventEmoji(event.event_type)}</Text>
+                </View>
+                {/* Content */}
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineDesc}>{getEventLabel(event, vow)}</Text>
+                  <Text style={styles.timelineTime}>{relativeTime(event.created_at)}</Text>
+                </View>
+              </View>
+            ))}
+            {/* Future verdict marker */}
+            {showFutureVerdict && (
+              <View style={styles.timelineItem}>
+                <View style={styles.timelineDotWrap}>
+                  <Text style={styles.timelineEmoji}>{'\u23F3'}</Text>
+                </View>
+                <View style={styles.timelineContent}>
+                  <Text style={styles.timelineDesc}>
+                    Verdict day \u2014 {formatDate(vow.ends_at)}
+                  </Text>
+                </View>
+              </View>
             )}
           </View>
+        </View>
 
-          <View style={{ height: insets.bottom + 20 }} />
-        </ScrollView>
-      </Animated.View>
-    </View>
+        {/* Actions block */}
+        <View style={styles.actionsBlock}>
+          <Pressable
+            style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.7 }]}
+            onPress={() => void handleShare()}
+            testID="vow-detail-share"
+            accessibilityLabel="Share vow"
+          >
+            <Text style={styles.shareBtnText}>Share vow</Text>
+          </Pressable>
+
+          {showWithdraw && (
+            <Pressable
+              style={({ pressed }) => [styles.withdrawBtn, pressed && { opacity: 0.7 }]}
+              onPress={handleWithdraw}
+              disabled={withdrawing}
+              testID="vow-detail-withdraw"
+              accessibilityLabel="Withdraw vow"
+            >
+              {withdrawing ? (
+                <ActivityIndicator size="small" color={palette.danger} />
+              ) : (
+                <Text style={styles.withdrawText}>Withdraw vow</Text>
+              )}
+            </Pressable>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#030508',
+    backgroundColor: palette.bg,
   },
-  container: {
+  centered: {
     flex: 1,
-  },
-  loadingWrap: {
-    flex: 1,
+    backgroundColor: palette.bg,
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 12,
+  },
+  errorText: {
+    color: palette.textSecondary,
+    fontSize: 16,
   },
   backBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    backgroundColor: palette.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 16,
-    marginTop: 8,
-    marginBottom: 4,
+    borderColor: palette.border,
+  },
+  backBtnText: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '600',
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingTop: 8,
+    paddingTop: 12,
     paddingBottom: 40,
-    gap: 20,
+    gap: 16,
   },
-  vowTitle: {
-    color: '#F5F5F7',
-    fontSize: 24,
-    fontWeight: '700' as const,
-    fontFamily: serifFont,
-    lineHeight: 32,
-    letterSpacing: -0.5,
-  },
-  statusBlock: {
-    borderRadius: 16,
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: palette.surface,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
+    borderColor: palette.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  backArrow: {
+    color: palette.text,
+    fontSize: 20,
+  },
+  vowTextBlock: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 4,
+  },
+  goldQuote: {
+    color: palette.goldBright,
+    fontSize: 32,
+    fontFamily: serifFont,
+    lineHeight: 36,
+  },
+  vowText: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 22,
+    fontWeight: '700',
+    fontFamily: serifFont,
+    lineHeight: 30,
+    letterSpacing: -0.5,
+    paddingTop: 4,
+  },
+
+  // Card
+  card: {
+    backgroundColor: palette.whiteOverlay,
+    borderColor: palette.border,
+    borderWidth: 1,
+    borderRadius: 16,
     padding: 16,
+    marginBottom: 16,
     gap: 12,
   },
-  statusTopRow: {
+
+  // Status
+  statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -457,87 +614,104 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 14,
-    fontWeight: '700' as const,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  countdownText: {
-    color: '#8A8A8E',
-    fontSize: 13,
-    marginLeft: 'auto',
-    fontWeight: '500' as const,
-  },
+
+  // Progress
   progressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.08)',
     overflow: 'hidden',
   },
   progressFill: {
-    height: 4,
-    borderRadius: 2,
+    height: '100%',
+    borderRadius: 3,
   },
-  dateRow: {
+
+  // Countdown
+  countdownText: {
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+
+  // Dates
+  datesRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   dateText: {
-    color: '#8A8A8E',
-    fontSize: 13,
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '500',
   },
-  peopleBlock: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    padding: 16,
-    gap: 12,
+
+  // People
+  peopleRow: {
+    gap: 6,
   },
-  blockTitle: {
-    color: '#8A8A8E',
+  peopleLabel: {
+    color: palette.textMuted,
     fontSize: 11,
-    fontWeight: '700' as const,
-    letterSpacing: 1.2,
-    marginBottom: 2,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
-  personRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  personLabel: {
-    color: '#8A8A8E',
-    fontSize: 14,
-  },
-  personValue: {
-    color: '#F5F5F7',
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  personValueMuted: {
-    color: '#667085',
-    fontSize: 14,
-  },
-  witnessValueRow: {
+  witnessInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+  },
+  witnessName: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '600',
   },
   witnessBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
-    borderWidth: 1,
   },
   witnessBadgeText: {
     fontSize: 11,
-    fontWeight: '600' as const,
+    fontWeight: '600',
   },
-  checkInBlock: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 16,
+  stakeText: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: palette.border,
+  },
+  typeBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: 'rgba(212,162,79,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    padding: 16,
-    gap: 12,
+    borderColor: palette.borderStrong,
+  },
+  typeBadgeText: {
+    color: palette.goldBright,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+
+  // Check-in
+  checkInLabel: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  cooldownText: {
+    color: palette.textMuted,
+    fontSize: 12,
   },
   checkInRow: {
     flexDirection: 'row',
@@ -545,67 +719,72 @@ const styles = StyleSheet.create({
   },
   checkInBtn: {
     flex: 1,
-    flexDirection: 'row',
+    minHeight: 44,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    paddingVertical: 10,
+  },
+  checkInGreen: {
+    backgroundColor: 'rgba(82,214,154,0.15)',
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    minHeight: 44,
+    borderColor: 'rgba(82,214,154,0.3)',
   },
-  checkInBtnPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.97 }],
+  checkInAmber: {
+    backgroundColor: 'rgba(212,162,79,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.3)',
   },
-  checkInBtnDisabled: {
+  checkInGold: {
+    backgroundColor: 'rgba(240,200,110,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(240,200,110,0.3)',
+  },
+  checkInDisabled: {
     opacity: 0.4,
   },
-  checkInText: {
-    color: '#F5F5F7',
-    fontSize: 12,
-    fontWeight: '600' as const,
+  checkInBtnText: {
+    color: palette.text,
+    fontSize: 13,
+    fontWeight: '600',
   },
-  checkInCooldown: {
-    color: '#667085',
-    fontSize: 12,
-    textAlign: 'center' as const,
+
+  // Timeline
+  timelineSection: {
+    marginBottom: 20,
+    gap: 12,
   },
-  timelineBlock: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    padding: 16,
+  sectionLabel: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  timelineList: {
     gap: 0,
   },
   timelineItem: {
     flexDirection: 'row',
-    minHeight: 44,
+    alignItems: 'flex-start',
+    minHeight: 48,
+    position: 'relative',
   },
   timelineLine: {
-    width: 24,
-    alignItems: 'center',
-  },
-  timelineNode: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: palette.gold,
-    marginTop: 6,
-  },
-  timelineFutureNode: {
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
-  },
-  timelineConnector: {
-    flex: 1,
+    position: 'absolute',
+    left: 14,
+    top: 28,
+    bottom: 0,
     width: 1,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    marginVertical: 4,
+    backgroundColor: palette.border,
+  },
+  timelineDotWrap: {
+    width: 30,
+    alignItems: 'center',
+    paddingTop: 2,
+  },
+  timelineEmoji: {
+    fontSize: 16,
   },
   timelineContent: {
     flex: 1,
@@ -613,60 +792,47 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     gap: 2,
   },
-  timelineRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  timelineIcon: {
-    fontSize: 14,
-  },
   timelineDesc: {
-    color: '#F5F5F7',
+    color: palette.text,
     fontSize: 14,
-    fontWeight: '500' as const,
-    flex: 1,
-  },
-  timelineDescFuture: {
-    color: '#667085',
-    fontSize: 14,
-    fontWeight: '500' as const,
-    fontStyle: 'italic' as const,
-    flex: 1,
+    fontWeight: '500',
   },
   timelineTime: {
-    color: '#667085',
+    color: palette.textMuted,
     fontSize: 12,
-    paddingLeft: 22,
   },
+
+  // Actions
   actionsBlock: {
-    backgroundColor: 'rgba(255,255,255,0.04)',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    padding: 16,
-    gap: 4,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 12,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.04)',
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  shareBtn: {
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+  },
+  shareBtnText: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  withdrawBtn: {
     minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
   },
-  actionRowDanger: {
-    borderBottomWidth: 0,
-  },
-  actionText: {
-    color: palette.goldBright,
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  actionTextDanger: {
-    color: '#FF7B7B',
-    fontSize: 15,
-    fontWeight: '600' as const,
+  withdrawText: {
+    color: palette.danger,
+    fontSize: 14,
+    fontWeight: '600',
+    letterSpacing: 0.2,
   },
 });

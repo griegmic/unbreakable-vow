@@ -70,7 +70,7 @@ export default function VowBrokenScreen() {
       <Animated.View style={{ opacity: contentFade }}>
         <TitleBlock
           title={isSelfWitness ? 'You were honest.' : `${firstName} called it.`}
-          subtitle={`${vow.stake.amount} goes to ${destination}.`}
+          subtitle={vow.stake.amount > 0 ? `$${vow.stake.amount} goes to ${destination}.` : 'The vow was broken. The record stands.'}
         />
       </Animated.View>
 

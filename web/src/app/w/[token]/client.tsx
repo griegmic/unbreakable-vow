@@ -17,6 +17,7 @@ interface Vow {
   witness_name: string;
   witness_accepted_at: string | null;
   witness_declined: boolean;
+  starts_at: string | null;
   ends_at: string | null;
   status: string;
 }
@@ -167,7 +168,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     const now = new Date();
     const end = vow.ends_at ? new Date(vow.ends_at) : null;
     const isVerdictDue = end ? now >= end : false;
-    const totalDays = 7;
+    const start = vow.starts_at ? new Date(vow.starts_at) : null;
+    const totalDays = (start && end) ? Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000)) : 7;
     const daysLeft = end ? Math.ceil((end.getTime() - now.getTime()) / 86400000) : null;
     const dayNumber = daysLeft !== null ? Math.max(1, totalDays - daysLeft + 1) : null;
     const countdownLabel = daysLeft === null ? null
@@ -435,7 +437,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       <FadeUp delay={0.08}>
         <TitleBlock
           title={`${makerName} named you their witness.`}
-          subtitle="They put real money on the line. You hold the power."
+          subtitle={vow.stake_amount > 0 ? "They put real money on the line. You hold the power." : "They put their word on the line. You hold the power."}
         />
       </FadeUp>
 
@@ -452,7 +454,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               <DollarSign className="w-4 h-4" style={{ color: 'var(--gold)' }} />
               <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
             </div>
-            <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake_amount / 100}</span>
+            <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>{vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : 'Accountability only'}</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
@@ -474,7 +476,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
           {[
             { icon: Eye, text: `Watch whether ${makerName} follows through.` },
             { icon: Shield, text: `On ${endDate}, you call it: kept or broken.` },
-            { icon: DollarSign, text: `If broken, $${vow.stake_amount / 100} goes to ${vow.destination}.` },
+            { icon: DollarSign, text: vow.stake_amount > 0 ? `If broken, $${Math.round(vow.stake_amount / 100)} goes to ${vow.destination}.` : 'No money at stake — just their word.' },
           ].map((item, i) => (
             <div key={i} className="flex items-center gap-3">
               <div

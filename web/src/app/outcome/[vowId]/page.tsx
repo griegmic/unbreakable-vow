@@ -29,13 +29,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: isKept ? 'Vow Kept' : 'Vow Broken',
     description: isKept
-      ? `"${vow.refined_text}" — $${amount} protected. The vow was honored.`
-      : `"${vow.refined_text}" — $${amount} to ${vow.destination}. The vow was broken.`,
+      ? (amount > 0 ? `"${vow.refined_text}" — $${amount} protected. The vow was honored.` : `"${vow.refined_text}" — The vow was honored.`)
+      : (amount > 0 ? `"${vow.refined_text}" — $${amount} to ${vow.destination}. The vow was broken.` : `"${vow.refined_text}" — The vow was broken.`),
     openGraph: {
       title: isKept ? 'Vow Kept' : 'Vow Broken',
       description: isKept
-        ? `"${vow.refined_text}" — $${amount} protected.`
-        : `"${vow.refined_text}" — $${amount} to ${vow.destination}.`,
+        ? (amount > 0 ? `"${vow.refined_text}" — $${amount} protected.` : `"${vow.refined_text}" — Vow honored.`)
+        : (amount > 0 ? `"${vow.refined_text}" — $${amount} to ${vow.destination}.` : `"${vow.refined_text}" — Vow broken.`),
       siteName: 'Unbreakable Vow',
     },
   };

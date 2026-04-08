@@ -70,8 +70,8 @@ export default function OutcomeClient({ vow }: { vow: Vow }) {
         <TitleBlock
           title={isKept ? 'Vow kept.' : 'Vow broken.'}
           subtitle={isKept
-            ? `The vow was honored. $${amount} stays safe.`
-            : `$${amount} goes to ${vow.destination}.`
+            ? (amount > 0 ? `The vow was honored. $${amount} stays safe.` : 'The vow was honored.')
+            : (amount > 0 ? `$${amount} goes to ${vow.destination}.` : 'The vow was broken. The record stands.')
           }
         />
       </FadeUp>
@@ -95,7 +95,7 @@ export default function OutcomeClient({ vow }: { vow: Vow }) {
               &ldquo;{vow.refined_text}&rdquo;
             </p>
             <p className="text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-              ${amount} at stake &middot; Witnessed by {vow.witness_name}
+              {amount > 0 ? `$${amount} at stake` : 'Accountability only'} &middot; Witnessed by {vow.witness_name}
             </p>
           </div>
         </div>

@@ -10,6 +10,7 @@ function VowBrokenContent() {
   const vowText = params.get('text') || 'Your vow';
   const amount = params.get('amount') || '0';
   const destination = params.get('destination') || 'charity';
+  const isZeroStake = !amount || amount === '0';
 
   return (
     <RitualScreen
@@ -34,7 +35,7 @@ function VowBrokenContent() {
       <FadeUp delay={0.1}>
         <TitleBlock
           title="Vow broken."
-          subtitle={`Your $${amount} goes to ${destination}.`}
+          subtitle={isZeroStake ? 'The vow was broken. The record stands.' : `Your $${amount} goes to ${destination}.`}
         />
       </FadeUp>
 
@@ -43,31 +44,33 @@ function VowBrokenContent() {
           <p className="text-[17px] font-serif font-medium text-center" style={{ color: 'var(--text)' }}>{vowText}</p>
           <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
           <div className="flex flex-col items-center gap-1">
-            <span className="text-2xl font-bold" style={{ color: 'var(--warm-amber)' }}>${amount} donated</span>
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>to {destination}</span>
+            <span className="text-2xl font-bold" style={{ color: 'var(--warm-amber)' }}>{isZeroStake ? 'Vow broken' : `$${amount} donated`}</span>
+            {!isZeroStake && <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>to {destination}</span>}
           </div>
         </RitualCard>
       </FadeUp>
 
-      {/* Settlement receipt */}
-      <FadeUp delay={0.2}>
-        <RitualCard>
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Amount</span>
-              <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>${amount}</span>
+      {/* Settlement receipt — only show for staked vows */}
+      {!isZeroStake && (
+        <FadeUp delay={0.2}>
+          <RitualCard>
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Amount</span>
+                <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>${amount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Donated to</span>
+                <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{destination}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Status</span>
+                <span className="text-sm font-semibold" style={{ color: 'var(--warm-amber)' }}>Payment processed</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Donated to</span>
-              <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{destination}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Status</span>
-              <span className="text-sm font-semibold" style={{ color: 'var(--warm-amber)' }}>Payment processed</span>
-            </div>
-          </div>
-        </RitualCard>
-      </FadeUp>
+          </RitualCard>
+        </FadeUp>
+      )}
 
       <FadeUp delay={0.25}>
         <p className="text-[14px] text-center" style={{ color: 'var(--text-secondary)' }}>

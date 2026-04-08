@@ -1,13 +1,7 @@
 'use client';
-import { useState, useRef } from 'react';
-import { Check, DollarSign, Sparkles, Share2, CheckCheck } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, FadeUp, HeaderBadge } from '@/components/ui';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { useState, useRef, useEffect, useCallback } from 'react';
+import { Check, DollarSign, Sparkles, Share2, CheckCheck, Undo2 } from 'lucide-react';
+import { RitualScreen, TitleBlock, RitualCard, FadeUp, HeaderBadge } from '@/components/ui';
 
 interface Vow {
   id: string;
@@ -28,15 +22,62 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
   const busyRef = useRef(false);
   const [error, setError] = useState('');
   const [shared, setShared] = useState(false);
+  const [pendingVerdict, setPendingVerdict] = useState<VerdictChoice>(null);
+  const [toastProgress, setToastProgress] = useState(100);
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const handleConfirmRef = useRef<(v: VerdictChoice) => Promise<void>>(null!);
 
-  const handleChoose = (verdict: VerdictChoice) => {
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const handleChoose = useCallback((verdict: VerdictChoice) => {
+    // Clear any previous timers
+    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
     setChoice(verdict);
-    setView('confirm');
+    setPendingVerdict(verdict);
     setError('');
-  };
+    setToastProgress(100);
 
-  const handleConfirm = async () => {
-    if (!choice || busyRef.current) return;
+    // Start countdown
+    const startTime = Date.now();
+    intervalRef.current = setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const remaining = Math.max(0, 100 - (elapsed / 3000) * 100);
+      setToastProgress(remaining);
+      if (remaining <= 0 && intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    }, 50);
+
+    undoTimeoutRef.current = setTimeout(() => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      intervalRef.current = null;
+      undoTimeoutRef.current = null;
+      setPendingVerdict(null);
+      setView('confirm');
+      if (verdict) handleConfirmRef.current(verdict);
+    }, 3000);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    if (undoTimeoutRef.current) { clearTimeout(undoTimeoutRef.current); undoTimeoutRef.current = null; }
+    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
+    setPendingVerdict(null);
+    setChoice(null);
+    setToastProgress(100);
+  }, []);
+
+  const handleConfirmDirect = async (verdict: VerdictChoice) => {
+    if (!verdict || busyRef.current) return;
     busyRef.current = true;
     setBusy(true);
     setError('');
@@ -50,7 +91,7 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
           'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
           'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         },
-        body: JSON.stringify({ token, verdict: choice }),
+        body: JSON.stringify({ token, verdict }),
       });
 
       const data = await res.json().catch(() => null);
@@ -63,6 +104,7 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
           : detail === 'refund_failed' ? 'Refund could not be processed right now. Please try again in a moment.'
           : typeof detail === 'string' ? detail : 'Something went wrong.';
         setError(msg);
+        setView('choose');
         setBusy(false);
         return;
       }
@@ -71,6 +113,7 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
         const msg = data.error === 'already_judged' ? 'This vow has already been judged.'
           : typeof data.error === 'string' ? data.error : 'Something went wrong.';
         setError(msg);
+        setView('choose');
         setBusy(false);
         return;
       }
@@ -78,20 +121,27 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
       setView('done');
     } catch {
       setError('Network error. Please check your connection and try again.');
+      setView('choose');
     } finally {
       busyRef.current = false;
       setBusy(false);
     }
   };
+  handleConfirmRef.current = handleConfirmDirect;
 
   if (view === 'done') {
     const isKept = choice === 'kept';
     const outcomeUrl = `https://unbreakablevow.app/outcome/${vow.id}`;
 
     const handleShareOutcome = async () => {
+      const isZeroStake = vow.stake_amount === 0;
       const text = isKept
-        ? `Vow kept: "${vow.refined_text}" — $${vow.stake_amount / 100} protected.`
-        : `Vow broken: "${vow.refined_text}" — $${vow.stake_amount / 100} to ${vow.destination}.`;
+        ? isZeroStake
+          ? `Vow kept: "${vow.refined_text}" — word honored.`
+          : `Vow kept: "${vow.refined_text}" — $${vow.stake_amount / 100} protected.`
+        : isZeroStake
+          ? `Vow broken: "${vow.refined_text}" — the record stands.`
+          : `Vow broken: "${vow.refined_text}" — $${vow.stake_amount / 100} to ${vow.destination}.`;
 
       if (navigator.share) {
         try {
@@ -126,8 +176,12 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
           <TitleBlock
             title={isKept ? 'Verdict: Kept.' : 'Verdict: Broken.'}
             subtitle={isKept
-              ? 'The vow was honored. Their money stays safe.'
-              : `$${vow.stake_amount / 100} will be donated to ${vow.destination}.`
+              ? vow.stake_amount === 0
+                ? 'The vow was honored.'
+                : 'The vow was honored. Their money stays safe.'
+              : vow.stake_amount === 0
+                ? 'The vow was broken. The record stands.'
+                : `$${vow.stake_amount / 100} will be donated to ${vow.destination}.`
             }
           />
         </FadeUp>
@@ -187,54 +241,21 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
   }
 
   if (view === 'confirm') {
-    const isKept = choice === 'kept';
+    // Submitting state
     return (
-      <RitualScreen
-        footer={
-          <>
+      <RitualScreen>
+        <FadeUp><HeaderBadge /></FadeUp>
+        <div className="flex items-center justify-center min-h-[50vh]">
+          <div className="flex flex-col items-center gap-4">
+            <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
+            <p className="text-[15px]" style={{ color: 'var(--text-secondary)' }}>Submitting verdict...</p>
             {error && (
-              <div className="rounded-xl p-3 mb-2" style={{ backgroundColor: 'var(--danger-muted)' }}>
+              <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--danger-muted)' }}>
                 <p className="text-sm text-center" style={{ color: 'var(--danger)' }}>{error}</p>
               </div>
             )}
-            <PrimaryButton
-              label="Confirm"
-              onPress={handleConfirm}
-              loading={busy}
-            />
-            <button
-              onClick={() => setView('choose')}
-              className="min-h-[46px] flex items-center justify-center w-full"
-            >
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Go back</span>
-            </button>
-          </>
-        }
-      >
-        <FadeUp><HeaderBadge /></FadeUp>
-        <FadeUp delay={0.1}>
-          <div className="flex justify-center mt-4">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: isKept ? 'var(--success-muted)' : 'var(--warm-amber-muted)' }}
-            >
-              {isKept ? (
-                <Check className="w-8 h-8" style={{ color: 'var(--success)' }} />
-              ) : (
-                <DollarSign className="w-8 h-8" style={{ color: 'var(--warm-amber)' }} />
-              )}
-            </div>
           </div>
-        </FadeUp>
-        <FadeUp delay={0.15}>
-          <TitleBlock
-            title={isKept ? 'Confirm: Kept.' : 'Are you sure?'}
-            subtitle={isKept
-              ? `They followed through. $${vow.stake_amount / 100} stays safe.`
-              : `This is final. $${vow.stake_amount / 100} goes to ${vow.destination}. No take-backs.`
-            }
-          />
-        </FadeUp>
+        </div>
       </RitualScreen>
     );
   }
@@ -257,11 +278,23 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
             <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
           </div>
           <p className="text-[17px] font-serif font-medium" style={{ color: 'var(--text)' }}>{vow.refined_text}</p>
-          <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-          <div className="flex items-center justify-between">
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
-            <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake_amount / 100}</span>
-          </div>
+          {vow.stake_amount > 0 ? (
+            <>
+              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+              <div className="flex items-center justify-between">
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake_amount / 100}</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+              <div className="flex items-center justify-between">
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>Accountability only</span>
+              </div>
+            </>
+          )}
         </RitualCard>
       </FadeUp>
 
@@ -279,7 +312,9 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
           <div>
             <span className="text-[17px] font-semibold block" style={{ color: 'var(--success)' }}>Vow kept</span>
             <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-              They did what they said. ${vow.stake_amount / 100} stays safe.
+              {vow.stake_amount === 0
+                ? 'They did what they said.'
+                : `They did what they said. $${vow.stake_amount / 100} stays safe.`}
             </span>
           </div>
         </button>
@@ -298,7 +333,9 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
           <div>
             <span className="text-[17px] font-semibold block" style={{ color: 'var(--warm-amber)' }}>Vow broken</span>
             <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-              ${vow.stake_amount / 100} to {vow.destination}.
+              {vow.stake_amount === 0
+                ? 'The vow was broken.'
+                : `$${vow.stake_amount / 100} to ${vow.destination}.`}
             </span>
           </div>
         </button>
@@ -309,6 +346,53 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
           Your honesty is what makes this work.
         </p>
       </FadeUp>
+
+      {/* Undo toast */}
+      {pendingVerdict && (
+        <div className="fixed bottom-6 left-4 right-4 z-50 flex justify-center">
+          <div
+            className="w-full max-w-[400px] rounded-2xl p-4 flex items-center gap-3 animate-slide-up"
+            style={{
+              backgroundColor: 'var(--surface-elevated)',
+              border: '1px solid var(--border-strong)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            }}
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+                Submitting: <span style={{ color: pendingVerdict === 'kept' ? 'var(--success)' : 'var(--warm-amber)' }}>
+                  {pendingVerdict === 'kept' ? 'Vow Kept' : 'Vow Broken'}
+                </span>
+              </p>
+              <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-100 ease-linear"
+                  style={{
+                    width: `${toastProgress}%`,
+                    backgroundColor: pendingVerdict === 'kept' ? 'var(--success)' : 'var(--warm-amber)',
+                  }}
+                />
+              </div>
+            </div>
+            <button
+              onClick={handleUndo}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl transition-transform active:scale-95"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <Undo2 className="w-3.5 h-3.5" style={{ color: 'var(--text-secondary)' }} />
+              <span className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Undo</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="fixed bottom-6 left-4 right-4 z-50 flex justify-center">
+          <div className="w-full max-w-[400px] rounded-2xl p-4" style={{ backgroundColor: 'var(--danger-muted)', border: '1px solid var(--danger)' }}>
+            <p className="text-sm text-center" style={{ color: 'var(--danger)' }}>{error}</p>
+          </div>
+        </div>
+      )}
     </RitualScreen>
   );
 }

@@ -1,4 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createAuditEvent } from '../_shared/audit.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -28,7 +29,7 @@ Deno.serve(async (req) => {
     // Look up vow by witness_invite_token
     const { data: vow, error: vowError } = await supabase
       .from('vows')
-      .select('id, user_id, status, witness_name, witness_accepted_at, witness_declined')
+      .select('id, user_id, status, witness_name, witness_phone, witness_accepted_at, witness_declined')
       .eq('witness_invite_token', token)
       .single();
 
@@ -53,6 +54,8 @@ Deno.serve(async (req) => {
         .from('vows')
         .update({ witness_declined: true })
         .eq('id', vow.id);
+
+      await createAuditEvent(supabase, vow.id, 'witness_declined', 'witness', null, { witness_name: vow.witness_name });
 
       // Push notification to owner
       await supabase.from('push_queue').insert({
@@ -88,6 +91,22 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Try to link witness account by phone
+    if (vow.witness_phone) {
+      const { data: witnessUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('phone', vow.witness_phone)
+        .maybeSingle();
+      if (witnessUser) {
+        await supabase.from('vows')
+          .update({ witness_user_id: witnessUser.id })
+          .eq('id', vow.id);
+      }
+    }
+
+    await createAuditEvent(supabase, vow.id, 'witness_accepted', 'witness', null, { witness_name: vow.witness_name });
 
     // Push notification to vow owner
     await supabase.from('push_queue').insert({

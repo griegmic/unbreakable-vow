@@ -331,7 +331,9 @@ export default function LiveScreen() {
       const inviteUrl = vow.witnessInviteToken
         ? `https://unbreakablevow.app/w/${vow.witnessInviteToken}`
         : 'https://unbreakablevow.app';
-      const msg = `I made an Unbreakable Vow: "${activeVowText}" — and I need you to hold me to it. ${vow.stake.amount} is on the line. ${inviteUrl}`;
+      const msg = vow.stake.amount > 0
+        ? `I made an Unbreakable Vow: "${activeVowText}" — and I need you to hold me to it. $${vow.stake.amount} is on the line. ${inviteUrl}`
+        : `I made an Unbreakable Vow: "${activeVowText}" — hold me to it. ${inviteUrl}`;
       console.log('[LiveScreen] sharing invite link:', inviteUrl);
       await Share.share({ message: msg });
     } catch {
@@ -614,6 +616,52 @@ export default function LiveScreen() {
       </View>
     );
   };
+
+  const cheekyLabels = useMemo(() => [
+    `Report to ${vow.witnessName}`,
+    `Tell ${vow.witnessName} you showed up`,
+    `Prove it to ${vow.witnessName}`,
+    `${vow.witnessName}'s watching. Say something.`,
+    `Confess to ${vow.witnessName}`,
+    `${vow.witnessName} demands an update`,
+  ], [vow.witnessName]);
+
+  const todaysLabel = useMemo(() => {
+    const dayIndex = Math.floor(Date.now() / 86400000) % cheekyLabels.length;
+    return cheekyLabels[dayIndex];
+  }, [cheekyLabels]);
+
+  const handleTextWitness = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const phone = vow.phoneNumber;
+    const stakeLabel = vow.stake.amount ? `$${vow.stake.amount}` : '';
+    const body = encodeURIComponent(
+      `Still holding my vow: "${activeVowText}"${stakeLabel ? ` — ${stakeLabel} on the line` : ''}. Just checking in 👀`
+    );
+    if (phone) {
+      const smsUrl = Platform.OS === 'ios'
+        ? `sms:${phone}&body=${body}`
+        : `sms:${phone}?body=${body}`;
+      console.log('[LiveScreen] opening SMS to witness:', smsUrl);
+      Linking.openURL(smsUrl).catch(() => {
+        console.log('[LiveScreen] failed to open SMS');
+      });
+    } else {
+      Share.share({ message: `Checking in on my vow: "${activeVowText}"` }).catch(() => {
+        console.log('[LiveScreen] share failed');
+      });
+    }
+  }, [vow.phoneNumber, vow.stake.amount, activeVowText]);
+
+  const getCountdownTint = useCallback((days: number | null) => {
+    if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
+    if (days <= 0) return { bg: 'rgba(255,123,123,0.10)', border: 'rgba(255,123,123,0.25)' };
+    if (days === 1) return { bg: 'rgba(255,180,80,0.10)', border: 'rgba(255,180,80,0.25)' };
+    if (days <= 3) return { bg: 'rgba(212,162,79,0.08)', border: 'rgba(212,162,79,0.20)' };
+    return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
+  }, []);
+
+  const dailyNudge = useMemo(() => getDailyNudge(), []);
 
   const renderVowActiveCard = () => {
     const tint = getCountdownTint(daysLeft);

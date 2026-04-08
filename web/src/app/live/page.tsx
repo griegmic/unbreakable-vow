@@ -226,7 +226,7 @@ export default function LivePage() {
             <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
             <div className="flex items-center justify-between">
               <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
-              <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake_amount / 100}</span>
+              <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>{vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : 'Accountability only'}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
@@ -276,7 +276,7 @@ export default function LivePage() {
         <FadeUp delay={0.08}>
           <TitleBlock
             title={vow.refined_text}
-            subtitle={`$${vow.stake_amount / 100} at stake · ${vow.destination} if broken`}
+            subtitle={vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} at stake · ${vow.destination} if broken` : 'Accountability only'}
           />
         </FadeUp>
 
@@ -375,7 +375,7 @@ export default function LivePage() {
       <FadeUp delay={0.08}>
         <TitleBlock
           title={vow.refined_text}
-          subtitle={`$${vow.stake_amount / 100} at stake · ${vow.destination} if broken`}
+          subtitle={vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} at stake · ${vow.destination} if broken` : 'Accountability only'}
         />
       </FadeUp>
 

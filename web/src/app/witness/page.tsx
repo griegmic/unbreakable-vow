@@ -133,7 +133,7 @@ export default function WitnessPage() {
               style={{ color: 'var(--text)', backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}
             />
             <p className="text-[12px] text-center" style={{ color: 'var(--text-muted)' }}>
-              Without a number, you&apos;ll need to share the invite link yourself.
+              Without a number, we&apos;ll give you a link to share after sealing.
             </p>
           </div>
         </FadeUp>
