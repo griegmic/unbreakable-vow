@@ -44,6 +44,8 @@ function RootLayoutNav() {
       <Stack.Screen name="self-resolve" />
       <Stack.Screen name="history" />
       <Stack.Screen name="settings" />
+      <Stack.Screen name="dashboard" />
+      <Stack.Screen name="vow-detail" />
     </Stack>
   );
 }

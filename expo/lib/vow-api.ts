@@ -262,6 +262,174 @@ export async function declineWitnessInvite(vowId: string): Promise<{ success: bo
   }
 }
 
+export interface VowRow {
+  id: string;
+  user_id: string;
+  raw_input: string;
+  refined_text: string;
+  status: 'draft' | 'sealed' | 'active' | 'awaiting_verdict' | 'kept' | 'broken' | 'voided';
+  vow_type: 'self' | 'challenge';
+  witness_name: string;
+  witness_phone: string | null;
+  witness_user_id: string | null;
+  witness_accepted_at: string | null;
+  witness_declined: boolean;
+  target_user_id: string | null;
+  target_phone: string | null;
+  challenge_status: 'pending' | 'accepted' | 'declined' | null;
+  challenge_invite_token: string | null;
+  stake_amount: number;
+  consequence: string;
+  destination: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  verdict: 'kept' | 'broken' | null;
+  sealed_at: string | null;
+  created_at: string;
+}
+
+export interface AuditEvent {
+  id: string;
+  vow_id: string;
+  event_type: string;
+  actor_type: 'maker' | 'witness' | 'target' | 'system';
+  actor_id: string | null;
+  metadata: Record<string, any>;
+  created_at: string;
+}
+
+export async function getMyVows(): Promise<VowRow[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .in('status', ['sealed', 'active', 'awaiting_verdict'])
+    .order('created_at', { ascending: false });
+  if (error) { console.error('[vow-api] getMyVows error:', error); return []; }
+  return (data ?? []) as VowRow[];
+}
+
+export async function getWitnessingVows(): Promise<VowRow[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('witness_user_id', session.user.id)
+    .neq('user_id', session.user.id)
+    .in('status', ['active', 'awaiting_verdict'])
+    .order('created_at', { ascending: false });
+  if (error) { console.error('[vow-api] getWitnessingVows error:', error); return []; }
+  return (data ?? []) as VowRow[];
+}
+
+export async function getIncomingChallenges(): Promise<VowRow[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('target_user_id', session.user.id)
+    .eq('challenge_status', 'pending')
+    .order('created_at', { ascending: false });
+  if (error) { console.error('[vow-api] getIncomingChallenges error:', error); return []; }
+  return (data ?? []) as VowRow[];
+}
+
+export async function getRecentVows(limit: number = 5): Promise<VowRow[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .in('status', ['kept', 'broken', 'voided'])
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (error) { console.error('[vow-api] getRecentVows error:', error); return []; }
+  return (data ?? []) as VowRow[];
+}
+
+export async function acceptChallenge(token: string): Promise<boolean> {
+  console.log('[vow-api] acceptChallenge:', token);
+  try {
+    const { error } = await supabase.from('vows')
+      .update({ challenge_status: 'accepted' })
+      .eq('challenge_invite_token', token);
+    if (error) { console.error('[vow-api] acceptChallenge error:', error); return false; }
+    return true;
+  } catch (err) {
+    console.error('[vow-api] acceptChallenge exception:', err);
+    return false;
+  }
+}
+
+export async function declineChallenge(token: string): Promise<boolean> {
+  console.log('[vow-api] declineChallenge:', token);
+  try {
+    const { error } = await supabase.from('vows')
+      .update({ challenge_status: 'declined' })
+      .eq('challenge_invite_token', token);
+    if (error) { console.error('[vow-api] declineChallenge error:', error); return false; }
+    return true;
+  } catch (err) {
+    console.error('[vow-api] declineChallenge exception:', err);
+    return false;
+  }
+}
+
+export async function getVowDetail(vowId: string): Promise<VowRow | null> {
+  console.log('[vow-api] getVowDetail:', vowId);
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('id', vowId)
+    .single();
+  if (error) { console.error('[vow-api] getVowDetail error:', error); return null; }
+  return data as VowRow;
+}
+
+export async function getVowTimeline(vowId: string): Promise<AuditEvent[]> {
+  console.log('[vow-api] getVowTimeline:', vowId);
+  const { data, error } = await supabase.from('audit_events')
+    .select('*')
+    .eq('vow_id', vowId)
+    .order('created_at', { ascending: true });
+  if (error) { console.error('[vow-api] getVowTimeline error:', error); return []; }
+  return (data ?? []) as AuditEvent[];
+}
+
+export async function submitCheckIn(vowId: string, type: string): Promise<boolean> {
+  console.log('[vow-api] submitCheckIn:', vowId, type);
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return false;
+  try {
+    const { error } = await supabase.from('audit_events').insert({
+      vow_id: vowId,
+      event_type: 'check_in',
+      actor_type: 'maker',
+      actor_id: session.user.id,
+      metadata: { type },
+    });
+    if (error) { console.error('[vow-api] submitCheckIn error:', error); return false; }
+    return true;
+  } catch (err) {
+    console.error('[vow-api] submitCheckIn exception:', err);
+    return false;
+  }
+}
+
+export async function voidVowV2(vowId: string): Promise<{ success: boolean; refunded?: boolean }> {
+  console.log('[vow-api] voidVowV2:', vowId);
+  try {
+    const { error } = await supabase.from('vows').update({
+      status: 'voided',
+    }).eq('id', vowId);
+    if (error) { console.error('[vow-api] voidVowV2 error:', error); return { success: false }; }
+    return { success: true, refunded: true };
+  } catch (err) {
+    console.error('[vow-api] voidVowV2 exception:', err);
+    return { success: false };
+  }
+}
+
 export async function extendVowDeadline(vowId: string, hours: number): Promise<{ success: boolean; newEndDate?: string; error?: string }> {
   console.log('[vow-api] extendVowDeadline for vow:', vowId, 'by', hours, 'hours');
   try {
