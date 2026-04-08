@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, XCircle, Clock } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
 import { RitualScreen, HeaderBadge, TitleBlock, RitualCard, StatPill, PrimaryButton, FadeUp } from '@/components/ui';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -50,9 +50,14 @@ export default function HistoryPage() {
 
   return (
     <RitualScreen
-      footer={<PrimaryButton label="Make a new vow" onPress={() => router.push('/')} />}
+      footer={<PrimaryButton label="Make a new vow" onPress={() => router.push('/create')} />}
     >
-      <FadeUp><HeaderBadge /></FadeUp>
+      <FadeUp>
+        <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 py-2">
+          <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Dashboard</span>
+        </button>
+      </FadeUp>
 
       <FadeUp delay={0.05}>
         <TitleBlock title="Your vows" subtitle={`${vows.length} total vows`} />
@@ -76,32 +81,28 @@ export default function HistoryPage() {
 
           return (
             <FadeUp key={v.id} delay={0.15 + i * 0.05}>
-              <RitualCard>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 mr-3">
-                    <p className="text-[15px] font-serif font-medium" style={{ color: 'var(--text)' }}>{v.refined_text}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                        {v.witness_name} · ${v.stake_amount / 100}
-                      </span>
+              <div
+                onClick={() => router.push(`/vow/${v.id}`)}
+                className="cursor-pointer transition-transform active:scale-[0.98]"
+              >
+                <RitualCard>
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1 mr-3">
+                      <p className="text-[15px] font-serif font-medium" style={{ color: 'var(--text)' }}>{v.refined_text}</p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+                          {v.witness_name} · ${v.stake_amount / 100}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="shrink-0">
+                      {isKept && <CheckCircle className="w-5 h-5" style={{ color: 'var(--success)' }} />}
+                      {isBroken && <XCircle className="w-5 h-5" style={{ color: 'var(--danger)' }} />}
+                      {isActive && <Clock className="w-5 h-5" style={{ color: 'var(--gold)' }} />}
                     </div>
                   </div>
-                  <div className="shrink-0">
-                    {isKept && <CheckCircle className="w-5 h-5" style={{ color: 'var(--success)' }} />}
-                    {isBroken && <XCircle className="w-5 h-5" style={{ color: 'var(--danger)' }} />}
-                    {isActive && <Clock className="w-5 h-5" style={{ color: 'var(--gold)' }} />}
-                  </div>
-                </div>
-                {isActive && (
-                  <button
-                    onClick={() => router.push('/live')}
-                    className="text-[13px] font-semibold mt-1"
-                    style={{ color: 'var(--gold)' }}
-                  >
-                    View active vow →
-                  </button>
-                )}
-              </RitualCard>
+                </RitualCard>
+              </div>
             </FadeUp>
           );
         })}

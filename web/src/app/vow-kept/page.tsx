@@ -59,8 +59,8 @@ function VowKeptContent() {
     <RitualScreen
       footer={
         <>
-          <PrimaryButton label="Make another vow" onPress={() => router.push('/')} />
-          <SecondaryButton label="View history" onPress={() => router.push('/history')} />
+          <PrimaryButton label="Make another vow" onPress={() => router.push('/create')} />
+          <SecondaryButton label="My Vows" onPress={() => router.push('/dashboard')} />
         </>
       }
     >

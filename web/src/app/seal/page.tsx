@@ -193,7 +193,7 @@ export default function SealPage() {
         const sealData = await sealRes.json().catch(() => null);
         console.error('Seal failed:', sealData?.error || sealRes.status);
       }
-      router.push('/sent');
+      router.push('/live');
     } catch (err) {
       console.error('Zero-stake seal error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');
@@ -326,7 +326,7 @@ export default function SealPage() {
     const t2 = setTimeout(() => setSealAnimPhase(3), 1200);
     const t3 = setTimeout(() => {
       setStep('done');
-      router.push('/sent');
+      router.push('/live');
     }, 2400);
     timersRef.current.push(t1, t2, t3);
   };

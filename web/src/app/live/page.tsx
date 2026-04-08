@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle } from 'lucide-react';
+import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle, LayoutGrid, ChevronRight } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp, HeaderBadge } from '@/components/ui';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
 import { useAuth } from '@/providers/auth-provider';
@@ -145,7 +145,7 @@ export default function LivePage() {
   if (!vow) {
     return (
       <RitualScreen
-        footer={<PrimaryButton label="Make a vow" onPress={() => router.push('/')} />}
+        footer={<PrimaryButton label="Make a vow" onPress={() => router.push('/create')} />}
       >
         <FadeUp><HeaderBadge /></FadeUp>
         <FadeUp delay={0.1}>
@@ -233,7 +233,17 @@ export default function LivePage() {
             ) : (
               <PrimaryButton label="Judge it yourself" onPress={handleGoSolo} loading={actionBusy} />
             )}
-            <SecondaryButton label="View history" onPress={() => router.push('/history')} />
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="w-full rounded-[14px] min-h-[46px] flex items-center justify-between px-4 transition-transform active:scale-[0.98]"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
+              </div>
+              <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+            </button>
           </div>
         }
       >
@@ -286,14 +296,18 @@ export default function LivePage() {
           <div className="flex flex-col gap-2">
             {witnessDeclined ? (
               <PrimaryButton label="Go solo instead" onPress={handleGoSolo} loading={actionBusy} />
-            ) : witnessUrl ? (
-              <ShareButton
-                url={witnessUrl}
-                text={nudgeShareText}
-                buttonText={`Nudge ${vow.witness_name}`}
-              />
             ) : null}
-            <SecondaryButton label="View history" onPress={() => router.push('/history')} />
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="w-full rounded-[14px] min-h-[46px] flex items-center justify-between px-4 transition-transform active:scale-[0.98]"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <div className="flex items-center gap-2">
+                <LayoutGrid className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
+              </div>
+              <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+            </button>
           </div>
         }
       >
@@ -329,7 +343,7 @@ export default function LivePage() {
           </FadeUp>
         )}
 
-        {/* Witness pending */}
+        {/* Send to a friend */}
         {!witnessDeclined && witnessUrl && (
           <FadeUp delay={0.12}>
             <div
@@ -341,10 +355,15 @@ export default function LivePage() {
                   <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--gold)' }} />
                 </div>
                 <div>
-                  <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Waiting for {vow.witness_name}</span>
-                  <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Send the link to get them on board</span>
+                  <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Now send it to your witness</span>
+                  <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>They&apos;ll tap the link to accept and start watching.</span>
                 </div>
               </div>
+              <ShareButton
+                url={witnessUrl}
+                text={nudgeShareText}
+                buttonText="Share with a friend"
+              />
               <div className="flex items-center gap-2">
                 <div className="rounded-[10px] py-2 px-3 flex-1 min-w-0" style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}>
                   <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{witnessUrl}</p>
@@ -391,7 +410,17 @@ export default function LivePage() {
     <RitualScreen
       footer={
         <div className="flex flex-col gap-2">
-          <SecondaryButton label="View history" onPress={() => router.push('/history')} />
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="w-full rounded-[14px] min-h-[46px] flex items-center justify-between px-4 transition-transform active:scale-[0.98]"
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
+            <div className="flex items-center gap-2">
+              <LayoutGrid className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
+            </div>
+            <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+          </button>
         </div>
       }
     >

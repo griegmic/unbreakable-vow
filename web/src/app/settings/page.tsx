@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, History } from 'lucide-react';
+import { LogOut, User, History, ArrowLeft } from 'lucide-react';
 import { RitualScreen, HeaderBadge, TitleBlock, RitualCard, PrimaryButton, FadeUp } from '@/components/ui';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -15,7 +15,12 @@ export default function SettingsPage() {
 
   return (
     <RitualScreen>
-      <FadeUp><HeaderBadge /></FadeUp>
+      <FadeUp>
+        <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 py-2">
+          <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Dashboard</span>
+        </button>
+      </FadeUp>
 
       <FadeUp delay={0.05}>
         <TitleBlock title="Settings" subtitle="Manage your account" />

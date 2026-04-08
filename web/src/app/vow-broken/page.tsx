@@ -16,8 +16,8 @@ function VowBrokenContent() {
     <RitualScreen
       footer={
         <>
-          <PrimaryButton label="Make a redemption vow" onPress={() => router.push('/')} />
-          <SecondaryButton label="View history" onPress={() => router.push('/history')} />
+          <PrimaryButton label="Make a redemption vow" onPress={() => router.push('/create')} />
+          <SecondaryButton label="My Vows" onPress={() => router.push('/dashboard')} />
         </>
       }
     >
