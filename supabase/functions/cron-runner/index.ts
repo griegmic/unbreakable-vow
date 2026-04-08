@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
 import { witnessReminderMessage, warmupMessage, verdictRequestMessage, outcomeMessage } from '../_shared/sms-templates.ts';
 

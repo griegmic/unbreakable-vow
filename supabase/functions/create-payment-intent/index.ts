@@ -1,4 +1,4 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
   }
 
   try {
+    console.log('[create-payment-intent] request received');
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing authorization' }), {
@@ -37,18 +38,22 @@ Deno.serve(async (req) => {
       });
     }
 
+    console.log('[create-payment-intent] creating supabase client, url:', supabaseUrl ? 'set' : 'MISSING', 'key:', serviceRoleKey ? 'set' : 'MISSING');
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
+    console.log('[create-payment-intent] verifying user token');
     const { data: { user }, error: authError } = await supabase.auth.getUser(
       authHeader.replace('Bearer ', '')
     );
     if (authError || !user) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      console.error('[create-payment-intent] auth failed:', authError?.message);
+      return new Response(JSON.stringify({ error: 'Unauthorized', detail: authError?.message }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
+    console.log('[create-payment-intent] user verified:', user.id);
     const { vow_id, amount } = await req.json();
 
     if (!vow_id || !amount || typeof amount !== 'number' || amount < 1000 || amount > 10000) {
@@ -59,19 +64,26 @@ Deno.serve(async (req) => {
     }
 
     // Get or create Stripe customer
-    const { data: profile } = await supabase
+    console.log('[create-payment-intent] looking up stripe customer for user:', user.id);
+    const { data: profile, error: profileError } = await supabase
       .from('users')
       .select('stripe_customer_id')
       .eq('id', user.id)
       .maybeSingle();
 
+    if (profileError) {
+      console.error('[create-payment-intent] profile lookup error:', profileError.message);
+    }
+
     let customerId = profile?.stripe_customer_id;
     if (!customerId) {
+      console.log('[create-payment-intent] no stripe customer, creating one. STRIPE_SECRET_KEY:', STRIPE_SECRET_KEY ? `set (${STRIPE_SECRET_KEY.substring(0, 7)}...)` : 'MISSING');
       const customer = await stripePost('customers', {
         email: user.email || '',
         'metadata[supabase_user_id]': user.id,
       });
       customerId = customer.id;
+      console.log('[create-payment-intent] stripe customer created:', customerId);
       // Try to update, but don't fail if user row doesn't exist
       await supabase
         .from('users')
@@ -79,6 +91,7 @@ Deno.serve(async (req) => {
     }
 
     // Create PaymentIntent
+    console.log('[create-payment-intent] creating payment intent, amount:', amount, 'customer:', customerId);
     const paymentIntent = await stripePost('payment_intents', {
       amount: String(amount),
       currency: 'usd',
