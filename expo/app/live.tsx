@@ -484,7 +484,7 @@ export default function LiveScreen() {
     }
   }, [activeVowText, vow.stake.amount, daysLeft]);
 
-  const getCountdownTint = useCallback((days: number | null) => {
+  const getCountdownTint = useCallback((days: number | null): { bg: string; border: string; accent: string } => {
     if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)', accent: palette.success };
     if (days <= 0) return { bg: 'rgba(255,123,123,0.10)', border: 'rgba(255,123,123,0.25)', accent: palette.danger };
     if (days === 1) return { bg: 'rgba(255,180,80,0.10)', border: 'rgba(255,180,80,0.25)', accent: '#FFB450' };
