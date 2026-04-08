@@ -425,7 +425,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       footer={
         <>
           <PrimaryButton
-            label="I accept — hold them to it"
+            label="I'm in"
             onPress={handleAccept}
             loading={busy}
             disabled={!oathSworn}
@@ -453,8 +453,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
       <FadeUp delay={0.08}>
         <TitleBlock
-          title={`${makerName} made a vow — and named you to hold them to it.`}
-          subtitle={vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} is on the line. When the time comes, you deliver the verdict.` : "When the time comes, you deliver the verdict."}
+          title={`${makerName} made a vow.`}
+          subtitle={vow.stake_amount > 0 ? "They put real money on it — and picked you to be the one who decides if they kept it." : "They put their word on the line — and picked you to be the one who decides if they kept it."}
         />
       </FadeUp>
 
@@ -487,31 +487,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         </RitualCard>
       </FadeUp>
 
-      {/* What this means */}
-      <FadeUp delay={0.2}>
-        <div className="flex flex-col gap-3 px-1">
-          {[
-            { icon: Eye, text: `Watch whether ${makerName} follows through.` },
-            { icon: Shield, text: `On ${endDate}, you call it: kept or broken.` },
-            { icon: DollarSign, text: vow.stake_amount > 0 ? `If broken, $${Math.round(vow.stake_amount / 100)} goes to ${vow.destination}.` : 'No money at stake — just their word.' },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-3">
-              <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
-                style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.12)' }}
-              >
-                <item.icon className="w-4 h-4" style={{ color: 'var(--gold)' }} />
-              </div>
-              <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>
-                {item.text}
-              </span>
-            </div>
-          ))}
-        </div>
-      </FadeUp>
-
       {/* Oath checkbox */}
-      <FadeUp delay={0.26}>
+      <FadeUp delay={0.2}>
         <div
           className="rounded-[20px] p-[18px]"
           style={{
