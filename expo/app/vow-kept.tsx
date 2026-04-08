@@ -68,7 +68,7 @@ export default function VowKeptScreen() {
     if (Platform.OS !== 'web') {
       try {
         await Share.share({
-          message: `I kept my Unbreakable Vow: "${activeVowText}" — $${vow.stake.amount} protected. 💪`,
+          message: `I kept my Unbreakable Vow: "${activeVowText}" — $${vow.stake.amount} protected. 💪\nhttps://unbreakablevow.app/outcome/${vow.vowId}`,
         });
       } catch {
         console.log('[VowKept] share failed');

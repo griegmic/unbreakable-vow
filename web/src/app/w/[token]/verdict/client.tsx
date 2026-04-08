@@ -1,6 +1,6 @@
 'use client';
 import { useState } from 'react';
-import { Check, DollarSign, Sparkles } from 'lucide-react';
+import { Check, DollarSign, Sparkles, Share2, CheckCheck } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, FadeUp, HeaderBadge } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
 
@@ -21,11 +21,12 @@ interface Vow {
 type VerdictChoice = 'kept' | 'broken' | null;
 type ViewState = 'choose' | 'confirm' | 'done';
 
-export default function VerdictClient({ vow, token }: { vow: Vow; token: string }) {
+export default function VerdictClient({ vow, token, makerName }: { vow: Vow; token: string; makerName: string }) {
   const [choice, setChoice] = useState<VerdictChoice>(null);
   const [view, setView] = useState<ViewState>('choose');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [shared, setShared] = useState(false);
 
   const handleChoose = (verdict: VerdictChoice) => {
     setChoice(verdict);
@@ -81,11 +82,30 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
 
   if (view === 'done') {
     const isKept = choice === 'kept';
+    const outcomeUrl = `https://unbreakablevow.app/outcome/${vow.id}`;
+
+    const handleShareOutcome = async () => {
+      const text = isKept
+        ? `Vow kept: "${vow.refined_text}" — $${vow.stake_amount / 100} protected.`
+        : `Vow broken: "${vow.refined_text}" — $${vow.stake_amount / 100} to ${vow.destination}.`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ text, url: outcomeUrl });
+          return;
+        } catch {}
+      }
+
+      await navigator.clipboard.writeText(`${text}\n${outcomeUrl}`);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    };
+
     return (
       <RitualScreen>
         <FadeUp><HeaderBadge /></FadeUp>
         <FadeUp delay={0.1}>
-          <div className="flex justify-center mt-8">
+          <div className="flex justify-center mt-6">
             <div
               className="w-16 h-16 rounded-full flex items-center justify-center animate-scale-in"
               style={{ backgroundColor: isKept ? 'var(--success-muted)' : 'var(--warm-amber-muted)' }}
@@ -112,19 +132,51 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
             Thank you for being an honest witness.
           </p>
         </FadeUp>
-        <FadeUp delay={0.3}>
-          <a
-            href="https://unbreakablevow.app"
-            className="w-full text-center rounded-[18px] min-h-[52px] flex items-center justify-center transition-transform active:scale-[0.975]"
+
+        {/* Share outcome */}
+        <FadeUp delay={0.25}>
+          <button
+            onClick={handleShareOutcome}
+            className="w-full rounded-[14px] min-h-[48px] flex items-center justify-center gap-2.5 transition-transform active:scale-[0.975]"
             style={{
-              background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-              boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+              backgroundColor: 'var(--surface)',
+              border: '1px solid var(--border-strong)',
             }}
           >
-            <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>
-              Make a vow of your own
-            </span>
-          </a>
+            {shared ? (
+              <>
+                <CheckCheck className="w-4 h-4" style={{ color: 'var(--success)' }} />
+                <span className="text-[14px] font-semibold" style={{ color: 'var(--success)' }}>Copied!</span>
+              </>
+            ) : (
+              <>
+                <Share2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+                <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Share the outcome</span>
+              </>
+            )}
+          </button>
+        </FadeUp>
+
+        {/* Reciprocity CTA */}
+        <FadeUp delay={0.35}>
+          <div className="flex flex-col gap-2">
+            <TitleBlock
+              title="Your turn."
+              subtitle={`Make a vow and pick ${makerName} to hold you accountable.`}
+            />
+            <a
+              href={`https://unbreakablevow.app/?ref=witness&from=${encodeURIComponent(makerName)}`}
+              className="w-full rounded-[18px] min-h-[56px] flex items-center justify-center transition-transform active:scale-[0.975]"
+              style={{
+                background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+              }}
+            >
+              <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                Make my vow
+              </span>
+            </a>
+          </div>
         </FadeUp>
       </RitualScreen>
     );

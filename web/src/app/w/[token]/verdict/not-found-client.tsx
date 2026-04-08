@@ -68,7 +68,7 @@ export default function VerdictNotFound({ token }: { token: string }) {
   }
 
   if (vow) {
-    return <VerdictClient vow={vow} token={token} />;
+    return <VerdictClient vow={vow} token={token} makerName="Your friend" />;
   }
 
   if (gaveUp) {

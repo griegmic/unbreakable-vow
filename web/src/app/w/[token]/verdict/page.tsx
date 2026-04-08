@@ -15,13 +15,24 @@ export default async function VerdictPage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('id, refined_text, stake_amount, destination, witness_name, status, verdict')
+    .select('id, refined_text, stake_amount, destination, witness_name, status, verdict, user_id')
     .eq('witness_invite_token', token)
     .single();
 
   if (vowError || !vow) {
     console.error('[VerdictPage] vow lookup failed:', vowError?.message, 'token:', token);
     return <VerdictNotFound token={token} />;
+  }
+
+  // Get the vow maker's name for the reciprocity CTA
+  let makerName = 'your friend';
+  if (vow.user_id) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('display_name')
+      .eq('id', vow.user_id)
+      .single();
+    if (user?.display_name) makerName = user.display_name;
   }
 
   if (vow.verdict) {
@@ -37,5 +48,5 @@ export default async function VerdictPage({ params }: Props) {
     );
   }
 
-  return <VerdictClient vow={vow} token={token} />;
+  return <VerdictClient vow={vow} token={token} makerName={makerName} />;
 }
