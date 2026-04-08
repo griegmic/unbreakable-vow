@@ -2,20 +2,23 @@ import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { Stack, router } from 'expo-router';
-import { AlertCircle, Clock, ExternalLink, FastForward, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, User, UserMinus } from 'lucide-react-native';
+import { AlertCircle, ChevronRight, Clock, ExternalLink, FastForward, Flame, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, ThumbsUp, Trophy, User, UserMinus } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { getDailyNudge, getVowVerdictDate, palette } from '@/constants/unbreakable';
+import { getDailyNudge, getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
-import { extendVowDeadline, resendWitnessInvite, switchToSoloWitness } from '@/lib/vow-api';
+import { extendVowDeadline, resendWitnessInvite, submitCheckIn, switchToSoloWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
 type WitnessStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'unknown';
 type VowPhase = 'witness_pending' | 'vow_active' | 'verdict_due';
+type CheckInType = 'on_track' | 'struggling' | 'done_early';
+
+const CHECK_IN_COOLDOWN_MS = 4 * 60 * 60 * 1000;
 
 export default function LiveScreen() {
   const { activeVowText, vow, isSelfWitness, switchToSolo, setVowId } = useVowFlow();
@@ -24,11 +27,20 @@ export default function LiveScreen() {
   const brokenTarget = vow.stake.destination;
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const progressAnim = useRef(new Animated.Value(0)).current;
+  const checkInScaleOn = useRef(new Animated.Value(1)).current;
+  const checkInScaleStruggle = useRef(new Animated.Value(1)).current;
+  const checkInScaleDone = useRef(new Animated.Value(1)).current;
+  const fadeInAnim = useRef(new Animated.Value(0)).current;
+
   const [witnessStatus, setWitnessStatus] = useState<WitnessStatus>(IS_EXPO_GO ? 'pending' : 'unknown');
   const [resendCooldown, setResendCooldown] = useState<number>(0);
   const [resending, setResending] = useState<boolean>(false);
   const [goingSolo, setGoingSolo] = useState<boolean>(false);
   const [extending, setExtending] = useState<boolean>(false);
+  const [checkingIn, setCheckingIn] = useState<boolean>(false);
+  const [lastCheckIn, setLastCheckIn] = useState<string | null>(null);
+  const [checkInFeedback, setCheckInFeedback] = useState<string | null>(null);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const now = new Date();
@@ -51,7 +63,6 @@ export default function LiveScreen() {
     }
   }, [vow.rawInput]);
 
-  // Hydrate witnessInviteToken and witness status from DB on mount
   useEffect(() => {
     if (!vow.vowId) return;
 
@@ -65,12 +76,10 @@ export default function LiveScreen() {
 
         if (!data) return;
 
-        // Hydrate token if missing
         if (!vow.witnessInviteToken && data.witness_invite_token) {
           setVowId(vow.vowId!, data.witness_invite_token);
         }
 
-        // Set witness status from DB (eliminates pending→active flash)
         if (!isSelfWitness) {
           if (data.witness_accepted_at) {
             setWitnessStatus((prev) => {
@@ -93,14 +102,36 @@ export default function LiveScreen() {
           }
         }
       } catch {
-        // Fallback to pending on error
+        // fallback
       }
     }
 
     void hydrateFromDb();
   }, [vow.vowId, vow.witnessInviteToken, setVowId, isSelfWitness]);
 
-  // Poll for witness status changes (acceptance, decline)
+  useEffect(() => {
+    if (!vow.vowId) return;
+    async function fetchLastCheckIn() {
+      try {
+        const { data } = await supabase
+          .from('audit_events')
+          .select('created_at')
+          .eq('vow_id', vow.vowId!)
+          .eq('event_type', 'check_in')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        if (data?.created_at) {
+          setLastCheckIn(data.created_at);
+          console.log('[LiveScreen] last check-in:', data.created_at);
+        }
+      } catch {
+        // no check-ins yet
+      }
+    }
+    void fetchLastCheckIn();
+  }, [vow.vowId]);
+
   useEffect(() => {
     if (isSelfWitness || !vow.vowId) return;
 
@@ -141,13 +172,19 @@ export default function LiveScreen() {
   }, [vow.vowId, isSelfWitness]);
 
   useEffect(() => {
-    console.log('[LiveScreen] vow active:', activeVowText);
     Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, { toValue: 1.15, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
         Animated.timing(pulseAnim, { toValue: 1, duration: 1200, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
       ])
     ).start();
+
+    Animated.timing(fadeInAnim, {
+      toValue: 1,
+      duration: 600,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -156,6 +193,57 @@ export default function LiveScreen() {
       if (cooldownRef.current) clearInterval(cooldownRef.current);
     };
   }, []);
+
+  const progressPercent = useMemo(() => {
+    if (isNaN(endDate.getTime())) return 0;
+    const startDate = vow.vowId ? new Date(endDate.getTime() - 7 * 86400000) : now;
+    const total = endDate.getTime() - startDate.getTime();
+    if (total <= 0) return 100;
+    const elapsed = now.getTime() - startDate.getTime();
+    return Math.max(0, Math.min(100, (elapsed / total) * 100));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endDate.getTime()]);
+
+  useEffect(() => {
+    Animated.timing(progressAnim, {
+      toValue: progressPercent,
+      duration: 1000,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: false,
+    }).start();
+  }, [progressPercent, progressAnim]);
+
+  const progressColor = useMemo(() => {
+    if (progressPercent < 50) return palette.goldBright;
+    if (progressPercent < 80) return palette.warmAmber;
+    return palette.danger;
+  }, [progressPercent]);
+
+  const canCheckIn = useMemo(() => {
+    if (!lastCheckIn) return true;
+    const lastTime = new Date(lastCheckIn).getTime();
+    return Date.now() - lastTime > CHECK_IN_COOLDOWN_MS;
+  }, [lastCheckIn]);
+
+  const checkInCooldownLabel = useMemo(() => {
+    if (!lastCheckIn || canCheckIn) return null;
+    const lastTime = new Date(lastCheckIn).getTime();
+    const remaining = CHECK_IN_COOLDOWN_MS - (Date.now() - lastTime);
+    const hours = Math.ceil(remaining / (60 * 60 * 1000));
+    return `Next check-in in ${hours}h`;
+  }, [lastCheckIn, canCheckIn]);
+
+  const daysLeft = useMemo(() => {
+    if (isNaN(endDate.getTime())) return null;
+    const ms = endDate.getTime() - now.getTime();
+    return Math.ceil(ms / 86400000);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [endDate.getTime()]);
+
+  const countdownLabel = daysLeft === null ? null
+    : daysLeft <= 0 ? "Today's the day"
+    : daysLeft === 1 ? 'Last day'
+    : `${daysLeft} days left`;
 
   const startResendCooldown = useCallback(() => {
     setResendCooldown(60);
@@ -209,13 +297,11 @@ export default function LiveScreen() {
           style: 'destructive',
           onPress: async () => {
             setGoingSolo(true);
-
             if (IS_EXPO_GO) {
               switchToSolo();
               setGoingSolo(false);
               return;
             }
-
             if (vow.vowId) {
               const result = await switchToSoloWitness(vow.vowId);
               if (result.success) {
@@ -292,6 +378,53 @@ export default function LiveScreen() {
     router.push('/witness-verdict');
   }, [vow.vowId]);
 
+  const handleCheckIn = useCallback(async (type: CheckInType) => {
+    if (checkingIn || !canCheckIn || !vow.vowId) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setCheckingIn(true);
+
+    const scaleRef = type === 'on_track' ? checkInScaleOn
+      : type === 'struggling' ? checkInScaleStruggle
+      : checkInScaleDone;
+
+    Animated.sequence([
+      Animated.timing(scaleRef, { toValue: 0.85, duration: 100, useNativeDriver: true }),
+      Animated.spring(scaleRef, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 12 }),
+    ]).start();
+
+    if (IS_EXPO_GO) {
+      setTimeout(() => {
+        setCheckingIn(false);
+        setLastCheckIn(new Date().toISOString());
+        const feedbackMap: Record<CheckInType, string> = {
+          on_track: "Keep it up. You're doing this.",
+          struggling: "Rough days count too. Stay in the fight.",
+          done_early: "Look at you. Ahead of schedule.",
+        };
+        setCheckInFeedback(feedbackMap[type]);
+        setTimeout(() => setCheckInFeedback(null), 4000);
+      }, 500);
+      return;
+    }
+
+    const success = await submitCheckIn(vow.vowId, type);
+    setCheckingIn(false);
+
+    if (success) {
+      setLastCheckIn(new Date().toISOString());
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const feedbackMap: Record<CheckInType, string> = {
+        on_track: "Keep it up. You're doing this.",
+        struggling: "Rough days count too. Stay in the fight.",
+        done_early: "Look at you. Ahead of schedule.",
+      };
+      setCheckInFeedback(feedbackMap[type]);
+      setTimeout(() => setCheckInFeedback(null), 4000);
+    } else {
+      Alert.alert('Check-in failed', 'Please try again.');
+    }
+  }, [checkingIn, canCheckIn, vow.vowId, checkInScaleOn, checkInScaleStruggle, checkInScaleDone]);
+
   const witnessWebUrl = vow.witnessInviteToken
     ? `https://unbreakablevow.app/w/${vow.witnessInviteToken}`
     : null;
@@ -302,6 +435,59 @@ export default function LiveScreen() {
       Linking.openURL(witnessWebUrl);
     }
   }, [witnessWebUrl]);
+
+  const cheekyLabels = useMemo(() => [
+    `Report to ${vow.witnessName}`,
+    `Tell ${vow.witnessName} you showed up`,
+    `Prove it to ${vow.witnessName}`,
+    `${vow.witnessName}'s watching. Say something.`,
+    `Confess to ${vow.witnessName}`,
+    `${vow.witnessName} demands an update`,
+  ], [vow.witnessName]);
+
+  const todaysLabel = useMemo(() => {
+    const dayIndex = Math.floor(Date.now() / 86400000) % cheekyLabels.length;
+    return cheekyLabels[dayIndex];
+  }, [cheekyLabels]);
+
+  const handleTextWitness = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const phone = vow.phoneNumber;
+    if (phone) {
+      const smsUrl = Platform.OS === 'ios'
+        ? `sms:${phone}`
+        : `sms:${phone}`;
+      console.log('[LiveScreen] opening SMS to witness (no body):', smsUrl);
+      Linking.openURL(smsUrl).catch(() => {
+        console.log('[LiveScreen] failed to open SMS');
+      });
+    } else {
+      Share.share({ message: `Checking in on my vow: "${activeVowText}"` }).catch(() => {
+        console.log('[LiveScreen] share failed');
+      });
+    }
+  }, [vow.phoneNumber, activeVowText]);
+
+  const handleShareProgress = useCallback(async () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    const stakeLabel = vow.stake.amount ? `$${vow.stake.amount}` : '';
+    const msg = `I'm ${daysLeft ?? 0} days into my vow: "${activeVowText}"${stakeLabel ? ` — ${stakeLabel} on the line` : ''}. Holding strong 💪`;
+    try {
+      await Share.share({ message: msg });
+    } catch {
+      console.log('[LiveScreen] share progress failed');
+    }
+  }, [activeVowText, vow.stake.amount, daysLeft]);
+
+  const getCountdownTint = useCallback((days: number | null) => {
+    if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)', accent: palette.success };
+    if (days <= 0) return { bg: 'rgba(255,123,123,0.10)', border: 'rgba(255,123,123,0.25)', accent: palette.danger };
+    if (days === 1) return { bg: 'rgba(255,180,80,0.10)', border: 'rgba(255,180,80,0.25)', accent: '#FFB450' };
+    if (days <= 3) return { bg: 'rgba(212,162,79,0.08)', border: 'rgba(212,162,79,0.20)', accent: palette.warmAmber };
+    return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)', accent: palette.success };
+  }, []);
+
+  const dailyNudge = useMemo(() => getDailyNudge(), []);
 
   const renderWitnessPendingCard = () => {
     if (witnessStatus === 'declined') {
@@ -410,74 +596,99 @@ export default function LiveScreen() {
     );
   };
 
-  const cheekyLabels = useMemo(() => [
-    `Report to ${vow.witnessName}`,
-    `Tell ${vow.witnessName} you showed up`,
-    `Prove it to ${vow.witnessName}`,
-    `${vow.witnessName}'s watching. Say something.`,
-    `Confess to ${vow.witnessName}`,
-    `${vow.witnessName} demands an update`,
-  ], [vow.witnessName]);
-
-  const todaysLabel = useMemo(() => {
-    const dayIndex = Math.floor(Date.now() / 86400000) % cheekyLabels.length;
-    return cheekyLabels[dayIndex];
-  }, [cheekyLabels]);
-
-  const handleTextWitness = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const phone = vow.phoneNumber;
-    const stakeLabel = vow.stake.amount ? `$${vow.stake.amount / 100}` : '';
-    const body = encodeURIComponent(
-      `Still holding my vow: "${activeVowText}"${stakeLabel ? ` — ${stakeLabel} on the line` : ''}. Just checking in 👀`
-    );
-    if (phone) {
-      const smsUrl = Platform.OS === 'ios'
-        ? `sms:${phone}&body=${body}`
-        : `sms:${phone}?body=${body}`;
-      console.log('[LiveScreen] opening SMS to witness:', smsUrl);
-      Linking.openURL(smsUrl).catch(() => {
-        console.log('[LiveScreen] failed to open SMS');
-      });
-    } else {
-      Share.share({ message: `Checking in on my vow: "${activeVowText}"` }).catch(() => {
-        console.log('[LiveScreen] share failed');
-      });
-    }
-  }, [vow.phoneNumber, vow.stake.amount, activeVowText]);
-
-  const getCountdownTint = useCallback((days: number | null) => {
-    if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
-    if (days <= 0) return { bg: 'rgba(255,123,123,0.10)', border: 'rgba(255,123,123,0.25)' };
-    if (days === 1) return { bg: 'rgba(255,180,80,0.10)', border: 'rgba(255,180,80,0.25)' };
-    if (days <= 3) return { bg: 'rgba(212,162,79,0.08)', border: 'rgba(212,162,79,0.20)' };
-    return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
-  }, []);
-
-  const dailyNudge = useMemo(() => getDailyNudge(), []);
-
   const renderVowActiveCard = () => {
     const tint = getCountdownTint(daysLeft);
     const witnessLabel = isSelfWitness
       ? "You're the judge"
       : `${vow.witnessName} is watching`;
 
+    const progressWidth = progressAnim.interpolate({
+      inputRange: [0, 100],
+      outputRange: ['0%', '100%'],
+      extrapolate: 'clamp',
+    });
+
     return (
-      <>
+      <Animated.View style={{ opacity: fadeInAnim }}>
         <View style={[
-          styles.unifiedCountdownCard,
+          styles.countdownCard,
           { backgroundColor: tint.bg, borderColor: tint.border },
         ]}>
-          <Text style={styles.unifiedCountdownBig}>{countdownLabel ?? 'Vow active'}</Text>
-          <Text style={styles.unifiedCountdownDate}>Verdict day: {dates.endLabel}</Text>
-          <View style={styles.unifiedWitnessRow}>
-            <View style={styles.unifiedWitnessDot} />
-            <Text style={styles.unifiedWitnessText}>{witnessLabel}</Text>
+          <Text style={styles.countdownBig}>{countdownLabel ?? 'Vow active'}</Text>
+
+          <View style={styles.progressBarWrap}>
+            <View style={styles.progressBarBg}>
+              <Animated.View style={[
+                styles.progressBarFill,
+                { width: progressWidth, backgroundColor: progressColor },
+              ]} />
+            </View>
+            <Text style={styles.progressPercent}>{Math.round(progressPercent)}%</Text>
           </View>
-          <Text style={styles.dailyNudgeText}>{dailyNudge}</Text>
+
+          <Text style={styles.countdownDate}>Verdict day: {dates.endLabel}</Text>
+
+          <View style={styles.witnessRow}>
+            <View style={[styles.witnessDot, { backgroundColor: tint.accent }]} />
+            <Text style={[styles.witnessText, { color: tint.accent }]}>{witnessLabel}</Text>
+          </View>
         </View>
 
-        {!isSelfWitness && (
+        <View style={styles.checkInSection}>
+          <Text style={styles.checkInTitle}>How's it going?</Text>
+          {checkInFeedback ? (
+            <View style={styles.checkInFeedbackWrap}>
+              <Sparkles color={palette.goldBright} size={14} />
+              <Text style={styles.checkInFeedbackText}>{checkInFeedback}</Text>
+            </View>
+          ) : !canCheckIn ? (
+            <Text style={styles.checkInCooldownText}>{checkInCooldownLabel}</Text>
+          ) : (
+            <View style={styles.checkInButtons}>
+              <Animated.View style={[styles.checkInBtnWrap, { transform: [{ scale: checkInScaleOn }] }]}>
+                <Pressable
+                  style={[styles.checkInBtn, styles.checkInBtnOnTrack]}
+                  onPress={() => { void handleCheckIn('on_track'); }}
+                  disabled={checkingIn || !canCheckIn}
+                  testID="live-checkin-ontrack"
+                >
+                  <ThumbsUp color={palette.success} size={18} />
+                  <Text style={[styles.checkInBtnLabel, { color: palette.success }]}>On track</Text>
+                </Pressable>
+              </Animated.View>
+
+              <Animated.View style={[styles.checkInBtnWrap, { transform: [{ scale: checkInScaleStruggle }] }]}>
+                <Pressable
+                  style={[styles.checkInBtn, styles.checkInBtnStruggling]}
+                  onPress={() => { void handleCheckIn('struggling'); }}
+                  disabled={checkingIn || !canCheckIn}
+                  testID="live-checkin-struggling"
+                >
+                  <Flame color={palette.warmAmber} size={18} />
+                  <Text style={[styles.checkInBtnLabel, { color: palette.warmAmber }]}>Struggling</Text>
+                </Pressable>
+              </Animated.View>
+
+              <Animated.View style={[styles.checkInBtnWrap, { transform: [{ scale: checkInScaleDone }] }]}>
+                <Pressable
+                  style={[styles.checkInBtn, styles.checkInBtnDone]}
+                  onPress={() => { void handleCheckIn('done_early'); }}
+                  disabled={checkingIn || !canCheckIn}
+                  testID="live-checkin-done"
+                >
+                  <Trophy color={palette.goldBright} size={18} />
+                  <Text style={[styles.checkInBtnLabel, { color: palette.goldBright }]}>Done early</Text>
+                </Pressable>
+              </Animated.View>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.nudgeWrap}>
+          <Text style={styles.nudgeText}>{dailyNudge}</Text>
+        </View>
+
+        {!isSelfWitness ? (
           <Pressable
             style={({ pressed }) => [styles.smsActionBtn, pressed && styles.smsActionBtnPressed]}
             onPress={handleTextWitness}
@@ -486,8 +697,17 @@ export default function LiveScreen() {
             <MessageCircle color="#0B0D11" size={18} />
             <Text style={styles.smsActionBtnText}>{todaysLabel}</Text>
           </Pressable>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.shareProgressBtn, pressed && styles.shareProgressBtnPressed]}
+            onPress={() => { void handleShareProgress(); }}
+            testID="live-share-progress"
+          >
+            <Share2 color={palette.goldBright} size={16} />
+            <Text style={styles.shareProgressBtnText}>Share your progress</Text>
+          </Pressable>
         )}
-      </>
+      </Animated.View>
     );
   };
 
@@ -505,19 +725,6 @@ export default function LiveScreen() {
       </View>
     );
   };
-
-  const daysLeft = (() => {
-    if (isNaN(endDate.getTime())) return null;
-    const ms = endDate.getTime() - now.getTime();
-    return Math.ceil(ms / 86400000);
-  })();
-
-  const countdownLabel = daysLeft === null ? null
-    : daysLeft <= 0 ? "Today's the day"
-    : daysLeft === 1 ? 'Last day'
-    : `${daysLeft} days left`;
-
-
 
   const renderBadge = () => {
     if (phase === 'verdict_due') {
@@ -576,13 +783,24 @@ export default function LiveScreen() {
 
     return (
       <>
+        <Pressable
+          style={({ pressed }) => [styles.dashboardLink, pressed && styles.dashboardLinkPressed]}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/dashboard');
+          }}
+          testID="live-my-vows"
+        >
+          <Layout color={palette.textSecondary} size={16} />
+          <Text style={styles.dashboardLinkText}>My Vows</Text>
+          <ChevronRight color={palette.textMuted} size={16} />
+        </Pressable>
         {IS_EXPO_GO && phase === 'vow_active' && (
           <Pressable style={styles.testSkipBtn} onPress={handleFastForward} testID="live-fast-forward">
             <FastForward color={palette.warmAmber} size={14} />
             <Text style={styles.testSkipText}>Fast-forward to verdict (test mode)</Text>
           </Pressable>
         )}
-        <SecondaryButton label="View history" onPress={() => router.push('/history')} testID="live-history" />
       </>
     );
   };
@@ -614,14 +832,14 @@ export default function LiveScreen() {
 
 const styles = StyleSheet.create({
   statusBadgeWrap: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   statusBadgeRow: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
   },
   statusPulse: {
-    position: 'absolute',
+    position: 'absolute' as const,
     width: 60,
     height: 32,
     borderRadius: 16,
@@ -631,8 +849,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(212,162,79,0.1)',
   },
   pendingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -654,8 +872,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -677,8 +895,8 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   verdictBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -708,8 +926,8 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   pendingIconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
     gap: 10,
   },
   pendingTitle: {
@@ -724,9 +942,9 @@ const styles = StyleSheet.create({
     lineHeight: 21,
   },
   shareInviteBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     gap: 8,
     minHeight: 48,
     borderRadius: 14,
@@ -747,7 +965,7 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
   },
   goSoloLink: {
-    alignItems: 'center',
+    alignItems: 'center' as const,
     paddingVertical: 4,
   },
   goSoloText: {
@@ -756,14 +974,14 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
   },
   declinedActions: {
-    flexDirection: 'row',
+    flexDirection: 'row' as const,
     gap: 10,
   },
   declinedActionBtn: {
     flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     gap: 6,
     paddingVertical: 10,
     paddingHorizontal: 6,
@@ -780,47 +998,140 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600' as const,
   },
-  unifiedCountdownCard: {
+  countdownCard: {
     borderRadius: 20,
     borderWidth: 1,
     padding: 24,
-    gap: 6,
+    gap: 10,
     alignItems: 'center' as const,
   },
-  unifiedCountdownBig: {
+  countdownBig: {
     color: palette.text,
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: '800' as const,
+    fontFamily: serifFont,
     letterSpacing: -0.5,
   },
-  unifiedCountdownDate: {
+  progressBarWrap: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    width: '100%' as const,
+    paddingHorizontal: 4,
+  },
+  progressBarBg: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    overflow: 'hidden' as const,
+  },
+  progressBarFill: {
+    height: 4,
+    borderRadius: 2,
+  },
+  progressPercent: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '600' as const,
+    minWidth: 32,
+    textAlign: 'right' as const,
+  },
+  countdownDate: {
     color: palette.textSecondary,
     fontSize: 14,
     fontWeight: '500' as const,
   },
-  unifiedWitnessRow: {
+  witnessRow: {
     flexDirection: 'row' as const,
     alignItems: 'center' as const,
     gap: 6,
-    marginTop: 8,
+    marginTop: 2,
   },
-  unifiedWitnessDot: {
+  witnessDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: palette.success,
   },
-  unifiedWitnessText: {
-    color: palette.success,
+  witnessText: {
     fontSize: 13,
     fontWeight: '600' as const,
   },
-  dailyNudgeText: {
-    color: 'rgba(255,255,255,0.4)',
+  checkInSection: {
+    backgroundColor: palette.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: palette.border,
+    padding: 18,
+    gap: 14,
+  },
+  checkInTitle: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+  },
+  checkInButtons: {
+    flexDirection: 'row' as const,
+    gap: 10,
+  },
+  checkInBtnWrap: {
+    flex: 1,
+  },
+  checkInBtn: {
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    paddingVertical: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  checkInBtnOnTrack: {
+    backgroundColor: 'rgba(82,214,154,0.06)',
+    borderColor: 'rgba(82,214,154,0.18)',
+  },
+  checkInBtnStruggling: {
+    backgroundColor: 'rgba(212,162,79,0.06)',
+    borderColor: 'rgba(212,162,79,0.18)',
+  },
+  checkInBtnDone: {
+    backgroundColor: 'rgba(240,200,110,0.06)',
+    borderColor: 'rgba(240,200,110,0.18)',
+  },
+  checkInBtnLabel: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    letterSpacing: 0.2,
+  },
+  checkInFeedbackWrap: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    paddingVertical: 8,
+  },
+  checkInFeedbackText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    fontStyle: 'italic' as const,
+  },
+  checkInCooldownText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '500' as const,
+    textAlign: 'center' as const,
+  },
+  nudgeWrap: {
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+  },
+  nudgeText: {
+    color: 'rgba(255,255,255,0.35)',
     fontSize: 12,
     fontStyle: 'italic' as const,
-    marginTop: 10,
-    lineHeight: 17,
+    lineHeight: 18,
+    textAlign: 'center' as const,
   },
   smsActionBtn: {
     flexDirection: 'row' as const,
@@ -845,38 +1156,25 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700' as const,
   },
-  activeCard: {
-    backgroundColor: 'rgba(82,214,154,0.08)',
-    borderRadius: 20,
+  shareProgressBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    minHeight: 48,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(82,214,154,0.22)',
-    padding: 20,
-    gap: 12,
+    borderColor: palette.borderStrong,
+    backgroundColor: 'rgba(212,162,79,0.06)',
   },
-  activeIconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
+  shareProgressBtnPressed: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
   },
-  activeCheckBg: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: 'rgba(82,214,154,0.14)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeTitle: {
-    flex: 1,
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  activeQuote: {
-    color: palette.textSecondary,
+  shareProgressBtnText: {
+    color: palette.goldBright,
     fontSize: 14,
-    lineHeight: 21,
-    fontStyle: 'italic',
+    fontWeight: '600' as const,
   },
   verdictCard: {
     backgroundColor: 'rgba(212,162,79,0.08)',
@@ -885,7 +1183,7 @@ const styles = StyleSheet.create({
     borderColor: palette.borderStrong,
     padding: 24,
     gap: 8,
-    alignItems: 'center',
+    alignItems: 'center' as const,
   },
   verdictHeadline: {
     color: palette.text,
@@ -900,9 +1198,9 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
   },
   witnessLinkRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     gap: 8,
     paddingVertical: 12,
     borderRadius: 14,
@@ -915,18 +1213,38 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
   },
-
+  dashboardLink: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 14,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  dashboardLinkPressed: {
+    opacity: 0.8,
+    backgroundColor: palette.surfaceElevated,
+  },
+  dashboardLinkText: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
   testSkipBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
     gap: 8,
     paddingVertical: 12,
     borderRadius: 14,
     backgroundColor: 'rgba(212,162,79,0.06)',
     borderWidth: 1,
     borderColor: 'rgba(212,162,79,0.15)',
-    borderStyle: 'dashed',
+    borderStyle: 'dashed' as const,
   },
   testSkipText: {
     color: palette.warmAmber,
