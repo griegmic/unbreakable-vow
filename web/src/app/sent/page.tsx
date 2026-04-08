@@ -55,11 +55,11 @@ export default function SentPage() {
 
       <FadeUp delay={0.1}>
         <TitleBlock
-          title={isSelfWitness ? 'Sealed.' : `${vow.witnessName} is your witness.`}
+          title={isSelfWitness ? 'Sealed.' : 'Sealed. Share it with your witness.'}
           subtitle={
             isSelfWitness
               ? "Your vow is locked. You'll judge yourself when the time comes."
-              : `Send them a personal message so they know you're serious.`
+              : 'First person to accept holds you to it.'
           }
         />
       </FadeUp>
@@ -74,7 +74,7 @@ export default function SentPage() {
             <ShareButton
               url={witnessUrl}
               text={shareText}
-              buttonText={`Text ${vow.witnessName}`}
+              buttonText="Share"
             />
             <div
               className="rounded-[16px] p-3 flex items-center gap-3"
@@ -86,7 +86,7 @@ export default function SentPage() {
               <CopyLinkButton url={witnessUrl} />
             </div>
             <p className="text-[12px] text-center" style={{ color: 'var(--text-muted)' }}>
-              A personal message hits harder than an automated text.
+              Send it to whoever you want — first to accept becomes your witness.
             </p>
           </div>
         </FadeUp>
@@ -101,7 +101,7 @@ export default function SentPage() {
                 <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Witness</span>
               </div>
               <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                {isSelfWitness ? 'Just me' : vow.witnessName}
+                {isSelfWitness ? 'Just me' : 'Pending'}
               </span>
             </div>
             <div className="flex items-center justify-between">
@@ -135,9 +135,9 @@ export default function SentPage() {
           <span className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>What happens next</span>
           <div className="flex flex-col gap-3">
             {[
-              { n: '1', text: isSelfWitness ? 'Live your vow for the next 7 days.' : `${vow.witnessName} taps the link to accept.` },
-              { n: '2', text: isSelfWitness ? "When time's up, you decide: kept or broken." : `Live your vow. ${vow.witnessName} is watching.` },
-              { n: '3', text: isSelfWitness ? 'If broken, your stake goes to the cause.' : `On verdict day, ${vow.witnessName} calls it: kept or broken.` },
+              { n: '1', text: isSelfWitness ? 'Live your vow for the next 7 days.' : 'Your witness taps the link to accept.' },
+              { n: '2', text: isSelfWitness ? "When time's up, you decide: kept or broken." : 'Live your vow. They\'re watching.' },
+              { n: '3', text: isSelfWitness ? 'If broken, your stake goes to the cause.' : 'On verdict day, they call it: kept or broken.' },
             ].map(({ n, text }) => (
               <div key={n} className="flex items-start gap-3">
                 <div
