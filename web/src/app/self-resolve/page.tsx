@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, DollarSign, Hand, ShieldCheck } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, OathCheckbox, FadeUp, HeaderBadge } from '@/components/ui';
@@ -20,6 +20,7 @@ export default function SelfResolvePage() {
   const [choice, setChoice] = useState<VerdictChoice>(null);
   const [view, setView] = useState<ViewState>('choose');
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -61,7 +62,8 @@ export default function SelfResolvePage() {
   };
 
   const handleConfirm = async () => {
-    if (!choice || busy || !vow) return;
+    if (!choice || busyRef.current || !vow) return;
+    busyRef.current = true;
     setBusy(true);
     setError('');
 
@@ -76,24 +78,36 @@ export default function SelfResolvePage() {
       if (fnError) {
         const detail = fnData?.error || fnError.message || 'Unknown error';
         console.error('Verdict submission error:', detail, fnData);
-        setError(`Failed to submit verdict: ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`);
+        const msg = detail === 'already_judged' ? 'This vow has already been judged.'
+          : detail === 'invalid_token' ? 'Could not find this vow.'
+          : detail === 'invalid_status' ? 'This vow is not ready for a verdict yet.'
+          : detail === 'refund_failed' ? 'Refund could not be processed right now. Please try again in a moment.'
+          : typeof detail === 'string' ? detail : 'Something went wrong.';
+        setError(msg);
+        busyRef.current = false;
         setBusy(false);
         return;
       }
 
       if (fnData?.error) {
         console.error('Verdict response error:', fnData.error);
-        setError(`Verdict error: ${fnData.error}`);
+        const msg = fnData.error === 'already_judged' ? 'This vow has already been judged.'
+          : fnData.error === 'refund_failed' ? 'Refund could not be processed right now. Please try again in a moment.'
+          : typeof fnData.error === 'string' ? fnData.error : 'Something went wrong.';
+        setError(msg);
+        busyRef.current = false;
         setBusy(false);
         return;
       }
     } catch (err) {
       console.error('Verdict exception:', err);
       setError('Network error. Please try again.');
+      busyRef.current = false;
       setBusy(false);
       return;
     }
 
+    busyRef.current = false;
     setBusy(false);
 
     const amountDollars = Math.round(vow.stake_amount / 100);
@@ -258,7 +272,8 @@ export default function SelfResolvePage() {
           <FadeUp delay={0}>
             <button
               onClick={() => handleChoose('kept')}
-              className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98]"
+              disabled={busy}
+              className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
               style={{ backgroundColor: 'var(--success-muted)', border: '1.5px solid rgba(82,214,154,0.3)' }}
             >
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'rgba(82,214,154,0.2)' }}>
@@ -276,7 +291,8 @@ export default function SelfResolvePage() {
           <FadeUp delay={0.05}>
             <button
               onClick={() => handleChoose('broken')}
-              className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98]"
+              disabled={busy}
+              className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
               style={{ backgroundColor: 'var(--warm-amber-muted)', border: '1.5px solid var(--warm-amber-border)' }}
             >
               <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'rgba(212,162,79,0.2)' }}>

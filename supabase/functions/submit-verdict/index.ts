@@ -62,13 +62,50 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString();
 
-    // Atomic update with status guard to prevent race conditions
+    // For "kept" verdicts with a payment, attempt refund BEFORE finalizing verdict.
+    // This ensures money is actually returned before we tell the user it was.
+    if (verdict === 'kept' && vow.stripe_payment_intent_id) {
+      try {
+        const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Idempotency-Key': `refund-${vow.id}`,
+          },
+          body: new URLSearchParams({ payment_intent: vow.stripe_payment_intent_id }).toString(),
+        });
+        if (!refundRes.ok) {
+          const refundData = await refundRes.json();
+          throw new Error(refundData.error?.message || 'Refund failed');
+        }
+      } catch (refundErr) {
+        console.error('Stripe refund failed:', refundErr);
+        // Flag for retry but DO NOT finalize verdict
+        await supabase
+          .from('vows')
+          .update({ refund_failed: true })
+          .eq('id', vow.id);
+
+        return new Response(JSON.stringify({
+          error: 'refund_failed',
+          message: 'Refund could not be processed. Please try again in a moment.',
+        }), {
+          status: 502,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Refund succeeded (or not needed) — now finalize verdict
     const { data: updated, error: updateError } = await supabase
       .from('vows')
       .update({
         verdict,
         verdict_at: now,
         status: verdict,
+        // Implicit acceptance if witness never formally accepted
+        ...(vow.witness_accepted_at ? {} : { witness_accepted_at: now }),
       })
       .eq('id', vow.id)
       .in('status', acceptableStatuses)
@@ -88,41 +125,6 @@ Deno.serve(async (req) => {
         status: 409,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
-
-    // Auto-set witness_accepted_at if witness never formally accepted
-    // (submitting a verdict is implicit acceptance)
-    if (!vow.witness_accepted_at) {
-      await supabase
-        .from('vows')
-        .update({ witness_accepted_at: now })
-        .eq('id', vow.id);
-    }
-
-    // If kept: issue Stripe refund
-    if (verdict === 'kept' && vow.stripe_payment_intent_id) {
-      try {
-        const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Idempotency-Key': `refund-${vow.id}`,
-          },
-          body: new URLSearchParams({ payment_intent: vow.stripe_payment_intent_id }).toString(),
-        });
-        if (!refundRes.ok) {
-          const refundData = await refundRes.json();
-          throw new Error(refundData.error?.message || 'Refund failed');
-        }
-      } catch (refundErr) {
-        console.error('Stripe refund failed:', refundErr);
-        // Flag for manual review — verdict is recorded but refund needs retry
-        await supabase
-          .from('vows')
-          .update({ refund_failed: true })
-          .eq('id', vow.id);
-      }
     }
 
     // Send SMS #4 (outcome) to witness

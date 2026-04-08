@@ -69,7 +69,7 @@ Deno.serve(async (req) => {
       try {
         const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
         const ownerName = profile?.display_name || 'Someone';
-        const acceptUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
+        const acceptUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
         const body = witnessReminderMessage(ownerName, vow.refined_text, acceptUrl);
         const sid = await sendSMS(vow.witness_phone!, body);
         await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_reminder', twilio_sid: sid });
@@ -155,7 +155,7 @@ Deno.serve(async (req) => {
         if (vow.witness_phone) {
           const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
           const ownerName = profile?.display_name || 'Someone';
-          const verdictUrl = `https://unbreakablevow.app/witness?token=${vow.witness_invite_token}`;
+          const verdictUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}/verdict`;
           const body = verdictRequestMessage(ownerName, vow.refined_text, verdictUrl);
           const sid = await sendSMS(vow.witness_phone, body);
           await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'verdict_request', twilio_sid: sid });
@@ -181,13 +181,13 @@ Deno.serve(async (req) => {
     for (const vow of overdueVows || []) {
       try {
         // Auto-resolve as kept (atomic with status guard to prevent double-resolve)
-        const { count } = await supabase.from('vows').update({
+        const { data: resolved } = await supabase.from('vows').update({
           verdict: 'kept',
           status: 'kept',
           verdict_at: now.toISOString(),
-        }).eq('id', vow.id).eq('status', 'awaiting_verdict');
+        }).eq('id', vow.id).eq('status', 'awaiting_verdict').select('id').maybeSingle();
 
-        if (count === 0) continue; // Already resolved by witness or another cron run
+        if (!resolved) continue; // Already resolved by witness or another cron run
 
         // Stripe refund
         if (vow.stripe_payment_intent_id) {

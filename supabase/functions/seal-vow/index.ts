@@ -152,16 +152,34 @@ Deno.serve(async (req) => {
         ? new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
         : 'soon';
 
-      try {
-        const messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDate, witnessUrl);
-        const twilioSid = await sendSMS(vow.witness_phone, messageBody);
-        await supabase.from('sms_log').insert({
-          vow_id,
-          message_type: 'seal',
-          twilio_sid: twilioSid,
+      const messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDate, witnessUrl);
+      let smsSent = false;
+
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
+          const twilioSid = await sendSMS(vow.witness_phone, messageBody);
+          await supabase.from('sms_log').insert({
+            vow_id,
+            message_type: 'seal',
+            twilio_sid: twilioSid,
+          });
+          smsSent = true;
+          break;
+        } catch (smsErr) {
+          console.error(`[seal-vow] SMS attempt ${attempt + 1} failed:`, smsErr);
+        }
+      }
+
+      if (!smsSent) {
+        await supabase.from('vows').update({ sms_failed: true }).eq('id', vow_id);
+        await supabase.from('push_queue').insert({
+          user_id: user.id,
+          title: 'Witness text failed',
+          body: `We couldn't text ${vow.witness_name}. Share the link manually.`,
+          data: { route: '/live', vow_id, event: 'sms_failed' },
+          send_after: now,
         });
-      } catch (smsErr) {
-        console.error('[seal-vow] SMS send failed:', smsErr);
       }
     }
 
@@ -179,7 +197,8 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error('seal-vow error:', err);
-    return new Response(JSON.stringify({ error: err.message || 'Internal server error' }), {
+    const message = err instanceof Error ? err.message : String(err);
+    return new Response(JSON.stringify({ error: message || 'Internal server error' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

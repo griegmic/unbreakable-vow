@@ -8,9 +8,11 @@ interface Props {
 
 export default async function VerdictPage({ params }: Props) {
   const { token } = await params;
+  // Use service role key — RLS witness policies were removed for security.
+  // This runs server-side only; SUPABASE_SERVICE_ROLE_KEY is never exposed to browser.
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
   const { data: vow, error: vowError } = await supabase

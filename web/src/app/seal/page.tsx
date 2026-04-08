@@ -194,9 +194,20 @@ export default function SealPage() {
     }
   }, [vow, activeVowText, isSelfWitness, setVowId, sealing]);
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = async () => {
     setStep('review');
-    setTimeout(() => createVowAndPay(), 300);
+    // Poll for session instead of blind setTimeout — OAuth callback may not have
+    // propagated the session cookie yet when this fires.
+    const maxAttempts = 10;
+    for (let i = 0; i < maxAttempts; i++) {
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      if (freshSession) {
+        createVowAndPay();
+        return;
+      }
+      await new Promise(r => setTimeout(r, 300));
+    }
+    setError('Session not found after sign-in. Please try again.');
   };
 
   const handlePaymentSuccess = async () => {

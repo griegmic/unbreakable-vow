@@ -69,11 +69,30 @@ Deno.serve(async (req) => {
     }
     console.log('[create-payment-intent] user:', user.id);
 
-    const { vow_id, amount } = await req.json();
-    console.log('[create-payment-intent] vow_id:', vow_id, 'amount:', amount);
+    const { vow_id } = await req.json();
+    console.log('[create-payment-intent] vow_id:', vow_id);
 
-    if (!vow_id || !amount || typeof amount !== 'number' || amount < 1000 || amount > 10000) {
-      return new Response(JSON.stringify({ error: 'Invalid request: vow_id and amount (1000-10000 cents) required' }), {
+    if (!vow_id) {
+      return new Response(JSON.stringify({ error: 'vow_id required' }), {
+        status: 400, headers: corsHeaders,
+      });
+    }
+
+    // Fetch authoritative stake amount from DB — never trust client
+    const vowRes = await supaRest(
+      `vows?id=eq.${vow_id}&user_id=eq.${user.id}&select=stake_amount&limit=1`
+    );
+    const vowRows = await vowRes.json();
+    const vowRow = vowRows?.[0];
+    if (!vowRow) {
+      return new Response(JSON.stringify({ error: 'Vow not found or unauthorized' }), {
+        status: 404, headers: corsHeaders,
+      });
+    }
+
+    const amount = vowRow.stake_amount;
+    if (typeof amount !== 'number' || amount < 1000 || amount > 10000) {
+      return new Response(JSON.stringify({ error: `Invalid stake amount: ${amount}` }), {
         status: 400, headers: corsHeaders,
       });
     }

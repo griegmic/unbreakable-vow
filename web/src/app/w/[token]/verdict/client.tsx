@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Check, DollarSign, Sparkles, Share2, CheckCheck } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, FadeUp, HeaderBadge } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
@@ -25,6 +25,7 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
   const [choice, setChoice] = useState<VerdictChoice>(null);
   const [view, setView] = useState<ViewState>('choose');
   const [busy, setBusy] = useState(false);
+  const busyRef = useRef(false);
   const [error, setError] = useState('');
   const [shared, setShared] = useState(false);
 
@@ -35,7 +36,8 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
   };
 
   const handleConfirm = async () => {
-    if (!choice || busy) return;
+    if (!choice || busyRef.current) return;
+    busyRef.current = true;
     setBusy(true);
     setError('');
 
@@ -58,6 +60,7 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
         const msg = detail === 'already_judged' ? 'This vow has already been judged.'
           : detail === 'invalid_token' ? 'Could not find this vow. The link may have expired.'
           : detail === 'invalid_status' ? 'This vow is not ready for a verdict yet.'
+          : detail === 'refund_failed' ? 'Refund could not be processed right now. Please try again in a moment.'
           : typeof detail === 'string' ? detail : 'Something went wrong.';
         setError(msg);
         setBusy(false);
@@ -76,6 +79,7 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
     } catch {
       setError('Network error. Please check your connection and try again.');
     } finally {
+      busyRef.current = false;
       setBusy(false);
     }
   };
@@ -265,7 +269,8 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
       <FadeUp delay={0.15}>
         <button
           onClick={() => handleChoose('kept')}
-          className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98]"
+          disabled={busy}
+          className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
           style={{ backgroundColor: 'var(--success-muted)', border: '1.5px solid rgba(82,214,154,0.3)' }}
         >
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'rgba(82,214,154,0.2)' }}>
@@ -283,7 +288,8 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
       <FadeUp delay={0.2}>
         <button
           onClick={() => handleChoose('broken')}
-          className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98]"
+          disabled={busy}
+          className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
           style={{ backgroundColor: 'var(--warm-amber-muted)', border: '1.5px solid var(--warm-amber-border)' }}
         >
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'rgba(212,162,79,0.2)' }}>
