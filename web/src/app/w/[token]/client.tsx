@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { DollarSign, Sparkles, Calendar, Clock, Shield, Eye, MessageCircle } from 'lucide-react';
+import { DollarSign, Sparkles, Calendar, Clock, Shield, Eye, MessageCircle, Check } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
 
@@ -62,6 +62,7 @@ function generateICS(vow: Vow, token: string, makerName: string): string {
 export default function WitnessInviteClient({ vow, token, makerName, makerPhone }: { vow: Vow; token: string; makerName: string; makerPhone: string | null }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [oathSworn, setOathSworn] = useState(false);
   const [status, setStatus] = useState<'pending' | 'accepted' | 'declined'>(
     vow.witness_accepted_at ? 'accepted' : vow.witness_declined ? 'declined' : 'pending'
   );
@@ -427,6 +428,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             label="I accept — hold them to it"
             onPress={handleAccept}
             loading={busy}
+            disabled={!oathSworn}
           />
           <SecondaryButton label="Decline" onPress={handleDecline} />
         </>
@@ -434,10 +436,25 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     >
       <FadeUp><HeaderBadge /></FadeUp>
 
+      {/* Chosen badge */}
+      <FadeUp delay={0.04}>
+        <div className="flex justify-center">
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
+            style={{ backgroundColor: 'rgba(212,162,79,0.10)', border: '1px solid rgba(212,162,79,0.25)' }}
+          >
+            <Eye className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
+            <span className="text-[11px] font-bold tracking-[1.5px] uppercase" style={{ color: 'var(--gold)' }}>
+              YOU&apos;VE BEEN CHOSEN AS A WITNESS
+            </span>
+          </div>
+        </div>
+      </FadeUp>
+
       <FadeUp delay={0.08}>
         <TitleBlock
-          title={`${makerName} named you their witness.`}
-          subtitle={vow.stake_amount > 0 ? "They put real money on the line. You hold the power." : "They put their word on the line. You hold the power."}
+          title={`${makerName} made a vow — and named you to hold them to it.`}
+          subtitle={vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} is on the line. When the time comes, you deliver the verdict.` : "When the time comes, you deliver the verdict."}
         />
       </FadeUp>
 
@@ -490,6 +507,39 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               </span>
             </div>
           ))}
+        </div>
+      </FadeUp>
+
+      {/* Oath checkbox */}
+      <FadeUp delay={0.26}>
+        <div
+          className="rounded-[20px] p-[18px]"
+          style={{
+            backgroundColor: 'var(--surface)',
+            border: `1px solid ${oathSworn ? 'var(--border-strong)' : 'var(--border)'}`,
+            boxShadow: oathSworn ? '0 6px 12px rgba(212,162,79,0.06)' : 'none',
+            transition: 'border-color 0.3s, box-shadow 0.3s',
+          }}
+        >
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <div
+              className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all"
+              style={{
+                backgroundColor: oathSworn ? 'rgba(212,162,79,0.15)' : 'var(--surface-elevated)',
+                border: `1.5px solid ${oathSworn ? 'var(--gold)' : 'var(--border)'}`,
+              }}
+              onClick={() => setOathSworn(!oathSworn)}
+            >
+              {oathSworn && <Check className="w-4 h-4" style={{ color: 'var(--gold)' }} />}
+            </div>
+            <span
+              className="text-[14px] leading-[20px] font-medium"
+              style={{ color: oathSworn ? 'var(--text)' : 'var(--text-secondary)' }}
+              onClick={() => setOathSworn(!oathSworn)}
+            >
+              I swear to judge fairly — no favors, no grudges.
+            </span>
+          </label>
         </div>
       </FadeUp>
 

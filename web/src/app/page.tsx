@@ -49,7 +49,7 @@ export default function HomePage() {
     <RitualScreen
       footer={
         <PrimaryButton
-          label="Set the terms"
+          label="I vow it"
           onPress={handleContinue}
           disabled={!input.trim()}
         />

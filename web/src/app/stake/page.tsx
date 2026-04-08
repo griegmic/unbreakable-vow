@@ -8,6 +8,13 @@ import { stakeAmounts, charities, antiCauses, consequenceOptions } from '@/lib/v
 
 const consequenceIcons = { charity: Heart, witness: Users, anti: Flame };
 
+const amountHints: Record<number, string> = {
+  10: 'A nudge',
+  25: 'Enough to sting',
+  50: 'You mean business',
+  100: 'Dead serious',
+};
+
 export default function StakePage() {
   const router = useRouter();
   const { vow, setStake, updateConsequence } = useVowFlow();
@@ -26,7 +33,7 @@ export default function StakePage() {
     <RitualScreen
       footer={
         <>
-          <PrimaryButton label="Continue" onPress={() => router.push('/witness')} />
+          <PrimaryButton label={vow.stake.amount > 0 ? `Confirm $${vow.stake.amount} stake` : 'Continue'} onPress={() => router.push('/witness')} />
           <SecondaryButton label="Back" onPress={() => router.back()} />
         </>
       }
@@ -35,8 +42,8 @@ export default function StakePage() {
 
       <FadeUp delay={0.05}>
         <TitleBlock
-          title="What's at stake?"
-          subtitle="Enough to hurt. Not enough to regret."
+          title="Set the stakes."
+          subtitle="Pick an amount that'll keep you honest."
         />
       </FadeUp>
 
@@ -58,6 +65,12 @@ export default function StakePage() {
                 style={{ color: vow.stake.amount === amount ? 'var(--gold-bright)' : 'var(--text)' }}
               >
                 ${amount}
+              </span>
+              <span
+                className="text-[10px] mt-0.5"
+                style={{ color: vow.stake.amount === amount ? 'var(--gold)' : 'var(--text-muted)' }}
+              >
+                {amountHints[amount]}
               </span>
             </button>
           ))}

@@ -38,6 +38,7 @@ export default function LivePage() {
   const [actionBusy, setActionBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState('');
   const [origin, setOrigin] = useState('');
+  const [lastCheckIn, setLastCheckIn] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const dailyNudge = useMemo(() => getDailyNudge(), []);
@@ -75,6 +76,39 @@ export default function LivePage() {
   }, [isAuthenticated, authLoading, router, fetchVow]);
 
   useEffect(() => { setOrigin(window.location.origin); }, []);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('lastCheckIn');
+    if (stored) setLastCheckIn(Number(stored));
+  }, []);
+
+  const checkInCooldown = lastCheckIn ? (Date.now() - lastCheckIn) < 4 * 60 * 60 * 1000 : false;
+
+  const handleCheckIn = async (mood: 'on_track' | 'struggling' | 'done_early') => {
+    if (!vow || actionBusy || checkInCooldown) return;
+    setActionBusy(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      await supabase.from('audit_events').insert({
+        vow_id: vow.id,
+        event_type: 'check_in',
+        actor_type: 'maker',
+        actor_id: session.user.id,
+        metadata: { mood },
+      });
+      const now = Date.now();
+      setLastCheckIn(now);
+      localStorage.setItem('lastCheckIn', String(now));
+      const labels = { on_track: 'On track', struggling: 'Struggling', done_early: 'Done early' };
+      setActionMsg(`Checked in: ${labels[mood]}`);
+      setTimeout(() => setActionMsg(''), 3000);
+    } catch {
+      setActionMsg('Check-in failed. Try again.');
+    } finally {
+      setActionBusy(false);
+    }
+  };
 
   const handleGoSolo = async () => {
     if (!vow || actionBusy) return;
@@ -401,6 +435,33 @@ export default function LivePage() {
             {dailyNudge}
           </p>
         </div>
+      </FadeUp>
+
+      {/* Check-in buttons */}
+      <FadeUp delay={0.14}>
+        <div className="flex gap-2">
+          {([
+            { mood: 'on_track' as const, label: 'On track', emoji: '💪' },
+            { mood: 'struggling' as const, label: 'Struggling', emoji: '😤' },
+            { mood: 'done_early' as const, label: 'Done early', emoji: '🎉' },
+          ]).map(({ mood, label, emoji }) => (
+            <button
+              key={mood}
+              onClick={() => handleCheckIn(mood)}
+              disabled={actionBusy || checkInCooldown}
+              className="flex-1 rounded-[14px] py-3 flex flex-col items-center gap-1 transition-all active:scale-[0.97] disabled:opacity-40"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <span className="text-[16px]">{emoji}</span>
+              <span className="text-[11px] font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+            </button>
+          ))}
+        </div>
+        {checkInCooldown && (
+          <p className="text-[11px] text-center mt-1.5" style={{ color: 'var(--text-muted)' }}>
+            Next check-in available in a few hours
+          </p>
+        )}
       </FadeUp>
 
       {/* SMS button for friend witnesses */}

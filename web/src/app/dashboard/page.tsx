@@ -140,7 +140,7 @@ export default function DashboardPage() {
   if (isEmpty) {
     return (
       <RitualScreen
-        footer={<PrimaryButton label="+ Make a Vow" onPress={() => router.push('/create')} />}
+        footer={<PrimaryButton label="+ Make a Vow" onPress={() => router.push('/')} />}
       >
         <FadeUp>
           <div className="flex items-center justify-between">
@@ -184,7 +184,7 @@ export default function DashboardPage() {
     <RitualScreen
       footer={
         <button
-          onClick={() => router.push('/create')}
+          onClick={() => router.push('/')}
           className="w-full rounded-[18px] min-h-[56px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"
           style={{
             background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',

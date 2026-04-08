@@ -34,8 +34,8 @@ function VowBrokenContent() {
 
       <FadeUp delay={0.1}>
         <TitleBlock
-          title="Vow broken."
-          subtitle={isZeroStake ? 'The vow was broken. The record stands.' : `Your $${amount} goes to ${destination}.`}
+          title="You were honest."
+          subtitle={isZeroStake ? 'The vow was broken, but you told the truth.' : `Your $${amount} goes to ${destination}. But you told the truth.`}
         />
       </FadeUp>
 

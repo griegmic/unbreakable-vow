@@ -281,7 +281,7 @@ export default function SelfResolvePage() {
                 <ShieldCheck className="w-6 h-6" style={{ color: 'var(--success)' }} />
               </div>
               <div>
-                <span className="text-[17px] font-semibold block" style={{ color: 'var(--success)' }}>Vow kept</span>
+                <span className="text-[17px] font-semibold block" style={{ color: 'var(--success)' }}>I kept my vow</span>
                 <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
                   {isZeroStake ? 'Word honored.' : `${stakeDisplay} stays safe.`}
                 </span>
@@ -300,7 +300,7 @@ export default function SelfResolvePage() {
                 <DollarSign className="w-6 h-6" style={{ color: 'var(--warm-amber)' }} />
               </div>
               <div>
-                <span className="text-[17px] font-semibold block" style={{ color: 'var(--warm-amber)' }}>Vow broken</span>
+                <span className="text-[17px] font-semibold block" style={{ color: 'var(--warm-amber)' }}>I broke it</span>
                 <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
                   {isZeroStake ? 'The record stands.' : `${stakeDisplay} goes to ${destination}.`}
                 </span>

@@ -77,8 +77,8 @@ function VowKeptContent() {
 
       <FadeUp delay={0.1}>
         <TitleBlock
-          title="Vow kept."
-          subtitle={isZeroStake ? "You did what you said. Word honored." : "You did what you said. Your money stays safe."}
+          title="You kept your word."
+          subtitle={isZeroStake ? "Word honored. That's what integrity looks like." : "Your money stays safe. That's what integrity looks like."}
         />
       </FadeUp>
 
