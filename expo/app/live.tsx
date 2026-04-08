@@ -637,16 +637,6 @@ export default function LiveScreen() {
     }
   }, [vow.phoneNumber, vow.stake.amount, activeVowText]);
 
-  const getCountdownTint = useCallback((days: number | null) => {
-    if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
-    if (days <= 0) return { bg: 'rgba(255,123,123,0.10)', border: 'rgba(255,123,123,0.25)' };
-    if (days === 1) return { bg: 'rgba(255,180,80,0.10)', border: 'rgba(255,180,80,0.25)' };
-    if (days <= 3) return { bg: 'rgba(212,162,79,0.08)', border: 'rgba(212,162,79,0.20)' };
-    return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
-  }, []);
-
-  const dailyNudge = useMemo(() => getDailyNudge(), []);
-
   const renderVowActiveCard = () => {
     const tint = getCountdownTint(daysLeft);
     const witnessLabel = isSelfWitness
