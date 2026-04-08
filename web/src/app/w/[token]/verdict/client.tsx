@@ -103,7 +103,7 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
             title={isKept ? 'Verdict: Kept.' : 'Verdict: Broken.'}
             subtitle={isKept
               ? 'The vow was honored. Their money stays safe.'
-              : `${vow.stake_amount / 100} will be donated to ${vow.destination}.`
+              : `$${vow.stake_amount / 100} will be donated to ${vow.destination}.`
             }
           />
         </FadeUp>
@@ -111,6 +111,20 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
           <p className="text-center text-[14px]" style={{ color: 'var(--text-muted)' }}>
             Thank you for being an honest witness.
           </p>
+        </FadeUp>
+        <FadeUp delay={0.3}>
+          <a
+            href="https://unbreakablevow.app"
+            className="w-full text-center rounded-[18px] min-h-[52px] flex items-center justify-center transition-transform active:scale-[0.975]"
+            style={{
+              background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+              boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+            }}
+          >
+            <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>
+              Make a vow of your own
+            </span>
+          </a>
         </FadeUp>
       </RitualScreen>
     );
@@ -160,8 +174,8 @@ export default function VerdictClient({ vow, token }: { vow: Vow; token: string 
           <TitleBlock
             title={isKept ? 'Confirm: Kept.' : 'Are you sure?'}
             subtitle={isKept
-              ? `They followed through. ${vow.stake_amount / 100} stays safe.`
-              : `This is final. ${vow.stake_amount / 100} goes to ${vow.destination}. No take-backs.`
+              ? `They followed through. $${vow.stake_amount / 100} stays safe.`
+              : `This is final. $${vow.stake_amount / 100} goes to ${vow.destination}. No take-backs.`
             }
           />
         </FadeUp>

@@ -1,14 +1,55 @@
 'use client';
-import { Suspense } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Trophy } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
+import { Trophy, Share2 } from 'lucide-react';
+import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp } from '@/components/ui';
+import { useAuth } from '@/providers/auth-provider';
+import { supabase } from '@/lib/supabase';
 
 function VowKeptContent() {
   const router = useRouter();
   const params = useSearchParams();
+  const { session } = useAuth();
   const vowText = params.get('text') || 'Your vow';
   const amount = params.get('amount') || '0';
+
+  const [keptCount, setKeptCount] = useState<number | null>(null);
+  const [streak, setStreak] = useState<number | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (!session?.user?.id) return;
+    const fetchStats = async () => {
+      const { data } = await supabase.from('vows')
+        .select('verdict, verdict_at')
+        .eq('user_id', session.user.id)
+        .not('verdict', 'is', null)
+        .order('verdict_at', { ascending: false });
+      if (!data) return;
+      const kept = data.filter(v => v.verdict === 'kept').length;
+      setKeptCount(kept);
+      // Calculate streak
+      let s = 0;
+      for (const v of data) {
+        if (v.verdict === 'kept') s++;
+        else break;
+      }
+      setStreak(s);
+    };
+    fetchStats();
+  }, [session?.user?.id]);
+
+  const handleShare = () => {
+    const text = `I kept my vow: "${vowText}" — $${amount} was on the line. 💪 unbreakablevow.app`;
+    if (navigator.share) {
+      navigator.share({ text }).catch(() => {});
+    } else {
+      navigator.clipboard?.writeText(text).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
+    }
+  };
 
   return (
     <RitualScreen
@@ -45,6 +86,32 @@ function VowKeptContent() {
             <span className="text-2xl font-bold" style={{ color: 'var(--success)' }}>${amount} saved</span>
           </div>
         </RitualCard>
+      </FadeUp>
+
+      {/* Stats */}
+      {keptCount !== null && (
+        <FadeUp delay={0.2}>
+          <div className="flex gap-3">
+            <StatPill value={String(keptCount)} label="vows kept" tone="success" />
+            {streak !== null && streak > 1 && (
+              <StatPill value={String(streak)} label="in a row" tone="success" />
+            )}
+          </div>
+        </FadeUp>
+      )}
+
+      {/* Share */}
+      <FadeUp delay={0.25}>
+        <button
+          onClick={handleShare}
+          className="w-full rounded-[18px] min-h-[48px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+        >
+          <Share2 className="w-4 h-4" style={{ color: 'var(--gold-bright)' }} />
+          <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+            {copied ? 'Copied!' : 'Share your win'}
+          </span>
+        </button>
       </FadeUp>
     </RitualScreen>
   );

@@ -16,6 +16,7 @@ export interface VowState {
   refinedText: string;
   witnessType: WitnessType;
   witnessName: string;
+  witnessPhone: string;
   stake: StakeState;
   vowId: string | null;
   witnessInviteToken: string | null;
@@ -26,6 +27,7 @@ const initialState: VowState = {
   refinedText: '',
   witnessType: 'friend',
   witnessName: '',
+  witnessPhone: '',
   stake: {
     amount: 25,
     consequence: 'charity',
@@ -54,6 +56,7 @@ interface VowFlowContextValue {
   setRefinedText: (value: string) => void;
   setWitnessType: (type: WitnessType) => void;
   setWitnessName: (name: string) => void;
+  setWitnessPhone: (phone: string) => void;
   setStake: (stake: StakeState) => void;
   updateConsequence: (consequence: ConsequenceType, destination: string) => void;
   setVowId: (vowId: string, witnessInviteToken: string | null) => void;
@@ -91,6 +94,10 @@ export function VowFlowProvider({ children }: { children: React.ReactNode }) {
     setVow((c) => ({ ...c, witnessName: name }));
   }, []);
 
+  const setWitnessPhone = useCallback((phone: string) => {
+    setVow((c) => ({ ...c, witnessPhone: phone }));
+  }, []);
+
   const setStake = useCallback((stake: StakeState) => {
     setVow((c) => ({ ...c, stake }));
   }, []);
@@ -104,7 +111,7 @@ export function VowFlowProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const switchToSolo = useCallback(() => {
-    setVow((c) => ({ ...c, witnessType: 'self' as const, witnessName: 'Just me' }));
+    setVow((c) => ({ ...c, witnessType: 'self' as const, witnessName: 'Just me', witnessPhone: '' }));
   }, []);
 
   const resetVow = useCallback(() => {
@@ -122,9 +129,9 @@ export function VowFlowProvider({ children }: { children: React.ReactNode }) {
 
   const value = useMemo(() => ({
     vow, activeVowText, isSelfWitness,
-    setRawInput, setRefinedText, setWitnessType, setWitnessName,
+    setRawInput, setRefinedText, setWitnessType, setWitnessName, setWitnessPhone,
     setStake, updateConsequence, setVowId, switchToSolo, resetVow, shouldSkipRefine,
-  }), [vow, activeVowText, isSelfWitness, setRawInput, setRefinedText, setWitnessType, setWitnessName, setStake, updateConsequence, setVowId, switchToSolo, resetVow, shouldSkipRefine]);
+  }), [vow, activeVowText, isSelfWitness, setRawInput, setRefinedText, setWitnessType, setWitnessName, setWitnessPhone, setStake, updateConsequence, setVowId, switchToSolo, resetVow, shouldSkipRefine]);
 
   return <VowFlowContext.Provider value={value}>{children}</VowFlowContext.Provider>;
 }

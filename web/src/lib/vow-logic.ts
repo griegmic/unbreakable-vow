@@ -260,6 +260,25 @@ export function getVowVerdictDate(input: string): { verdictLabel: string; endLab
   return { ...dates, isCustomDate: false };
 }
 
+export const vowNudges: string[] = [
+  "Discipline is choosing between what you want now and what you want most.",
+  "You don't have to be extreme, just consistent.",
+  "The pain of discipline weighs ounces. The pain of regret weighs tons.",
+  "Small daily improvements are the key to staggering long-term results.",
+  "You're not just doing this for you. Someone's watching.",
+  "The best time to start was yesterday. The second best time is now.",
+  "A vow isn't a wish. It's a contract with yourself.",
+  "Show up today. Tomorrow's you will thank you.",
+  "Motivation gets you started. Commitment keeps you going.",
+  "Every day you keep your word, you become harder to break.",
+];
+
+export function getDailyNudge(): string {
+  const today = new Date();
+  const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+  return vowNudges[seed % vowNudges.length];
+}
+
 export function getVowDates(): { range: string; verdictLabel: string; endLabel: string } {
   const start = new Date();
   const end = new Date(start);

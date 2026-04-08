@@ -15,7 +15,7 @@ function VowBrokenContent() {
     <RitualScreen
       footer={
         <>
-          <PrimaryButton label="Make another vow" onPress={() => router.push('/')} />
+          <PrimaryButton label="Make a redemption vow" onPress={() => router.push('/')} />
           <SecondaryButton label="View history" onPress={() => router.push('/history')} />
         </>
       }
@@ -49,12 +49,30 @@ function VowBrokenContent() {
         </RitualCard>
       </FadeUp>
 
+      {/* Settlement receipt */}
       <FadeUp delay={0.2}>
         <RitualCard>
-          <p className="text-[15px] text-center" style={{ color: 'var(--text-secondary)' }}>
-            You didn&apos;t keep your word this time. But making another vow means you haven&apos;t given up.
-          </p>
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Amount</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>${amount}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Donated to</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>{destination}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Status</span>
+              <span className="text-sm font-semibold" style={{ color: 'var(--warm-amber)' }}>Payment processed</span>
+            </div>
+          </div>
         </RitualCard>
+      </FadeUp>
+
+      <FadeUp delay={0.25}>
+        <p className="text-[14px] text-center" style={{ color: 'var(--text-secondary)' }}>
+          You were honest. That takes guts. Make a new vow and come back stronger.
+        </p>
       </FadeUp>
     </RitualScreen>
   );

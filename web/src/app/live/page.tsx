@@ -1,14 +1,34 @@
 'use client';
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Scale, Calendar, Shield, Clock, Check, Eye } from 'lucide-react';
+import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp, HeaderBadge } from '@/components/ui';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
+import { getDailyNudge } from '@/lib/vow-logic';
 import type { Database } from '@/lib/types';
 
-type Vow = Database['public']['Tables']['vows']['Row'];
+type VowRow = Database['public']['Tables']['vows']['Row'];
+type Vow = Omit<VowRow, 'stripe_payment_intent_id'>;
+type VowPhase = 'witness_pending' | 'vow_active' | 'verdict_due';
+
+function getCountdownTint(days: number | null) {
+  if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
+  if (days <= 0) return { bg: 'rgba(255,123,123,0.10)', border: 'rgba(255,123,123,0.25)' };
+  if (days === 1) return { bg: 'rgba(255,180,80,0.10)', border: 'rgba(255,180,80,0.25)' };
+  if (days <= 3) return { bg: 'rgba(212,162,79,0.08)', border: 'rgba(212,162,79,0.20)' };
+  return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
+}
+
+const cheekyLabelTemplates = [
+  'Report to {name}',
+  'Tell {name} you showed up',
+  'Prove it to {name}',
+  'Check in with {name}',
+  'Let {name} know',
+  'Update {name}',
+];
 
 export default function LivePage() {
   const router = useRouter();
@@ -20,12 +40,14 @@ export default function LivePage() {
   const [origin, setOrigin] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const dailyNudge = useMemo(() => getDailyNudge(), []);
+
   const fetchVow = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     const { data } = await supabase.from('vows')
-      .select('*')
+      .select('id, user_id, raw_input, refined_text, status, witness_name, witness_phone, witness_invite_token, stake_amount, consequence, destination, starts_at, ends_at, verdict, verdict_at, witness_accepted_at, witness_declined, sealed_at, created_at')
       .eq('user_id', session.user.id)
       .in('status', ['sealed', 'active', 'awaiting_verdict'])
       .order('created_at', { ascending: false })
@@ -45,7 +67,8 @@ export default function LivePage() {
 
     fetchVow();
 
-    intervalRef.current = setInterval(fetchVow, 30000);
+    // Poll every 10 seconds for witness status changes
+    intervalRef.current = setInterval(fetchVow, 10000);
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
@@ -102,12 +125,12 @@ export default function LivePage() {
     );
   }
 
-  const isActive = ['sealed', 'active'].includes(vow.status);
-  const isAwaiting = vow.status === 'awaiting_verdict';
+  // ── Derived state ──
   const endsAt = vow.ends_at ? new Date(vow.ends_at) : null;
   const now = new Date();
+  const isVerdictDue = endsAt ? now >= endsAt : false;
+  const daysLeft = endsAt ? Math.ceil((endsAt.getTime() - now.getTime()) / 86400000) : null;
   const hoursLeft = endsAt ? Math.max(0, Math.floor((endsAt.getTime() - now.getTime()) / (1000 * 60 * 60))) : 0;
-  const daysLeft = Math.floor(hoursLeft / 24);
   const witnessUrl = vow.witness_invite_token && origin ? `${origin}/w/${vow.witness_invite_token}` : '';
   const isSolo = vow.witness_name === 'Just me';
 
@@ -115,24 +138,225 @@ export default function LivePage() {
   const witnessDeclined = !isSolo && vow.witness_declined;
   const witnessAccepted = !isSolo && !!vow.witness_accepted_at;
 
-  const statusLabel = isAwaiting ? 'Awaiting verdict' : witnessPending ? 'Witness pending' : 'Vow active';
-  const statusColor = isAwaiting ? 'var(--gold)' : witnessPending ? 'var(--gold)' : 'var(--success)';
+  const phase: VowPhase = isVerdictDue ? 'verdict_due'
+    : witnessPending ? 'witness_pending'
+    : 'vow_active';
+
+  const countdownLabel = daysLeft === null ? null
+    : daysLeft <= 0 ? "Today's the day"
+    : daysLeft === 1 ? 'Last day'
+    : `${daysLeft} days left`;
+
+  const tint = getCountdownTint(daysLeft);
+  const witnessLabel = isSolo ? "You're the judge" : `${vow.witness_name} is watching`;
+  const endDateFormatted = endsAt?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) || '—';
+
+  const todaysLabel = (() => {
+    const dayIndex = Math.floor(Date.now() / 86400000) % cheekyLabelTemplates.length;
+    return cheekyLabelTemplates[dayIndex].replace('{name}', vow.witness_name);
+  })();
+
   const nudgeShareText = `I made a vow: "${vow.refined_text.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept:`;
 
+  const handleTextWitness = () => {
+    const phone = vow.witness_phone;
+    const stakeLabel = vow.stake_amount ? `$${vow.stake_amount / 100}` : '';
+    const body = encodeURIComponent(
+      `Still holding my vow: "${vow.refined_text}"${stakeLabel ? ` — ${stakeLabel} on the line` : ''}. Just checking in 👀`
+    );
+    if (phone) {
+      const cleanPhone = phone.replace(/[^\d+\-]/g, '');
+      // ?&body= works cross-platform (iOS Safari + Android)
+      window.location.href = `sms:${cleanPhone}?&body=${body}`;
+    } else {
+      // Desktop or no phone: copy message to clipboard
+      const msg = decodeURIComponent(body);
+      if (navigator.share) {
+        navigator.share({ text: msg }).catch(() => {});
+      } else {
+        navigator.clipboard?.writeText(msg).then(() => {
+          setActionMsg('Message copied to clipboard');
+          setTimeout(() => setActionMsg(''), 2000);
+        });
+      }
+    }
+  };
+
+  // ── VERDICT DUE phase ──
+  if (phase === 'verdict_due') {
+    return (
+      <RitualScreen
+        footer={
+          <div className="flex flex-col gap-2">
+            {isSolo ? (
+              <PrimaryButton label="Deliver your verdict" onPress={() => router.push('/self-resolve')} />
+            ) : witnessAccepted ? (
+              <ShareButton
+                url={witnessUrl ? `${witnessUrl}/verdict` : ''}
+                text={`Time to deliver the verdict on my vow: "${vow.refined_text}"`}
+                buttonText={`Nudge ${vow.witness_name} to decide`}
+              />
+            ) : (
+              <PrimaryButton label="Judge it yourself" onPress={handleGoSolo} loading={actionBusy} />
+            )}
+            <SecondaryButton label="View history" onPress={() => router.push('/history')} />
+          </div>
+        }
+      >
+        <FadeUp><HeaderBadge /></FadeUp>
+
+        {/* Status badge */}
+        <FadeUp delay={0.05}>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--gold)' }} />
+            <span className="text-[13px] font-semibold uppercase tracking-[0.5px]" style={{ color: 'var(--gold)' }}>VERDICT DUE</span>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.08}>
+          <TitleBlock
+            title="Time's up."
+            subtitle={isSolo ? 'How did it go?' : `${vow.witness_name}, it's your call.`}
+          />
+        </FadeUp>
+
+        <FadeUp delay={0.12}>
+          <RitualCard>
+            <p className="text-[17px] font-serif font-medium" style={{ color: 'var(--text)' }}>{vow.refined_text}</p>
+            <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+            <div className="flex items-center justify-between">
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
+              <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake_amount / 100}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
+              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
+            </div>
+          </RitualCard>
+        </FadeUp>
+
+        {actionMsg && (
+          <FadeUp>
+            <p className="text-[13px] text-center" style={{ color: 'var(--text-secondary)' }}>{actionMsg}</p>
+          </FadeUp>
+        )}
+      </RitualScreen>
+    );
+  }
+
+  // ── WITNESS PENDING phase ──
+  if (phase === 'witness_pending') {
+    return (
+      <RitualScreen
+        footer={
+          <div className="flex flex-col gap-2">
+            {witnessDeclined ? (
+              <PrimaryButton label="Go solo instead" onPress={handleGoSolo} loading={actionBusy} />
+            ) : witnessUrl ? (
+              <ShareButton
+                url={witnessUrl}
+                text={nudgeShareText}
+                buttonText={`Nudge ${vow.witness_name}`}
+              />
+            ) : null}
+            <SecondaryButton label="View history" onPress={() => router.push('/history')} />
+          </div>
+        }
+      >
+        <FadeUp><HeaderBadge /></FadeUp>
+
+        {/* Status badge */}
+        <FadeUp delay={0.05}>
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full animate-pulse" style={{ backgroundColor: 'var(--gold)' }} />
+            <span className="text-[13px] font-semibold uppercase tracking-[0.5px]" style={{ color: 'var(--gold)' }}>VOW PENDING</span>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.08}>
+          <TitleBlock
+            title={vow.refined_text}
+            subtitle={`$${vow.stake_amount / 100} at stake · ${vow.destination} if broken`}
+          />
+        </FadeUp>
+
+        {/* Witness declined */}
+        {witnessDeclined && (
+          <FadeUp delay={0.12}>
+            <div
+              className="rounded-[20px] p-5 flex flex-col gap-3"
+              style={{ backgroundColor: 'rgba(220,38,38,0.04)', border: '1px solid rgba(220,38,38,0.15)' }}
+            >
+              <span className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>{vow.witness_name} declined.</span>
+              <p className="text-[13px] leading-[19px]" style={{ color: 'var(--text-secondary)' }}>
+                You can continue solo — you&apos;ll judge the vow yourself on verdict day.
+              </p>
+            </div>
+          </FadeUp>
+        )}
+
+        {/* Witness pending */}
+        {!witnessDeclined && witnessUrl && (
+          <FadeUp delay={0.12}>
+            <div
+              className="rounded-[20px] p-5 flex flex-col gap-3"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(212,162,79,0.15)' }}>
+                  <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--gold)' }} />
+                </div>
+                <div>
+                  <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Waiting for {vow.witness_name}</span>
+                  <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Send the link to get them on board</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="rounded-[10px] py-2 px-3 flex-1 min-w-0" style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}>
+                  <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{witnessUrl}</p>
+                </div>
+                <CopyLinkButton url={witnessUrl} />
+              </div>
+            </div>
+          </FadeUp>
+        )}
+
+        {/* "or go solo" link */}
+        {!witnessDeclined && (
+          <FadeUp delay={0.16}>
+            <button
+              onClick={handleGoSolo}
+              disabled={actionBusy}
+              className="w-full py-2 flex items-center justify-center gap-2"
+            >
+              <Shield className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
+              <span className="text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>or go solo</span>
+            </button>
+          </FadeUp>
+        )}
+
+        {/* Time info */}
+        <FadeUp delay={0.2}>
+          <div className="flex gap-3">
+            <StatPill value={daysLeft != null && daysLeft > 0 ? `${daysLeft}d` : `${hoursLeft}h`} label="Time left" />
+            <StatPill value={endDateFormatted} label="Verdict day" />
+          </div>
+        </FadeUp>
+
+        {actionMsg && (
+          <FadeUp>
+            <p className="text-[13px] text-center" style={{ color: 'var(--text-secondary)' }}>{actionMsg}</p>
+          </FadeUp>
+        )}
+      </RitualScreen>
+    );
+  }
+
+  // ── VOW ACTIVE phase (default) ──
   return (
     <RitualScreen
       footer={
         <div className="flex flex-col gap-2">
-          {isSolo && (isActive || isAwaiting) && (
-            <PrimaryButton label="Deliver your verdict" onPress={() => router.push('/self-resolve')} />
-          )}
-          {witnessPending && witnessUrl && (
-            <ShareButton
-              url={witnessUrl}
-              text={nudgeShareText}
-              buttonText={`Nudge ${vow.witness_name}`}
-            />
-          )}
           <SecondaryButton label="View history" onPress={() => router.push('/history')} />
         </div>
       }
@@ -142,8 +366,8 @@ export default function LivePage() {
       {/* Status badge */}
       <FadeUp delay={0.05}>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: statusColor }} />
-          <span className="text-[13px] font-semibold uppercase tracking-[0.5px]" style={{ color: statusColor }}>{statusLabel}</span>
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--success)' }} />
+          <span className="text-[13px] font-semibold uppercase tracking-[0.5px]" style={{ color: 'var(--success)' }}>VOW ACTIVE</span>
         </div>
       </FadeUp>
 
@@ -155,94 +379,50 @@ export default function LivePage() {
         />
       </FadeUp>
 
-      {/* Stats */}
+      {/* Countdown card */}
       <FadeUp delay={0.12}>
-        <div className="flex gap-3">
-          <StatPill value={daysLeft > 0 ? `${daysLeft}d` : `${hoursLeft}h`} label="Time left" />
-          <StatPill
-            value={endsAt?.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) || '—'}
-            label="Verdict day"
-          />
+        <div
+          className="rounded-[20px] p-5 flex flex-col gap-2"
+          style={{ backgroundColor: tint.bg, border: `1px solid ${tint.border}` }}
+        >
+          <span className="text-[22px] font-bold" style={{ color: 'var(--text)' }}>
+            {countdownLabel ?? 'Vow active'}
+          </span>
+          <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+            Verdict day: {endDateFormatted}
+          </span>
+          <div className="flex items-center gap-2 mt-1">
+            <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: 'var(--success)' }} />
+            <span className="text-[13px] font-semibold" style={{ color: 'var(--success)' }}>
+              {witnessLabel}
+            </span>
+          </div>
+          <p className="text-[12px] italic mt-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            {dailyNudge}
+          </p>
         </div>
       </FadeUp>
 
-      {/* STATE: Witness pending */}
-      {witnessPending && witnessUrl && (
+      {/* SMS button for friend witnesses */}
+      {!isSolo && (
         <FadeUp delay={0.16}>
-          <div
-            className="rounded-[20px] p-5 flex flex-col gap-3"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(212,162,79,0.15)' }}>
-                <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--gold)' }} />
-              </div>
-              <div>
-                <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Waiting for {vow.witness_name}</span>
-                <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>Send the link to get them on board</span>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="rounded-[10px] py-2 px-3 flex-1 min-w-0" style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}>
-                <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{witnessUrl}</p>
-              </div>
-              <CopyLinkButton url={witnessUrl} />
-            </div>
-          </div>
-        </FadeUp>
-      )}
-
-      {/* STATE: Witness declined */}
-      {witnessDeclined && (
-        <FadeUp delay={0.16}>
-          <div
-            className="rounded-[20px] p-5 flex flex-col gap-3"
-            style={{ backgroundColor: 'rgba(220,38,38,0.04)', border: '1px solid rgba(220,38,38,0.15)' }}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>{vow.witness_name} declined.</span>
-            </div>
-            <p className="text-[13px] leading-[19px]" style={{ color: 'var(--text-secondary)' }}>
-              You can continue solo — you&apos;ll judge the vow yourself on verdict day.
-            </p>
-            <button
-              onClick={handleGoSolo}
-              disabled={actionBusy}
-              className="flex items-center justify-center gap-2 min-h-[44px] rounded-[14px] transition-opacity disabled:opacity-40"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', color: 'var(--text)' }}
-            >
-              <Shield className="w-4 h-4" />
-              <span className="text-[14px] font-semibold">Go solo instead</span>
-            </button>
-          </div>
-        </FadeUp>
-      )}
-
-      {/* STATE: Witness accepted */}
-      {witnessAccepted && (
-        <FadeUp delay={0.16}>
-          <div
-            className="rounded-[20px] p-4 flex items-center gap-3"
+          <button
+            onClick={handleTextWitness}
+            className="w-full rounded-[18px] min-h-[52px] flex items-center justify-center gap-2.5 transition-transform active:scale-[0.975]"
             style={{
-              backgroundColor: 'rgba(82,214,154,0.06)',
-              border: '1px solid rgba(82,214,154,0.18)',
+              background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+              boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
             }}
           >
-            <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(82,214,154,0.15)' }}>
-              <Eye className="w-[18px] h-[18px]" style={{ color: 'var(--success)' }} />
-            </div>
-            <div className="flex-1">
-              <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>{vow.witness_name} is watching.</span>
-              <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                They&apos;ll deliver the verdict on {endsAt?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) || 'verdict day'}.
-              </span>
-            </div>
-            <Check className="w-5 h-5 shrink-0" style={{ color: 'var(--success)' }} />
-          </div>
+            <MessageCircle className="w-[18px] h-[18px]" color="#0B0D11" />
+            <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>
+              {todaysLabel}
+            </span>
+          </button>
         </FadeUp>
       )}
 
-      {/* Details card — minimal, just the essentials not shown above */}
+      {/* Details card */}
       <FadeUp delay={0.2}>
         <RitualCard>
           <div className="flex flex-col gap-3">
@@ -258,9 +438,7 @@ export default function LivePage() {
                 <Calendar className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
                 <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Ends</span>
               </div>
-              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                {endsAt?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) || '—'}
-              </span>
+              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{endDateFormatted}</span>
             </div>
           </div>
         </RitualCard>

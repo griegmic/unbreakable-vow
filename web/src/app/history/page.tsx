@@ -7,12 +7,12 @@ import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/types';
 
-type Vow = Database['public']['Tables']['vows']['Row'];
+type HistoryVow = Pick<Database['public']['Tables']['vows']['Row'], 'id' | 'refined_text' | 'status' | 'witness_name' | 'stake_amount' | 'verdict' | 'created_at'>;
 
 export default function HistoryPage() {
   const router = useRouter();
   const { isAuthenticated, loading: authLoading } = useAuth();
-  const [vows, setVows] = useState<Vow[]>([]);
+  const [vows, setVows] = useState<HistoryVow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function HistoryPage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const { data } = await supabase.from('vows')
-        .select('*')
+        .select('id, refined_text, status, witness_name, stake_amount, verdict, created_at')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
       setVows(data ?? []);
