@@ -90,17 +90,21 @@ export default function SealPage() {
         setVowId(vowData.id, vowData.witness_invite_token);
       }
 
-      const piResponse = await supabase.functions.invoke('create-payment-intent', {
-        body: { vow_id: vowData.id, amount: vow.stake.amount * 100 },
+      const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`;
+      const piRes = await fetch(fnUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${currentSession.access_token}`,
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        },
+        body: JSON.stringify({ vow_id: vowData.id, amount: vow.stake.amount * 100 }),
       });
 
-      // supabase.functions.invoke puts the response body in `data` even on error
-      const piData = piResponse.data;
-      const piError = piResponse.error;
+      const piData = await piRes.json().catch(() => null);
 
-      if (piError) {
-        // Try to get the actual error from the response body
-        const detail = piData?.error || piError.message || 'Payment setup failed';
+      if (!piRes.ok) {
+        const detail = piData?.error || `HTTP ${piRes.status}`;
         throw new Error(`Payment: ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`);
       }
 
@@ -199,11 +203,24 @@ export default function SealPage() {
     setStep('sealing');
 
     if (vow.vowId) {
-      const { error: sealError } = await supabase.functions.invoke('seal-vow', {
-        body: { vow_id: vow.vowId },
-      });
-      if (sealError) {
-        console.error('Failed to seal vow:', sealError);
+      try {
+        const { data: { session: sealSession } } = await supabase.auth.getSession();
+        const sealUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`;
+        const sealRes = await fetch(sealUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${sealSession?.access_token}`,
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          },
+          body: JSON.stringify({ vow_id: vow.vowId }),
+        });
+        if (!sealRes.ok) {
+          const sealData = await sealRes.json().catch(() => null);
+          console.error('Failed to seal vow:', sealData?.error || sealRes.status);
+        }
+      } catch (sealErr) {
+        console.error('Failed to seal vow:', sealErr);
         // Continue with animation — payment succeeded, seal can be retried server-side
       }
     }
