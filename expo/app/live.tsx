@@ -471,23 +471,7 @@ export default function LiveScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleTextWitness = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const phone = vow.phoneNumber;
-    if (phone) {
-      const smsUrl = Platform.OS === 'ios'
-        ? `sms:${phone}`
-        : `sms:${phone}`;
-      console.log('[LiveScreen] opening SMS to witness (no body):', smsUrl);
-      Linking.openURL(smsUrl).catch(() => {
-        console.log('[LiveScreen] failed to open SMS');
-      });
-    } else {
-      Share.share({ message: `Checking in on my vow: "${activeVowText}"` }).catch(() => {
-        console.log('[LiveScreen] share failed');
-      });
-    }
-  }, [vow.phoneNumber, activeVowText]);
+
 
   const handleShareProgress = useCallback(async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
