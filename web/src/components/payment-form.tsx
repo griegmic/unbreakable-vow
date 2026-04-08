@@ -5,7 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-function CheckoutForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel: () => void }) {
+function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; onCancel: () => void; onSkip?: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -58,6 +58,16 @@ function CheckoutForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel
           <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>Pay & Seal</span>
         )}
       </button>
+      {onSkip && (
+        <button
+          type="button"
+          onClick={onSkip}
+          className="w-full min-h-[48px] rounded-2xl flex items-center justify-center transition-transform active:scale-[0.975]"
+          style={{ border: '1px dashed rgba(212,162,79,0.3)', background: 'rgba(212,162,79,0.06)' }}
+        >
+          <span className="text-[14px] font-semibold" style={{ color: 'var(--gold)' }}>Skip payment (testing)</span>
+        </button>
+      )}
       <button
         type="button"
         onClick={onCancel}
@@ -69,7 +79,7 @@ function CheckoutForm({ onSuccess, onCancel }: { onSuccess: () => void; onCancel
   );
 }
 
-export function PaymentModal({ clientSecret, onSuccess, onCancel }: { clientSecret: string; onSuccess: () => void; onCancel: () => void }) {
+export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip }: { clientSecret: string; onSuccess: () => void; onCancel: () => void; onSkip?: () => void }) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
@@ -113,7 +123,7 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel }: { clientSecr
             },
           }}
         >
-          <CheckoutForm onSuccess={onSuccess} onCancel={onCancel} />
+          <CheckoutForm onSuccess={onSuccess} onCancel={onCancel} onSkip={onSkip} />
         </Elements>
       </div>
     </div>

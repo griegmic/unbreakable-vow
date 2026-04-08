@@ -566,6 +566,15 @@ export default function CreatePage() {
           clientSecret={clientSecret}
           onSuccess={handlePaymentSuccess}
           onCancel={() => { setShowPayment(false); setSealing(false); }}
+          onSkip={async () => {
+            if (vowId) {
+              await supabase.from('vows').update({
+                stripe_payment_intent_id: null,
+                stake_amount: 0,
+              }).eq('id', vowId);
+            }
+            handlePaymentSuccess();
+          }}
         />
       )}
     </>

@@ -502,6 +502,17 @@ export default function SealPage() {
           clientSecret={clientSecret}
           onSuccess={handlePaymentSuccess}
           onCancel={() => { setStep('review'); setSealing(false); }}
+          onSkip={async () => {
+            // Testing bypass: seal the vow without capturing payment.
+            // Clear the Stripe PI so verdict logic won't try to refund it.
+            if (vow.vowId) {
+              await supabase.from('vows').update({
+                stripe_payment_intent_id: null,
+                stake_amount: 0,
+              }).eq('id', vow.vowId);
+            }
+            handlePaymentSuccess();
+          }}
         />
       )}
     </>
