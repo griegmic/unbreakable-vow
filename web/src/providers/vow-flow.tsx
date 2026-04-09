@@ -23,6 +23,7 @@ export interface VowState {
   vowType: 'self' | 'challenge';
   targetName: string;
   targetPhone: string;
+  deadlineIso: string | null;
 }
 
 const initialState: VowState = {
@@ -41,6 +42,7 @@ const initialState: VowState = {
   vowType: 'self',
   targetName: '',
   targetPhone: '',
+  deadlineIso: null,
 };
 
 const STORAGE_KEY = 'unbreakable-vow-flow';
@@ -48,7 +50,7 @@ const STORAGE_KEY = 'unbreakable-vow-flow';
 function loadState(): VowState {
   if (typeof window === 'undefined') return initialState;
   try {
-    const saved = sessionStorage.getItem(STORAGE_KEY);
+    const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) return JSON.parse(saved);
   } catch {}
   return initialState;
@@ -68,6 +70,7 @@ interface VowFlowContextValue {
   setVowId: (vowId: string, witnessInviteToken: string | null) => void;
   setVowType: (type: 'self' | 'challenge') => void;
   setTarget: (name: string, phone: string) => void;
+  setDeadline: (iso: string | null) => void;
   switchToSolo: () => void;
   resetVow: () => void;
   shouldSkipRefine: (input: string) => boolean;
@@ -78,10 +81,10 @@ const VowFlowContext = createContext<VowFlowContextValue | null>(null);
 export function VowFlowProvider({ children }: { children: React.ReactNode }) {
   const [vow, setVow] = useState<VowState>(loadState);
 
-  // Persist to sessionStorage on every change
+  // Persist to localStorage on every change (survives OAuth redirects)
   useEffect(() => {
     try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(vow));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(vow));
     } catch {}
   }, [vow]);
 
@@ -126,13 +129,17 @@ export function VowFlowProvider({ children }: { children: React.ReactNode }) {
     setVow((c) => ({ ...c, targetName: name, targetPhone: phone }));
   }, []);
 
+  const setDeadline = useCallback((iso: string | null) => {
+    setVow((c) => ({ ...c, deadlineIso: iso }));
+  }, []);
+
   const switchToSolo = useCallback(() => {
     setVow((c) => ({ ...c, witnessType: 'self' as const, witnessName: 'Just me', witnessPhone: '' }));
   }, []);
 
   const resetVow = useCallback(() => {
     setVow(initialState);
-    try { sessionStorage.removeItem(STORAGE_KEY); } catch {}
+    try { localStorage.removeItem(STORAGE_KEY); } catch {}
   }, []);
 
   const shouldSkipRefine = useCallback((input: string): boolean => {
@@ -146,8 +153,8 @@ export function VowFlowProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     vow, activeVowText, isSelfWitness,
     setRawInput, setRefinedText, setWitnessType, setWitnessName, setWitnessPhone,
-    setStake, updateConsequence, setVowId, setVowType, setTarget, switchToSolo, resetVow, shouldSkipRefine,
-  }), [vow, activeVowText, isSelfWitness, setRawInput, setRefinedText, setWitnessType, setWitnessName, setWitnessPhone, setStake, updateConsequence, setVowId, setVowType, setTarget, switchToSolo, resetVow, shouldSkipRefine]);
+    setStake, updateConsequence, setVowId, setVowType, setTarget, setDeadline, switchToSolo, resetVow, shouldSkipRefine,
+  }), [vow, activeVowText, isSelfWitness, setRawInput, setRefinedText, setWitnessType, setWitnessName, setWitnessPhone, setStake, updateConsequence, setVowId, setVowType, setTarget, setDeadline, switchToSolo, resetVow, shouldSkipRefine]);
 
   return <VowFlowContext.Provider value={value}>{children}</VowFlowContext.Provider>;
 }

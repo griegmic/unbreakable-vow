@@ -18,7 +18,7 @@ export default function AuthCallbackPage() {
           localStorage.removeItem('auth-return-path');
           return returnPath;
         }
-        const stored = sessionStorage.getItem('unbreakable-vow-flow');
+        const stored = localStorage.getItem('unbreakable-vow-flow');
         if (stored) {
           const parsed = JSON.parse(stored);
           if (parsed.rawInput) return '/seal';
