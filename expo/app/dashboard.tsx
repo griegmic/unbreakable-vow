@@ -103,6 +103,7 @@ function getStatusConfig(vow: Vow, sectionId: SectionId): { color: string; label
     return { color: '#FF8C00', label: 'Challenge received' };
   }
   switch (vow.status) {
+    case 'draft': return { color: palette.warmAmber, label: 'Draft — tap to seal' };
     case 'active': return { color: palette.success, label: 'Active' };
     case 'sealed': return { color: palette.gold, label: 'Sealed' };
     case 'awaiting_verdict': return { color: palette.warmAmber, label: 'Verdict due' };
@@ -134,7 +135,7 @@ function VowCard({
   const countdown = getCountdownText(vow.ends_at);
   const stakeLabel = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} stake` : 'no stake';
   const isChallenge = sectionId === 'attention' && vow.challenge_status === 'pending';
-  const isActiveOwn = sectionId === 'yours' && (vow.status === 'active' || vow.status === 'sealed' || vow.status === 'awaiting_verdict');
+  const isActiveOwn = sectionId === 'yours' && (vow.status === 'draft' || vow.status === 'active' || vow.status === 'sealed' || vow.status === 'awaiting_verdict');
   const personLabel = sectionId === 'witnessing' ? "You're witnessing" : vow.witness_name;
 
   // Witness status badge
@@ -332,7 +333,7 @@ export default function VowDashboard() {
     ];
 
     const yourVowItems = myVows
-      .filter((v) => v.status === 'sealed' || v.status === 'active')
+      .filter((v) => v.status === 'draft' || v.status === 'sealed' || v.status === 'active')
       .sort((a, b) => {
         // Newest first so the most recently created vow is always at the top
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
@@ -370,7 +371,7 @@ export default function VowDashboard() {
   // Stats
   // ---------------------------------------------------------------------------
 
-  const activeCount = myVows.filter((v) => v.status === 'active' || v.status === 'sealed' || v.status === 'awaiting_verdict').length;
+  const activeCount = myVows.filter((v) => v.status === 'draft' || v.status === 'active' || v.status === 'sealed' || v.status === 'awaiting_verdict').length;
   const keptCount = myVows.filter((v) => v.status === 'kept').length;
   // Streak: consecutive kept vows from most recent
   let streakCount = 0;

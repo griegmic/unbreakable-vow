@@ -324,7 +324,7 @@ export async function getMyVows(): Promise<VowRow[]> {
   const { data, error } = await supabase.from('vows')
     .select('*')
     .eq('user_id', session.user.id)
-    .in('status', ['sealed', 'active', 'awaiting_verdict'])
+    .in('status', ['draft', 'sealed', 'active', 'awaiting_verdict'])
     .order('created_at', { ascending: false });
   if (error) { console.error('[vow-api] getMyVows error:', error); return []; }
   return (data ?? []) as VowRow[];
