@@ -277,6 +277,9 @@ export function generateSuggestion(input: string): string {
   const hasFrequency = /\d+\s*(?:x|times?)/i.test(normalizeWordNumbers(lower));
   const hasDeadline = /by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(lower);
 
+  // If vow already has a relative time reference, don't try to enhance it
+  if (hasRelativeTime(lower)) return `${clean}.`;
+
   if (hasTimeWindow && hasFrequency) return `${clean}.`;
   if (hasTimeWindow && hasDeadline) return `${clean}.`;
 
@@ -348,6 +351,14 @@ export function generateSuggestion(input: string): string {
   return `${clean}.`;
 }
 
+function hasRelativeTime(input: string): boolean {
+  return /(tomorrow|tonight|today|this\s+(morning|afternoon|evening|weekend|friday|saturday|sunday|monday|tuesday|wednesday|thursday)|next\s+(week|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|in\s+the\s+(morning|afternoon|evening)|before\s+(bed|work|lunch|dinner|noon|midnight|class|school)|after\s+(work|lunch|dinner|class|school))/i.test(input);
+}
+
+function hasActionVerb(input: string): boolean {
+  return /(go\s+to|wake|run|walk|read|write|code|cook|call|send|finish|complete|submit|clean|study|practice|meditate|exercise|work\s+out|lift|swim|bike|jog|stretch|do\s+a|make\s+a|no\s+|don't|stop|avoid|quit)/i.test(input);
+}
+
 export function analyzeVow(input: string): AnalysisResult {
   const normalized = normalizeWordNumbers(input);
   const lowered = normalized.toLowerCase().trim();
@@ -387,6 +398,11 @@ export function analyzeVow(input: string): AnalysisResult {
       type: 'vague',
       suggestions: getContextualSuggestions(input),
     };
+  }
+
+  // Action + relative time reference = good enough (e.g. "go to the gym tomorrow morning")
+  if (hasActionVerb(lowered) && hasRelativeTime(lowered)) {
+    return { type: 'already_good' };
   }
 
   const alreadyGoodPattern = /wake.*before.*\d|gym.*\d.*(?:time|x)|no.*(?:phone|takeout|alcohol|sugar|social media|instagram|tiktok|junk|delivery|netflix|youtube|screen).*(?:week|month|all|every|tonight|in bed|before|after)|send.*by.*(?:fri|mon|tue|wed|thu|sat|sun)|read.*every.*(?:night|day|evening|morning)|read.*(?:night|day).*(?:in bed|before bed)|run.*(?:\d|every|daily)|meditate.*(?:every|daily|\d)/i;
