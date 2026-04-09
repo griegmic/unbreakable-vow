@@ -15,9 +15,11 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
-      // ?new=1 forces a fresh creation flow (used by viral CTAs)
       const params = new URLSearchParams(window.location.search);
-      if (params.get('new') === '1') {
+
+      // ?new=1 forces a fresh creation flow (used by viral CTAs)
+      // ?guided=1 forces the full guided flow for returning users
+      if (params.get('new') === '1' || params.get('guided') === '1') {
         localStorage.removeItem('unbreakable-vow-flow');
         window.history.replaceState({}, '', '/');
         return; // Stay on creation page

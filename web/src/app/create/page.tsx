@@ -695,6 +695,19 @@ export default function CreatePage() {
             label="I solemnly swear to honor this vow and accept the consequences."
           />
         </FadeUp>
+
+        {/* Guided flow link */}
+        <FadeUp delay={0.45}>
+          <div className="flex justify-center">
+            <button
+              onClick={() => router.push('/?guided=1')}
+              className="text-[13px] font-medium underline py-2"
+              style={{ color: 'var(--text-muted)' }}
+            >
+              Use guided flow instead
+            </button>
+          </div>
+        </FadeUp>
       </RitualScreen>
 
       <AuthModal

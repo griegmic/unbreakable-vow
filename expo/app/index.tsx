@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { ArrowRight, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -17,13 +17,33 @@ import {
 
 import { AppMenuButton } from '@/components/app-menu';
 import { palette, serifFont, vowExamples } from '@/constants/unbreakable';
+import { supabase } from '@/lib/supabase';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function HomeScreen() {
   const { setRawInput, setRefinedText, shouldSkipRefine } = useVowFlow();
+  const searchParams = useLocalSearchParams<{ guided?: string }>();
   const [input, setInput] = useState<string>('');
   const [focused, setFocused] = useState<boolean>(false);
   const inputRef = useRef<TextInput>(null);
+
+  // Returning users (have any sealed/active/kept vow) → redirect to QuickVow
+  // Skip redirect if ?guided=1 (user explicitly chose guided flow)
+  useEffect(() => {
+    if (searchParams.guided === '1') return;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { count } = await supabase
+        .from('vows')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .neq('status', 'draft');
+      if (count && count > 0) {
+        router.replace('/quick-vow');
+      }
+    })();
+  }, [searchParams.guided]);
 
   const fadeIn = useRef(new Animated.Value(0)).current;
   const slideUp = useRef(new Animated.Value(20)).current;

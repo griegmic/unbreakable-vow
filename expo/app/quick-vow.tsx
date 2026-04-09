@@ -559,6 +559,11 @@ export default function QuickVowScreen() {
           </View>
           <Text style={styles.oathText}>I solemnly swear to honor this vow and accept the consequences.</Text>
         </Pressable>
+
+        {/* Guided flow link */}
+        <Pressable onPress={() => router.push('/?guided=1')} hitSlop={8}>
+          <Text style={styles.guidedLink}>Use guided flow instead</Text>
+        </Pressable>
       </RitualScreen>
 
       <ContactPickerModal
@@ -741,5 +746,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     flex: 1,
+  },
+  guidedLink: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '500',
+    textAlign: 'center',
+    textDecorationLine: 'underline',
+    paddingVertical: 8,
   },
 });
