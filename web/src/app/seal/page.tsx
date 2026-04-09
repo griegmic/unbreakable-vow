@@ -424,7 +424,7 @@ export default function SealPage() {
         <FadeUp delay={0.05}>
           <TitleBlock
             title="Your Unbreakable Vow"
-            subtitle="Review below. Once sealed, terms are final."
+            subtitle="Once you seal it, there's no going back."
           />
         </FadeUp>
 

@@ -200,21 +200,26 @@ Deno.serve(async (req) => {
     }
 
     // Queue push notification to vow owner
+    const amountDollars = Math.round(vow.stake_amount / 100);
     const noRealPayment = vow.stake_amount === 0 || !hasRealStripePI;
-    const pushTitle = verdict === 'kept' ? 'Vow kept!' : 'Vow broken';
-    const pushBody = verdict === 'kept'
-      ? noRealPayment
-        ? `${vow.witness_name} confirmed you kept your vow. Word honored.`
-        : `${vow.witness_name} confirmed you kept your vow. $${Math.round(vow.stake_amount / 100)} refunded.`
-      : noRealPayment
-        ? `${vow.witness_name} says you broke your vow. The record stands.`
-        : `${vow.witness_name} says you broke your vow. $${Math.round(vow.stake_amount / 100)} goes to ${vow.destination}.`;
+    let pushTitle: string;
+    let pushBody: string;
+
+    if (verdict === 'kept') {
+      pushTitle = 'Vow kept';
+      pushBody = `${vow.witness_name} confirmed it. You kept your word.`;
+    } else {
+      pushTitle = 'Vow broken';
+      pushBody = noRealPayment
+        ? `${vow.witness_name} has spoken. The record stands.`
+        : `${vow.witness_name} has spoken. $${amountDollars} to ${vow.destination}.`;
+    }
 
     await supabase.from('push_queue').insert({
       user_id: vow.user_id,
       title: pushTitle,
       body: pushBody,
-      data: { vow_id: vow.id, verdict },
+      data: { vow_id: vow.id, verdict, event: `vow_verdict_${verdict}` },
       send_after: now,
     });
 

@@ -38,7 +38,7 @@ export default function SentPage() {
   return (
     <RitualScreen
       footer={
-        <PrimaryButton label="Got it" onPress={handleGotIt} />
+        <PrimaryButton label="The clock starts now" onPress={handleGotIt} />
       }
     >
       {/* Success check */}

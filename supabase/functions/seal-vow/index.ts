@@ -230,15 +230,11 @@ Deno.serve(async (req) => {
       await createAuditEvent(supabase, vow.id, 'witness_invited', 'system', null);
     }
 
-    const amountDollarsPush = Math.round(vow.stake_amount / 100);
-    const pushBody = vow.stake_amount > 0
-      ? `Your vow is active. $${amountDollarsPush} is on the line.`
-      : 'Your vow is active. Your word is on the line.';
     await supabase.from('push_queue').insert({
       user_id: user.id,
-      title: 'Vow sealed!',
-      body: pushBody,
-      data: { route: '/live', vow_id },
+      title: 'Vow sealed',
+      body: "It's done. No turning back.",
+      data: { route: '/live', vow_id, event: 'vow_sealed' },
       send_after: now,
     });
 

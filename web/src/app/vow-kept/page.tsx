@@ -1,8 +1,8 @@
 'use client';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Trophy, Share2 } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp } from '@/components/ui';
+import { Share2, Check } from 'lucide-react';
+import { RitualScreen, TitleBlock, PrimaryButton, SecondaryButton, StatPill, FadeUp } from '@/components/ui';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 
@@ -28,7 +28,6 @@ function VowKeptContent() {
       if (!data) return;
       const kept = data.filter(v => v.verdict === 'kept').length;
       setKeptCount(kept);
-      // Calculate streak
       let s = 0;
       for (const v of data) {
         if (v.verdict === 'kept') s++;
@@ -59,42 +58,106 @@ function VowKeptContent() {
     <RitualScreen
       footer={
         <>
-          <PrimaryButton label="Make another vow" onPress={() => router.push('/create')} />
+          <PrimaryButton label="Go again" onPress={() => router.push('/create')} />
           <SecondaryButton label="My Vows" onPress={() => router.push('/dashboard')} />
         </>
       }
     >
       <FadeUp>
-        <div className="flex justify-center mt-8">
-          <div
-            className="w-20 h-20 rounded-full flex items-center justify-center animate-scale-in"
-            style={{ backgroundColor: 'var(--success-muted)', boxShadow: '0 0 40px rgba(82,214,154,0.3)' }}
-          >
-            <Trophy className="w-10 h-10" style={{ color: 'var(--success)' }} />
-          </div>
-        </div>
-      </FadeUp>
-
-      <FadeUp delay={0.1}>
         <TitleBlock
           title="You kept your word."
           subtitle={isZeroStake ? "Word honored. That's what integrity looks like." : "Your money stays safe. That's what integrity looks like."}
         />
       </FadeUp>
 
-      <FadeUp delay={0.15}>
-        <RitualCard>
-          <p className="text-[17px] font-serif font-medium text-center" style={{ color: 'var(--text)' }}>{vowText}</p>
-          <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-          <div className="flex justify-center">
-            <span className="text-2xl font-bold" style={{ color: 'var(--success)' }}>{isZeroStake ? 'Vow honored' : `$${amount} saved`}</span>
+      {/* Receipt card */}
+      <FadeUp delay={0.1}>
+        <div
+          style={{
+            backgroundColor: 'var(--surface)',
+            border: '1px solid var(--gold)',
+            borderRadius: 22,
+            padding: '28px 22px',
+            boxShadow: '0 16px 28px rgba(0,0,0,0.26), 0 0 0 1px rgba(212,162,79,0.15)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 18,
+          }}
+        >
+          {/* Badge */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+          }}>
+            <div style={{
+              width: 28,
+              height: 28,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, var(--gold-bright), var(--gold-deep))',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0,
+            }}>
+              <Check style={{ width: 16, height: 16, color: '#0B0D11' }} />
+            </div>
+            <span style={{
+              fontSize: 13,
+              fontWeight: 800,
+              letterSpacing: '1.6px',
+              textTransform: 'uppercase' as const,
+              color: 'var(--gold-bright)',
+            }}>
+              Vow Kept
+            </span>
           </div>
-        </RitualCard>
+
+          {/* Divider */}
+          <div style={{ width: '100%', height: 1, backgroundColor: 'var(--border)' }} />
+
+          {/* Vow text */}
+          <p style={{
+            fontSize: 17,
+            fontFamily: 'var(--font-serif, Georgia, serif)',
+            fontWeight: 500,
+            color: 'var(--text)',
+            textAlign: 'center',
+            lineHeight: '26px',
+            margin: 0,
+          }}>
+            &ldquo;{vowText}&rdquo;
+          </p>
+
+          {/* Amount */}
+          <span style={{
+            fontSize: 28,
+            fontWeight: 800,
+            color: 'var(--success)',
+            letterSpacing: '-0.5px',
+          }}>
+            {isZeroStake ? 'Honored' : `$${amount} saved`}
+          </span>
+
+          {/* Divider */}
+          <div style={{ width: '100%', height: 1, backgroundColor: 'var(--border)' }} />
+
+          {/* Branding */}
+          <span style={{
+            fontSize: 11,
+            fontWeight: 600,
+            letterSpacing: '0.8px',
+            color: 'var(--text-muted)',
+          }}>
+            unbreakablevow.app
+          </span>
+        </div>
       </FadeUp>
 
       {/* Stats */}
       {keptCount !== null && (
-        <FadeUp delay={0.2}>
+        <FadeUp delay={0.15}>
           <div className="flex gap-3">
             <StatPill value={String(keptCount)} label="vows kept" tone="success" />
             {streak !== null && streak > 1 && (
@@ -105,7 +168,7 @@ function VowKeptContent() {
       )}
 
       {/* Share */}
-      <FadeUp delay={0.25}>
+      <FadeUp delay={0.2}>
         <button
           onClick={handleShare}
           className="w-full rounded-[18px] min-h-[48px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"

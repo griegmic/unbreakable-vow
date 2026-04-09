@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const now = new Date();
-  const results = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, sms_retry: 0, refund_retry: 0, push: 0, errors: [] as string[] };
+  const results = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, sms_retry: 0, refund_retry: 0, vow_lifecycle: 0, push: 0, errors: [] as string[] };
 
   try {
     // === TASK 0: Send witness acceptance reminders ===
@@ -404,6 +404,104 @@ Deno.serve(async (req) => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       results.errors.push(`refund_retry: ${msg}`);
+    }
+
+    // === TASK 7: Schedule vow lifecycle push notifications ===
+    // Queries active/awaiting_verdict vows and schedules time-based push notifications
+    // with dedup via push_queue data->>'event' + data->>'vow_id'
+    try {
+      const { data: lifecycleVows } = await supabase
+        .from('vows')
+        .select('*')
+        .in('status', ['active', 'awaiting_verdict'])
+        .not('starts_at', 'is', null)
+        .not('ends_at', 'is', null);
+
+      for (const vow of lifecycleVows || []) {
+        const startsAt = new Date(vow.starts_at);
+        const endsAt = new Date(vow.ends_at);
+
+        // Helper: check if a push with this event was already queued for this vow
+        async function alreadyQueued(eventType: string, userId?: string): Promise<boolean> {
+          const { count } = await supabase
+            .from('push_queue')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', userId || vow.user_id)
+            .contains('data', { vow_id: vow.id, event: eventType });
+          return (count || 0) > 0;
+        }
+
+        // Helper: queue a push notification
+        async function queuePush(userId: string, title: string, body: string, eventType: string, sendAfter: Date) {
+          await supabase.from('push_queue').insert({
+            user_id: userId,
+            title,
+            body,
+            data: { vow_id: vow.id, event: eventType },
+            send_after: sendAfter.toISOString(),
+          });
+          results.vow_lifecycle++;
+        }
+
+        try {
+          // --- #2: 24 hours after start: "Day 1 down." ---
+          const day1 = new Date(startsAt.getTime() + 24 * 60 * 60 * 1000);
+          if (now >= day1) {
+            if (!(await alreadyQueued('vow_day1'))) {
+              const body = vow.witness_name && vow.witness_user_id
+                ? `Day 1 down. ${vow.witness_name} is watching.`
+                : 'Day 1 down. You made a promise.';
+              await queuePush(vow.user_id, 'Day 1', body, 'vow_day1', day1);
+            }
+          }
+
+          // --- #3: Midpoint ---
+          const midpoint = new Date((startsAt.getTime() + endsAt.getTime()) / 2);
+          // Only send midpoint if vow is at least 3 days long (avoid spamming short vows)
+          const vowDurationMs = endsAt.getTime() - startsAt.getTime();
+          if (vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
+            if (!(await alreadyQueued('vow_midpoint'))) {
+              await queuePush(vow.user_id, 'Halfway', 'Halfway. Still standing?', 'vow_midpoint', midpoint);
+            }
+          }
+
+          // --- #4: 48 hours before deadline ---
+          const fortyEightBefore = new Date(endsAt.getTime() - 48 * 60 * 60 * 1000);
+          // Only send if 48h-before is after the midpoint (avoid sending before midpoint on short vows)
+          if (fortyEightBefore > midpoint && now >= fortyEightBefore) {
+            if (!(await alreadyQueued('vow_48h_warning'))) {
+              const daysLeft = Math.ceil((endsAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+              const body = `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left. You know what's on the line.`;
+              await queuePush(vow.user_id, 'Deadline approaching', body, 'vow_48h_warning', fortyEightBefore);
+            }
+          }
+
+          // --- #6: Verdict day — notify witness when ends_at is reached ---
+          if (now >= endsAt && vow.witness_user_id) {
+            if (!(await alreadyQueued('vow_verdict_day_witness', vow.witness_user_id))) {
+              // Get maker's display name
+              const { data: makerProfile } = await supabase
+                .from('users')
+                .select('display_name')
+                .eq('id', vow.user_id)
+                .single();
+              const makerName = makerProfile?.display_name || 'Someone';
+              await queuePush(
+                vow.witness_user_id,
+                'Verdict time',
+                `Time's up on ${makerName}'s vow. What's the verdict?`,
+                'vow_verdict_day_witness',
+                endsAt,
+              );
+            }
+          }
+        } catch (err) {
+          results.errors.push(`vow_lifecycle ${vow.id}: ${err}`);
+        }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.errors.push(`vow_lifecycle: ${msg}`);
     }
 
     // === TASK 4: Process push notification queue ===

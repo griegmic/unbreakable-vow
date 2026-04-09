@@ -4,17 +4,27 @@ import { useRouter } from 'next/navigation';
 import { Sparkles, User } from 'lucide-react';
 import { RitualScreen, HeaderBadge, PrimaryButton, FadeUp } from '@/components/ui';
 import { useAuth } from '@/providers/auth-provider';
+import { supabase } from '@/lib/supabase';
 import { useVowFlow } from '@/providers/vow-flow';
 import { vowExamples, analyzeVow } from '@/lib/vow-logic';
 
 export default function HomePage() {
   const router = useRouter();
-  const { setRawInput, setRefinedText } = useVowFlow();
-  const { isAuthenticated, loading } = useAuth();
+  const { setRawInput, setRefinedText, setWitnessName } = useVowFlow();
+  const { isAuthenticated, loading, session } = useAuth();
   const [input, setInput] = useState('');
 
+  // Pre-fill witness name from URL params (e.g. /?ref=witness&from=Joey)
   useEffect(() => {
-    if (!loading && isAuthenticated) {
+    const params = new URLSearchParams(window.location.search);
+    const fromName = params.get('from');
+    if (fromName) {
+      setWitnessName(decodeURIComponent(fromName));
+    }
+  }, [setWitnessName]);
+
+  useEffect(() => {
+    async function redirectIfAuthenticated() {
       const params = new URLSearchParams(window.location.search);
 
       // ?new=1 forces a fresh creation flow (used by viral CTAs)
@@ -37,9 +47,27 @@ export default function HomePage() {
           }
         }
       } catch {}
-      router.replace('/dashboard');
+
+      // Check if user has an active vow — if so, go to /live instead of /dashboard
+      const { data: activeVow } = await supabase
+        .from('vows')
+        .select('id')
+        .eq('user_id', session!.user.id)
+        .in('status', ['sealed', 'active', 'awaiting_verdict'])
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (activeVow) {
+        router.replace('/live');
+      } else {
+        router.replace('/dashboard');
+      }
     }
-  }, [isAuthenticated, loading, router]);
+    if (!loading && isAuthenticated) {
+      redirectIfAuthenticated();
+    }
+  }, [isAuthenticated, loading, router, session]);
 
   // Show loading spinner only when redirecting (not when ?new=1 keeps us on creation page)
   const isNewFlow = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('new') === '1';
