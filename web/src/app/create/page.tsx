@@ -25,11 +25,6 @@ async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, 
   );
 }
 
-/** Get a fresh access token for edge function calls. */
-async function getFreshToken(): Promise<string | null> {
-  const { data: { session } } = await supabase.auth.refreshSession();
-  return session?.access_token ?? null;
-}
 
 const STAKE_OPTIONS = [0, 10, 25, 50, 100];
 
@@ -239,16 +234,13 @@ export default function CreatePage() {
 
       if (stakeAmount === 0) {
         // $0 vow: call seal-vow directly, no payment
-        // Get a fresh token right before the edge function call
-        const freshToken = await getFreshToken();
-        if (!freshToken) throw new Error('Session expired. Please sign in again.');
-
+        // Use the access token from the session we already refreshed above
         const sealUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`;
         const sealRes = await fetch(sealUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${freshToken}`,
+            'Authorization': `Bearer ${currentSession.access_token}`,
             'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           },
           body: JSON.stringify({ vow_id: newVow.id }),
@@ -264,15 +256,12 @@ export default function CreatePage() {
       }
 
       // Staked vow: create payment intent
-      const freshToken = await getFreshToken();
-      if (!freshToken) throw new Error('Session expired. Please sign in again.');
-
       const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`;
       const piRes = await fetch(fnUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${freshToken}`,
+          'Authorization': `Bearer ${currentSession.access_token}`,
           'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         },
         body: JSON.stringify({ vow_id: newVow.id, amount: stakeAmount * 100 }),
@@ -302,19 +291,27 @@ export default function CreatePage() {
     try { localStorage.setItem('quickvow-defaults', JSON.stringify({ stakeAmount, consequence, deadlineLabel })); } catch {}
     if (vowId) {
       try {
-        const freshToken = await getFreshToken();
+        const { data: { session: paySession } } = await supabase.auth.getSession();
+        const sealToken = paySession?.access_token;
+        if (!sealToken) throw new Error('Session expired');
         const sealUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`;
-        await fetch(sealUrl, {
+        const sealRes = await fetch(sealUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${freshToken}`,
+            'Authorization': `Bearer ${sealToken}`,
             'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           },
           body: JSON.stringify({ vow_id: vowId }),
         });
+        if (!sealRes.ok) {
+          const sealData = await sealRes.json().catch(() => null);
+          throw new Error(sealData?.error || `Seal failed: ${sealRes.status}`);
+        }
       } catch (sealErr) {
         console.error('Failed to seal vow:', sealErr);
+        setError(sealErr instanceof Error ? sealErr.message : 'Failed to activate vow.');
+        return;
       }
     }
     resetVow();
