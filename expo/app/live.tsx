@@ -947,20 +947,24 @@ export default function LiveScreen() {
     <RitualScreen footer={renderFooter()}>
       <Stack.Screen options={{ headerShown: false }} />
 
-      {/* Back button when navigated from dashboard */}
-      {searchParams.vowId && (
-        <Pressable
-          style={styles.backRow}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      {/* Top nav — always visible */}
+      <Pressable
+        style={styles.backRow}
+        onPress={() => {
+          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (searchParams.vowId) {
+            // Came from dashboard — go back
             router.back();
-          }}
-          hitSlop={8}
-        >
-          <ChevronLeft color={palette.textSecondary} size={20} />
-          <Text style={styles.backText}>My Vows</Text>
-        </Pressable>
-      )}
+          } else {
+            // Came from seal/quick-vow — push to dashboard (don't go back to seal)
+            router.push('/dashboard');
+          }
+        }}
+        hitSlop={8}
+      >
+        <ChevronLeft color={palette.textSecondary} size={20} />
+        <Text style={styles.backText}>My Vows</Text>
+      </Pressable>
 
       {renderBadge()}
 
