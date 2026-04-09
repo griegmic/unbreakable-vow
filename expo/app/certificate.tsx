@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Share as ShareIcon } from 'lucide-react-native';
+import { ChevronLeft, Share as ShareIcon } from 'lucide-react-native';
 import React, { useCallback, useRef, useState } from 'react';
-import { Alert, Platform, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { VowCertificate } from '@/components/vow-certificate';
@@ -78,6 +78,21 @@ export default function CertificateScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
 
+      <Pressable
+        style={styles.backRow}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/');
+          }
+        }}
+        hitSlop={8}
+      >
+        <ChevronLeft color={palette.textSecondary} size={20} />
+        <Text style={styles.backText}>Back</Text>
+      </Pressable>
+
       <TitleBlock
         title="It's official."
         subtitle="Share your vow — let people know you mean it."
@@ -101,6 +116,18 @@ export default function CertificateScreen() {
 }
 
 const styles = StyleSheet.create({
+  backRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    paddingVertical: 4,
+    marginBottom: 4,
+  },
+  backText: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    fontWeight: '500' as const,
+  },
   certWrapper: {
     alignItems: 'center',
     paddingVertical: 8,

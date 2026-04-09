@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { ChevronRight, History, Settings } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, History, Settings } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -335,7 +335,9 @@ export default function VowDashboard() {
     const yourVowItems = myVows
       .filter((v) => v.status === 'draft' || v.status === 'sealed' || v.status === 'active')
       .sort((a, b) => {
-        // Newest first so the most recently created vow is always at the top
+        // Drafts always first, then newest first
+        if (a.status === 'draft' && b.status !== 'draft') return -1;
+        if (b.status === 'draft' && a.status !== 'draft') return 1;
         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
 
@@ -416,6 +418,22 @@ export default function VowDashboard() {
 
   const ListHeader = () => (
     <View style={styles.headerArea}>
+      {/* Always-visible back — never let the user get trapped */}
+      <Pressable
+        style={styles.backRow}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/');
+          }
+        }}
+        hitSlop={8}
+      >
+        <ChevronLeft color={palette.textSecondary} size={20} />
+        <Text style={styles.backText}>Back</Text>
+      </Pressable>
+
       {/* Nav row */}
       <View style={styles.navRow}>
         <AppMenuButton style={styles.navBtn} />
@@ -579,6 +597,18 @@ export default function VowDashboard() {
 // ---------------------------------------------------------------------------
 
 const styles = StyleSheet.create({
+  backRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 4,
+    marginBottom: 4,
+  },
+  backText: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    fontWeight: '500',
+  },
   screen: {
     flex: 1,
     backgroundColor: palette.bg,
