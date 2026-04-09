@@ -25,7 +25,7 @@ export default function SealPage() {
   const [isDevBypass, setIsDevBypass] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const verdictInfo = getVowVerdictDate(activeVowText);
+  const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
   useEffect(() => {
     setIsDevBypass(window.location.hostname === 'localhost');
@@ -39,7 +39,17 @@ export default function SealPage() {
   }, []);
 
   useEffect(() => {
-    if (!vow.rawInput) router.replace('/');
+    if (!vow.rawInput) {
+      // Double-check localStorage directly — context might not have hydrated yet
+      try {
+        const stored = localStorage.getItem('unbreakable-vow-flow');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed.rawInput) return; // state exists, context will catch up
+        }
+      } catch {}
+      router.replace('/');
+    }
   }, [vow.rawInput, router]);
 
   const createVowAndPay = useCallback(async () => {

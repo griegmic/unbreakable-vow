@@ -15,6 +15,18 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
+      // Don't redirect to dashboard if user has an in-progress vow creation
+      try {
+        const flow = localStorage.getItem('unbreakable-vow-flow');
+        if (flow) {
+          const parsed = JSON.parse(flow);
+          if (parsed.rawInput) {
+            // Resume the vow flow where they left off
+            router.replace(parsed.vowId ? '/live' : parsed.refinedText ? '/seal' : '/refine');
+            return;
+          }
+        }
+      } catch {}
       router.replace('/dashboard');
     }
   }, [isAuthenticated, loading, router]);

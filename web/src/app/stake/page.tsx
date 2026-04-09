@@ -74,7 +74,13 @@ export default function StakePage() {
   };
 
   useEffect(() => {
-    if (!vow.rawInput) router.replace('/');
+    if (!vow.rawInput) {
+      try {
+        const stored = localStorage.getItem('unbreakable-vow-flow');
+        if (stored && JSON.parse(stored).rawInput) return;
+      } catch {}
+      router.replace('/');
+    }
   }, [vow.rawInput, router]);
 
   const handleAmountSelect = (amount: number) => {

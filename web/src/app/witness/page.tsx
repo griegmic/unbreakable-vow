@@ -10,7 +10,13 @@ export default function WitnessPage() {
   const { vow, setWitnessName, setWitnessType, switchToSolo } = useVowFlow();
 
   useEffect(() => {
-    if (!vow.rawInput) router.replace('/');
+    if (!vow.rawInput) {
+      try {
+        const stored = localStorage.getItem('unbreakable-vow-flow');
+        if (stored && JSON.parse(stored).rawInput) return;
+      } catch {}
+      router.replace('/');
+    }
   }, [vow.rawInput, router]);
 
   const handleFriend = () => {
