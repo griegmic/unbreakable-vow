@@ -1,10 +1,10 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Heart, Users, Flame } from 'lucide-react';
-import { RitualScreen, BackButton, TitleBlock, SectionLabel, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
+import { RitualScreen, BackButton, TitleBlock, SectionLabel, ChoiceChip, PrimaryButton, SecondaryButton, FadeUp, RitualCard } from '@/components/ui';
 import { useVowFlow } from '@/providers/vow-flow';
-import { stakeAmounts, charities, antiCauses, consequenceOptions } from '@/lib/vow-logic';
+import { stakeAmounts, charities, antiCauses, consequenceOptions, inferDeadline } from '@/lib/vow-logic';
 
 const consequenceIcons = { charity: Heart, witness: Users, anti: Flame };
 
@@ -15,9 +15,63 @@ const amountHints: Record<number, string> = {
   100: 'Dead serious',
 };
 
+const DEADLINE_PRESETS = [
+  { label: 'This Friday', days: () => { const d = new Date(); const diff = 5 - d.getDay(); return diff <= 0 ? diff + 7 : diff; } },
+  { label: 'End of week', days: () => { const d = new Date(); const diff = 7 - d.getDay(); return diff === 0 ? 7 : diff; } },
+  { label: 'In 7 days', days: () => 7 },
+  { label: 'Pick date', days: () => -1 },
+];
+
 export default function StakePage() {
   const router = useRouter();
-  const { vow, setStake, updateConsequence } = useVowFlow();
+  const { vow, activeVowText, setStake, updateConsequence, setDeadline } = useVowFlow();
+
+  const [deadlineLabel, setDeadlineLabel] = useState('In 7 days');
+  const [customDate, setCustomDate] = useState('');
+  const [showCustomDate, setShowCustomDate] = useState(false);
+
+  // Check if vow text already implies a deadline
+  const inferredDeadline = useMemo(() => inferDeadline(activeVowText), [activeVowText]);
+  const needsDeadlinePicker = !inferredDeadline;
+
+  // Set inferred deadline on mount or when text changes
+  useEffect(() => {
+    if (inferredDeadline) {
+      setDeadline(inferredDeadline.toISOString());
+    }
+  }, [inferredDeadline, setDeadline]);
+
+  // Compute end date from picker selection
+  const pickedEndDate = useMemo(() => {
+    if (showCustomDate && customDate) {
+      return new Date(customDate + 'T23:59:59');
+    }
+    const preset = DEADLINE_PRESETS.find((p) => p.label === deadlineLabel);
+    if (!preset) return null;
+    const days = preset.days();
+    if (days === -1) return null;
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }, [deadlineLabel, customDate, showCustomDate]);
+
+  // Persist picked deadline to flow state
+  useEffect(() => {
+    if (needsDeadlinePicker && pickedEndDate) {
+      setDeadline(pickedEndDate.toISOString());
+    }
+  }, [needsDeadlinePicker, pickedEndDate, setDeadline]);
+
+  const handleDeadlineSelect = (label: string) => {
+    setDeadlineLabel(label);
+    if (label === 'Pick date') {
+      setShowCustomDate(true);
+    } else {
+      setShowCustomDate(false);
+      setCustomDate('');
+    }
+  };
 
   useEffect(() => {
     if (!vow.rawInput) router.replace('/');
@@ -144,6 +198,40 @@ export default function StakePage() {
               ))}
             </div>
           </div>
+        </FadeUp>
+      )}
+
+      {/* Deadline picker — only shown when vow text doesn't imply one */}
+      {needsDeadlinePicker && (
+        <FadeUp delay={0.3}>
+          <RitualCard>
+            <SectionLabel>Deadline</SectionLabel>
+            <div className="flex flex-wrap">
+              {DEADLINE_PRESETS.map((p) => (
+                <ChoiceChip
+                  key={p.label}
+                  label={p.label}
+                  active={deadlineLabel === p.label}
+                  onPress={() => handleDeadlineSelect(p.label)}
+                />
+              ))}
+            </div>
+            {showCustomDate && (
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
+                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+              />
+            )}
+            {pickedEndDate && (
+              <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                Ends {pickedEndDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+              </p>
+            )}
+          </RitualCard>
         </FadeUp>
       )}
     </RitualScreen>

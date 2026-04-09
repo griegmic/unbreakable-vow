@@ -67,8 +67,7 @@ export default function SealPage() {
       }
 
       if (!vowData) {
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 7);
+        const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
 
         const { data: newVow, error: vowError } = await supabase.from('vows').insert({
           user_id: currentSession.user.id,
@@ -150,8 +149,7 @@ export default function SealPage() {
         if (existing) vowData = existing;
       }
       if (!vowData) {
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 7);
+        const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
         const { data: newVow, error: vowError } = await supabase.from('vows').insert({
           user_id: currentSession.user.id,
           raw_input: vow.rawInput,
@@ -237,8 +235,7 @@ export default function SealPage() {
       }
 
       if (!vowData) {
-        const endDate = new Date();
-        endDate.setDate(endDate.getDate() + 7);
+        const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
 
         const { data: newVow, error: vowError } = await supabase.from('vows').insert({
           user_id: currentSession.user.id,

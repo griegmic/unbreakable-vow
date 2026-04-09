@@ -293,6 +293,99 @@ export function getDailyNudge(): string {
   return vowNudges[seed % vowNudges.length];
 }
 
+/**
+ * Attempts to infer an end date from vow text. Returns null if uncertain.
+ * "tomorrow morning" → tomorrow 11:59pm
+ * "this Friday" → this Friday 11:59pm
+ * "this week" / "all week" → Sunday 11:59pm
+ * "this weekend" → Sunday 11:59pm
+ * "next Monday" → next Monday 11:59pm
+ * "tonight" / "today" → today 11:59pm
+ */
+export function inferDeadline(input: string): Date | null {
+  const lower = input.toLowerCase();
+  const now = new Date();
+
+  if (/\btonight\b|\btoday\b/.test(lower)) {
+    const d = new Date(now);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+
+  if (/\btomorrow\b/.test(lower)) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + 1);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const thisDayMatch = lower.match(/this\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+  const nextDayMatch = lower.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+
+  if (thisDayMatch) {
+    const target = dayNames.indexOf(thisDayMatch[1].toLowerCase());
+    const d = new Date(now);
+    let diff = target - d.getDay();
+    if (diff <= 0) diff += 7;
+    d.setDate(d.getDate() + diff);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+
+  if (nextDayMatch) {
+    const target = dayNames.indexOf(nextDayMatch[1].toLowerCase());
+    const d = new Date(now);
+    let diff = target - d.getDay();
+    if (diff <= 0) diff += 7;
+    d.setDate(d.getDate() + diff + 7);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+
+  if (/\bthis\s+weekend\b/.test(lower)) {
+    const d = new Date(now);
+    const diff = 7 - d.getDay();
+    d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+
+  if (/\bthis\s+week\b|\ball\s+week\b|\beveryday\b|\bevery\s+day\b|\beveryday\b/.test(lower)) {
+    const d = new Date(now);
+    const diff = 7 - d.getDay();
+    d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+
+  if (/\bnext\s+week\b/.test(lower)) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + 14 - d.getDay());
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+
+  if (/\bthis\s+month\b|\ball\s+month\b/.test(lower)) {
+    const d = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+
+  // Check explicit dates (e.g. "by April 15")
+  const explicitDate = extractDeadlineDate(lower);
+  if (explicitDate) {
+    const parsed = new Date(`${explicitDate}, ${now.getFullYear()}`);
+    if (!isNaN(parsed.getTime())) {
+      parsed.setHours(23, 59, 59, 0);
+      if (parsed < now) parsed.setFullYear(parsed.getFullYear() + 1);
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
 export function getVowDates(): { range: string; verdictLabel: string; endLabel: string } {
   const start = new Date();
   const end = new Date(start);
