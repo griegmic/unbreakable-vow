@@ -1,26 +1,21 @@
-import * as Contacts from 'expo-contacts';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { ChevronRight, Search, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import ContactPickerModal from '@/components/contact-picker-modal';
 import {
   BackButton,
   RitualScreen,
   TitleBlock,
 } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
+import { type ContactEntry, requestAndLoadContacts } from '@/lib/contacts';
 import { updateVowWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
 type WitnessMode = 'choose' | 'contacts';
-
-interface ContactEntry {
-  id: string;
-  name: string;
-  phone: string;
-}
 
 export default function WitnessScreen() {
   const { setWitness, setWitnessType, vow, updateWitnessMidVow, setVowId } = useVowFlow();
@@ -48,46 +43,10 @@ export default function WitnessScreen() {
     setLoadingContacts(true);
 
     try {
-      const { status } = await Contacts.requestPermissionsAsync();
-      if (status !== 'granted') {
-        setLoadingContacts(false);
-        Alert.alert(
-          'Contacts access needed',
-          'Go to Settings \u2192 Unbreakable Vow \u2192 Contacts to allow access.',
-        );
-        return;
-      }
-
-      const { data } = await Contacts.getContactsAsync({
-        fields: [Contacts.Fields.PhoneNumbers, Contacts.Fields.Name],
-        sort: Contacts.SortTypes.FirstName,
-      });
-
-      const parsed: ContactEntry[] = [];
-      for (const c of data) {
-        if (!c.name) continue;
-        const phoneNum = c.phoneNumbers?.[0]?.number;
-        if (phoneNum) {
-          parsed.push({
-            id: c.id ?? c.name,
-            name: c.name,
-            phone: phoneNum,
-          });
-        }
-      }
-
-      if (parsed.length === 0) {
-        setLoadingContacts(false);
-        Alert.alert(
-          'No contacts found',
-          'We couldn\'t find contacts with phone numbers.',
-          [{ text: 'OK', style: 'cancel' }],
-        );
-        return;
-      }
-
-      setContacts(parsed);
+      const { granted, contacts: loaded } = await requestAndLoadContacts();
       setLoadingContacts(false);
+      if (!granted || loaded.length === 0) return;
+      setContacts(loaded);
       setMode('contacts');
     } catch {
       setLoadingContacts(false);

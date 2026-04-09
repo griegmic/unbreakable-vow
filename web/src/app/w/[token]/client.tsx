@@ -144,9 +144,28 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     setCalendarAdded(true);
   };
 
+  // Elapsed computation for time-based nudges
+  const getElapsed = (): number => {
+    if (!vow.starts_at || !vow.ends_at) return 0;
+    const start = new Date(vow.starts_at).getTime();
+    const end = new Date(vow.ends_at).getTime();
+    if (end <= start) return 0;
+    return Math.min(1, Math.max(0, (Date.now() - start) / (end - start)));
+  };
+
+  const getNudgeSms = (elapsed: number): string => {
+    if (elapsed < 0.15) return "How's the vow going?";
+    if (elapsed < 0.85) return "Still keeping the vow? I'm paying attention.";
+    return 'Almost verdict time. You good?';
+  };
+
   const handleTextMaker = () => {
+    const isJustAcceptedState = justAccepted;
     setJustAccepted(false);
-    const message = encodeURIComponent("Just accepted your vow. I'm watching. 👀");
+    const smsBody = isJustAcceptedState
+      ? "Just accepted your vow. I'm watching. 👀"
+      : getNudgeSms(getElapsed());
+    const message = encodeURIComponent(smsBody);
     if (makerPhone) {
       // Sanitize phone: keep only digits, +, and hyphens
       const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
@@ -246,10 +265,17 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 )}
                 <a
                   href="https://unbreakablevow.app"
-                  className="block text-center text-[13px] py-3 transition-opacity hover:opacity-80"
-                  style={{ color: 'var(--text-muted)' }}
+                  className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    border: '1px solid var(--border-strong)',
+                  }}
                 >
-                  Make a vow of your own &rarr;
+                  <div className="min-h-[50px] flex items-center justify-center px-5">
+                    <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                      Your turn &mdash; what will you commit to?
+                    </span>
+                  </div>
                 </a>
               </div>
             </FadeUp>
@@ -325,27 +351,35 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               </FadeUp>
             )}
 
-            {/* Text maker CTA — above calendar, hidden when verdict due or no phone */}
-            {!isVerdictDue && makerPhone && (
-              <FadeUp delay={0.2}>
-                <button
-                  type="button"
-                  onClick={handleTextMaker}
-                  className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    border: '1px solid var(--border-strong)',
-                  }}
-                >
-                  <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-                    <MessageCircle className="w-[16px] h-[16px]" style={{ color: 'var(--gold-bright)' }} />
-                    <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                      Tell {makerLabel} you&apos;re watching
-                    </span>
-                  </div>
-                </button>
-              </FadeUp>
-            )}
+            {/* Text maker CTA — time-based nudge, hidden when verdict due or no phone */}
+            {!isVerdictDue && makerPhone && (() => {
+              const elapsed = getElapsed();
+              const nudgeLabel = elapsed < 0.15
+                ? `Send ${makerLabel} a message`
+                : elapsed < 0.85
+                  ? `Check in on ${makerLabel}`
+                  : `The clock is ticking — message ${makerLabel}`;
+              return (
+                <FadeUp delay={0.2}>
+                  <button
+                    type="button"
+                    onClick={handleTextMaker}
+                    className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border-strong)',
+                    }}
+                  >
+                    <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
+                      <MessageCircle className="w-[16px] h-[16px]" style={{ color: 'var(--gold-bright)' }} />
+                      <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                        {nudgeLabel}
+                      </span>
+                    </div>
+                  </button>
+                </FadeUp>
+              );
+            })()}
 
             {/* Calendar reminder CTA */}
             {!isVerdictDue && (
@@ -392,10 +426,17 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             <FadeUp delay={makerPhone ? 0.3 : 0.25}>
               <a
                 href="https://unbreakablevow.app"
-                className="block text-center text-[13px] py-3 transition-opacity hover:opacity-80"
-                style={{ color: 'var(--text-muted)' }}
+                className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
+                style={{
+                  backgroundColor: 'var(--surface)',
+                  border: '1px solid var(--border-strong)',
+                }}
               >
-                Make a vow of your own &rarr;
+                <div className="min-h-[50px] flex items-center justify-center px-5">
+                  <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                    Your turn &mdash; what will you commit to?
+                  </span>
+                </div>
               </a>
             </FadeUp>
           </>

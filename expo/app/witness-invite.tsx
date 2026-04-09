@@ -1,8 +1,9 @@
+import * as Calendar from 'expo-calendar';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { AlertCircle, Check, CheckCircle2, Shield } from 'lucide-react-native';
+import { AlertCircle, Check, CheckCircle2, MessageCircle, Shield } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
@@ -102,7 +103,7 @@ export default function WitnessInviteScreen() {
     if (!remoteVow) return;
     setAccepting(true);
 
-    const result = await acceptWitnessInvite(remoteVow.id);
+    const result = await acceptWitnessInvite(token!);
     setAccepting(false);
 
     if (result.success) {
@@ -137,7 +138,7 @@ export default function WitnessInviteScreen() {
           style: 'destructive',
           onPress: async () => {
             setDeclining(true);
-            const result = await declineWitnessInvite(remoteVow.id);
+            const result = await declineWitnessInvite(token!);
             setDeclining(false);
             if (result.success) {
               setScreenState('declined');
@@ -187,7 +188,65 @@ export default function WitnessInviteScreen() {
     );
   }
 
+  // SMS helper
+  const sendSms = (phone: string | null | undefined, body: string) => {
+    const encoded = encodeURIComponent(body);
+    const sep = Platform.OS === 'android' ? '?' : '&';
+    if (phone) {
+      const cleanPhone = phone.replace(/[^\d+\-]/g, '');
+      void Linking.openURL(`sms:${cleanPhone}${sep}body=${encoded}`);
+    } else {
+      void Linking.openURL(`sms:${sep}body=${encoded}`);
+    }
+  };
+
+  const handleAddToNativeCalendar = async () => {
+    if (!remoteVow?.ends_at) return;
+    try {
+      const { status } = await Calendar.requestCalendarPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Calendar access needed', 'Allow calendar access in Settings to add a reminder.');
+        return;
+      }
+      const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
+      const defaultCal = calendars.find((c) => c.allowsModifications) || calendars[0];
+      if (!defaultCal) {
+        Alert.alert('No calendar found', 'Could not find a writable calendar on this device.');
+        return;
+      }
+      const endDate = new Date(remoteVow.ends_at);
+      endDate.setHours(9, 0, 0, 0);
+      await Calendar.createEventAsync(defaultCal.id, {
+        title: `Deliver your verdict — ${makerName}'s vow`,
+        startDate: endDate,
+        endDate: new Date(endDate.getTime() + 30 * 60 * 1000),
+        notes: `Time to decide: did ${makerName} keep their vow?\n"${remoteVow.refined_text}"`,
+        alarms: [{ relativeOffset: -15 }],
+      });
+      Alert.alert('Added!', 'Calendar reminder set for verdict day.');
+    } catch (err) {
+      console.error('[WitnessInvite] calendar error:', err);
+      Alert.alert('Calendar error', 'Could not add to calendar. Please try again.');
+    }
+  };
+
+  // Elapsed computation for time-based nudges
+  const getElapsed = (): number => {
+    if (!remoteVow?.starts_at || !remoteVow?.ends_at) return 0;
+    const start = new Date(remoteVow.starts_at).getTime();
+    const end = new Date(remoteVow.ends_at).getTime();
+    if (end <= start) return 0;
+    return Math.min(1, Math.max(0, (Date.now() - start) / (end - start)));
+  };
+
+  const getNudgeCopy = (elapsed: number): { cta: string; sms: string } => {
+    if (elapsed < 0.15) return { cta: `Send ${makerName} a message`, sms: "How's the vow going?" };
+    if (elapsed < 0.85) return { cta: `Check in on ${makerName}`, sms: "Still keeping the vow? I'm paying attention." };
+    return { cta: `The clock is ticking — message ${makerName}`, sms: 'Almost verdict time. You good?' };
+  };
+
   if (screenState === 'accepted') {
+    const makerPhone = remoteVow?.maker_phone ?? null;
     return (
       <RitualScreen>
         <Stack.Screen options={{ headerShown: false }} />
@@ -197,14 +256,92 @@ export default function WitnessInviteScreen() {
           </View>
           <Text style={styles.successTitle}>You're locked in.</Text>
           <Text style={styles.successBody}>
-            You'll be notified when it's time to deliver your verdict{verdictDate ? ` on ${verdictDate}` : ''}. Until then, keep {makerName} honest.
+            {makerName} is counting on your honesty. You'll deliver your verdict{verdictDate ? ` on ${verdictDate}` : ' when time\'s up'}.
           </Text>
+
+          {/* Vow quote */}
+          <RitualCard>
+            <Text style={styles.sectionLabel}>THE VOW</Text>
+            <Text style={styles.vowTextStyle}>{vowText}</Text>
+          </RitualCard>
+
+          {/* Primary CTA: Tell them you're watching */}
+          {makerPhone ? (
+            <Pressable
+              onPress={() => sendSms(makerPhone, "Just accepted your vow. I'm watching.")}
+              style={styles.goldButton}
+            >
+              <MessageCircle color="#0B0D11" size={18} />
+              <Text style={styles.goldButtonText}>Tell {makerName} you're watching</Text>
+            </Pressable>
+          ) : null}
+
+          {/* Secondary: Calendar reminder */}
+          <Pressable onPress={handleAddToNativeCalendar} style={styles.outlinedButton}>
+            <Text style={styles.outlinedButtonText}>Remind me on verdict day</Text>
+          </Pressable>
+
+          {/* Tertiary: Viral CTA */}
+          <Pressable
+            onPress={() => Linking.openURL('https://unbreakablevow.app')}
+            style={styles.outlinedButton}
+          >
+            <Text style={styles.outlinedButtonText}>Your turn — what will you commit to?</Text>
+          </Pressable>
         </View>
       </RitualScreen>
     );
   }
 
   if (screenState === 'already_accepted') {
+    const elapsed = getElapsed();
+    const makerPhone = remoteVow?.maker_phone ?? null;
+
+    // Check if verdict is due
+    const nowMs = Date.now();
+    const endMs = remoteVow?.ends_at ? new Date(remoteVow.ends_at).getTime() : 0;
+    const isVerdictDue = endMs > 0 && nowMs >= endMs;
+
+    if (isVerdictDue) {
+      return (
+        <RitualScreen>
+          <Stack.Screen options={{ headerShown: false }} />
+          <View style={styles.centeredWrap}>
+            <View style={styles.successIconWrap}>
+              <CheckCircle2 color={palette.goldBright} size={36} />
+            </View>
+            <Text style={styles.successTitle}>Time's up.</Text>
+            <Text style={styles.successBody}>
+              Did {makerName} keep their word? Your call.
+            </Text>
+
+            <RitualCard>
+              <Text style={styles.sectionLabel}>THE VOW</Text>
+              <Text style={styles.vowTextStyle}>{vowText}</Text>
+            </RitualCard>
+
+            <Pressable
+              onPress={() => Linking.openURL(`https://unbreakablevow.app/w/${token}/verdict`)}
+              style={styles.goldButton}
+            >
+              <Text style={styles.goldButtonText}>Deliver your verdict</Text>
+            </Pressable>
+
+            <Pressable
+              onPress={() => Linking.openURL('https://unbreakablevow.app')}
+              style={styles.outlinedButton}
+            >
+              <Text style={styles.outlinedButtonText}>Your turn — what will you commit to?</Text>
+            </Pressable>
+          </View>
+        </RitualScreen>
+      );
+    }
+
+    // Return visit — active vow
+    const nudge = getNudgeCopy(elapsed);
+    const progressPct = Math.round(elapsed * 100);
+
     return (
       <RitualScreen>
         <Stack.Screen options={{ headerShown: false }} />
@@ -212,10 +349,39 @@ export default function WitnessInviteScreen() {
           <View style={styles.successIconWrap}>
             <CheckCircle2 color={palette.success} size={36} />
           </View>
-          <Text style={styles.successTitle}>Already accepted</Text>
+          <Text style={styles.successTitle}>You're watching.</Text>
           <Text style={styles.successBody}>
-            You've already accepted this witness invite. You'll be notified when it's verdict time.
+            {makerName} is counting on your honesty.
           </Text>
+
+          <RitualCard>
+            <Text style={styles.sectionLabel}>THE VOW</Text>
+            <Text style={styles.vowTextStyle}>{vowText}</Text>
+            <View style={styles.progressRow}>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+              </View>
+              <Text style={styles.progressLabel}>{progressPct}%</Text>
+            </View>
+          </RitualCard>
+
+          {/* Time-based nudge CTA */}
+          {makerPhone ? (
+            <Pressable
+              onPress={() => sendSms(makerPhone, nudge.sms)}
+              style={styles.outlinedButton}
+            >
+              <MessageCircle color={palette.goldBright} size={16} />
+              <Text style={styles.outlinedButtonText}>{nudge.cta}</Text>
+            </Pressable>
+          ) : null}
+
+          <Pressable
+            onPress={() => Linking.openURL('https://unbreakablevow.app')}
+            style={styles.outlinedButton}
+          >
+            <Text style={styles.outlinedButtonText}>Your turn — what will you commit to?</Text>
+          </Pressable>
         </View>
       </RitualScreen>
     );
@@ -523,5 +689,62 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 21,
+  },
+  goldButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: palette.goldBright,
+    borderRadius: 18,
+    paddingVertical: 16,
+    width: '100%',
+  },
+  goldButtonText: {
+    color: '#0B0D11',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  outlinedButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 18,
+    paddingVertical: 14,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    backgroundColor: palette.surface,
+  },
+  outlinedButtonText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  progressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
+  },
+  progressTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: palette.gold,
+  },
+  progressLabel: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontWeight: '600',
+    width: 36,
+    textAlign: 'right',
   },
 });

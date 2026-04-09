@@ -32,6 +32,8 @@ interface Vow {
   vow_type: string;
   witness_name: string;
   witness_user_id: string | null;
+  witness_accepted_at: string | null;
+  witness_declined: boolean;
   stake_amount: number;
   starts_at: string | null;
   ends_at: string | null;
@@ -134,6 +136,13 @@ function VowCard({
   const isChallenge = sectionId === 'attention' && vow.challenge_status === 'pending';
   const personLabel = sectionId === 'witnessing' ? "You're witnessing" : vow.witness_name;
 
+  // Witness status badge
+  const isSolo = !vow.witness_name || vow.witness_name === 'Just me';
+  const witnessStatusBadge = isSolo ? null
+    : vow.witness_accepted_at ? { color: '#52D69A', label: 'Accepted' }
+    : vow.witness_declined ? { color: '#FF7B7B', label: 'Declined' }
+    : { color: '#F0C86E', label: 'Pending' };
+
   const handlePressIn = () => {
     Animated.spring(scaleAnim, { toValue: 0.98, useNativeDriver: true, speed: 40, bounciness: 4 }).start();
   };
@@ -184,6 +193,13 @@ function VowCard({
         {/* Meta row */}
         <View style={styles.metaRow}>
           {personLabel ? <Text style={styles.metaText}>{personLabel}</Text> : null}
+          {witnessStatusBadge ? (
+            <>
+              <Text style={styles.metaDot}>{'\u00B7'}</Text>
+              <View style={[styles.witnessDot, { backgroundColor: witnessStatusBadge.color }]} />
+              <Text style={[styles.witnessStatusText, { color: witnessStatusBadge.color }]}>{witnessStatusBadge.label}</Text>
+            </>
+          ) : null}
           {personLabel ? <Text style={styles.metaDot}>{'\u00B7'}</Text> : null}
           <Text style={styles.metaText}>{stakeLabel}</Text>
         </View>
@@ -732,6 +748,15 @@ const styles = StyleSheet.create({
   metaDot: {
     color: palette.textMuted,
     fontSize: 13,
+  },
+  witnessDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  witnessStatusText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
 
   // Challenge actions

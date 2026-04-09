@@ -180,6 +180,8 @@ export interface WitnessVowData {
   witness_declined: boolean;
   status: string;
   user_display_name: string | null;
+  maker_phone: string | null;
+  witness_invite_token: string | null;
 }
 
 export async function getVowByWitnessToken(token: string): Promise<{ success: boolean; vow?: WitnessVowData; error?: string }> {
@@ -187,7 +189,7 @@ export async function getVowByWitnessToken(token: string): Promise<{ success: bo
   try {
     const { data, error } = await supabase
       .from('vows')
-      .select('id, refined_text, witness_name, stake_amount, consequence, destination, starts_at, ends_at, witness_accepted_at, witness_declined, status, user_id')
+      .select('id, refined_text, witness_name, witness_invite_token, stake_amount, consequence, destination, starts_at, ends_at, witness_accepted_at, witness_declined, status, user_id')
       .eq('witness_invite_token', token)
       .in('status', ['sealed', 'active', 'awaiting_verdict'])
       .single();
@@ -198,13 +200,15 @@ export async function getVowByWitnessToken(token: string): Promise<{ success: bo
     }
 
     let userDisplayName: string | null = null;
+    let makerPhone: string | null = null;
     try {
       const { data: userData } = await supabase
         .from('users')
-        .select('display_name')
+        .select('display_name, phone')
         .eq('id', data.user_id)
         .single();
       userDisplayName = userData?.display_name ?? null;
+      makerPhone = userData?.phone ?? null;
     } catch {
       console.log('[vow-api] could not fetch user display name');
     }
@@ -224,6 +228,8 @@ export async function getVowByWitnessToken(token: string): Promise<{ success: bo
         witness_declined: data.witness_declined ?? false,
         status: data.status,
         user_display_name: userDisplayName,
+        maker_phone: makerPhone,
+        witness_invite_token: data.witness_invite_token,
       },
     };
   } catch (err) {
@@ -232,16 +238,18 @@ export async function getVowByWitnessToken(token: string): Promise<{ success: bo
   }
 }
 
-export async function acceptWitnessInvite(vowId: string): Promise<{ success: boolean; error?: string }> {
-  console.log('[vow-api] acceptWitnessInvite for vow:', vowId);
+export async function acceptWitnessInvite(token: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] acceptWitnessInvite with token:', token);
   try {
-    const { error } = await supabase.from('vows').update({
-      witness_accepted_at: new Date().toISOString(),
-      witness_declined: false,
-    }).eq('id', vowId);
+    const { data, error } = await supabase.functions.invoke('accept-witness', {
+      body: { token, action: 'accept' },
+    });
     if (error) {
       console.error('[vow-api] acceptWitnessInvite error:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Failed to accept invite.' };
+    }
+    if (data?.error) {
+      return { success: false, error: data.error === 'vow_not_active' ? 'This vow is no longer active.' : 'Something went wrong.' };
     }
     return { success: true };
   } catch (err) {
@@ -250,15 +258,18 @@ export async function acceptWitnessInvite(vowId: string): Promise<{ success: boo
   }
 }
 
-export async function declineWitnessInvite(vowId: string): Promise<{ success: boolean; error?: string }> {
-  console.log('[vow-api] declineWitnessInvite for vow:', vowId);
+export async function declineWitnessInvite(token: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] declineWitnessInvite with token:', token);
   try {
-    const { error } = await supabase.from('vows').update({
-      witness_declined: true,
-    }).eq('id', vowId);
+    const { data, error } = await supabase.functions.invoke('accept-witness', {
+      body: { token, action: 'decline' },
+    });
     if (error) {
       console.error('[vow-api] declineWitnessInvite error:', error);
-      return { success: false, error: error.message };
+      return { success: false, error: error.message || 'Failed to decline invite.' };
+    }
+    if (data?.error) {
+      return { success: false, error: 'Something went wrong.' };
     }
     return { success: true };
   } catch (err) {

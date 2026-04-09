@@ -2,11 +2,10 @@ import Constants from 'expo-constants';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, CheckCircle, Sparkles } from 'lucide-react-native';
+import { ArrowLeft, Sparkles } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
-  Clipboard,
   Platform,
   Pressable,
   Share,
@@ -16,8 +15,10 @@ import {
   View,
 } from 'react-native';
 
+import ContactPickerModal from '@/components/contact-picker-modal';
+
 import AuthSheet from '@/components/auth-sheet';
-import { ChoiceChip, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
+import { ChoiceChip, PrimaryButton, RitualCard, RitualScreen } from '@/components/vow-ui';
 import {
   analyzeVow,
   charities,
@@ -32,6 +33,7 @@ import { createPaymentIntent, setupPaymentSheet, showPaymentSheet } from '@/lib/
 import { createVow, voidVowV2 } from '@/lib/vow-api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
+import { useVowFlow } from '@/providers/vow-flow';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 const STAKE_OPTIONS = [0, ...defaultStakeAmounts]; // [0, 10, 25, 50, 100]
@@ -86,15 +88,20 @@ export default function QuickVowScreen() {
   const [recentWitnesses, setRecentWitnesses] = useState<RecentWitness[]>([]);
   const [showNewWitness, setShowNewWitness] = useState(false);
 
+  // Witness contact picker
+  const [contactPickerVisible, setContactPickerVisible] = useState(false);
+
   // Seal state
   const [sealing, setSealing] = useState(false);
   const [error, setError] = useState('');
   const [authSheetVisible, setAuthSheetVisible] = useState(false);
-  const [sealed, setSealed] = useState(false);
   const [sealedVowId, setSealedVowId] = useState<string | null>(null);
   const [witnessToken, setWitnessToken] = useState<string | null>(null);
   const [paidVowId, setPaidVowId] = useState<string | null>(null);
   const pendingSealRef = useRef(false);
+
+  // VowFlow for hydrating after seal
+  const vowFlow = useVowFlow();
 
   // Computed values — useMemo to avoid new Date() on every render (prevents useCallback churn)
   const deadlineDate = useMemo(
@@ -206,7 +213,7 @@ export default function QuickVowScreen() {
       }
       setSealing(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setSealed(true);
+      await handleSealSuccess();
       return;
     }
 
@@ -234,7 +241,7 @@ export default function QuickVowScreen() {
         await invokeSealEdgeFunction(vowId);
         setSealing(false);
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        setSealed(true);
+        await handleSealSuccess();
         return;
       }
 
@@ -255,7 +262,7 @@ export default function QuickVowScreen() {
       await invokeSealEdgeFunction(vowId);
       setSealing(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setSealed(true);
+      await handleSealSuccess();
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[QuickVow] seal flow error:', errMsg);
@@ -310,113 +317,39 @@ export default function QuickVowScreen() {
     ? `https://unbreakablevow.app/w/${witnessToken}`
     : '';
 
-  const handleShare = async () => {
-    if (!witnessUrl) return;
-    try {
-      await Share.share({
-        message: `I just made a vow: "${finalText.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept: ${witnessUrl}`,
-      });
-    } catch {}
+  // -----------------------------------------------------------------------
+  // Post-seal: hydrate VowFlow → auto-share → navigate to /live
+  // -----------------------------------------------------------------------
+
+  const handleSealSuccess = async () => {
+    // Hydrate VowFlowProvider so /live has full context
+    vowFlow.setRawInput(vowText);
+    vowFlow.setRefinedText(finalText);
+    if (witnessName) {
+      vowFlow.setWitnessType('friend');
+      vowFlow.setWitness(witnessName, witnessPhone ? 'sms' : 'link', witnessPhone || undefined);
+    } else {
+      vowFlow.setWitnessType('self');
+      vowFlow.setWitness('Just me', 'link');
+    }
+    vowFlow.setStake({ amount: stakeAmount, consequence, destination: stakeAmount > 0 ? destination : 'None' });
+    if (sealedVowId) {
+      vowFlow.setVowId(sealedVowId, witnessToken);
+    }
+    vowFlow.setDeadline(deadlineDate.toISOString());
+
+    // Auto-share for witnessed vows
+    if (witnessName && witnessUrl) {
+      try {
+        await Share.share({
+          message: `I just made a vow: "${finalText.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept: ${witnessUrl}`,
+        });
+      } catch {}
+    }
+
+    // Navigate to /live
+    router.push({ pathname: '/live', params: { justSealed: '1' } });
   };
-
-  // -----------------------------------------------------------------------
-  // Sealed success screen
-  // -----------------------------------------------------------------------
-
-  if (sealed) {
-    const isSolo = !witnessName;
-    return (
-      <RitualScreen
-        footer={
-          <>
-            <PrimaryButton label="My Vows" onPress={() => router.push('/dashboard')} testID="quickvow-my-vows" />
-            <SecondaryButton
-              testID="quickvow-make-another"
-              label="Make another vow"
-              onPress={() => {
-                setSealed(false);
-                setSealedVowId(null);
-                setWitnessToken(null);
-                setPaidVowId(null);
-                setVowText('');
-                setSuggestion('');
-                setOathChecked(false);
-                setError('');
-                setStakeAmount(0);
-                setConsequence('charity');
-                setDestination(charities[0]);
-                setWitnessName('');
-                setWitnessPhone('');
-                setShowNewWitness(false);
-                setDeadlinePreset('in_7_days');
-                setCustomDate(getPresetDate('in_7_days'));
-                setShowDatePicker(false);
-              }}
-            />
-          </>
-        }
-      >
-        <Stack.Screen options={{ headerShown: false }} />
-
-        <View style={styles.successIcon}>
-          <CheckCircle color={palette.success} size={32} />
-        </View>
-
-        <TitleBlock
-          title={isSolo ? 'Sealed.' : 'Sealed. Share it.'}
-          subtitle={isSolo
-            ? "Your vow is locked. You'll judge yourself when the time comes."
-            : 'Send the link to your witness — first to accept holds you to it.'}
-        />
-
-        <RitualCard>
-          <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>THE VOW</Text>
-            <Sparkles color={palette.goldBright} size={14} />
-          </View>
-          <Text style={styles.summaryText}>{finalText}</Text>
-        </RitualCard>
-
-        {!isSolo && witnessUrl ? (
-          <>
-            <Pressable onPress={handleShare} style={styles.shareButton}>
-              <Text style={styles.shareButtonText}>Share with witness</Text>
-            </Pressable>
-            <Pressable
-              onPress={() => {
-                try { Clipboard.setString(witnessUrl); } catch {}
-              }}
-              style={styles.copyRow}
-            >
-              <Text style={styles.copyText} numberOfLines={1}>{witnessUrl}</Text>
-              <Text style={styles.copyLabel}>Copy</Text>
-            </Pressable>
-          </>
-        ) : null}
-
-        <RitualCard>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Witness</Text>
-            <Text style={styles.detailValue}>{witnessName || 'Just me'}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Stake</Text>
-            <Text style={[styles.detailValue, styles.goldValue]}>${stakeAmount}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>Ends</Text>
-            <Text style={styles.detailValue}>{formatDateShort(deadlineDate)}</Text>
-          </View>
-          {stakeAmount > 0 && (
-            <View style={styles.detailRow}>
-              <Text style={styles.detailLabel}>If broken</Text>
-              <Text style={styles.detailValue}>{destination}</Text>
-            </View>
-          )}
-        </RitualCard>
-      </RitualScreen>
-    );
-  }
 
   // -----------------------------------------------------------------------
   // Creation form
@@ -466,43 +399,83 @@ export default function QuickVowScreen() {
 
         {/* Witness */}
         <RitualCard>
-          <Text style={styles.sectionLabel}>WITNESS (OPTIONAL)</Text>
-          {recentWitnesses.length > 0 && !showNewWitness ? (
-            <View style={styles.chipRow}>
-              {recentWitnesses.map((w) => (
-                <ChoiceChip
-                  key={w.name + w.phone}
-                  label={w.name}
-                  active={witnessName === w.name && witnessPhone === w.phone}
-                  onPress={() => { setWitnessName(w.name); setWitnessPhone(w.phone); setShowNewWitness(false); }}
-                />
-              ))}
-              <ChoiceChip
-                label="+ New"
-                active={showNewWitness}
-                onPress={() => { setShowNewWitness(true); setWitnessName(''); setWitnessPhone(''); }}
-              />
+          <Text style={styles.sectionLabel}>WHO'S HOLDING YOU TO IT?</Text>
+          <Text style={styles.witnessSubline}>Witnessed vows are kept 3x more often.</Text>
+
+          {/* Selected witness display */}
+          {witnessName && !showNewWitness ? (
+            <View style={styles.selectedWitness}>
+              <View style={styles.selectedWitnessInfo}>
+                <Text style={styles.selectedWitnessName}>{witnessName} ✓</Text>
+                {witnessPhone ? <Text style={styles.selectedWitnessPhone}>{witnessPhone}</Text> : null}
+              </View>
+              <Pressable onPress={() => { setWitnessName(''); setWitnessPhone(''); }}>
+                <Text style={styles.changeLink}>Change</Text>
+              </Pressable>
             </View>
-          ) : null}
-          {(showNewWitness || recentWitnesses.length === 0) ? (
-            <View style={styles.inputCol}>
-              <TextInput
-                value={witnessName}
-                onChangeText={setWitnessName}
-                placeholder="Witness name"
-                placeholderTextColor={palette.textMuted}
-                style={styles.fieldInput}
-              />
-              <TextInput
-                value={witnessPhone}
-                onChangeText={setWitnessPhone}
-                placeholder="Phone number"
-                placeholderTextColor={palette.textMuted}
-                keyboardType="phone-pad"
-                style={styles.fieldInput}
-              />
-            </View>
-          ) : null}
+          ) : (
+            <>
+              {/* First-time or no recent: hero contact picker + manual */}
+              {recentWitnesses.length === 0 && !showNewWitness ? (
+                <View style={styles.inputCol}>
+                  <Pressable
+                    onPress={() => setContactPickerVisible(true)}
+                    style={styles.contactPickerHero}
+                  >
+                    <Text style={styles.contactPickerHeroText}>Pick from contacts</Text>
+                  </Pressable>
+                  <Pressable onPress={() => setShowNewWitness(true)}>
+                    <Text style={styles.manualEntryLink}>Enter manually</Text>
+                  </Pressable>
+                </View>
+              ) : null}
+
+              {/* Returning user: recent chips + contact/manual */}
+              {recentWitnesses.length > 0 && !showNewWitness ? (
+                <View style={styles.chipRow}>
+                  {recentWitnesses.map((w) => (
+                    <ChoiceChip
+                      key={w.name + w.phone}
+                      label={w.name}
+                      active={witnessName === w.name && witnessPhone === w.phone}
+                      onPress={() => { setWitnessName(w.name); setWitnessPhone(w.phone); setShowNewWitness(false); }}
+                    />
+                  ))}
+                  <ChoiceChip
+                    label="From contacts"
+                    active={false}
+                    onPress={() => setContactPickerVisible(true)}
+                  />
+                  <ChoiceChip
+                    label="+ Manual"
+                    active={showNewWitness}
+                    onPress={() => { setShowNewWitness(true); setWitnessName(''); setWitnessPhone(''); }}
+                  />
+                </View>
+              ) : null}
+
+              {/* Manual entry form */}
+              {showNewWitness ? (
+                <View style={styles.inputCol}>
+                  <TextInput
+                    value={witnessName}
+                    onChangeText={setWitnessName}
+                    placeholder="Witness name"
+                    placeholderTextColor={palette.textMuted}
+                    style={styles.fieldInput}
+                  />
+                  <TextInput
+                    value={witnessPhone}
+                    onChangeText={setWitnessPhone}
+                    placeholder="Phone number"
+                    placeholderTextColor={palette.textMuted}
+                    keyboardType="phone-pad"
+                    style={styles.fieldInput}
+                  />
+                </View>
+              ) : null}
+            </>
+          )}
         </RitualCard>
 
         {/* Stake */}
@@ -593,6 +566,17 @@ export default function QuickVowScreen() {
         </Pressable>
       </RitualScreen>
 
+      <ContactPickerModal
+        visible={contactPickerVisible}
+        onSelect={(name, phone) => {
+          setWitnessName(name);
+          setWitnessPhone(phone);
+          setContactPickerVisible(false);
+          setShowNewWitness(false);
+        }}
+        onClose={() => setContactPickerVisible(false)}
+      />
+
       <AuthSheet
         visible={authSheetVisible}
         onDismiss={() => setAuthSheetVisible(false)}
@@ -652,6 +636,57 @@ const styles = StyleSheet.create({
     color: palette.gold,
     fontSize: 13,
     flex: 1,
+  },
+  witnessSubline: {
+    color: palette.textMuted,
+    fontSize: 13,
+    marginBottom: 4,
+  },
+  selectedWitness: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    backgroundColor: 'rgba(212,162,79,0.06)',
+    marginTop: 4,
+  },
+  selectedWitnessInfo: {
+    gap: 2,
+  },
+  selectedWitnessName: {
+    color: palette.text,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  selectedWitnessPhone: {
+    color: palette.textMuted,
+    fontSize: 12,
+  },
+  changeLink: {
+    color: palette.goldBright,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  contactPickerHero: {
+    backgroundColor: palette.goldBright,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+  },
+  contactPickerHeroText: {
+    color: '#0B0D11',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  manualEntryLink: {
+    color: palette.textMuted,
+    fontSize: 13,
+    textAlign: 'center',
+    paddingVertical: 4,
   },
   chipRow: {
     flexDirection: 'row',
@@ -722,78 +757,5 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     flex: 1,
-  },
-  // Sealed state styles
-  successIcon: {
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryLabel: {
-    color: palette.gold,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1.1,
-  },
-  summaryText: {
-    color: palette.text,
-    fontSize: 20,
-    lineHeight: 30,
-    fontWeight: '600',
-  },
-  shareButton: {
-    backgroundColor: palette.gold,
-    borderRadius: 18,
-    paddingVertical: 16,
-    alignItems: 'center',
-  },
-  shareButtonText: {
-    color: '#0B0D11',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  copyRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.surface,
-    padding: 12,
-  },
-  copyText: {
-    color: palette.textMuted,
-    fontSize: 12,
-    flex: 1,
-    marginRight: 8,
-  },
-  copyLabel: {
-    color: palette.textSecondary,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  detailRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  detailLabel: {
-    color: palette.textMuted,
-    fontSize: 13,
-  },
-  detailValue: {
-    color: palette.text,
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  goldValue: {
-    color: palette.goldBright,
-    fontWeight: '800',
   },
 });

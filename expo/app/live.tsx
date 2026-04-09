@@ -1,8 +1,8 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
-import { Stack, router } from 'expo-router';
-import { AlertCircle, ChevronRight, Clock, ExternalLink, FastForward, Flame, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, ThumbsUp, Trophy, User, UserMinus } from 'lucide-react-native';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
+import { AlertCircle, ChevronRight, Clock, ExternalLink, FastForward, Flame, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, ThumbsUp, Trophy, User, UserMinus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -22,9 +22,13 @@ const CHECK_IN_COOLDOWN_MS = 4 * 60 * 60 * 1000;
 
 export default function LiveScreen() {
   const { activeVowText, vow, isSelfWitness, switchToSolo, setVowId } = useVowFlow();
+  const searchParams = useLocalSearchParams<{ justSealed?: string }>();
   const dates = getVowVerdictDate(vow.rawInput);
 
   const brokenTarget = vow.stake.destination;
+
+  // Share banner for witnessed vows just sealed
+  const [shareBannerDismissed, setShareBannerDismissed] = useState(false);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
@@ -888,6 +892,36 @@ export default function LiveScreen() {
         subtitle={`$${vow.stake.amount} at stake \u00B7 Goes to ${brokenTarget} if broken`}
       />
 
+      {/* Share banner for witnessed vows */}
+      {!isSelfWitness && !witnessAccepted && !shareBannerDismissed && vow.witnessName && (
+        <View style={styles.shareBanner}>
+          <View style={styles.shareBannerContent}>
+            <Text style={styles.shareBannerText}>Send your vow to {vow.witnessName}</Text>
+            <View style={styles.shareBannerActions}>
+              <Pressable
+                onPress={async () => {
+                  const witnessUrl = vow.witnessInviteToken ? `https://unbreakablevow.app/w/${vow.witnessInviteToken}` : '';
+                  if (witnessUrl) {
+                    try {
+                      await Share.share({
+                        message: `I just made a vow: "${activeVowText}" — I picked you to hold me accountable. Tap here to accept: ${witnessUrl}`,
+                      });
+                    } catch {}
+                  }
+                }}
+                style={styles.shareBannerBtn}
+              >
+                <Share2 color="#0B0D11" size={14} />
+                <Text style={styles.shareBannerBtnText}>Share</Text>
+              </Pressable>
+              <Pressable onPress={() => setShareBannerDismissed(true)} hitSlop={8}>
+                <X color={palette.textMuted} size={16} />
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
+
       {phase === 'witness_pending' && renderWitnessPendingCard()}
       {phase === 'vow_active' && renderVowActiveCard()}
       {phase === 'verdict_due' && renderVerdictDueCard()}
@@ -1403,5 +1437,42 @@ const styles = StyleSheet.create({
     color: palette.warmAmber,
     fontSize: 13,
     fontWeight: '600' as const,
+  },
+  shareBanner: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    backgroundColor: 'rgba(212,162,79,0.08)',
+    padding: 14,
+  },
+  shareBannerContent: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  shareBannerText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    flex: 1,
+  },
+  shareBannerActions: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+  },
+  shareBannerBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 6,
+    backgroundColor: palette.goldBright,
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  shareBannerBtnText: {
+    color: '#0B0D11',
+    fontSize: 13,
+    fontWeight: '700' as const,
   },
 });
