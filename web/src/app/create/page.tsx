@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Sparkles, User, DollarSign, Calendar, Scale, Plus } from 'lucide-react';
+import { ArrowLeft, Sparkles, User, DollarSign, Calendar, Scale, Plus, CheckCircle } from 'lucide-react';
 import {
   RitualScreen, RitualCard, PrimaryButton, ChoiceChip,
   OathCheckbox, VowPreview, SectionLabel, FadeUp,
 } from '@/components/ui';
 import { AuthModal } from '@/components/auth-modal';
 import { PaymentModal } from '@/components/payment-form';
+import { ShareButton, CopyLinkButton } from '@/components/share-button';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -15,6 +16,20 @@ import {
   analyzeVow, generateSuggestion, charities, antiCauses,
   consequenceOptions, type ConsequenceType,
 } from '@/lib/vow-logic';
+
+/** Ensure a public.users row exists before inserting a vow (foreign key requirement). */
+async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, email?: string) {
+  await supabase.from('users').upsert(
+    { id: userId, display_name: (meta?.full_name as string) || email?.split('@')[0] || null },
+    { onConflict: 'id', ignoreDuplicates: true },
+  );
+}
+
+/** Get a fresh access token for edge function calls. */
+async function getFreshToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.refreshSession();
+  return session?.access_token ?? null;
+}
 
 const STAKE_OPTIONS = [0, 10, 25, 50, 100];
 
@@ -60,6 +75,8 @@ export default function CreatePage() {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [showPayment, setShowPayment] = useState(false);
   const [vowId, setVowId] = useState<string | null>(null);
+  const [witnessToken, setWitnessToken] = useState<string | null>(null);
+  const [sealed, setSealed] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -168,6 +185,8 @@ export default function CreatePage() {
       const finalText = formattedText.endsWith('.') || formattedText.endsWith('!') ? formattedText : formattedText + '.';
       const isChallenge = vowType === 'challenge';
 
+      await ensurePublicUser(currentSession.user.id, currentSession.user.user_metadata, currentSession.user.email ?? undefined);
+
       const { data: newVow, error: vowError } = await supabase
         .from('vows')
         .insert({
@@ -196,35 +215,43 @@ export default function CreatePage() {
 
       if (vowError) throw new Error(`Vow creation failed: ${vowError.message}`);
       setVowId(newVow.id);
+      setWitnessToken(newVow.witness_invite_token);
 
       if (stakeAmount === 0) {
         // $0 vow: call seal-vow directly, no payment
+        // Get a fresh token right before the edge function call
+        const freshToken = await getFreshToken();
+        if (!freshToken) throw new Error('Session expired. Please sign in again.');
+
         const sealUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`;
         const sealRes = await fetch(sealUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${currentSession.access_token}`,
+            'Authorization': `Bearer ${freshToken}`,
             'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           },
           body: JSON.stringify({ vow_id: newVow.id }),
         });
         if (!sealRes.ok) {
           const sealData = await sealRes.json().catch(() => null);
-          throw new Error(sealData?.error || `Seal failed: ${sealRes.status}`);
+          throw new Error(sealData?.error || sealData?.msg || `Seal failed: ${sealRes.status}`);
         }
         resetVow();
-        router.push('/dashboard');
+        setSealed(true);
         return;
       }
 
       // Staked vow: create payment intent
+      const freshToken = await getFreshToken();
+      if (!freshToken) throw new Error('Session expired. Please sign in again.');
+
       const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`;
       const piRes = await fetch(fnUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentSession.access_token}`,
+          'Authorization': `Bearer ${freshToken}`,
           'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         },
         body: JSON.stringify({ vow_id: newVow.id, amount: stakeAmount * 100 }),
@@ -232,7 +259,7 @@ export default function CreatePage() {
 
       const piData = await piRes.json().catch(() => null);
       if (!piRes.ok) {
-        const detail = piData?.error || `HTTP ${piRes.status}`;
+        const detail = piData?.error || piData?.msg || `HTTP ${piRes.status}`;
         throw new Error(`Payment: ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`);
       }
 
@@ -253,13 +280,13 @@ export default function CreatePage() {
     setShowPayment(false);
     if (vowId) {
       try {
-        const { data: { session: sealSession } } = await supabase.auth.refreshSession();
+        const freshToken = await getFreshToken();
         const sealUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`;
         await fetch(sealUrl, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sealSession?.access_token}`,
+            'Authorization': `Bearer ${freshToken}`,
             'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
           },
           body: JSON.stringify({ vow_id: vowId }),
@@ -269,8 +296,8 @@ export default function CreatePage() {
       }
     }
     resetVow();
-    router.push(`/certificate/${vowId}`);
-  }, [vowId, resetVow, router]);
+    setSealed(true);
+  }, [vowId, resetVow]);
 
   const handleAuthSuccess = async () => {
     setShowAuth(false);
@@ -285,6 +312,121 @@ export default function CreatePage() {
     }
     setError('Session not found after sign-in. Please try again.');
   };
+
+  const witnessUrl = witnessToken && typeof window !== 'undefined'
+    ? `${window.location.origin}/w/${witnessToken}`
+    : '';
+  const isSolo = !witnessName;
+  const shareText = `I just made a vow: "${formattedText.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept:`;
+
+  if (sealed) {
+    return (
+      <RitualScreen
+        footer={
+          <div className="flex flex-col gap-2">
+            <PrimaryButton label="My Vows" onPress={() => router.push('/dashboard')} />
+            <button
+              onClick={() => {
+                setSealed(false);
+                setVowId(null);
+                setWitnessToken(null);
+                setVowText('');
+                setOathChecked(false);
+                setError('');
+              }}
+              className="min-h-[44px] flex items-center justify-center"
+            >
+              <span className="text-[15px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Make another vow</span>
+            </button>
+          </div>
+        }
+      >
+        <FadeUp>
+          <div className="flex justify-center mt-4">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center animate-scale-in"
+              style={{ backgroundColor: 'var(--success-muted)' }}
+            >
+              <CheckCircle className="w-7 h-7" style={{ color: 'var(--success)' }} />
+            </div>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.1}>
+          <div className="text-center">
+            <h1 className="text-[28px] font-bold font-serif" style={{ color: 'var(--text)' }}>
+              {isSolo ? 'Sealed.' : 'Sealed. Share it.'}
+            </h1>
+            <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+              {isSolo
+                ? "Your vow is locked. You'll judge yourself when the time comes."
+                : 'Send the link to your witness — first to accept holds you to it.'}
+            </p>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.15}>
+          <VowPreview text={formattedText} />
+        </FadeUp>
+
+        {!isSolo && witnessUrl && (
+          <FadeUp delay={0.2}>
+            <div className="flex flex-col gap-3">
+              <ShareButton url={witnessUrl} text={shareText} buttonText="Share with witness" />
+              <div
+                className="rounded-[16px] p-3 flex items-center gap-3"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <p className="flex-1 text-[12px] truncate" style={{ color: 'var(--text-muted)' }}>{witnessUrl}</p>
+                <CopyLinkButton url={witnessUrl} />
+              </div>
+            </div>
+          </FadeUp>
+        )}
+
+        <FadeUp delay={0.25}>
+          <RitualCard>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <User className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>{vowType === 'challenge' ? 'Challenge' : 'Witness'}</span>
+                </div>
+                <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                  {vowType === 'challenge' ? targetName : (witnessName || 'Just me')}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Stake</span>
+                </div>
+                <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${stakeAmount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Ends</span>
+                </div>
+                <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                  {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+              {stakeAmount > 0 && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Scale className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                    <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
+                  </div>
+                  <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{destination}</span>
+                </div>
+              )}
+            </div>
+          </RitualCard>
+        </FadeUp>
+      </RitualScreen>
+    );
+  }
 
   return (
     <>
@@ -315,7 +457,7 @@ export default function CreatePage() {
             className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
             style={{ color: 'var(--text)' }}
           >
-            New Vow
+            QuickVow
           </h1>
         </FadeUp>
 

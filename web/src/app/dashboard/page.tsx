@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Plus, ArrowLeft } from 'lucide-react';
+import { Settings, Plus, ArrowLeft, Menu, X, Zap, Clock, LayoutGrid } from 'lucide-react';
 import { RitualScreen, HeaderBadge, SectionLabel, StatPill, PrimaryButton, FadeUp } from '@/components/ui';
 import VowCard from '@/components/vow-card';
 import { useAuth } from '@/providers/auth-provider';
@@ -9,6 +9,83 @@ import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/types';
 
 type VowRow = Database['public']['Tables']['vows']['Row'];
+
+function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [open, onClose]);
+
+  // Prevent body scroll when open
+  useEffect(() => {
+    if (open) document.body.style.overflow = 'hidden';
+    else document.body.style.overflow = '';
+    return () => { document.body.style.overflow = ''; };
+  }, [open]);
+
+  const nav = (path: string) => { onClose(); router.push(path); };
+
+  const items = [
+    { icon: Zap, label: 'QuickVow', description: 'Create a vow in seconds', path: '/create' },
+    { icon: LayoutGrid, label: 'My Vows', description: 'All your active vows', path: '/dashboard' },
+    { icon: Clock, label: 'History', description: 'Past vows and outcomes', path: '/history' },
+    { icon: Settings, label: 'Settings', description: 'Account and preferences', path: '/settings' },
+  ];
+
+  return (
+    <>
+      {/* Overlay */}
+      <div
+        className="fixed inset-0 z-50 transition-opacity duration-200"
+        style={{ opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', backgroundColor: 'rgba(0,0,0,0.6)' }}
+        onClick={onClose}
+      />
+      {/* Drawer */}
+      <div
+        className="fixed top-0 left-0 bottom-0 z-50 w-[280px] flex flex-col transition-transform duration-200 safe-top safe-bottom"
+        style={{
+          transform: open ? 'translateX(0)' : 'translateX(-100%)',
+          backgroundColor: 'var(--surface-elevated)',
+          borderRight: '1px solid var(--border)',
+        }}
+      >
+        <div className="flex items-center justify-between p-5 pb-3">
+          <span className="text-[13px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>Menu</span>
+          <button onClick={onClose} className="p-1">
+            <X className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
+          </button>
+        </div>
+        <div className="flex flex-col gap-1 px-3">
+          {items.map((item) => (
+            <button
+              key={item.path}
+              onClick={() => nav(item.path)}
+              className="flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors active:opacity-80"
+              style={{ backgroundColor: item.path === '/create' ? 'rgba(212,162,79,0.08)' : 'transparent' }}
+            >
+              <div
+                className="w-9 h-9 rounded-[12px] flex items-center justify-center shrink-0"
+                style={{ backgroundColor: item.path === '/create' ? 'rgba(212,162,79,0.15)' : 'var(--surface)' }}
+              >
+                <item.icon className="w-[18px] h-[18px]" style={{ color: item.path === '/create' ? 'var(--gold-bright)' : 'var(--text-muted)' }} />
+              </div>
+              <div>
+                <span className="text-[15px] font-semibold block" style={{ color: item.path === '/create' ? 'var(--gold-bright)' : 'var(--text)' }}>
+                  {item.label}
+                </span>
+                <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{item.description}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+}
 
 function InProgressBanner() {
   const router = useRouter();
@@ -65,6 +142,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const fetchData = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -227,6 +305,8 @@ export default function DashboardPage() {
   }
 
   return (
+    <>
+    <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
     <RitualScreen
       footer={
         <button
@@ -247,24 +327,11 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
-              onClick={() => {
-                // If there's an in-progress vow, go back to it instead of browser history
-                // (browser history is polluted by the OAuth redirect chain)
-                try {
-                  const flow = localStorage.getItem('unbreakable-vow-flow');
-                  if (flow) {
-                    const parsed = JSON.parse(flow);
-                    if (parsed.rawInput) {
-                      router.push(parsed.vowId ? '/live' : parsed.refinedText ? '/seal' : '/refine');
-                      return;
-                    }
-                  }
-                } catch {}
-                router.back();
-              }}
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
               className="p-1 -ml-1"
             >
-              <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+              <Menu className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
             </button>
             <HeaderBadge />
           </div>
@@ -373,5 +440,6 @@ export default function DashboardPage() {
         </FadeUp>
       )}
     </RitualScreen>
+    </>
   );
 }
