@@ -86,7 +86,7 @@ export function AppMenuButton({ style }: AppMenuProps) {
       icon: <Zap color={palette.goldBright} size={18} />,
       label: 'QuickVow',
       description: 'Create a vow in seconds',
-      route: '/',
+      route: '/quick-vow',
     },
     {
       icon: <BookOpen color={palette.textSecondary} size={18} />,

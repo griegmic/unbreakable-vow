@@ -26,6 +26,12 @@ export async function createVow(params: {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
 
+  // Ensure public.users row exists (foreign key requirement for vows.user_id)
+  await supabase.from('users').upsert(
+    { id: session.user.id, display_name: (session.user.user_metadata?.full_name as string) || session.user.email?.split('@')[0] || null },
+    { onConflict: 'id', ignoreDuplicates: true },
+  );
+
   const endDate = params.deadlineIso ? new Date(params.deadlineIso) : new Date(Date.now() + 7 * 86400000);
 
   const { data, error } = await supabase.from('vows').insert({
@@ -418,13 +424,20 @@ export async function submitCheckIn(vowId: string, type: string): Promise<boolea
 export async function voidVowV2(vowId: string): Promise<{ success: boolean; refunded?: boolean }> {
   console.log('[vow-api] voidVowV2:', vowId);
   try {
-    const { error } = await supabase.from('vows').update({
-      status: 'voided',
-    }).eq('id', vowId);
-    if (error) { console.error('[vow-api] voidVowV2 error:', error); return { success: false }; }
+    const { error } = await supabase.functions.invoke('void-vow', {
+      body: { vow_id: vowId },
+    });
+    if (error) {
+      console.error('[vow-api] voidVowV2 edge function error:', error);
+      // Fallback: direct DB update so vow at least gets voided
+      await supabase.from('vows').update({ status: 'voided' }).eq('id', vowId);
+      return { success: true, refunded: false };
+    }
     return { success: true, refunded: true };
   } catch (err) {
     console.error('[vow-api] voidVowV2 exception:', err);
+    // Fallback: direct DB update
+    await supabase.from('vows').update({ status: 'voided' }).eq('id', vowId).catch(() => {});
     return { success: false };
   }
 }
