@@ -15,6 +15,14 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!loading && isAuthenticated) {
+      // ?new=1 forces a fresh creation flow (used by viral CTAs)
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('new') === '1') {
+        localStorage.removeItem('unbreakable-vow-flow');
+        window.history.replaceState({}, '', '/');
+        return; // Stay on creation page
+      }
+
       // Don't redirect to dashboard if user has an in-progress vow creation
       try {
         const flow = localStorage.getItem('unbreakable-vow-flow');
@@ -31,7 +39,9 @@ export default function HomePage() {
     }
   }, [isAuthenticated, loading, router]);
 
-  if (!loading && isAuthenticated) {
+  // Show loading spinner only when redirecting (not when ?new=1 keeps us on creation page)
+  const isNewFlow = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('new') === '1';
+  if (!loading && isAuthenticated && !isNewFlow) {
     return (
       <RitualScreen>
         <div className="flex items-center justify-center min-h-[60vh]">

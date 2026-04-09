@@ -150,7 +150,12 @@ function VowCard({
     Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
   };
   const handlePress = () => {
-    router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
+    const isActiveOwn = sectionId === 'yours' && (vow.status === 'active' || vow.status === 'sealed' || vow.status === 'awaiting_verdict');
+    if (isActiveOwn) {
+      router.push({ pathname: '/live', params: { vowId: vow.id } });
+    } else {
+      router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
+    }
   };
 
   return (

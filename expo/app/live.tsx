@@ -21,8 +21,9 @@ type CheckInType = 'on_track' | 'struggling' | 'done_early';
 const CHECK_IN_COOLDOWN_MS = 4 * 60 * 60 * 1000;
 
 export default function LiveScreen() {
-  const { activeVowText, vow, isSelfWitness, switchToSolo, setVowId, setDeadline } = useVowFlow();
-  const searchParams = useLocalSearchParams<{ justSealed?: string }>();
+  const vowFlow = useVowFlow();
+  const { activeVowText, vow, isSelfWitness, switchToSolo, setVowId, setDeadline } = vowFlow;
+  const searchParams = useLocalSearchParams<{ justSealed?: string; vowId?: string }>();
   const dates = useMemo(() => {
     if (vow.deadlineIso) {
       const end = new Date(vow.deadlineIso);
@@ -74,12 +75,51 @@ export default function LiveScreen() {
 
   console.log('[LiveScreen] phase:', phase, '| witnessStatus:', witnessStatus, '| isSelfWitness:', isSelfWitness);
 
+  // Hydrate VowFlow from DB when arriving from dashboard with vowId param
+  const [hydrating, setHydrating] = useState(false);
   useEffect(() => {
-    if (!vow.rawInput) {
+    const paramVowId = searchParams.vowId;
+    if (!paramVowId || vow.rawInput) return; // already hydrated or no param
+
+    setHydrating(true);
+    (async () => {
+      try {
+        const { data } = await supabase
+          .from('vows')
+          .select('*')
+          .eq('id', paramVowId)
+          .single();
+        if (!data) { setHydrating(false); return; }
+
+        vowFlow.setRawInput(data.raw_input);
+        vowFlow.setRefinedText(data.refined_text);
+        vowFlow.setVowId(data.id, data.witness_invite_token);
+        if (data.ends_at) vowFlow.setDeadline(new Date(data.ends_at).toISOString());
+        vowFlow.setStake({
+          amount: Math.round(data.stake_amount / 100),
+          consequence: (data.consequence || 'charity') as 'charity' | 'anti',
+          destination: data.destination,
+        });
+        if (data.witness_name === 'Just me') {
+          vowFlow.setWitnessType('self');
+          vowFlow.setWitness('Just me', 'link');
+        } else {
+          vowFlow.setWitnessType('friend');
+          vowFlow.setWitness(data.witness_name, data.witness_phone ? 'sms' : 'link', data.witness_phone || undefined);
+        }
+      } catch (err) {
+        console.error('[LiveScreen] hydration from DB failed:', err);
+      }
+      setHydrating(false);
+    })();
+  }, [searchParams.vowId]);
+
+  useEffect(() => {
+    if (!vow.rawInput && !searchParams.vowId && !hydrating) {
       console.log('[LiveScreen] empty vow state, redirecting home');
       router.replace('/');
     }
-  }, [vow.rawInput]);
+  }, [vow.rawInput, searchParams.vowId, hydrating]);
 
   useEffect(() => {
     if (!vow.vowId) return;
@@ -465,7 +505,7 @@ export default function LiveScreen() {
   }, [witnessWebUrl]);
 
   const witnessMessages = useMemo(() => [
-    { label: `Report to ${vow.witnessName}`, emoji: '📣', subtext: 'Let them know you showed up' },
+    { label: `Report to ${vow.witnessName}`, emoji: '📣', subtext: 'Send a quick update' },
     { label: `Tell ${vow.witnessName} you crushed it`, emoji: '💪', subtext: "They're rooting for you" },
     { label: `Prove it to ${vow.witnessName}`, emoji: '🔥', subtext: 'Actions speak louder' },
     { label: `${vow.witnessName} is waiting`, emoji: '👀', subtext: 'Don\'t leave them hanging' },
@@ -629,7 +669,7 @@ export default function LiveScreen() {
 
   const cheekyLabels = useMemo(() => [
     `Report to ${vow.witnessName}`,
-    `Tell ${vow.witnessName} you showed up`,
+    `Text ${vow.witnessName} an update`,
     `Prove it to ${vow.witnessName}`,
     `${vow.witnessName}'s watching. Say something.`,
     `Confess to ${vow.witnessName}`,

@@ -24,6 +24,7 @@ import {
   charities,
   antiCauses,
   generateSuggestion,
+  inferDeadline,
   palette,
   serifFont,
   stakeAmounts as defaultStakeAmounts,
@@ -86,7 +87,6 @@ export default function QuickVowScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [oathChecked, setOathChecked] = useState(false);
   const [recentWitnesses, setRecentWitnesses] = useState<RecentWitness[]>([]);
-  const [showNewWitness, setShowNewWitness] = useState(false);
 
   // Witness contact picker
   const [contactPickerVisible, setContactPickerVisible] = useState(false);
@@ -127,6 +127,32 @@ export default function QuickVowScreen() {
       setSuggestion(generateSuggestion(vowText));
     } else {
       setSuggestion('');
+    }
+  }, [vowText]);
+
+  // Auto-detect deadline from vow text
+  useEffect(() => {
+    if (!vowText.trim()) return;
+    const inferred = inferDeadline(vowText);
+    if (!inferred) return;
+
+    const now = new Date();
+    const diffDays = (inferred.getTime() - now.getTime()) / (1000 * 60 * 60 * 24);
+
+    if (diffDays < 1) {
+      setCustomDate(inferred);
+      setDeadlinePreset('custom');
+    } else if (diffDays < 2) {
+      setDeadlinePreset('tomorrow');
+    } else if (diffDays <= 5) {
+      setDeadlinePreset('end_of_week');
+    } else if (diffDays <= 8) {
+      setDeadlinePreset('in_7_days');
+    } else if (diffDays <= 35) {
+      setDeadlinePreset('in_30_days');
+    } else {
+      setCustomDate(inferred);
+      setDeadlinePreset('custom');
     }
   }, [vowText]);
 
@@ -185,10 +211,12 @@ export default function QuickVowScreen() {
     setError('');
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    const resolvedWitnessName = witnessName || 'Just me';
+    const resolvedWitnessName = (!witnessName || witnessName === 'Just me') ? 'Just me' : witnessName;
     const resolvedWitnessPhone = witnessPhone ? formatE164(witnessPhone) : null;
 
     if (IS_EXPO_GO) {
+      let devVowId = 'dev-' + Date.now();
+      let devToken: string | null = 'dev-token-' + Date.now();
       try {
         const vowRecord = await createVow({
           rawInput: vowText,
@@ -204,21 +232,22 @@ export default function QuickVowScreen() {
           status: 'active',
           sealed_at: new Date().toISOString(),
         }).eq('id', vowRecord.id);
-        setSealedVowId(vowRecord.id);
-        setWitnessToken(vowRecord.witness_invite_token);
+        devVowId = vowRecord.id;
+        devToken = vowRecord.witness_invite_token;
       } catch (err) {
         console.error('[QuickVow] Expo Go creation failed:', err);
-        setSealedVowId('dev-' + Date.now());
-        setWitnessToken('dev-token-' + Date.now());
       }
+      setSealedVowId(devVowId);
+      setWitnessToken(devToken);
       setSealing(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await handleSealSuccess();
+      await handleSealSuccess(devVowId, devToken);
       return;
     }
 
     // Production flow
     let vowId: string | null = null;
+    let witnessInviteToken: string | null = null;
     let paymentCaptured = false;
 
     try {
@@ -233,15 +262,16 @@ export default function QuickVowScreen() {
         deadlineIso: deadlineDate.toISOString(),
       });
       vowId = vowRecord.id;
+      witnessInviteToken = vowRecord.witness_invite_token;
       setSealedVowId(vowId);
-      setWitnessToken(vowRecord.witness_invite_token);
+      setWitnessToken(witnessInviteToken);
 
       if (stakeAmount === 0) {
         // $0 vow: seal directly, no payment
         await invokeSealEdgeFunction(vowId);
         setSealing(false);
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        await handleSealSuccess();
+        await handleSealSuccess(vowId, witnessInviteToken);
         return;
       }
 
@@ -262,7 +292,7 @@ export default function QuickVowScreen() {
       await invokeSealEdgeFunction(vowId);
       setSealing(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      await handleSealSuccess();
+      await handleSealSuccess(vowId!, witnessInviteToken);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[QuickVow] seal flow error:', errMsg);
@@ -310,22 +340,14 @@ export default function QuickVowScreen() {
   }, [handleSealFlow, isAuthenticated]);
 
   // -----------------------------------------------------------------------
-  // Share helpers
-  // -----------------------------------------------------------------------
-
-  const witnessUrl = witnessToken
-    ? `https://unbreakablevow.app/w/${witnessToken}`
-    : '';
-
-  // -----------------------------------------------------------------------
   // Post-seal: hydrate VowFlow → auto-share → navigate to /live
   // -----------------------------------------------------------------------
 
-  const handleSealSuccess = async () => {
+  const handleSealSuccess = async (resolvedVowId: string, resolvedToken: string | null) => {
     // Hydrate VowFlowProvider so /live has full context
     vowFlow.setRawInput(vowText);
     vowFlow.setRefinedText(finalText);
-    if (witnessName) {
+    if (witnessName && witnessName !== 'Just me') {
       vowFlow.setWitnessType('friend');
       vowFlow.setWitness(witnessName, witnessPhone ? 'sms' : 'link', witnessPhone || undefined);
     } else {
@@ -333,16 +355,15 @@ export default function QuickVowScreen() {
       vowFlow.setWitness('Just me', 'link');
     }
     vowFlow.setStake({ amount: stakeAmount, consequence, destination: stakeAmount > 0 ? destination : 'None' });
-    if (sealedVowId) {
-      vowFlow.setVowId(sealedVowId, witnessToken);
-    }
+    vowFlow.setVowId(resolvedVowId, resolvedToken);
     vowFlow.setDeadline(deadlineDate.toISOString());
 
     // Auto-share for witnessed vows
-    if (witnessName && witnessUrl) {
+    const shareUrl = resolvedToken ? `https://unbreakablevow.app/w/${resolvedToken}` : '';
+    if (witnessName && shareUrl) {
       try {
         await Share.share({
-          message: `I just made a vow: "${finalText.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept: ${witnessUrl}`,
+          message: `I just made a vow: "${finalText.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept: ${shareUrl}`,
         });
       } catch {}
     }
@@ -403,7 +424,7 @@ export default function QuickVowScreen() {
           <Text style={styles.witnessSubline}>Witnessed vows are kept 3x more often.</Text>
 
           {/* Selected witness display */}
-          {witnessName && !showNewWitness ? (
+          {witnessName && witnessName !== 'Just me' ? (
             <View style={styles.selectedWitness}>
               <View style={styles.selectedWitnessInfo}>
                 <Text style={styles.selectedWitnessName}>{witnessName} ✓</Text>
@@ -415,8 +436,8 @@ export default function QuickVowScreen() {
             </View>
           ) : (
             <>
-              {/* First-time or no recent: hero contact picker + manual */}
-              {recentWitnesses.length === 0 && !showNewWitness ? (
+              {/* First-time: hero contact picker */}
+              {recentWitnesses.length === 0 ? (
                 <View style={styles.inputCol}>
                   <Pressable
                     onPress={() => setContactPickerVisible(true)}
@@ -424,53 +445,27 @@ export default function QuickVowScreen() {
                   >
                     <Text style={styles.contactPickerHeroText}>Pick from contacts</Text>
                   </Pressable>
-                  <Pressable onPress={() => setShowNewWitness(true)}>
-                    <Text style={styles.manualEntryLink}>Enter manually</Text>
+                  <Pressable onPress={() => { setWitnessName('Just me'); setWitnessPhone(''); }}>
+                    <Text style={styles.manualEntryLink}>I'll hold myself accountable</Text>
                   </Pressable>
                 </View>
               ) : null}
 
-              {/* Returning user: recent chips + contact/manual */}
-              {recentWitnesses.length > 0 && !showNewWitness ? (
+              {/* Returning user: recent chips + contacts */}
+              {recentWitnesses.length > 0 ? (
                 <View style={styles.chipRow}>
                   {recentWitnesses.map((w) => (
                     <ChoiceChip
                       key={w.name + w.phone}
                       label={w.name}
                       active={witnessName === w.name && witnessPhone === w.phone}
-                      onPress={() => { setWitnessName(w.name); setWitnessPhone(w.phone); setShowNewWitness(false); }}
+                      onPress={() => { setWitnessName(w.name); setWitnessPhone(w.phone); }}
                     />
                   ))}
                   <ChoiceChip
                     label="From contacts"
                     active={false}
                     onPress={() => setContactPickerVisible(true)}
-                  />
-                  <ChoiceChip
-                    label="+ Manual"
-                    active={showNewWitness}
-                    onPress={() => { setShowNewWitness(true); setWitnessName(''); setWitnessPhone(''); }}
-                  />
-                </View>
-              ) : null}
-
-              {/* Manual entry form */}
-              {showNewWitness ? (
-                <View style={styles.inputCol}>
-                  <TextInput
-                    value={witnessName}
-                    onChangeText={setWitnessName}
-                    placeholder="Witness name"
-                    placeholderTextColor={palette.textMuted}
-                    style={styles.fieldInput}
-                  />
-                  <TextInput
-                    value={witnessPhone}
-                    onChangeText={setWitnessPhone}
-                    placeholder="Phone number"
-                    placeholderTextColor={palette.textMuted}
-                    keyboardType="phone-pad"
-                    style={styles.fieldInput}
                   />
                 </View>
               ) : null}
@@ -572,7 +567,6 @@ export default function QuickVowScreen() {
           setWitnessName(name);
           setWitnessPhone(phone);
           setContactPickerVisible(false);
-          setShowNewWitness(false);
         }}
         onClose={() => setContactPickerVisible(false)}
       />
@@ -685,8 +679,8 @@ const styles = StyleSheet.create({
   manualEntryLink: {
     color: palette.textMuted,
     fontSize: 13,
-    textAlign: 'center',
-    paddingVertical: 4,
+    textAlign: 'center' as const,
+    paddingVertical: 8,
   },
   chipRow: {
     flexDirection: 'row',
@@ -697,16 +691,6 @@ const styles = StyleSheet.create({
   inputCol: {
     gap: 8,
     marginTop: 4,
-  },
-  fieldInput: {
-    color: palette.text,
-    fontSize: 15,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: 'transparent',
   },
   divider: {
     height: 1,

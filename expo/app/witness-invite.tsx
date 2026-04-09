@@ -283,7 +283,7 @@ export default function WitnessInviteScreen() {
 
           {/* Tertiary: Viral CTA */}
           <Pressable
-            onPress={() => Linking.openURL('https://unbreakablevow.app')}
+            onPress={() => Linking.openURL('https://unbreakablevow.app/?new=1')}
             style={styles.outlinedButton}
           >
             <Text style={styles.outlinedButtonText}>Your turn — what will you commit to?</Text>
@@ -328,7 +328,7 @@ export default function WitnessInviteScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => Linking.openURL('https://unbreakablevow.app')}
+              onPress={() => Linking.openURL('https://unbreakablevow.app/?new=1')}
               style={styles.outlinedButton}
             >
               <Text style={styles.outlinedButtonText}>Your turn — what will you commit to?</Text>
@@ -365,19 +365,25 @@ export default function WitnessInviteScreen() {
             </View>
           </RitualCard>
 
-          {/* Time-based nudge CTA */}
+          {/* Primary CTA: Text the maker */}
           {makerPhone ? (
             <Pressable
               onPress={() => sendSms(makerPhone, nudge.sms)}
-              style={styles.outlinedButton}
+              style={styles.goldButton}
             >
-              <MessageCircle color={palette.goldBright} size={16} />
-              <Text style={styles.outlinedButtonText}>{nudge.cta}</Text>
+              <MessageCircle color="#0B0D11" size={16} />
+              <Text style={styles.goldButtonText}>{nudge.cta}</Text>
             </Pressable>
           ) : null}
 
+          {/* Secondary: Calendar reminder */}
+          <Pressable onPress={handleAddToNativeCalendar} style={styles.outlinedButton}>
+            <Text style={styles.outlinedButtonText}>Remind me on verdict day</Text>
+          </Pressable>
+
+          {/* Tertiary: Viral CTA */}
           <Pressable
-            onPress={() => Linking.openURL('https://unbreakablevow.app')}
+            onPress={() => Linking.openURL('https://unbreakablevow.app/?new=1')}
             style={styles.outlinedButton}
           >
             <Text style={styles.outlinedButtonText}>Your turn — what will you commit to?</Text>

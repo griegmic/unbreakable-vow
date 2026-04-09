@@ -23,7 +23,7 @@ function getCountdownTint(days: number | null) {
 
 const cheekyLabelTemplates = [
   'Report to {name}',
-  'Tell {name} you showed up',
+  'Text {name} an update',
   'Prove it to {name}',
   'Check in with {name}',
   'Let {name} know',

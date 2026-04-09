@@ -63,18 +63,6 @@ export default function SealScreen() {
     return getVowVerdictDate(vow.rawInput);
   }, [vow.deadlineIso, vow.rawInput]);
 
-  const oathTimeLabel = useMemo(() => {
-    if (!vow.deadlineIso) return 'this week';
-    const end = new Date(vow.deadlineIso);
-    const now = new Date();
-    const diffDays = Math.round((end.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays <= 1) return 'today';
-    if (diffDays <= 7) return 'this week';
-    if (diffDays <= 14) return 'these next two weeks';
-    if (diffDays <= 31) return 'this month';
-    return `until ${end.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
-  }, [vow.deadlineIso]);
-
   const brokenLabel = `Donated to ${vow.stake.destination}`;
 
   const registerPush = useCallback(async () => {
@@ -401,14 +389,14 @@ export default function SealScreen() {
 
       {sealed && isSelfWitness ? (
         <Animated.View style={[styles.oathFlash, { opacity: oathFlashOpacity }]} pointerEvents="none">
-          <Text style={styles.oathFlashText}>I solemnly swear{"\n"}to keep my word {oathTimeLabel}.</Text>
+          <Text style={styles.oathFlashText}>I solemnly swear{"\n"}to keep my word this week.</Text>
         </Animated.View>
       ) : null}
 
       {!sealed && isSelfWitness ? (
         <Animated.View style={[styles.swearCard, { borderColor: swearBorderColor }]}>
           <Animated.View style={[styles.swearGlowBg, { opacity: swearBgOpacity }]} />
-          <Text style={styles.oathHeroText}>I solemnly swear{"\n"}to keep my word {oathTimeLabel}.</Text>
+          <Text style={styles.oathHeroText}>I solemnly swear{"\n"}to keep my word this week.</Text>
           <View style={styles.oathDivider} />
           <Pressable
             onPress={sworn ? handleUnswear : handleSwear}

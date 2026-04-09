@@ -264,7 +264,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                   </button>
                 )}
                 <a
-                  href="https://unbreakablevow.app"
+                  href="https://unbreakablevow.app/?new=1"
                   className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
                   style={{
                     backgroundColor: 'var(--surface)',
@@ -425,7 +425,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             {/* Tertiary: make your own vow */}
             <FadeUp delay={makerPhone ? 0.3 : 0.25}>
               <a
-                href="https://unbreakablevow.app"
+                href="https://unbreakablevow.app/?new=1"
                 className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
                 style={{
                   backgroundColor: 'var(--surface)',
