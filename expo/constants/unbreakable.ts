@@ -274,14 +274,20 @@ export function generateSuggestion(input: string): string {
   clean = clean.charAt(0).toUpperCase() + clean.slice(1);
 
   const hasTimeWindow = /(this\s+(week|month|year)|all\s+(week|month)|every|daily)/i.test(lower);
+  const hasDuration = /for\s+\d+\s+(?:days?|weeks?|months?)\b|\buntil\s+\w+/i.test(lower);
   const hasFrequency = /\d+\s*(?:x|times?)/i.test(normalizeWordNumbers(lower));
-  const hasDeadline = /by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(lower);
+  const hasDeadline = /by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|by\s+end/i.test(lower);
 
   // If vow already has a relative time reference, don't try to enhance it
   if (hasRelativeTime(lower)) return `${clean}.`;
 
+  // If vow already has a duration ("for 30 days", "until May"), don't append time window
+  if (hasDuration) return `${clean}.`;
+
+  // If vow already has a "by [day]" or "by [month]" deadline, don't append time window
+  if (hasDeadline) return `${clean}.`;
+
   if (hasTimeWindow && hasFrequency) return `${clean}.`;
-  if (hasTimeWindow && hasDeadline) return `${clean}.`;
 
   if (/(send|submit|finish|complete|ship|launch)/i.test(lower) && !hasDeadline) {
     return `${clean} by Friday at 5pm.`;
@@ -405,7 +411,7 @@ export function analyzeVow(input: string): AnalysisResult {
     return { type: 'already_good' };
   }
 
-  const alreadyGoodPattern = /wake.*before.*\d|gym.*\d.*(?:time|x)|no.*(?:phone|takeout|alcohol|sugar|social media|instagram|tiktok|junk|delivery|netflix|youtube|screen).*(?:week|month|all|every|tonight|in bed|before|after)|send.*by.*(?:fri|mon|tue|wed|thu|sat|sun)|read.*every.*(?:night|day|evening|morning)|read.*(?:night|day).*(?:in bed|before bed)|run.*(?:\d|every|daily)|meditate.*(?:every|daily|\d)/i;
+  const alreadyGoodPattern = /wake.*before.*\d|gym.*\d.*(?:time|x)|no.*(?:phone|takeout|alcohol|sugar|social media|instagram|tiktok|junk|delivery|netflix|youtube|screen).*(?:week|month|all|every|tonight|in bed|before|after|for\s+\d|until)|send.*by.*(?:fri|mon|tue|wed|thu|sat|sun)|(?:ship|launch|deploy|build).*by.*(?:fri|mon|tue|wed|thu|sat|sun)|read.*every.*(?:night|day|evening|morning)|read.*(?:night|day).*(?:in bed|before bed)|run.*(?:\d|every|daily)|meditate.*(?:every|daily|\d)/i;
   if (alreadyGoodPattern.test(lowered)) {
     return { type: 'already_good' };
   }
@@ -423,6 +429,26 @@ export function analyzeVow(input: string): AnalysisResult {
   }
 
   if (/(every|all|this\s+week|this\s+month|this\s+year|weekday|daily|each day|each night)/i.test(lowered) && lowered.split(' ').length >= 4) {
+    return { type: 'already_good' };
+  }
+
+  // Action verb + "by [day name]" = good enough
+  if (/by\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i.test(lowered) && lowered.split(' ').length >= 4) {
+    return { type: 'already_good' };
+  }
+
+  // "for N days/weeks/months" duration pattern
+  if (/for\s+\d+\s+(?:days?|weeks?|months?)\b/i.test(lowered) && lowered.split(' ').length >= 4) {
+    return { type: 'already_good' };
+  }
+
+  // "until [date/word]" pattern
+  if (/\buntil\s+\w+/i.test(lowered) && lowered.split(' ').length >= 4) {
+    return { type: 'already_good' };
+  }
+
+  // "end of [month]" pattern
+  if (/end\s+of\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(lowered)) {
     return { type: 'already_good' };
   }
 
@@ -512,7 +538,25 @@ export function inferDeadline(input: string): Date | null {
     d.setHours(23, 59, 59, 0);
     return d;
   }
-  if (/\bthis\s+week\b|\ball\s+week\b|\beveryday\b|\bevery\s+day\b/.test(lower)) {
+  // "by Friday", "by Monday" etc (without "this" or "next" prefix)
+  const byDayMatch = lower.match(/by\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+  if (byDayMatch) {
+    const target = dayNames.indexOf(byDayMatch[1].toLowerCase());
+    const d = new Date(now);
+    let diff = target - d.getDay();
+    if (diff <= 0) diff += 7;
+    d.setDate(d.getDate() + diff);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  if (/\bthis\s+weekend\b/.test(lower)) {
+    const d = new Date(now);
+    const diff = 7 - d.getDay(); // days until Sunday
+    d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  if (/\bthis\s+week\b|\ball\s+week\b|\beveryday\b|\bevery\s+day\b|\bdaily\b|\bevery\s+weekday\b|\bevery\s+(?:monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b/.test(lower)) {
     const d = new Date(now);
     const diff = 7 - d.getDay();
     d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
@@ -523,6 +567,64 @@ export function inferDeadline(input: string): Date | null {
     const d = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     d.setHours(23, 59, 59, 0);
     return d;
+  }
+  // "for N days/weeks/months" patterns
+  const forDaysMatch = lower.match(/for\s+(\d+)\s+days?\b/);
+  if (forDaysMatch) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + parseInt(forDaysMatch[1], 10));
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  const forWeeksMatch = lower.match(/for\s+(\d+)\s+weeks?\b/);
+  if (forWeeksMatch) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + parseInt(forWeeksMatch[1], 10) * 7);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  const forMonthsMatch = lower.match(/for\s+(\d+)\s+months?\b/);
+  if (forMonthsMatch) {
+    const d = new Date(now);
+    d.setMonth(d.getMonth() + parseInt(forMonthsMatch[1], 10));
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  // "end of [month name]"
+  const endOfMonthMatch = lower.match(/end\s+of\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)/i);
+  if (endOfMonthMatch) {
+    const monthNames: Record<string, number> = {
+      jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+      apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6,
+      aug: 7, august: 7, sep: 8, september: 8, oct: 9, october: 9,
+      nov: 10, november: 10, dec: 11, december: 11,
+    };
+    const monthIdx = monthNames[endOfMonthMatch[1].toLowerCase()];
+    if (monthIdx !== undefined) {
+      let year = now.getFullYear();
+      if (monthIdx < now.getMonth()) year++;
+      const d = new Date(year, monthIdx + 1, 0);
+      d.setHours(23, 59, 59, 0);
+      return d;
+    }
+  }
+  // "until [month name]" — deadline is the 1st of that month
+  const untilMonthMatch = lower.match(/until\s+(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)/i);
+  if (untilMonthMatch) {
+    const monthNames: Record<string, number> = {
+      jan: 0, january: 0, feb: 1, february: 1, mar: 2, march: 2,
+      apr: 3, april: 3, may: 4, jun: 5, june: 5, jul: 6, july: 6,
+      aug: 7, august: 7, sep: 8, september: 8, oct: 9, october: 9,
+      nov: 10, november: 10, dec: 11, december: 11,
+    };
+    const monthIdx = monthNames[untilMonthMatch[1].toLowerCase()];
+    if (monthIdx !== undefined) {
+      let year = now.getFullYear();
+      if (monthIdx <= now.getMonth()) year++;
+      const d = new Date(year, monthIdx, 1);
+      d.setHours(23, 59, 59, 0);
+      return d;
+    }
   }
   const explicitDate = extractDeadlineDate(lower);
   if (explicitDate) {

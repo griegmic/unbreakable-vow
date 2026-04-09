@@ -1,6 +1,6 @@
 import { Stack, router } from 'expo-router';
 import { Users } from 'lucide-react-native';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
@@ -11,7 +11,21 @@ import { useVowFlow } from '@/providers/vow-flow';
 export default function CrewInviteScreen() {
   const { displayName } = useAuth();
   const { activeVowText, vow } = useVowFlow();
-  const dates = getVowVerdictDate(vow.rawInput);
+  const dates = useMemo(() => {
+    if (vow.deadlineIso) {
+      const end = new Date(vow.deadlineIso);
+      const start = new Date();
+      const formatShort = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const formatLong = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      return {
+        verdictLabel: `Verdict on ${formatLong(end)}`,
+        endLabel: formatLong(end),
+        range: `${formatShort(start)} \u2013 ${formatShort(end)}`,
+        isCustomDate: true,
+      };
+    }
+    return getVowVerdictDate(vow.rawInput);
+  }, [vow.deadlineIso, vow.rawInput]);
   const makerName = displayName || 'Your friend';
 
   console.log('[CrewInviteScreen] rendering for witness:', vow.witnessName);

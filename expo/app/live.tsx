@@ -21,9 +21,23 @@ type CheckInType = 'on_track' | 'struggling' | 'done_early';
 const CHECK_IN_COOLDOWN_MS = 4 * 60 * 60 * 1000;
 
 export default function LiveScreen() {
-  const { activeVowText, vow, isSelfWitness, switchToSolo, setVowId } = useVowFlow();
+  const { activeVowText, vow, isSelfWitness, switchToSolo, setVowId, setDeadline } = useVowFlow();
   const searchParams = useLocalSearchParams<{ justSealed?: string }>();
-  const dates = getVowVerdictDate(vow.rawInput);
+  const dates = useMemo(() => {
+    if (vow.deadlineIso) {
+      const end = new Date(vow.deadlineIso);
+      const start = new Date();
+      const formatShort = (d: Date) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const formatLong = (d: Date) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+      return {
+        verdictLabel: `Verdict on ${formatLong(end)}`,
+        endLabel: formatLong(end),
+        range: `${formatShort(start)} \u2013 ${formatShort(end)}`,
+        isCustomDate: true,
+      };
+    }
+    return getVowVerdictDate(vow.rawInput);
+  }, [vow.deadlineIso, vow.rawInput]);
 
   const brokenTarget = vow.stake.destination;
 
@@ -84,6 +98,11 @@ export default function LiveScreen() {
           setVowId(vow.vowId!, data.witness_invite_token);
         }
 
+        // Sync DB ends_at into VowFlow so display dates stay accurate
+        if (data.ends_at) {
+          setDeadline(new Date(data.ends_at).toISOString());
+        }
+
         if (!isSelfWitness) {
           if (data.witness_accepted_at) {
             setWitnessStatus((prev) => {
@@ -111,7 +130,7 @@ export default function LiveScreen() {
     }
 
     void hydrateFromDb();
-  }, [vow.vowId, vow.witnessInviteToken, setVowId, isSelfWitness]);
+  }, [vow.vowId, vow.witnessInviteToken, setVowId, setDeadline, isSelfWitness]);
 
   useEffect(() => {
     if (!vow.vowId) return;
@@ -363,13 +382,16 @@ export default function LiveScreen() {
     setExtending(false);
 
     if (result.success) {
+      if (result.newEndDate) {
+        setDeadline(result.newEndDate);
+      }
       setWitnessStatus('pending');
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert('Extended', `${vow.witnessName} has 48 more hours to respond.`);
     } else {
       Alert.alert('Couldn\'t extend', result.error || 'Please try again.');
     }
-  }, [extending, vow.vowId, vow.witnessName]);
+  }, [extending, vow.vowId, vow.witnessName, setDeadline]);
 
   const handleFastForward = useCallback(async () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
