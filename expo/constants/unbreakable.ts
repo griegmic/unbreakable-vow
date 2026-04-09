@@ -476,6 +476,66 @@ export function extractDeadlineDate(input: string): string | null {
   return null;
 }
 
+export function inferDeadline(input: string): Date | null {
+  const lower = input.toLowerCase();
+  const now = new Date();
+
+  if (/\btonight\b|\btoday\b/.test(lower)) {
+    const d = new Date(now);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  if (/\btomorrow\b/.test(lower)) {
+    const d = new Date(now);
+    d.setDate(d.getDate() + 1);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const thisDayMatch = lower.match(/this\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+  if (thisDayMatch) {
+    const target = dayNames.indexOf(thisDayMatch[1].toLowerCase());
+    const d = new Date(now);
+    let diff = target - d.getDay();
+    if (diff <= 0) diff += 7;
+    d.setDate(d.getDate() + diff);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  const nextDayMatch = lower.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i);
+  if (nextDayMatch) {
+    const target = dayNames.indexOf(nextDayMatch[1].toLowerCase());
+    const d = new Date(now);
+    let diff = target - d.getDay();
+    if (diff <= 0) diff += 7;
+    d.setDate(d.getDate() + diff + 7);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  if (/\bthis\s+week\b|\ball\s+week\b|\beveryday\b|\bevery\s+day\b/.test(lower)) {
+    const d = new Date(now);
+    const diff = 7 - d.getDay();
+    d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  if (/\bthis\s+month\b|\ball\s+month\b/.test(lower)) {
+    const d = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+  const explicitDate = extractDeadlineDate(lower);
+  if (explicitDate) {
+    const parsed = new Date(`${explicitDate}, ${now.getFullYear()}`);
+    if (!isNaN(parsed.getTime())) {
+      parsed.setHours(23, 59, 59, 0);
+      if (parsed < now) parsed.setFullYear(parsed.getFullYear() + 1);
+      return parsed;
+    }
+  }
+  return null;
+}
+
 export function getVowVerdictDate(input: string): { verdictLabel: string; endLabel: string; range: string; isCustomDate: boolean } {
   const deadlineDate = extractDeadlineDate(input);
   if (deadlineDate) {

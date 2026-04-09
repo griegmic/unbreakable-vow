@@ -1,8 +1,9 @@
+import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { CreditCard, Flame, HeartHandshake, ShieldCheck } from 'lucide-react-native';
-import React, { useMemo, useRef, useState } from 'react';
-import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import {
   BackButton,
@@ -12,15 +13,64 @@ import {
   RitualScreen,
   TitleBlock,
 } from '@/components/vow-ui';
-import { antiCauses, charities, palette, stakeAmounts } from '@/constants/unbreakable';
+import { antiCauses, charities, inferDeadline, palette, stakeAmounts } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
+type DeadlinePreset = 'tomorrow' | 'end_of_week' | 'in_7_days' | 'in_30_days' | 'custom';
+
+function getPresetDate(preset: DeadlinePreset): Date {
+  const d = new Date();
+  switch (preset) {
+    case 'tomorrow':
+      d.setDate(d.getDate() + 1);
+      break;
+    case 'end_of_week': {
+      const diff = 7 - d.getDay();
+      d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+      break;
+    }
+    case 'in_7_days':
+      d.setDate(d.getDate() + 7);
+      break;
+    case 'in_30_days':
+      d.setDate(d.getDate() + 30);
+      break;
+    case 'custom':
+      d.setDate(d.getDate() + 7);
+      break;
+  }
+  d.setHours(23, 59, 59, 0);
+  return d;
+}
+
+function formatDeadlineLabel(date: Date): string {
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
 export default function StakeScreen() {
-  const { setStake, vow } = useVowFlow();
+  const { setStake, setDeadline, vow, activeVowText } = useVowFlow();
 
   const [amount, setAmount] = useState<number>(vow.stake.amount);
   const [consequence, setConsequence] = useState<typeof vow.stake.consequence>(vow.stake.consequence);
   const [destination, setDestination] = useState<string>(vow.stake.destination);
+
+  // Deadline state
+  const implicitDeadline = useMemo(() => inferDeadline(activeVowText), [activeVowText]);
+  const [deadlinePreset, setDeadlinePreset] = useState<DeadlinePreset>('in_7_days');
+  const [customDate, setCustomDate] = useState<Date>(getPresetDate('in_7_days'));
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const showDeadlinePicker = !implicitDeadline;
+
+  const deadlineDate = useMemo(() => {
+    if (implicitDeadline) return implicitDeadline;
+    if (deadlinePreset === 'custom') return customDate;
+    return getPresetDate(deadlinePreset);
+  }, [implicitDeadline, deadlinePreset, customDate]);
+
+  // Sync deadline to provider
+  useEffect(() => {
+    setDeadline(deadlineDate.toISOString());
+  }, [deadlineDate, setDeadline]);
 
   console.log('[StakeScreen] rendering, amount:', amount, 'consequence:', consequence);
 
@@ -145,6 +195,63 @@ export default function StakeScreen() {
         </View>
       </RitualCard>
 
+      {/* Deadline picker */}
+      {showDeadlinePicker && (
+        <RitualCard>
+          <Text style={styles.sectionTitle}>Deadline</Text>
+          <View style={styles.deadlineRow}>
+            {([
+              ['tomorrow', 'Tomorrow'],
+              ['end_of_week', 'End of week'],
+              ['in_7_days', 'In 7 days'],
+              ['in_30_days', 'A month'],
+            ] as const).map(([id, label]) => {
+              const active = deadlinePreset === id;
+              return (
+                <Pressable
+                  key={id}
+                  onPress={() => {
+                    void Haptics.selectionAsync();
+                    setDeadlinePreset(id);
+                    setShowDatePicker(false);
+                  }}
+                  style={[styles.deadlineChip, active && styles.deadlineChipActive]}
+                >
+                  <Text style={[styles.deadlineChipText, active && styles.deadlineChipTextActive]}>{label}</Text>
+                </Pressable>
+              );
+            })}
+            <Pressable
+              onPress={() => {
+                void Haptics.selectionAsync();
+                setDeadlinePreset('custom');
+                setShowDatePicker(true);
+              }}
+              style={[styles.deadlineChip, deadlinePreset === 'custom' && styles.deadlineChipActive]}
+            >
+              <Text style={[styles.deadlineChipText, deadlinePreset === 'custom' && styles.deadlineChipTextActive]}>Pick date</Text>
+            </Pressable>
+          </View>
+          {showDatePicker && deadlinePreset === 'custom' && (
+            <DateTimePicker
+              value={customDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              minimumDate={new Date(Date.now() + 86400000)}
+              themeVariant="dark"
+              onChange={(_e, date) => {
+                if (Platform.OS === 'android') setShowDatePicker(false);
+                if (date) {
+                  date.setHours(23, 59, 59, 0);
+                  setCustomDate(date);
+                }
+              }}
+            />
+          )}
+          <Text style={styles.deadlineLabel}>Ends {formatDeadlineLabel(deadlineDate)}</Text>
+        </RitualCard>
+      )}
+
       <View style={styles.paymentHint}>
         <View style={styles.paymentIconRow}>
           <CreditCard color={palette.textMuted} size={16} />
@@ -261,6 +368,36 @@ const styles = StyleSheet.create({
   optionWrap: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+  },
+  deadlineRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  deadlineChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: palette.surfaceElevated,
+  },
+  deadlineChipActive: {
+    backgroundColor: 'rgba(212,162,79,0.14)',
+    borderColor: palette.borderStrong,
+  },
+  deadlineChipText: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  deadlineChipTextActive: {
+    color: palette.goldBright,
+  },
+  deadlineLabel: {
+    color: palette.textMuted,
+    fontSize: 13,
+    marginTop: 4,
   },
   paymentHint: {
     alignItems: 'center',

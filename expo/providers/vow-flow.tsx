@@ -22,6 +22,7 @@ export interface VowState {
   stake: StakeState;
   vowId: string | null;
   witnessInviteToken: string | null;
+  deadlineIso: string | null;
 }
 
 const initialState: VowState = {
@@ -38,6 +39,7 @@ const initialState: VowState = {
   },
   vowId: null,
   witnessInviteToken: null,
+  deadlineIso: null,
 };
 
 export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
@@ -85,6 +87,11 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
   const setVowId = useCallback((vowId: string, witnessInviteToken: string | null) => {
     console.log('[VowFlow] setVowId', vowId);
     setVow((current) => ({ ...current, vowId, witnessInviteToken }));
+  }, []);
+
+  const setDeadline = useCallback((iso: string | null) => {
+    console.log('[VowFlow] setDeadline', iso);
+    setVow((current) => ({ ...current, deadlineIso: iso }));
   }, []);
 
   const switchToSolo = useCallback(() => {
@@ -141,11 +148,12 @@ export const [VowFlowProvider, useVowFlow] = createContextHook(() => {
       setStake,
       updateConsequence,
       setVowId,
+      setDeadline,
       switchToSolo,
       updateWitnessMidVow,
       resetVow,
       shouldSkipRefine,
     }),
-    [activeVowText, analysis, isSelfWitness, resetVow, setRawInput, setRefinedText, setStake, setVowId, setWitness, setWitnessType, shouldSkipRefine, switchToSolo, updateConsequence, updateWitnessMidVow, vow]
+    [activeVowText, analysis, isSelfWitness, resetVow, setDeadline, setRawInput, setRefinedText, setStake, setVowId, setWitness, setWitnessType, shouldSkipRefine, switchToSolo, updateConsequence, updateWitnessMidVow, vow]
   );
 });

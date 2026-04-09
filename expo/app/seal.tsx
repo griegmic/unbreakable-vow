@@ -159,6 +159,7 @@ export default function SealScreen() {
           stakeAmount: vow.stake.amount,
           consequence: vow.stake.consequence,
           destination: vow.stake.destination,
+          deadlineIso: vow.deadlineIso,
         });
         // Mark as active directly (skip payment — no fake Stripe IDs)
         await supabase.from('vows').update({

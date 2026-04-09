@@ -21,12 +21,12 @@ export async function createVow(params: {
   stakeAmount: number; // dollars
   consequence: string;
   destination: string;
+  deadlineIso?: string | null;
 }) {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) throw new Error('Not authenticated');
 
-  const endDate = new Date();
-  endDate.setDate(endDate.getDate() + 7);
+  const endDate = params.deadlineIso ? new Date(params.deadlineIso) : new Date(Date.now() + 7 * 86400000);
 
   const { data, error } = await supabase.from('vows').insert({
     user_id: session.user.id,
