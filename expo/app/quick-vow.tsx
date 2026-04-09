@@ -4,6 +4,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { ArrowLeft, Sparkles } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Alert,
   Platform,
@@ -79,7 +80,7 @@ export default function QuickVowScreen() {
   const [suggestion, setSuggestion] = useState('');
   const [witnessName, setWitnessName] = useState('');
   const [witnessPhone, setWitnessPhone] = useState('');
-  const [stakeAmount, setStakeAmount] = useState(0);
+  const [stakeAmount, setStakeAmount] = useState(10); // Default $10
   const [consequence, setConsequence] = useState<ConsequenceType>('charity');
   const [destination, setDestination] = useState(charities[0]);
   const [deadlinePreset, setDeadlinePreset] = useState<DeadlinePreset>('in_7_days');
@@ -87,6 +88,7 @@ export default function QuickVowScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [oathChecked, setOathChecked] = useState(false);
   const [recentWitnesses, setRecentWitnesses] = useState<RecentWitness[]>([]);
+  const [vowCount, setVowCount] = useState(0); // For oath copy evolution
 
   // Witness contact picker
   const [contactPickerVisible, setContactPickerVisible] = useState(false);
@@ -162,10 +164,11 @@ export default function QuickVowScreen() {
     if (!list.includes(destination)) setDestination(list[0]);
   }, [consequence, destination]);
 
-  // Load recent witnesses
+  // Load recent witnesses + vow count + smart defaults
   useEffect(() => {
     if (!session?.user?.id) return;
     (async () => {
+      // Recent witnesses
       const { data } = await supabase
         .from('vows')
         .select('witness_name, witness_phone')
@@ -187,6 +190,34 @@ export default function QuickVowScreen() {
         }
         setRecentWitnesses(unique);
       }
+
+      // Vow count (for oath copy)
+      const { count } = await supabase
+        .from('vows')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .neq('status', 'draft');
+      if (count) setVowCount(count);
+
+      // Smart defaults from last vow
+      try {
+        const saved = await AsyncStorage.getItem('quickvow-defaults');
+        if (saved) {
+          const defaults = JSON.parse(saved);
+          if (defaults.stakeAmount !== undefined) setStakeAmount(defaults.stakeAmount);
+          if (defaults.consequence) setConsequence(defaults.consequence);
+          const validPresets: DeadlinePreset[] = ['tomorrow', 'end_of_week', 'in_7_days', 'in_30_days', 'custom'];
+          if (defaults.deadlinePreset && validPresets.includes(defaults.deadlinePreset)) {
+            // Map in_30_days to custom since it has no chip
+            if (defaults.deadlinePreset === 'in_30_days') {
+              setCustomDate(getPresetDate('in_30_days'));
+              setDeadlinePreset('custom');
+            } else {
+              setDeadlinePreset(defaults.deadlinePreset);
+            }
+          }
+        }
+      } catch {}
     })();
   }, [session?.user?.id]);
 
@@ -344,6 +375,15 @@ export default function QuickVowScreen() {
   // -----------------------------------------------------------------------
 
   const handleSealSuccess = async (resolvedVowId: string, resolvedToken: string | null) => {
+    // Save smart defaults for next time
+    try {
+      await AsyncStorage.setItem('quickvow-defaults', JSON.stringify({
+        stakeAmount,
+        consequence,
+        deadlinePreset,
+      }));
+    } catch {}
+
     // Hydrate VowFlowProvider so /live has full context
     vowFlow.setRawInput(vowText);
     vowFlow.setRefinedText(finalText);
@@ -399,7 +439,7 @@ export default function QuickVowScreen() {
 
         <Text style={styles.pageTitle}>QuickVow</Text>
 
-        {/* Vow text */}
+        {/* Vow text + inline deadline */}
         <RitualCard>
           <Text style={styles.sectionLabel}>WHAT ARE YOU COMMITTING TO?</Text>
           <TextInput
@@ -416,6 +456,47 @@ export default function QuickVowScreen() {
               <Text style={styles.suggestionText}>{suggestion}</Text>
             </Pressable>
           ) : null}
+
+          {/* Inline deadline */}
+          <View style={styles.inlineDeadlineDivider} />
+          <View style={styles.inlineDeadlineRow}>
+            <Text style={styles.inlineDeadlineLabel}>Ends</Text>
+            <View style={styles.chipRow}>
+              {([
+                ['tomorrow', 'Tomorrow'],
+                ['end_of_week', 'End of week'],
+                ['in_7_days', '7 days'],
+                ['custom', 'Pick'],
+              ] as [DeadlinePreset, string][]).map(([id, label]) => (
+                <ChoiceChip
+                  key={id}
+                  label={label}
+                  active={deadlinePreset === id}
+                  onPress={() => {
+                    setDeadlinePreset(id);
+                    if (id === 'custom') setShowDatePicker(true);
+                  }}
+                />
+              ))}
+            </View>
+          </View>
+          {showDatePicker && deadlinePreset === 'custom' ? (
+            <DateTimePicker
+              value={customDate}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              minimumDate={new Date()}
+              themeVariant="dark"
+              onChange={(_: unknown, date?: Date) => {
+                if (Platform.OS === 'android') setShowDatePicker(false);
+                if (date) {
+                  date.setHours(23, 59, 59, 0);
+                  setCustomDate(date);
+                }
+              }}
+            />
+          ) : null}
+          <Text style={styles.deadlineHint}>{formatDateShort(deadlineDate)}</Text>
         </RitualCard>
 
         {/* Witness */}
@@ -504,46 +585,7 @@ export default function QuickVowScreen() {
           ) : null}
         </RitualCard>
 
-        {/* Deadline */}
-        <RitualCard>
-          <Text style={styles.sectionLabel}>DEADLINE</Text>
-          <View style={styles.chipRow}>
-            {([
-              ['tomorrow', 'Tomorrow'],
-              ['end_of_week', 'End of week'],
-              ['in_7_days', 'In 7 days'],
-              ['in_30_days', 'A month'],
-              ['custom', 'Pick date'],
-            ] as [DeadlinePreset, string][]).map(([id, label]) => (
-              <ChoiceChip
-                key={id}
-                label={label}
-                active={deadlinePreset === id}
-                onPress={() => {
-                  setDeadlinePreset(id);
-                  if (id === 'custom') setShowDatePicker(true);
-                }}
-              />
-            ))}
-          </View>
-          {showDatePicker && deadlinePreset === 'custom' ? (
-            <DateTimePicker
-              value={customDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              minimumDate={new Date()}
-              themeVariant="dark"
-              onChange={(_: unknown, date?: Date) => {
-                if (Platform.OS === 'android') setShowDatePicker(false);
-                if (date) {
-                  date.setHours(23, 59, 59, 0);
-                  setCustomDate(date);
-                }
-              }}
-            />
-          ) : null}
-          <Text style={styles.deadlineHint}>Ends {formatDateShort(deadlineDate)}</Text>
-        </RitualCard>
+        {/* Deadline card removed — merged into vow text card above */}
 
         {/* Error */}
         {error ? (
@@ -552,12 +594,14 @@ export default function QuickVowScreen() {
           </View>
         ) : null}
 
-        {/* Oath */}
+        {/* Oath — evolves for returning users */}
         <Pressable onPress={() => { setOathChecked(!oathChecked); void Haptics.selectionAsync(); }} style={styles.oathRow}>
           <View style={[styles.checkbox, oathChecked && styles.checkboxChecked]}>
             {oathChecked ? <Text style={styles.checkmark}>✓</Text> : null}
           </View>
-          <Text style={styles.oathText}>I solemnly swear to honor this vow and accept the consequences.</Text>
+          <Text style={styles.oathText}>
+            {vowCount >= 2 ? 'I mean it.' : 'I solemnly swear to honor this vow and accept the consequences.'}
+          </Text>
         </Pressable>
 
         {/* Guided flow link */}
@@ -702,10 +746,25 @@ const styles = StyleSheet.create({
     backgroundColor: palette.border,
     marginVertical: 8,
   },
+  inlineDeadlineDivider: {
+    height: 1,
+    backgroundColor: palette.border,
+    marginVertical: 8,
+  },
+  inlineDeadlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  inlineDeadlineLabel: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
   deadlineHint: {
     color: palette.textMuted,
     fontSize: 13,
-    marginTop: 4,
+    marginTop: 2,
   },
   errorBox: {
     backgroundColor: 'rgba(255,123,123,0.12)',

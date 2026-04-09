@@ -281,6 +281,29 @@ export async function declineWitnessInvite(token: string): Promise<{ success: bo
   }
 }
 
+function formatPhoneE164(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('1') && digits.length === 11) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  return `+${digits}`;
+}
+
+export async function saveWitnessReminder(token: string, phone: string, name?: string): Promise<{ success: boolean; error?: string }> {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 7) return { success: false, error: 'Please enter a valid phone number.' };
+
+  try {
+    const { data, error } = await supabase.functions.invoke('accept-witness', {
+      body: { token, action: 'save-reminder', phone: formatPhoneE164(phone), name },
+    });
+    if (error) return { success: false, error: error.message };
+    if (data?.error) return { success: false, error: data.error };
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: 'Failed to save reminder.' };
+  }
+}
+
 export interface VowRow {
   id: string;
   user_id: string;

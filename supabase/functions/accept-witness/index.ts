@@ -15,7 +15,8 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { token, action } = await req.json();
+    const body = await req.json();
+    const { token, action, phone: reminderPhone, name: reminderName } = body;
 
     if (!token) {
       return new Response(JSON.stringify({ error: 'token required' }), {
@@ -36,6 +37,27 @@ Deno.serve(async (req) => {
     if (vowError || !vow) {
       return new Response(JSON.stringify({ error: 'invalid_token' }), {
         status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Handle save-reminder (witness provides their phone for verdict-day SMS)
+    if (action === 'save-reminder') {
+      // Only allow if vow is still active and witness has accepted
+      if (!['active', 'awaiting_verdict'].includes(vow.status) || !vow.witness_accepted_at) {
+        return new Response(JSON.stringify({ error: 'cannot_save_reminder' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const updates: Record<string, string> = {};
+      // Only set witness_phone if not already set (don't overwrite maker-provided phone)
+      if (reminderPhone && !vow.witness_phone) updates.witness_phone = reminderPhone;
+      if (reminderName && (!vow.witness_name || vow.witness_name === 'Just me')) updates.witness_name = reminderName;
+      if (Object.keys(updates).length > 0) {
+        await supabase.from('vows').update(updates).eq('id', vow.id);
+      }
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

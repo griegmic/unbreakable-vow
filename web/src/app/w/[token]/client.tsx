@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { DollarSign, Sparkles, Calendar, Clock, Shield, Eye, MessageCircle, Check } from 'lucide-react';
+import { DollarSign, Sparkles, Calendar, Eye, MessageCircle, Check, Phone } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
 import { createClient } from '@supabase/supabase-js';
 
@@ -22,43 +22,6 @@ interface Vow {
   status: string;
 }
 
-function generateICS(vow: Vow, token: string, makerName: string): string {
-  const end = new Date(vow.ends_at!);
-  // Set to 9 AM on verdict day
-  end.setHours(9, 0, 0, 0);
-  const endTime = new Date(end.getTime() + 30 * 60 * 1000); // 30 min duration
-
-  const fmt = (d: Date) => {
-    const pad = (n: number) => n.toString().padStart(2, '0');
-    return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
-  };
-
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const verdictUrl = `https://unbreakablevow.app/w/${token}/verdict`;
-  const now = new Date();
-
-  return [
-    'BEGIN:VCALENDAR',
-    'VERSION:2.0',
-    'PRODID:-//Unbreakable Vow//EN',
-    'BEGIN:VEVENT',
-    `DTSTART;TZID=${tz}:${fmt(end)}`,
-    `DTEND;TZID=${tz}:${fmt(endTime)}`,
-    `DTSTAMP:${fmt(now)}Z`,
-    `UID:vow-${vow.id}@unbreakablevow.app`,
-    `SUMMARY:Deliver your verdict — ${makerName}'s vow`,
-    `DESCRIPTION:Time to decide: did ${makerName} keep their vow?\\nTap here to deliver your verdict: ${verdictUrl}`,
-    `URL:${verdictUrl}`,
-    'BEGIN:VALARM',
-    'TRIGGER:-PT15M',
-    'ACTION:DISPLAY',
-    `DESCRIPTION:${makerName}'s vow verdict is due`,
-    'END:VALARM',
-    'END:VEVENT',
-    'END:VCALENDAR',
-  ].join('\r\n');
-}
-
 export default function WitnessInviteClient({ vow, token, makerName, makerPhone }: { vow: Vow; token: string; makerName: string; makerPhone: string | null }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,7 +30,39 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     vow.witness_accepted_at ? 'accepted' : vow.witness_declined ? 'declined' : 'pending'
   );
   const [justAccepted, setJustAccepted] = useState(false);
-  const [calendarAdded, setCalendarAdded] = useState(false);
+  // Reminder capture
+  const [reminderExpanded, setReminderExpanded] = useState(false);
+  const [reminderPhone, setReminderPhone] = useState('');
+  const [reminderName, setReminderName] = useState('');
+  const [reminderSaved, setReminderSaved] = useState(false);
+  const [reminderSaving, setReminderSaving] = useState(false);
+
+  const needsWitnessName = !vow.witness_name || vow.witness_name === 'Just me';
+
+  const handleSaveReminder = async () => {
+    const digits = reminderPhone.replace(/\D/g, '');
+    if (digits.length < 7 || reminderSaving) return;
+    setReminderSaving(true);
+    // Format to E.164
+    const formatted = digits.startsWith('1') && digits.length === 11
+      ? `+${digits}`
+      : digits.length === 10
+        ? `+1${digits}`
+        : `+${digits}`;
+    try {
+      const { error: fnError } = await supabase.functions.invoke('accept-witness', {
+        body: { token, action: 'save-reminder', phone: formatted, name: reminderName.trim() || undefined },
+      });
+      if (!fnError) {
+        setReminderSaved(true);
+      } else {
+        setError('Could not save reminder. Please try again.');
+      }
+    } catch {
+      setError('Network error. Please try again.');
+    }
+    setReminderSaving(false);
+  };
 
   useEffect(() => {
     if (justAccepted) {
@@ -127,21 +122,6 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     } finally {
       setBusy(false);
     }
-  };
-
-  const handleAddToCalendar = () => {
-    if (!vow.ends_at) return;
-    const icsContent = generateICS(vow, token, makerName);
-    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'vow-verdict.ics';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setCalendarAdded(true);
   };
 
   // Elapsed computation for time-based nudges
@@ -385,8 +365,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               </FadeUp>
             )}
 
-            {/* Text maker CTA — time-based nudge, hidden when verdict due or no phone */}
-            {!isVerdictDue && makerPhone && (() => {
+            {/* Primary CTA: Text the maker — time-based nudge */}
+            {!isVerdictDue && (() => {
               const elapsed = getElapsed();
               const nudgeLabel = elapsed < 0.15
                 ? `Send ${makerLabel} a message`
@@ -400,13 +380,13 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                     onClick={handleTextMaker}
                     className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
                     style={{
-                      backgroundColor: 'var(--surface)',
-                      border: '1px solid var(--border-strong)',
+                      background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                      boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
                     }}
                   >
                     <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-                      <MessageCircle className="w-[16px] h-[16px]" style={{ color: 'var(--gold-bright)' }} />
-                      <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                      <MessageCircle className="w-[18px] h-[18px]" color="#0B0D11" />
+                      <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
                         {nudgeLabel}
                       </span>
                     </div>
@@ -415,44 +395,87 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               );
             })()}
 
-            {/* Calendar reminder CTA */}
+            {/* Secondary: Reminder phone capture */}
             {!isVerdictDue && (
-              <FadeUp delay={makerPhone ? 0.25 : 0.2}>
-                <div className="flex flex-col gap-3">
-                  {vow.ends_at ? (
-                    <button
-                      type="button"
-                      onClick={handleAddToCalendar}
-                      className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-                      style={{
-                        background: calendarAdded
-                          ? 'var(--surface)'
-                          : 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                        boxShadow: calendarAdded ? 'none' : '0 12px 24px rgba(212,162,79,0.28)',
-                        border: calendarAdded ? '1px solid var(--border-strong)' : 'none',
-                      }}
-                    >
-                      <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-                        <Calendar
-                          className="w-[18px] h-[18px]"
-                          color={calendarAdded ? 'var(--success)' : '#0B0D11'}
-                        />
-                        <span
-                          className="text-[15px] font-extrabold tracking-[0.2px]"
-                          style={{ color: calendarAdded ? 'var(--success)' : '#0B0D11' }}
-                        >
-                          {calendarAdded ? 'Added to calendar' : 'Remind me on verdict day'}
-                        </span>
-                      </div>
-                    </button>
-                  ) : null}
-                  <p className="text-center text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                    {vow.ends_at
-                      ? `You'll deliver your verdict here on ${endDate}`
-                      : 'Verdict date: TBD'
-                    }
-                  </p>
-                </div>
+              <FadeUp delay={0.25}>
+                {reminderSaved ? (
+                  <div
+                    className="flex items-center justify-center gap-2 py-3.5 rounded-[18px]"
+                    style={{ backgroundColor: 'rgba(82,214,154,0.08)', border: '1px solid rgba(82,214,154,0.2)' }}
+                  >
+                    <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+                    <span className="text-[14px] font-semibold" style={{ color: 'var(--success)' }}>
+                      Reminder set — we&apos;ll text you on verdict day
+                    </span>
+                  </div>
+                ) : reminderExpanded ? (
+                  <div
+                    className="rounded-[18px] p-4 flex flex-col gap-3"
+                    style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4" style={{ color: 'var(--gold-bright)' }} />
+                      <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+                        {vow.witness_name && vow.witness_name !== 'Just me' ? `Hey ${vow.witness_name}! ` : ''}Get a text on verdict day
+                      </span>
+                    </div>
+                    {needsWitnessName && (
+                      <input
+                        type="text"
+                        value={reminderName}
+                        onChange={(e) => setReminderName(e.target.value)}
+                        placeholder="Your name"
+                        className="w-full bg-transparent text-[15px] outline-none py-2.5 px-3.5 rounded-xl"
+                        style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                      />
+                    )}
+                    <input
+                      type="tel"
+                      value={reminderPhone}
+                      onChange={(e) => setReminderPhone(e.target.value)}
+                      placeholder="Phone number"
+                      autoFocus
+                      className="w-full bg-transparent text-[15px] outline-none py-2.5 px-3.5 rounded-xl"
+                      style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                    />
+                    <div className="flex items-center gap-4">
+                      <button
+                        type="button"
+                        onClick={handleSaveReminder}
+                        disabled={!reminderPhone.trim() || reminderSaving}
+                        className="px-5 py-2.5 rounded-xl text-[14px] font-bold transition-opacity"
+                        style={{
+                          backgroundColor: 'var(--gold-bright)',
+                          color: '#0B0D11',
+                          opacity: !reminderPhone.trim() || reminderSaving ? 0.5 : 1,
+                        }}
+                      >
+                        {reminderSaving ? 'Saving...' : 'Remind me'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setReminderExpanded(false)}
+                        className="text-[13px] font-medium"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        No thanks
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setReminderExpanded(true)}
+                    className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                    style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+                  >
+                    <div className="min-h-[50px] flex items-center justify-center gap-2 px-5">
+                      <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                        Remind me on verdict day
+                      </span>
+                    </div>
+                  </button>
+                )}
               </FadeUp>
             )}
 

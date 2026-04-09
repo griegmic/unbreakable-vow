@@ -58,7 +58,7 @@ export default function CreatePage() {
   const [witnessPhone, setWitnessPhone] = useState('');
   const [targetName, setTargetName] = useState('');
   const [targetPhone, setTargetPhone] = useState('');
-  const [stakeAmount, setStakeAmount] = useState(0);
+  const [stakeAmount, setStakeAmount] = useState(10);
   const [consequence, setConsequence] = useState<ConsequenceType>('charity');
   const [destination, setDestination] = useState('ALS Association');
   const [deadlineLabel, setDeadlineLabel] = useState('In 7 days');
@@ -78,6 +78,7 @@ export default function CreatePage() {
   const [witnessToken, setWitnessToken] = useState<string | null>(null);
   const [sealed, setSealed] = useState(false);
 
+  const [vowCount, setVowCount] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Compute suggestion as user types
@@ -119,6 +120,25 @@ export default function CreatePage() {
         }
         setRecentWitnesses(unique);
       }
+
+      // Vow count for oath copy
+      const { count } = await supabase
+        .from('vows')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', session.user.id)
+        .neq('status', 'draft');
+      if (count) setVowCount(count);
+
+      // Smart defaults
+      try {
+        const saved = localStorage.getItem('quickvow-defaults');
+        if (saved) {
+          const defaults = JSON.parse(saved);
+          if (defaults.stakeAmount !== undefined) setStakeAmount(defaults.stakeAmount);
+          if (defaults.consequence) setConsequence(defaults.consequence);
+          if (defaults.deadlineLabel) setDeadlineLabel(defaults.deadlineLabel);
+        }
+      } catch {}
     })();
   }, [session?.user?.id]);
 
@@ -237,6 +257,7 @@ export default function CreatePage() {
           const sealData = await sealRes.json().catch(() => null);
           throw new Error(sealData?.error || sealData?.msg || `Seal failed: ${sealRes.status}`);
         }
+        try { localStorage.setItem('quickvow-defaults', JSON.stringify({ stakeAmount, consequence, deadlineLabel })); } catch {}
         resetVow();
         setSealed(true);
         return;
@@ -278,6 +299,7 @@ export default function CreatePage() {
 
   const handlePaymentSuccess = useCallback(async () => {
     setShowPayment(false);
+    try { localStorage.setItem('quickvow-defaults', JSON.stringify({ stakeAmount, consequence, deadlineLabel })); } catch {}
     if (vowId) {
       try {
         const freshToken = await getFreshToken();
@@ -488,6 +510,35 @@ export default function CreatePage() {
                 </button>
               )}
             </div>
+
+            {/* Inline deadline */}
+            <div className="h-px my-2" style={{ backgroundColor: 'var(--border)' }} />
+            <div className="flex items-center gap-2.5">
+              <span className="text-[13px] font-semibold" style={{ color: 'var(--text-muted)' }}>Ends</span>
+              <div className="flex flex-wrap">
+                {DEADLINE_PRESETS.map((p) => (
+                  <ChoiceChip
+                    key={p.label}
+                    label={p.label === 'Pick date' ? 'Pick' : p.label}
+                    active={deadlineLabel === p.label}
+                    onPress={() => handleDeadlineSelect(p.label)}
+                  />
+                ))}
+              </div>
+            </div>
+            {showCustomDate && (
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
+                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+              />
+            )}
+            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+              {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </p>
           </RitualCard>
         </FadeUp>
 
@@ -616,35 +667,7 @@ export default function CreatePage() {
           </RitualCard>
         </FadeUp>
 
-        {/* Deadline */}
-        <FadeUp delay={0.3}>
-          <RitualCard>
-            <SectionLabel>Deadline</SectionLabel>
-            <div className="flex flex-wrap">
-              {DEADLINE_PRESETS.map((p) => (
-                <ChoiceChip
-                  key={p.label}
-                  label={p.label}
-                  active={deadlineLabel === p.label}
-                  onPress={() => handleDeadlineSelect(p.label)}
-                />
-              ))}
-            </div>
-            {showCustomDate && (
-              <input
-                type="date"
-                value={customDate}
-                onChange={(e) => setCustomDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-              />
-            )}
-            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-              Ends {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </p>
-          </RitualCard>
-        </FadeUp>
+        {/* Deadline card removed — merged into vow text card above */}
 
         {/* Preview */}
         {vowText.trim() && (
@@ -692,7 +715,7 @@ export default function CreatePage() {
           <OathCheckbox
             checked={oathChecked}
             onChange={setOathChecked}
-            label="I solemnly swear to honor this vow and accept the consequences."
+            label={vowCount >= 2 ? "I mean it." : "I solemnly swear to honor this vow and accept the consequences."}
           />
         </FadeUp>
 

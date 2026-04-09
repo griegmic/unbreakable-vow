@@ -1,13 +1,12 @@
-import * as Calendar from 'expo-calendar';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { AlertCircle, Check, CheckCircle2, MessageCircle, Shield } from 'lucide-react-native';
+import { AlertCircle, Check, CheckCircle2, MessageCircle, Phone, Shield } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Animated, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
-import { acceptWitnessInvite, declineWitnessInvite, getVowByWitnessToken, type WitnessVowData } from '@/lib/vow-api';
+import { acceptWitnessInvite, declineWitnessInvite, getVowByWitnessToken, saveWitnessReminder, type WitnessVowData } from '@/lib/vow-api';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
@@ -25,6 +24,13 @@ export default function WitnessInviteScreen() {
   const [accepting, setAccepting] = useState<boolean>(false);
   const [declining, setDeclining] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
+
+  // Reminder capture
+  const [reminderExpanded, setReminderExpanded] = useState(false);
+  const [reminderPhone, setReminderPhone] = useState('');
+  const [reminderName, setReminderName] = useState('');
+  const [reminderSaved, setReminderSaved] = useState(false);
+  const [reminderSaving, setReminderSaving] = useState(false);
 
   const isRemote = !!token;
   const vowText = isRemote ? (remoteVow?.refined_text ?? '') : activeVowText;
@@ -217,35 +223,22 @@ export default function WitnessInviteScreen() {
     }
   };
 
-  const handleAddToNativeCalendar = async () => {
-    if (!remoteVow?.ends_at) return;
-    try {
-      const { status } = await Calendar.requestCalendarPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Calendar access needed', 'Allow calendar access in Settings to add a reminder.');
-        return;
-      }
-      const calendars = await Calendar.getCalendarsAsync(Calendar.EntityTypes.EVENT);
-      const defaultCal = calendars.find((c) => c.allowsModifications) || calendars[0];
-      if (!defaultCal) {
-        Alert.alert('No calendar found', 'Could not find a writable calendar on this device.');
-        return;
-      }
-      const endDate = new Date(remoteVow.ends_at);
-      endDate.setHours(9, 0, 0, 0);
-      await Calendar.createEventAsync(defaultCal.id, {
-        title: `Deliver your verdict — ${makerName}'s vow`,
-        startDate: endDate,
-        endDate: new Date(endDate.getTime() + 30 * 60 * 1000),
-        notes: `Time to decide: did ${makerName} keep their vow?\n"${remoteVow.refined_text}"`,
-        alarms: [{ relativeOffset: -15 }],
-      });
-      Alert.alert('Added!', 'Calendar reminder set for verdict day.');
-    } catch (err) {
-      console.error('[WitnessInvite] calendar error:', err);
-      Alert.alert('Calendar error', 'Could not add to calendar. Please try again.');
+  const handleSaveReminder = async () => {
+    if (!token || !reminderPhone.trim()) return;
+    setReminderSaving(true);
+    const result = await saveWitnessReminder(token, reminderPhone.trim(), reminderName.trim() || undefined);
+    setReminderSaving(false);
+    if (result.success) {
+      setReminderSaved(true);
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } else {
+      Alert.alert('Could not save', result.error || 'Please try again.');
     }
   };
+
+  // Check if we need the witness name (maker didn't provide one or it's generic)
+  const needsWitnessName = !remoteVow?.witness_name || remoteVow.witness_name === 'Just me';
+  const witnessDisplayName = remoteVow?.witness_name && remoteVow.witness_name !== 'Just me' ? remoteVow.witness_name : null;
 
   // Elapsed computation for time-based nudges
   const getElapsed = (): number => {
@@ -282,21 +275,66 @@ export default function WitnessInviteScreen() {
             <Text style={styles.vowTextStyle}>{vowText}</Text>
           </RitualCard>
 
-          {/* Primary CTA: Tell them you're watching */}
-          {makerPhone ? (
-            <Pressable
-              onPress={() => sendSms(makerPhone, "Just accepted your vow. I'm watching.")}
-              style={styles.goldButton}
-            >
-              <MessageCircle color="#0B0D11" size={18} />
-              <Text style={styles.goldButtonText}>Tell {makerName} you're watching</Text>
-            </Pressable>
-          ) : null}
-
-          {/* Secondary: Calendar reminder */}
-          <Pressable onPress={handleAddToNativeCalendar} style={styles.outlinedButton}>
-            <Text style={styles.outlinedButtonText}>Remind me on verdict day</Text>
+          {/* Primary CTA: Text the maker */}
+          <Pressable
+            onPress={() => sendSms(makerPhone, "Just accepted your vow. I'm watching.")}
+            style={styles.goldButton}
+          >
+            <MessageCircle color="#0B0D11" size={18} />
+            <Text style={styles.goldButtonText}>Tell {makerName} you're watching</Text>
           </Pressable>
+
+          {/* Secondary: Reminder capture */}
+          {reminderSaved ? (
+            <View style={styles.reminderSavedRow}>
+              <Check color={palette.success} size={16} />
+              <Text style={styles.reminderSavedText}>Reminder set — we'll text you on verdict day</Text>
+            </View>
+          ) : reminderExpanded ? (
+            <View style={styles.reminderForm}>
+              <View style={styles.reminderFormHeader}>
+                <Phone color={palette.goldBright} size={16} />
+                <Text style={styles.reminderFormTitle}>
+                  {witnessDisplayName ? `Hey ${witnessDisplayName}! ` : ''}Get a text on verdict day
+                </Text>
+              </View>
+              {needsWitnessName && (
+                <TextInput
+                  value={reminderName}
+                  onChangeText={setReminderName}
+                  placeholder="Your name"
+                  placeholderTextColor={palette.textMuted}
+                  style={styles.reminderInput}
+                  autoCapitalize="words"
+                />
+              )}
+              <TextInput
+                value={reminderPhone}
+                onChangeText={setReminderPhone}
+                placeholder="Phone number"
+                placeholderTextColor={palette.textMuted}
+                style={styles.reminderInput}
+                keyboardType="phone-pad"
+                autoFocus
+              />
+              <View style={styles.reminderActions}>
+                <Pressable
+                  onPress={handleSaveReminder}
+                  style={[styles.reminderSubmit, (!reminderPhone.trim() || reminderSaving) && { opacity: 0.5 }]}
+                  disabled={!reminderPhone.trim() || reminderSaving}
+                >
+                  <Text style={styles.reminderSubmitText}>{reminderSaving ? 'Saving...' : 'Remind me'}</Text>
+                </Pressable>
+                <Pressable onPress={() => setReminderExpanded(false)}>
+                  <Text style={styles.reminderCancelText}>No thanks</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable onPress={() => setReminderExpanded(true)} style={styles.outlinedButton}>
+              <Text style={styles.outlinedButtonText}>Remind me on verdict day</Text>
+            </Pressable>
+          )}
 
           {/* Tertiary: Viral CTA */}
           <Pressable
@@ -383,20 +421,65 @@ export default function WitnessInviteScreen() {
           </RitualCard>
 
           {/* Primary CTA: Text the maker */}
-          {makerPhone ? (
-            <Pressable
-              onPress={() => sendSms(makerPhone, nudge.sms)}
-              style={styles.goldButton}
-            >
-              <MessageCircle color="#0B0D11" size={16} />
-              <Text style={styles.goldButtonText}>{nudge.cta}</Text>
-            </Pressable>
-          ) : null}
-
-          {/* Secondary: Calendar reminder */}
-          <Pressable onPress={handleAddToNativeCalendar} style={styles.outlinedButton}>
-            <Text style={styles.outlinedButtonText}>Remind me on verdict day</Text>
+          <Pressable
+            onPress={() => sendSms(makerPhone, nudge.sms)}
+            style={styles.goldButton}
+          >
+            <MessageCircle color="#0B0D11" size={16} />
+            <Text style={styles.goldButtonText}>{nudge.cta}</Text>
           </Pressable>
+
+          {/* Secondary: Reminder capture */}
+          {reminderSaved ? (
+            <View style={styles.reminderSavedRow}>
+              <Check color={palette.success} size={16} />
+              <Text style={styles.reminderSavedText}>Reminder set — we'll text you on verdict day</Text>
+            </View>
+          ) : reminderExpanded ? (
+            <View style={styles.reminderForm}>
+              <View style={styles.reminderFormHeader}>
+                <Phone color={palette.goldBright} size={16} />
+                <Text style={styles.reminderFormTitle}>
+                  {witnessDisplayName ? `Hey ${witnessDisplayName}! ` : ''}Get a text on verdict day
+                </Text>
+              </View>
+              {needsWitnessName && (
+                <TextInput
+                  value={reminderName}
+                  onChangeText={setReminderName}
+                  placeholder="Your name"
+                  placeholderTextColor={palette.textMuted}
+                  style={styles.reminderInput}
+                  autoCapitalize="words"
+                />
+              )}
+              <TextInput
+                value={reminderPhone}
+                onChangeText={setReminderPhone}
+                placeholder="Phone number"
+                placeholderTextColor={palette.textMuted}
+                style={styles.reminderInput}
+                keyboardType="phone-pad"
+                autoFocus
+              />
+              <View style={styles.reminderActions}>
+                <Pressable
+                  onPress={handleSaveReminder}
+                  style={[styles.reminderSubmit, (!reminderPhone.trim() || reminderSaving) && { opacity: 0.5 }]}
+                  disabled={!reminderPhone.trim() || reminderSaving}
+                >
+                  <Text style={styles.reminderSubmitText}>{reminderSaving ? 'Saving...' : 'Remind me'}</Text>
+                </Pressable>
+                <Pressable onPress={() => setReminderExpanded(false)}>
+                  <Text style={styles.reminderCancelText}>No thanks</Text>
+                </Pressable>
+              </View>
+            </View>
+          ) : (
+            <Pressable onPress={() => setReminderExpanded(true)} style={styles.outlinedButton}>
+              <Text style={styles.outlinedButtonText}>Remind me on verdict day</Text>
+            </Pressable>
+          )}
 
           {/* Tertiary: Viral CTA */}
           <Pressable
@@ -769,5 +852,73 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     width: 36,
     textAlign: 'right',
+  },
+  reminderForm: {
+    width: '100%',
+    borderRadius: 18,
+    padding: 16,
+    gap: 12,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+  },
+  reminderFormHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  reminderFormTitle: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  reminderInput: {
+    color: palette.text,
+    fontSize: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+  },
+  reminderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  reminderSubmit: {
+    backgroundColor: palette.goldBright,
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+  },
+  reminderSubmitText: {
+    color: '#0B0D11',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  reminderCancelText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  reminderSavedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    width: '100%',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: 'rgba(82,214,154,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(82,214,154,0.2)',
+  },
+  reminderSavedText: {
+    color: palette.success,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
