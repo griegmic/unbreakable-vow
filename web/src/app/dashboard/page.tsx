@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Plus } from 'lucide-react';
+import { Settings, Plus, ArrowLeft } from 'lucide-react';
 import { RitualScreen, HeaderBadge, SectionLabel, StatPill, PrimaryButton, FadeUp } from '@/components/ui';
 import VowCard from '@/components/vow-card';
 import { useAuth } from '@/providers/auth-provider';
@@ -199,7 +199,12 @@ export default function DashboardPage() {
       {/* Header */}
       <FadeUp>
         <div className="flex items-center justify-between">
-          <HeaderBadge />
+          <div className="flex items-center gap-3">
+            <button onClick={() => router.back()} className="p-1 -ml-1">
+              <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+            </button>
+            <HeaderBadge />
+          </div>
           <div className="flex items-center gap-3">
             {displayName && (
               <span className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
