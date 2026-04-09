@@ -344,17 +344,39 @@ export default function VowDetailPage() {
                   if (!confirm('This will cancel your vow' + (vow.stake_amount > 0 ? ' and refund your stake' : '') + '. Continue?')) return;
                   setVoiding(true);
                   setVoidError('');
-                  // Refresh session to avoid expired JWT
-                  await supabase.auth.refreshSession();
-                  const { data, error } = await supabase.functions.invoke('void-vow', { body: { vow_id: vow.id } });
-                  if (error) {
-                    console.error('Withdraw failed:', error);
-                    const detail = typeof data === 'object' && data?.message ? data.message : error.message || 'Something went wrong';
-                    setVoidError(detail);
+                  try {
+                    // Refresh session for fresh JWT
+                    const { data: { session: freshSession } } = await supabase.auth.refreshSession();
+                    if (!freshSession) {
+                      setVoidError('Session expired. Please sign in again.');
+                      setVoiding(false);
+                      return;
+                    }
+                    const res = await fetch(
+                      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/void-vow`,
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${freshSession.access_token}`,
+                          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                        },
+                        body: JSON.stringify({ vow_id: vow.id }),
+                      }
+                    );
+                    if (!res.ok) {
+                      const body = await res.json().catch(() => null);
+                      console.error('Withdraw failed:', res.status, body);
+                      setVoidError(body?.message || body?.error || `Error ${res.status}`);
+                      setVoiding(false);
+                      return;
+                    }
+                    router.push('/dashboard');
+                  } catch (err) {
+                    console.error('Withdraw error:', err);
+                    setVoidError(err instanceof Error ? err.message : 'Network error');
                     setVoiding(false);
-                    return;
                   }
-                  router.push('/dashboard');
                 }}
                 className="w-full min-h-[46px] rounded-[14px] flex items-center justify-center gap-2 transition-opacity"
                 style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', opacity: voiding ? 0.5 : 1 }}
