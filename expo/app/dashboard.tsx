@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { History, Settings } from 'lucide-react-native';
+import { ChevronRight, History, Settings } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -134,6 +134,7 @@ function VowCard({
   const countdown = getCountdownText(vow.ends_at);
   const stakeLabel = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} stake` : 'no stake';
   const isChallenge = sectionId === 'attention' && vow.challenge_status === 'pending';
+  const isActiveOwn = sectionId === 'yours' && (vow.status === 'active' || vow.status === 'sealed' || vow.status === 'awaiting_verdict');
   const personLabel = sectionId === 'witnessing' ? "You're witnessing" : vow.witness_name;
 
   // Witness status badge
@@ -150,7 +151,6 @@ function VowCard({
     Animated.spring(scaleAnim, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 4 }).start();
   };
   const handlePress = () => {
-    const isActiveOwn = sectionId === 'yours' && (vow.status === 'active' || vow.status === 'sealed' || vow.status === 'awaiting_verdict');
     if (isActiveOwn) {
       router.push({ pathname: '/live', params: { vowId: vow.id } });
     } else {
@@ -166,10 +166,15 @@ function VowCard({
         onPressOut={handlePressOut}
         style={styles.card}
       >
-        {/* Vow text */}
-        <Text style={styles.cardText} numberOfLines={2}>
-          {vow.refined_text || vow.raw_input}
-        </Text>
+        {/* Vow text + tap affordance */}
+        <View style={styles.cardTextRow}>
+          <Text style={[styles.cardText, { flex: 1 }]} numberOfLines={2}>
+            {vow.refined_text || vow.raw_input}
+          </Text>
+          {isActiveOwn && (
+            <ChevronRight color={palette.textMuted} size={18} style={{ marginLeft: 8 }} />
+          )}
+        </View>
 
         {/* Status row */}
         <View style={styles.statusRow}>
@@ -329,9 +334,8 @@ export default function VowDashboard() {
     const yourVowItems = myVows
       .filter((v) => v.status === 'sealed' || v.status === 'active')
       .sort((a, b) => {
-        if (!a.ends_at) return 1;
-        if (!b.ends_at) return -1;
-        return new Date(a.ends_at).getTime() - new Date(b.ends_at).getTime();
+        // Newest first so the most recently created vow is always at the top
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
 
     const witnessItems = witnessingVows.filter((v) => v.status === 'active');
@@ -698,6 +702,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     gap: 10,
+  },
+  cardTextRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
   },
   cardText: {
     color: palette.text,
