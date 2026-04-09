@@ -183,6 +183,40 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : 'TBD';
 
+  // ─── RESOLVED STATE (voided/kept/broken) ───
+  if (['voided', 'kept', 'broken'].includes(vow.status)) {
+    const resolvedMessages: Record<string, { title: string; subtitle: string }> = {
+      voided: { title: 'Vow withdrawn.', subtitle: `${makerName} withdrew this vow.` },
+      kept: { title: 'Vow kept!', subtitle: `${makerName} kept their word. The verdict is in.` },
+      broken: { title: 'Vow broken.', subtitle: `${makerName} didn't follow through.` },
+    };
+    const msg = resolvedMessages[vow.status] || resolvedMessages.voided;
+    return (
+      <RitualScreen>
+        <FadeUp><HeaderBadge /></FadeUp>
+        <FadeUp delay={0.1}>
+          <TitleBlock title={msg.title} subtitle={msg.subtitle} />
+        </FadeUp>
+        <FadeUp delay={0.2}>
+          <a
+            href="https://unbreakablevow.app/?new=1"
+            className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
+            style={{
+              backgroundColor: 'var(--surface)',
+              border: '1px solid var(--border-strong)',
+            }}
+          >
+            <div className="min-h-[50px] flex items-center justify-center px-5">
+              <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                Your turn &mdash; what will you commit to?
+              </span>
+            </div>
+          </a>
+        </FadeUp>
+      </RitualScreen>
+    );
+  }
+
   // ─── ACCEPTED STATE ───
   if (status === 'accepted') {
     const now = new Date();

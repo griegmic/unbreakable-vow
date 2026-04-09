@@ -1,6 +1,5 @@
 import 'react-native-get-random-values';
 
-import type { AuditEvent } from '@/types/database';
 import { supabase } from './supabase';
 
 /** UUID v4 using the polyfilled crypto.getRandomValues */
@@ -27,9 +26,14 @@ export async function createVow(params: {
   if (!session) throw new Error('Not authenticated');
 
   // Ensure public.users row exists (foreign key requirement for vows.user_id)
+  const userPhone = session.user.phone || (session.user.user_metadata?.phone as string) || null;
   await supabase.from('users').upsert(
-    { id: session.user.id, display_name: (session.user.user_metadata?.full_name as string) || session.user.email?.split('@')[0] || null },
-    { onConflict: 'id', ignoreDuplicates: true },
+    {
+      id: session.user.id,
+      display_name: (session.user.user_metadata?.full_name as string) || session.user.email?.split('@')[0] || null,
+      ...(userPhone ? { phone: userPhone } : {}),
+    },
+    { onConflict: 'id' },
   );
 
   const endDate = params.deadlineIso ? new Date(params.deadlineIso) : new Date(Date.now() + 7 * 86400000);
@@ -191,7 +195,6 @@ export async function getVowByWitnessToken(token: string): Promise<{ success: bo
       .from('vows')
       .select('id, refined_text, witness_name, witness_invite_token, stake_amount, consequence, destination, starts_at, ends_at, witness_accepted_at, witness_declined, status, user_id')
       .eq('witness_invite_token', token)
-      .in('status', ['sealed', 'active', 'awaiting_verdict'])
       .single();
 
     if (error || !data) {
@@ -300,6 +303,7 @@ export interface VowRow {
   starts_at: string | null;
   ends_at: string | null;
   verdict: 'kept' | 'broken' | null;
+  verdict_at: string | null;
   sealed_at: string | null;
   created_at: string;
 }
@@ -364,31 +368,31 @@ export async function getRecentVows(limit: number = 5): Promise<VowRow[]> {
   return (data ?? []) as VowRow[];
 }
 
-export async function acceptChallenge(token: string): Promise<boolean> {
+export async function acceptChallenge(token: string): Promise<{ success: boolean; error?: string }> {
   console.log('[vow-api] acceptChallenge:', token);
   try {
     const { error } = await supabase.from('vows')
       .update({ challenge_status: 'accepted' })
       .eq('challenge_invite_token', token);
-    if (error) { console.error('[vow-api] acceptChallenge error:', error); return false; }
-    return true;
+    if (error) { console.error('[vow-api] acceptChallenge error:', error); return { success: false, error: error.message }; }
+    return { success: true };
   } catch (err) {
     console.error('[vow-api] acceptChallenge exception:', err);
-    return false;
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
 
-export async function declineChallenge(token: string): Promise<boolean> {
+export async function declineChallenge(token: string): Promise<{ success: boolean; error?: string }> {
   console.log('[vow-api] declineChallenge:', token);
   try {
     const { error } = await supabase.from('vows')
       .update({ challenge_status: 'declined' })
       .eq('challenge_invite_token', token);
-    if (error) { console.error('[vow-api] declineChallenge error:', error); return false; }
-    return true;
+    if (error) { console.error('[vow-api] declineChallenge error:', error); return { success: false, error: error.message }; }
+    return { success: true };
   } catch (err) {
     console.error('[vow-api] declineChallenge exception:', err);
-    return false;
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
 }
 
@@ -412,10 +416,10 @@ export async function getVowTimeline(vowId: string): Promise<AuditEvent[]> {
   return (data ?? []) as AuditEvent[];
 }
 
-export async function submitCheckIn(vowId: string, type: string): Promise<boolean> {
+export async function submitCheckIn(vowId: string, type: string): Promise<{ success: boolean; error?: string }> {
   console.log('[vow-api] submitCheckIn:', vowId, type);
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return false;
+  if (!session) return { success: false, error: 'Not authenticated' };
   try {
     const { error } = await supabase.from('audit_events').insert({
       vow_id: vowId,
@@ -424,15 +428,15 @@ export async function submitCheckIn(vowId: string, type: string): Promise<boolea
       actor_id: session.user.id,
       metadata: { type },
     });
-    if (error) { console.error('[vow-api] submitCheckIn error:', error); return false; }
-    return true;
+    if (error) { console.error('[vow-api] submitCheckIn error:', error); return { success: false, error: error.message }; }
+    return { success: true };
   } catch (err) {
     console.error('[vow-api] submitCheckIn exception:', err);
-    return false;
+    return { success: false, error: 'Failed to check in.' };
   }
 }
 
-export async function voidVowV2(vowId: string): Promise<{ success: boolean; refunded?: boolean }> {
+export async function voidVowV2(vowId: string): Promise<{ success: boolean; refunded?: boolean; error?: string }> {
   console.log('[vow-api] voidVowV2:', vowId);
   try {
     const { error } = await supabase.functions.invoke('void-vow', {
@@ -448,8 +452,8 @@ export async function voidVowV2(vowId: string): Promise<{ success: boolean; refu
   } catch (err) {
     console.error('[vow-api] voidVowV2 exception:', err);
     // Fallback: direct DB update
-    await supabase.from('vows').update({ status: 'voided' }).eq('id', vowId).catch(() => {});
-    return { success: false };
+    try { await supabase.from('vows').update({ status: 'voided' }).eq('id', vowId); } catch { /* ignore */ }
+    return { success: false, error: 'Could not withdraw vow.' };
   }
 }
 

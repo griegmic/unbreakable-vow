@@ -57,7 +57,17 @@ export default function WitnessInviteScreen() {
       console.log('[WitnessInviteScreen] vow loaded:', result.vow.id);
       setRemoteVow(result.vow);
 
-      if (result.vow.witness_accepted_at) {
+      // Handle resolved vow states
+      const resolvedStatuses = ['voided', 'kept', 'broken'];
+      if (resolvedStatuses.includes(result.vow.status)) {
+        const statusMessages: Record<string, string> = {
+          voided: 'This vow has been withdrawn.',
+          kept: 'This vow has been kept! The verdict is in.',
+          broken: 'This vow was broken. The verdict is in.',
+        };
+        setErrorMsg(statusMessages[result.vow.status] || 'This vow is no longer active.');
+        setScreenState('error');
+      } else if (result.vow.witness_accepted_at) {
         setScreenState('already_accepted');
       } else if (result.vow.witness_declined) {
         setErrorMsg('This invite has been declined.');

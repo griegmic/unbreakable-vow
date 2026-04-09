@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { AlertCircle, ChevronRight, Clock, ExternalLink, FastForward, Flame, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, ThumbsUp, Trophy, User, UserMinus, X } from 'lucide-react-native';
+import { AlertCircle, ChevronLeft, ChevronRight, Clock, ExternalLink, FastForward, Flame, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, ThumbsUp, Trophy, User, UserMinus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -64,7 +64,7 @@ export default function LiveScreen() {
 
   const now = new Date();
   const endDateStr = dates.endLabel;
-  const endDate = new Date(endDateStr);
+  const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(NaN);
   const isVerdictDue = !isNaN(endDate.getTime()) && now >= endDate;
 
   const witnessAccepted = witnessStatus === 'accepted';
@@ -475,10 +475,10 @@ export default function LiveScreen() {
       return;
     }
 
-    const success = await submitCheckIn(vow.vowId, type);
+    const result = await submitCheckIn(vow.vowId, type);
     setCheckingIn(false);
 
-    if (success) {
+    if (result.success) {
       setLastCheckIn(new Date().toISOString());
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       const feedbackMap: Record<CheckInType, string> = {
@@ -947,6 +947,21 @@ export default function LiveScreen() {
     <RitualScreen footer={renderFooter()}>
       <Stack.Screen options={{ headerShown: false }} />
 
+      {/* Back button when navigated from dashboard */}
+      {searchParams.vowId && (
+        <Pressable
+          style={styles.backRow}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.back();
+          }}
+          hitSlop={8}
+        >
+          <ChevronLeft color={palette.textSecondary} size={20} />
+          <Text style={styles.backText}>My Vows</Text>
+        </Pressable>
+      )}
+
       {renderBadge()}
 
       <TitleBlock
@@ -999,6 +1014,19 @@ export default function LiveScreen() {
 }
 
 const styles = StyleSheet.create({
+  backRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 4,
+    alignSelf: 'flex-start' as const,
+    paddingVertical: 4,
+    marginBottom: 4,
+  },
+  backText: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    fontWeight: '500' as const,
+  },
   statusBadgeWrap: {
     alignItems: 'center' as const,
   },
