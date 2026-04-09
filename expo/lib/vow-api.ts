@@ -244,12 +244,17 @@ export async function getVowByWitnessToken(token: string): Promise<{ success: bo
 export async function acceptWitnessInvite(token: string): Promise<{ success: boolean; error?: string }> {
   console.log('[vow-api] acceptWitnessInvite with token:', token);
   try {
-    const { data, error } = await supabase.functions.invoke('accept-witness', {
+    const { data, error, response } = await supabase.functions.invoke('accept-witness', {
       body: { token, action: 'accept' },
-    });
+    }) as { data: any; error: any };
     if (error) {
-      console.error('[vow-api] acceptWitnessInvite error:', error);
-      return { success: false, error: error.message || 'Failed to accept invite.' };
+      // Parse the actual error from the edge function response
+      let errorBody: any = null;
+      try { errorBody = await error.context?.json(); } catch {}
+      console.error('[vow-api] acceptWitnessInvite error:', errorBody || error.message);
+      if (errorBody?.error === 'vow_not_active') return { success: false, error: 'This vow is no longer active.' };
+      if (errorBody?.error === 'invalid_token') return { success: false, error: 'This invite link is no longer valid.' };
+      return { success: false, error: `Failed to accept invite. (${errorBody?.error || error.message || 'unknown'})` };
     }
     if (data?.error) {
       return { success: false, error: data.error === 'vow_not_active' ? 'This vow is no longer active.' : 'Something went wrong.' };
@@ -266,10 +271,12 @@ export async function declineWitnessInvite(token: string): Promise<{ success: bo
   try {
     const { data, error } = await supabase.functions.invoke('accept-witness', {
       body: { token, action: 'decline' },
-    });
+    }) as { data: any; error: any };
     if (error) {
-      console.error('[vow-api] declineWitnessInvite error:', error);
-      return { success: false, error: error.message || 'Failed to decline invite.' };
+      let errorBody: any = null;
+      try { errorBody = await error.context?.json(); } catch {}
+      console.error('[vow-api] declineWitnessInvite error:', errorBody || error.message);
+      return { success: false, error: `Failed to decline invite. (${errorBody?.error || error.message || 'unknown'})` };
     }
     if (data?.error) {
       return { success: false, error: 'Something went wrong.' };
@@ -295,8 +302,12 @@ export async function saveWitnessReminder(token: string, phone: string, name?: s
   try {
     const { data, error } = await supabase.functions.invoke('accept-witness', {
       body: { token, action: 'save-reminder', phone: formatPhoneE164(phone), name },
-    });
-    if (error) return { success: false, error: error.message };
+    }) as { data: any; error: any };
+    if (error) {
+      let errorBody: any = null;
+      try { errorBody = await error.context?.json(); } catch {}
+      return { success: false, error: errorBody?.error || error.message || 'Failed to save reminder.' };
+    }
     if (data?.error) return { success: false, error: data.error };
     return { success: true };
   } catch (err) {

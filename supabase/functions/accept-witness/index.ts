@@ -43,8 +43,8 @@ Deno.serve(async (req) => {
 
     // Handle save-reminder (witness provides their phone for verdict-day SMS)
     if (action === 'save-reminder') {
-      // Only allow if vow is still active and witness has accepted
-      if (!['active', 'awaiting_verdict'].includes(vow.status) || !vow.witness_accepted_at) {
+      // Only allow if vow is active/sealed and witness has accepted
+      if (!['active', 'awaiting_verdict', 'sealed'].includes(vow.status) || !vow.witness_accepted_at) {
         return new Response(JSON.stringify({ error: 'cannot_save_reminder' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -63,8 +63,17 @@ Deno.serve(async (req) => {
     }
 
     // Check vow is in a state where acceptance makes sense
-    if (!['active', 'awaiting_verdict'].includes(vow.status)) {
+    // Include 'sealed' for race conditions where witness clicks before seal-vow completes
+    if (!['active', 'awaiting_verdict', 'sealed'].includes(vow.status)) {
       return new Response(JSON.stringify({ error: 'vow_not_active', status: vow.status }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Reject unrecognized actions (only accept/decline/save-reminder are valid)
+    if (action && action !== 'accept' && action !== 'decline') {
+      return new Response(JSON.stringify({ error: 'invalid_action' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -72,6 +81,14 @@ Deno.serve(async (req) => {
 
     // Handle decline
     if (action === 'decline') {
+      // Don't allow declining after already accepting
+      if (vow.witness_accepted_at) {
+        return new Response(JSON.stringify({ error: 'already_accepted' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       await supabase
         .from('vows')
         .update({ witness_declined: true })

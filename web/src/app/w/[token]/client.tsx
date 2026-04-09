@@ -2,12 +2,6 @@
 import { useState, useEffect } from 'react';
 import { DollarSign, Sparkles, Calendar, Eye, MessageCircle, Check, Phone } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
 
 interface Vow {
   id: string;
@@ -50,10 +44,16 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         ? `+1${digits}`
         : `+${digits}`;
     try {
-      const { error: fnError } = await supabase.functions.invoke('accept-witness', {
-        body: { token, action: 'save-reminder', phone: formatted, name: reminderName.trim() || undefined },
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/accept-witness`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+        },
+        body: JSON.stringify({ token, action: 'save-reminder', phone: formatted, name: reminderName.trim() || undefined }),
       });
-      if (!fnError) {
+      if (res.ok) {
         setReminderSaved(true);
       } else {
         setError('Could not save reminder. Please try again.');
@@ -76,11 +76,24 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     setBusy(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('accept-witness', {
-        body: { token, action: 'accept' },
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/accept-witness`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+        },
+        body: JSON.stringify({ token, action: 'accept' }),
       });
-      if (fnError) {
-        setError('Failed to accept. Please try again.');
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        const msg = data?.error === 'vow_not_active'
+          ? 'This vow is no longer active.'
+          : data?.error === 'invalid_token'
+            ? 'This invite link is no longer valid.'
+            : `Failed to accept. Please try again. (${data?.error || res.status})`;
+        console.error('[accept-witness] Error:', data);
+        setError(msg);
         setBusy(false);
         return;
       }
@@ -103,11 +116,19 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     setBusy(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('accept-witness', {
-        body: { token, action: 'decline' },
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/accept-witness`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+        },
+        body: JSON.stringify({ token, action: 'decline' }),
       });
-      if (fnError) {
-        setError('Failed to decline. Please try again.');
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        console.error('[accept-witness decline] Error:', data);
+        setError(`Failed to decline. Please try again. (${data?.error || res.status})`);
         setBusy(false);
         return;
       }
