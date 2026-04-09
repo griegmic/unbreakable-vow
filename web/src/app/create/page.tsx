@@ -111,9 +111,9 @@ export default function CreatePage() {
       return new Date(customDate + 'T23:59:59');
     }
     const preset = DEADLINE_PRESETS.find((p) => p.label === deadlineLabel);
-    if (!preset) return new Date(Date.now() + 7 * 86400000);
+    if (!preset) { const f = new Date(); f.setDate(f.getDate() + 7); f.setHours(23, 59, 59, 0); return f; }
     const days = preset.days();
-    if (days === -1) return new Date(Date.now() + 7 * 86400000);
+    if (days === -1) { const f = new Date(); f.setDate(f.getDate() + 7); f.setHours(23, 59, 59, 0); return f; }
     const d = new Date();
     d.setDate(d.getDate() + days);
     d.setHours(23, 59, 59, 0);

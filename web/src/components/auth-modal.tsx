@@ -100,12 +100,33 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
     if (busy) return;
     setBusy(true);
     setError('');
-    // Save current path so the auth callback can return here after OAuth
-    try { localStorage.setItem('auth-return-path', window.location.pathname); } catch {}
+    // Encode return path in the callback URL so it survives mobile Safari's
+    // localStorage clearing during cross-origin OAuth redirects.
+    let returnPath = window.location.pathname;
+    if (returnPath === '/') {
+      try {
+        const flow = localStorage.getItem('unbreakable-vow-flow');
+        if (flow) {
+          const parsed = JSON.parse(flow);
+          if (parsed.rawInput) returnPath = '/refine';
+        }
+      } catch {}
+    }
+    // Cookies survive cross-origin OAuth redirects (localStorage may be wiped in Safari/in-app browsers).
+    // Save return path AND the entire vow flow state so nothing is lost.
+    try { document.cookie = `auth_return_path=${encodeURIComponent(returnPath)}; path=/; max-age=300; SameSite=Lax`; } catch {}
+    try {
+      const flow = localStorage.getItem('unbreakable-vow-flow');
+      if (flow) document.cookie = `vow_flow_backup=${encodeURIComponent(flow)}; path=/; max-age=300; SameSite=Lax`;
+    } catch {}
+    // Also save to localStorage as fallback
+    try { localStorage.setItem('auth-return-path', returnPath); } catch {}
+    const callbackUrl = new URL('/auth/callback', window.location.origin);
+    callbackUrl.searchParams.set('return_to', returnPath);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.origin + '/auth/callback',
+        redirectTo: callbackUrl.toString(),
       },
     });
     // If we get here, the redirect didn't happen (error case)

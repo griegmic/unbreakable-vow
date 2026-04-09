@@ -11,7 +11,7 @@ export default function SentPage() {
   const router = useRouter();
   const { vow, activeVowText, isSelfWitness, resetVow } = useVowFlow();
 
-  const verdictInfo = getVowVerdictDate(activeVowText);
+  const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
   const [origin, setOrigin] = useState('');
   const witnessUrl = vow.witnessInviteToken && origin
     ? `${origin}/w/${vow.witnessInviteToken}`

@@ -263,13 +263,31 @@ export function extractDeadlineDate(input: string): string | null {
   return null;
 }
 
-export function getVowVerdictDate(input: string): { verdictLabel: string; endLabel: string; range: string; isCustomDate: boolean } {
+export function getVowVerdictDate(input: string, deadlineIso?: string | null): { verdictLabel: string; endLabel: string; range: string; isCustomDate: boolean } {
+  const formatShort = (date: Date): string => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const formatLong = (date: Date): string => date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  // 1. Use explicit deadline from flow state (most authoritative)
+  if (deadlineIso) {
+    const end = new Date(deadlineIso);
+    if (!isNaN(end.getTime())) {
+      const start = new Date();
+      return { verdictLabel: `Verdict on ${formatLong(end)}`, endLabel: formatLong(end), range: `${formatShort(start)} \u2013 ${formatShort(end)}`, isCustomDate: true };
+    }
+  }
+
+  // 2. Try to extract from vow text
   const deadlineDate = extractDeadlineDate(input);
   if (deadlineDate) {
     const start = new Date();
-    const formatShort = (date: Date): string => date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const parsed = new Date(`${deadlineDate}, ${start.getFullYear()}`);
+    if (!isNaN(parsed.getTime())) {
+      return { verdictLabel: `Verdict on ${formatLong(parsed)}`, endLabel: formatLong(parsed), range: `${formatShort(start)} \u2013 ${formatShort(parsed)}`, isCustomDate: true };
+    }
     return { verdictLabel: `Verdict on ${deadlineDate}`, endLabel: deadlineDate, range: `${formatShort(start)} \u2013 ${deadlineDate}`, isCustomDate: true };
   }
+
+  // 3. Default to 7-day window
   const dates = getVowDates();
   return { ...dates, isCustomDate: false };
 }

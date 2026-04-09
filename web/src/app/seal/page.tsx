@@ -12,6 +12,14 @@ import { getVowVerdictDate } from '@/lib/vow-logic';
 
 type SealStep = 'review' | 'auth' | 'payment' | 'sealing' | 'done';
 
+/** Ensure a public.users row exists before inserting a vow (foreign key requirement). */
+async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, email?: string) {
+  await supabase.from('users').upsert(
+    { id: userId, display_name: (meta?.full_name as string) || email?.split('@')[0] || null },
+    { onConflict: 'id', ignoreDuplicates: true },
+  );
+}
+
 export default function SealPage() {
   const router = useRouter();
   const { vow, activeVowText, isSelfWitness, setVowId } = useVowFlow();
@@ -77,6 +85,8 @@ export default function SealPage() {
       }
 
       if (!vowData) {
+        await ensurePublicUser(currentSession.user.id, currentSession.user.user_metadata, currentSession.user.email ?? undefined);
+
         const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
 
         const { data: newVow, error: vowError } = await supabase.from('vows').insert({
@@ -159,6 +169,8 @@ export default function SealPage() {
         if (existing) vowData = existing;
       }
       if (!vowData) {
+        await ensurePublicUser(currentSession.user.id, currentSession.user.user_metadata, currentSession.user.email ?? undefined);
+
         const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
         const { data: newVow, error: vowError } = await supabase.from('vows').insert({
           user_id: currentSession.user.id,
@@ -245,6 +257,8 @@ export default function SealPage() {
       }
 
       if (!vowData) {
+        await ensurePublicUser(currentSession.user.id, currentSession.user.user_metadata, currentSession.user.email ?? undefined);
+
         const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
 
         const { data: newVow, error: vowError } = await supabase.from('vows').insert({

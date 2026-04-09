@@ -10,6 +10,52 @@ import type { Database } from '@/lib/types';
 
 type VowRow = Database['public']['Tables']['vows']['Row'];
 
+function InProgressBanner() {
+  const router = useRouter();
+  const [flowTarget, setFlowTarget] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const flow = localStorage.getItem('unbreakable-vow-flow');
+      if (flow) {
+        const parsed = JSON.parse(flow);
+        if (parsed.rawInput && !parsed.vowId) {
+          setFlowTarget(parsed.refinedText ? '/seal' : '/refine');
+        }
+      }
+    } catch {}
+  }, []);
+
+  if (!flowTarget) return null;
+
+  return (
+    <button
+      onClick={() => router.push(flowTarget)}
+      className="w-full rounded-[18px] p-4 flex items-center gap-3 text-left transition-all active:scale-[0.98]"
+      style={{
+        backgroundColor: 'rgba(212,162,79,0.08)',
+        border: '1.5px solid var(--gold)',
+        boxShadow: '0 0 20px rgba(212,162,79,0.12)',
+      }}
+    >
+      <div
+        className="w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0"
+        style={{ backgroundColor: 'rgba(212,162,79,0.15)' }}
+      >
+        <ArrowLeft className="w-5 h-5" style={{ color: 'var(--gold-bright)' }} />
+      </div>
+      <div>
+        <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>
+          You have an unfinished vow
+        </span>
+        <span className="text-[13px]" style={{ color: 'var(--gold)' }}>
+          Tap to continue where you left off
+        </span>
+      </div>
+    </button>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { isAuthenticated, loading: authLoading, displayName } = useAuth();
@@ -200,7 +246,24 @@ export default function DashboardPage() {
       <FadeUp>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button onClick={() => router.back()} className="p-1 -ml-1">
+            <button
+              onClick={() => {
+                // If there's an in-progress vow, go back to it instead of browser history
+                // (browser history is polluted by the OAuth redirect chain)
+                try {
+                  const flow = localStorage.getItem('unbreakable-vow-flow');
+                  if (flow) {
+                    const parsed = JSON.parse(flow);
+                    if (parsed.rawInput) {
+                      router.push(parsed.vowId ? '/live' : parsed.refinedText ? '/seal' : '/refine');
+                      return;
+                    }
+                  }
+                } catch {}
+                router.back();
+              }}
+              className="p-1 -ml-1"
+            >
               <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
             </button>
             <HeaderBadge />
@@ -222,6 +285,9 @@ export default function DashboardPage() {
           </div>
         </div>
       </FadeUp>
+
+      {/* Resume in-progress vow banner */}
+      <InProgressBanner />
 
       {/* Stats */}
       <FadeUp delay={0.05}>
