@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { History, Settings } from 'lucide-react-native';
+import { ArrowLeft, History, Settings } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -391,6 +391,14 @@ export default function VowDashboard() {
     <View style={styles.headerArea}>
       {/* Nav row */}
       <View style={styles.navRow}>
+        <Pressable
+          style={styles.navBtn}
+          onPress={() => router.back()}
+          hitSlop={8}
+          accessibilityLabel="Back"
+        >
+          <ArrowLeft color={palette.textSecondary} size={20} />
+        </Pressable>
         <View style={{ flex: 1 }} />
         <Pressable
           style={styles.navBtn}
