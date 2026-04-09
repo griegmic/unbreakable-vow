@@ -421,6 +421,13 @@ export default function LivePage() {
             </div>
             <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
           </button>
+          <button
+            onClick={() => router.push('/?new=1')}
+            className="w-full rounded-[14px] min-h-[42px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
+            style={{ color: 'var(--gold-bright)' }}
+          >
+            <span className="text-[13px] font-semibold">+ Make another vow</span>
+          </button>
         </div>
       }
     >

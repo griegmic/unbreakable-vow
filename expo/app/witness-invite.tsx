@@ -184,6 +184,13 @@ export default function WitnessInviteScreen() {
   }
 
   if (screenState === 'error') {
+    // Dynamic title based on whether we loaded a vow in a resolved state
+    const resolvedStatus = remoteVow?.status;
+    const errorTitle = resolvedStatus === 'voided' ? 'Vow withdrawn'
+      : resolvedStatus === 'kept' ? 'Vow kept'
+      : resolvedStatus === 'broken' ? 'Vow broken'
+      : 'Vow not found';
+
     return (
       <RitualScreen>
         <Stack.Screen options={{ headerShown: false }} />
@@ -191,7 +198,7 @@ export default function WitnessInviteScreen() {
           <View style={styles.errorIconWrap}>
             <AlertCircle color={palette.warmAmber} size={32} />
           </View>
-          <Text style={styles.errorTitle}>Vow not found</Text>
+          <Text style={styles.errorTitle}>{errorTitle}</Text>
           <Text style={styles.errorBody}>{errorMsg}</Text>
         </View>
       </RitualScreen>
