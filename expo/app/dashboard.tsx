@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useFocusEffect } from 'expo-router';
-import { ArrowLeft, History, Settings } from 'lucide-react-native';
+import { History, Settings } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { palette, serifFont } from '@/constants/unbreakable';
 import { acceptChallenge, declineChallenge, getIncomingChallenges, getMyVows, getRecentVows, getWitnessingVows } from '@/lib/vow-api';
 import { useAuth } from '@/providers/auth-provider';
@@ -391,14 +392,7 @@ export default function VowDashboard() {
     <View style={styles.headerArea}>
       {/* Nav row */}
       <View style={styles.navRow}>
-        <Pressable
-          style={styles.navBtn}
-          onPress={() => router.back()}
-          hitSlop={8}
-          accessibilityLabel="Back"
-        >
-          <ArrowLeft color={palette.textSecondary} size={20} />
-        </Pressable>
+        <AppMenuButton style={styles.navBtn} />
         <View style={{ flex: 1 }} />
         <Pressable
           style={styles.navBtn}
