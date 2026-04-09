@@ -72,6 +72,7 @@ export default function VowDetailPage() {
   const [loading, setLoading] = useState(true);
   const [origin, setOrigin] = useState('');
   const [voiding, setVoiding] = useState(false);
+  const [voidError, setVoidError] = useState('');
   const [checkInCooldown, setCheckInCooldown] = useState(false);
   const [lastCheckInTime, setLastCheckInTime] = useState<Date | null>(null);
   const [timelineKey, setTimelineKey] = useState(0);
@@ -336,27 +337,37 @@ export default function VowDetailPage() {
             </button>
           )}
           {isMaker && !isTerminal && (
-            <button
-              disabled={voiding}
-              onClick={async () => {
-                if (!confirm('This will cancel your vow' + (vow.stake_amount > 0 ? ' and refund your stake' : '') + '. Continue?')) return;
-                setVoiding(true);
-                const { error } = await supabase.functions.invoke('void-vow', { body: { vow_id: vow.id } });
-                if (error) {
-                  alert('Failed to withdraw vow. Please try again.');
-                  setVoiding(false);
-                  return;
-                }
-                router.push('/dashboard');
-              }}
-              className="w-full min-h-[46px] rounded-[14px] flex items-center justify-center gap-2 transition-opacity"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', opacity: voiding ? 0.5 : 1 }}
-            >
-              <Ban className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
-                {voiding ? 'Withdrawing...' : 'Withdraw vow'}
-              </span>
-            </button>
+            <div className="flex flex-col gap-2">
+              <button
+                disabled={voiding}
+                onClick={async () => {
+                  if (!confirm('This will cancel your vow' + (vow.stake_amount > 0 ? ' and refund your stake' : '') + '. Continue?')) return;
+                  setVoiding(true);
+                  setVoidError('');
+                  // Refresh session to avoid expired JWT
+                  await supabase.auth.refreshSession();
+                  const { data, error } = await supabase.functions.invoke('void-vow', { body: { vow_id: vow.id } });
+                  if (error) {
+                    console.error('Withdraw failed:', error);
+                    const detail = typeof data === 'object' && data?.message ? data.message : error.message || 'Something went wrong';
+                    setVoidError(detail);
+                    setVoiding(false);
+                    return;
+                  }
+                  router.push('/dashboard');
+                }}
+                className="w-full min-h-[46px] rounded-[14px] flex items-center justify-center gap-2 transition-opacity"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', opacity: voiding ? 0.5 : 1 }}
+              >
+                <Ban className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                <span className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
+                  {voiding ? 'Withdrawing...' : 'Withdraw vow'}
+                </span>
+              </button>
+              {voidError && (
+                <p className="text-[13px] text-center" style={{ color: 'var(--danger)' }}>{voidError}</p>
+              )}
+            </div>
           )}
         </div>
       </FadeUp>
