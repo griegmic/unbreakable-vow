@@ -10,19 +10,22 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
 
-    // Check if we have vow flow state to return to
-    const hasVowState = (() => {
+    // Return to the page the user was on before OAuth, or fall back to vow flow check
+    const redirectTo = (() => {
       try {
+        const returnPath = localStorage.getItem('auth-return-path');
+        if (returnPath) {
+          localStorage.removeItem('auth-return-path');
+          return returnPath;
+        }
         const stored = sessionStorage.getItem('unbreakable-vow-flow');
         if (stored) {
           const parsed = JSON.parse(stored);
-          return !!parsed.rawInput;
+          if (parsed.rawInput) return '/seal';
         }
       } catch {}
-      return false;
+      return '/';
     })();
-
-    const redirectTo = hasVowState ? '/seal' : '/';
 
     const handleCallback = async () => {
       const { data: { session }, error: sessionError } = await supabase.auth.getSession();

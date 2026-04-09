@@ -100,6 +100,8 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
     if (busy) return;
     setBusy(true);
     setError('');
+    // Save current path so the auth callback can return here after OAuth
+    try { localStorage.setItem('auth-return-path', window.location.pathname); } catch {}
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
