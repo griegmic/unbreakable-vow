@@ -345,9 +345,11 @@ export default function VowDetailPage() {
                   setVoiding(true);
                   setVoidError('');
                   try {
-                    // Refresh session for fresh JWT
-                    const { data: { session: freshSession } } = await supabase.auth.refreshSession();
-                    if (!freshSession) {
+                    // Get a valid session — try refresh first, fall back to current
+                    const { data: refreshData, error: refreshErr } = await supabase.auth.refreshSession();
+                    const freshSession = refreshErr ? null : refreshData.session;
+                    const session = freshSession || (await supabase.auth.getSession()).data.session;
+                    if (!session) {
                       setVoidError('Session expired. Please sign in again.');
                       setVoiding(false);
                       return;
@@ -358,7 +360,7 @@ export default function VowDetailPage() {
                         method: 'POST',
                         headers: {
                           'Content-Type': 'application/json',
-                          'Authorization': `Bearer ${freshSession.access_token}`,
+                          'Authorization': `Bearer ${session.access_token}`,
                           'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
                         },
                         body: JSON.stringify({ vow_id: vow.id }),
