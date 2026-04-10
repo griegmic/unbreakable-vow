@@ -1,7 +1,7 @@
 'use client';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Share2, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Share2, ShieldCheck, ArrowRight, Camera } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -146,8 +146,7 @@ function VowKeptContent() {
       <RitualScreen
         footer={
           <>
-            <PrimaryButton label="Challenge a friend" onPress={() => router.push('/create')} />
-            <SecondaryButton label="Go again" onPress={() => router.push('/create')} />
+            <PrimaryButton label="Make a new vow" onPress={() => router.push('/create')} />
             <SecondaryButton label="View your record" onPress={() => router.push('/dashboard')} />
           </>
         }
@@ -178,7 +177,7 @@ function VowKeptContent() {
           <TitleBlock title={title} subtitle={subtitle} />
         </FadeUp>
 
-        {/* Trophy vow card — gold border */}
+        {/* Shareable receipt card — gold border */}
         <FadeUp delay={0.14}>
           <div
             style={{
@@ -192,6 +191,19 @@ function VowKeptContent() {
               gap: 14,
             }}
           >
+            {/* Header stamp */}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <span style={{
+                fontSize: 10,
+                fontWeight: 800,
+                letterSpacing: '3px',
+                color: 'var(--gold-bright)',
+                textTransform: 'uppercase',
+              }}>
+                VOW KEPT
+              </span>
+            </div>
+
             {/* Vow text in serif */}
             <p style={{
               fontSize: 17,
@@ -230,6 +242,19 @@ function VowKeptContent() {
                   </span>
                 </div>
               )}
+            </div>
+
+            {/* Watermark */}
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 2 }}>
+              <span style={{
+                fontSize: 10,
+                letterSpacing: '1px',
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                opacity: 0.5,
+              }}>
+                unbreakablevow.app
+              </span>
             </div>
           </div>
         </FadeUp>
@@ -294,6 +319,19 @@ function VowKeptContent() {
               </span>
             </div>
           </button>
+        </FadeUp>
+
+        {/* Screenshot hint */}
+        <FadeUp delay={0.26}>
+          <p style={{
+            fontSize: 12,
+            color: 'var(--text-muted)',
+            textAlign: 'center',
+            margin: 0,
+            opacity: 0.6,
+          }}>
+            Screenshot the card above to share as an image
+          </p>
         </FadeUp>
       </RitualScreen>
     </>

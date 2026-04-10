@@ -1,8 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { AlertTriangle, Share2 } from 'lucide-react-native';
-import React, { useEffect, useRef } from 'react';
-import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { AlertTriangle, Share2, Camera } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Alert, Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
@@ -16,6 +17,8 @@ function isAntiCause(destination: string): boolean {
 
 export default function VowBrokenScreen() {
   const { activeVowText, resetVow, vow, isSelfWitness, setRawInput } = useVowFlow();
+  const receiptRef = useRef<View>(null);
+  const [sharing, setSharing] = useState(false);
 
   const destination = vow.stake.destination;
   const amount = vow.stake.amount;
@@ -70,25 +73,44 @@ export default function VowBrokenScreen() {
     return "Broken. But you told the truth.";
   })();
 
-  const handleShare = async () => {
-    void Haptics.selectionAsync();
-    if (Platform.OS === 'web') return;
-
-    let text: string;
+  const getShareText = () => {
     if (isZeroStake) {
-      text = `I broke my vow: "${activeVowText}" — unbreakablevow.app`;
-    } else if (antiCause) {
-      text = `I broke my vow and just donated $${amount} to ${destination}. Don't be like me → unbreakablevow.app`;
-    } else {
-      text = `I broke my vow: "${activeVowText}" — $${amount} donated to ${destination}. unbreakablevow.app`;
+      return `I couldn't even keep a free vow: "${activeVowText}" — unbreakablevow.app`;
+    }
+    if (antiCause) {
+      return `I broke my vow and just donated $${amount} to ${destination}. Don't be like me → unbreakablevow.app`;
+    }
+    return `I broke my vow: "${activeVowText}" — $${amount} donated to ${destination}. unbreakablevow.app`;
+  };
+
+  const handleShare = useCallback(async () => {
+    if (sharing) return;
+    setSharing(true);
+    void Haptics.selectionAsync();
+
+    if (Platform.OS === 'web') {
+      setSharing(false);
+      return;
     }
 
     try {
-      await Share.share({ message: text });
+      const uri = await captureRef(receiptRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+      await Share.share({ url: uri, message: getShareText() });
     } catch {
-      console.log('[VowBroken] share failed');
+      // Fallback to text-only share
+      try {
+        await Share.share({ message: getShareText() });
+      } catch {
+        console.log('[VowBroken] share failed');
+      }
+    } finally {
+      setSharing(false);
     }
-  };
+  }, [sharing, activeVowText, amount, destination, antiCause, isZeroStake]);
 
   return (
     <RitualScreen
@@ -134,40 +156,52 @@ export default function VowBrokenScreen() {
         <TitleBlock title={title} subtitle={subtitle} />
       </Animated.View>
 
-      {/* Vow card with amber/red border accent + shake animation */}
+      {/* Shareable receipt card — capture via ViewShot */}
       <Animated.View style={{ opacity: contentFade, transform: [{ translateX: cardShakeX }] }}>
-        <RitualCard style={styles.vowCard}>
-          {/* Subtle BROKEN watermark */}
-          <View style={styles.brokenStamp} pointerEvents="none">
-            <Text style={styles.brokenStampText}>BROKEN</Text>
-          </View>
-
-          {/* Vow text in serif */}
-          <Text style={styles.vowText}>&ldquo;{activeVowText}&rdquo;</Text>
-
-          <View style={styles.rule} />
-
-          {/* Witness */}
-          {!isSelfWitness && (
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Witness</Text>
-              <Text style={styles.metaValue}>{vow.witnessName}</Text>
+        <View ref={receiptRef} collapsable={false}>
+          <RitualCard style={styles.vowCard}>
+            {/* Subtle BROKEN watermark */}
+            <View style={styles.brokenStamp} pointerEvents="none">
+              <Text style={styles.brokenStampText}>BROKEN</Text>
             </View>
-          )}
 
-          {/* Payment line or accountability line */}
-          {!isZeroStake ? (
-            <View style={styles.paymentLine}>
-              <Text style={styles.paymentText}>
-                ${amount} → {destination} · Processed ✓
-              </Text>
+            {/* Header stamp */}
+            <View style={styles.headerStamp}>
+              <Text style={styles.headerStampTextBroken}>VOW BROKEN</Text>
             </View>
-          ) : (
-            <View style={styles.paymentLine}>
-              <Text style={styles.accountabilityText}>Accountability only</Text>
+
+            {/* Vow text in serif */}
+            <Text style={styles.vowText}>&ldquo;{activeVowText}&rdquo;</Text>
+
+            <View style={styles.rule} />
+
+            {/* Witness */}
+            {!isSelfWitness && (
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Witness</Text>
+                <Text style={styles.metaValue}>{vow.witnessName}</Text>
+              </View>
+            )}
+
+            {/* Payment line or accountability line */}
+            {!isZeroStake ? (
+              <View style={styles.paymentLine}>
+                <Text style={styles.paymentText}>
+                  ${amount} → {destination} · Processed ✓
+                </Text>
+              </View>
+            ) : (
+              <View style={styles.paymentLine}>
+                <Text style={styles.accountabilityText}>Accountability only</Text>
+              </View>
+            )}
+
+            {/* Watermark */}
+            <View style={styles.watermarkRow}>
+              <Text style={styles.watermarkText}>unbreakablevow.app</Text>
             </View>
-          )}
-        </RitualCard>
+          </RitualCard>
+        </View>
       </Animated.View>
 
       {/* Share section */}
@@ -302,5 +336,26 @@ const styles = StyleSheet.create({
   },
   shareTextAnti: {
     color: '#FF7B7B',
+  },
+  headerStamp: {
+    alignItems: 'center',
+  },
+  headerStampTextBroken: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 3,
+    color: '#FF7B7B',
+    textTransform: 'uppercase',
+  },
+  watermarkRow: {
+    alignItems: 'center',
+    paddingTop: 2,
+  },
+  watermarkText: {
+    fontSize: 10,
+    letterSpacing: 1,
+    fontWeight: '600',
+    color: palette.textMuted,
+    opacity: 0.5,
   },
 });

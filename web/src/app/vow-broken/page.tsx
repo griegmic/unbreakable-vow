@@ -1,7 +1,7 @@
 'use client';
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Share2, AlertTriangle, RotateCcw, Users, ClipboardList } from 'lucide-react';
+import { Share2, AlertTriangle, Camera } from 'lucide-react';
 import { RitualScreen, TitleBlock, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
 
 const ANTI_CAUSES = ['Donald Trump', 'NRA', 'Flat Earth Society'];
@@ -21,6 +21,7 @@ function VowBrokenContent() {
   const isZeroStake = !amount || amount === '0';
   const antiCause = isAntiCause(destination);
   const [copied, setCopied] = useState(false);
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   const firstName = selfWitness ? 'You' : (witness.split(' ')[0] || 'Your witness');
 
@@ -38,7 +39,7 @@ function VowBrokenContent() {
 
   const getShareText = () => {
     if (isZeroStake) {
-      return `I broke my vow: "${vowText}" — unbreakablevow.app`;
+      return `I couldn't even keep a free vow: "${vowText}" — unbreakablevow.app`;
     }
     if (antiCause) {
       return `I broke my vow and just donated $${amount} to ${destination}. Don't be like me → unbreakablevow.app`;
@@ -104,89 +105,122 @@ function VowBrokenContent() {
         <TitleBlock title={title} subtitle={subtitle} />
       </FadeUp>
 
-      {/* Vow card with amber/red border */}
+      {/* Shareable receipt card — gradient border via wrapper */}
       <FadeUp delay={0.1}>
         <div
+          ref={receiptRef}
           className="vow-broken-card"
           style={{
-            backgroundColor: 'var(--surface)',
-            border: '1px solid',
-            borderImage: 'linear-gradient(135deg, var(--warm-amber), #FF7B7B) 1',
+            background: 'linear-gradient(135deg, var(--warm-amber), #FF7B7B)',
             borderRadius: 22,
-            padding: '24px 20px',
+            padding: 1,
             boxShadow: '0 16px 28px rgba(0,0,0,0.26), 0 0 0 1px rgba(255,123,123,0.12)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 14,
-            position: 'relative',
-            overflow: 'hidden',
           }}
         >
-          {/* Subtle BROKEN watermark */}
-          <div style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%) rotate(-18deg)',
-            fontSize: 48,
-            fontWeight: 900,
-            letterSpacing: '6px',
-            color: 'rgba(255,123,123,0.06)',
-            textTransform: 'uppercase',
-            pointerEvents: 'none',
-            userSelect: 'none',
-            whiteSpace: 'nowrap',
-          }}>
-            BROKEN
-          </div>
-
-          {/* Vow text in serif */}
-          <p style={{
-            fontSize: 18,
-            fontFamily: 'var(--font-serif, Georgia, serif)',
-            fontWeight: 500,
-            color: 'var(--text)',
-            textAlign: 'center',
-            lineHeight: '28px',
-            margin: 0,
-            position: 'relative',
-          }}>
-            &ldquo;{vowText}&rdquo;
-          </p>
-
-          {/* Divider */}
-          <div style={{ width: '100%', height: 1, backgroundColor: 'var(--border)' }} />
-
-          {/* Witness */}
-          {witness && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Witness</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{witness}</span>
+          <div
+            style={{
+              backgroundColor: 'var(--surface)',
+              borderRadius: 21,
+              padding: '24px 20px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 14,
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            {/* Subtle BROKEN watermark */}
+            <div style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%) rotate(-18deg)',
+              fontSize: 48,
+              fontWeight: 900,
+              letterSpacing: '6px',
+              color: 'rgba(255,123,123,0.06)',
+              textTransform: 'uppercase',
+              pointerEvents: 'none',
+              userSelect: 'none',
+              whiteSpace: 'nowrap',
+            }}>
+              BROKEN
             </div>
-          )}
 
-          {/* Payment line (staked) or accountability line ($0) */}
-          {!isZeroStake ? (
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
-              <span style={{
-                fontSize: 14,
-                fontWeight: 700,
-                color: 'var(--warm-amber)',
-              }}>
-                ${amount} → {destination} · Processed ✓
-              </span>
-            </div>
-          ) : (
+            {/* Header stamp */}
             <div style={{ display: 'flex', justifyContent: 'center' }}>
               <span style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: 'var(--text-muted)',
+                fontSize: 10,
+                fontWeight: 800,
+                letterSpacing: '3px',
+                color: '#FF7B7B',
+                textTransform: 'uppercase',
               }}>
-                Accountability only
+                VOW BROKEN
               </span>
             </div>
-          )}
+
+            {/* Vow text in serif */}
+            <p style={{
+              fontSize: 18,
+              fontFamily: 'var(--font-serif, Georgia, serif)',
+              fontWeight: 500,
+              color: 'var(--text)',
+              textAlign: 'center',
+              lineHeight: '28px',
+              margin: 0,
+              position: 'relative',
+            }}>
+              &ldquo;{vowText}&rdquo;
+            </p>
+
+            {/* Divider */}
+            <div style={{ width: '100%', height: 1, backgroundColor: 'var(--border)' }} />
+
+            {/* Witness */}
+            {witness && !selfWitness && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Witness</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{witness}</span>
+              </div>
+            )}
+
+            {/* Payment line (staked) or accountability line ($0) */}
+            {!isZeroStake ? (
+              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+                <span style={{
+                  fontSize: 14,
+                  fontWeight: 700,
+                  color: 'var(--warm-amber)',
+                }}>
+                  ${amount} → {destination} · Processed ✓
+                </span>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
+                <span style={{
+                  fontSize: 14,
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                }}>
+                  Accountability only
+                </span>
+              </div>
+            )}
+
+            {/* Watermark */}
+            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 2 }}>
+              <span style={{
+                fontSize: 10,
+                letterSpacing: '1px',
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+                opacity: 0.5,
+              }}>
+                unbreakablevow.app
+              </span>
+            </div>
+          </div>
         </div>
       </FadeUp>
 
@@ -205,6 +239,19 @@ function VowBrokenContent() {
             {copied ? 'Copied!' : 'Share the damage'}
           </span>
         </button>
+      </FadeUp>
+
+      {/* Screenshot hint */}
+      <FadeUp delay={0.18}>
+        <p style={{
+          fontSize: 12,
+          color: 'var(--text-muted)',
+          textAlign: 'center',
+          margin: 0,
+          opacity: 0.6,
+        }}>
+          Screenshot the receipt above to share as an image
+        </p>
       </FadeUp>
 
       {/* CSS shake animation */}

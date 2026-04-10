@@ -1,8 +1,9 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { ShieldCheck, Share2, ArrowRight } from 'lucide-react-native';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Linking, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
@@ -14,6 +15,8 @@ type VowRow = Database['public']['Tables']['vows']['Row'];
 
 export default function VowKeptScreen() {
   const { activeVowText, resetVow, vow, isSelfWitness } = useVowFlow();
+  const receiptRef = useRef<View>(null);
+  const [sharing, setSharing] = useState(false);
   const [keptCount, setKeptCount] = useState(0);
   const [streak, setStreak] = useState(0);
 
@@ -92,20 +95,38 @@ export default function VowKeptScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleShare = async () => {
-    void Haptics.selectionAsync();
-    const shareText = isZeroStake
-      ? `I kept my Unbreakable Vow: "${activeVowText}" 🔥 ${streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`
-      : `I kept my Unbreakable Vow: "${activeVowText}" — $${vow.stake.amount} protected. 🔥 ${streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`;
+  const getShareText = () => isZeroStake
+    ? `I kept my Unbreakable Vow: "${activeVowText}" 🔥 ${streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`
+    : `I kept my Unbreakable Vow: "${activeVowText}" — $${vow.stake.amount} protected. 🔥 ${streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`;
 
-    if (Platform.OS !== 'web') {
+  const handleShare = useCallback(async () => {
+    if (sharing) return;
+    setSharing(true);
+    void Haptics.selectionAsync();
+
+    if (Platform.OS === 'web') {
+      setSharing(false);
+      return;
+    }
+
+    try {
+      const uri = await captureRef(receiptRef, {
+        format: 'png',
+        quality: 1,
+        result: 'tmpfile',
+      });
+      await Share.share({ url: uri, message: getShareText() });
+    } catch {
+      // Fallback to text-only
       try {
-        await Share.share({ message: shareText });
+        await Share.share({ message: getShareText() });
       } catch {
         console.log('[VowKept] share failed');
       }
+    } finally {
+      setSharing(false);
     }
-  };
+  }, [sharing, activeVowText, vow.stake.amount, streak, isZeroStake]);
 
   const handleDonate = () => {
     const url = `https://www.google.com/search?q=donate+${encodeURIComponent(destination)}`;
@@ -127,15 +148,7 @@ export default function VowKeptScreen() {
             testID="kept-share"
           />
           <SecondaryButton
-            label="Challenge a friend"
-            onPress={() => {
-              resetVow();
-              router.replace('/');
-            }}
-            testID="kept-challenge"
-          />
-          <SecondaryButton
-            label="Go again"
+            label="Make a new vow"
             onPress={() => {
               resetVow();
               router.replace('/');
@@ -161,35 +174,47 @@ export default function VowKeptScreen() {
         <TitleBlock title={title} subtitle={subtitle} />
       </Animated.View>
 
-      {/* Trophy vow card — gold border */}
+      {/* Shareable receipt card — capture via ViewShot */}
       <Animated.View style={{ opacity: contentFade }}>
-        <RitualCard>
-          <View style={styles.trophyCardInner}>
-            {/* Vow text in serif */}
-            <Text style={styles.vowText}>&ldquo;{activeVowText}&rdquo;</Text>
-
-            {/* Divider */}
-            <View style={styles.rule} />
-
-            {/* Meta rows */}
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Witness</Text>
-              <Text style={styles.metaValue}>{isSelfWitness ? 'Self' : vow.witnessName}</Text>
-            </View>
-            <View style={styles.metaRow}>
-              <Text style={styles.metaLabel}>Stake</Text>
-              <Text style={styles.metaValueSuccess}>
-                {isZeroStake ? 'Accountability only' : `$${vow.stake.amount} saved`}
-              </Text>
-            </View>
-            {streak > 0 && (
-              <View style={styles.metaRow}>
-                <Text style={styles.metaLabel}>Streak</Text>
-                <Text style={styles.streakValue}>🔥 {streak} in a row</Text>
+        <View ref={receiptRef} collapsable={false}>
+          <RitualCard>
+            <View style={styles.trophyCardInner}>
+              {/* Header stamp */}
+              <View style={styles.headerStamp}>
+                <Text style={styles.headerStampTextKept}>VOW KEPT</Text>
               </View>
-            )}
-          </View>
-        </RitualCard>
+
+              {/* Vow text in serif */}
+              <Text style={styles.vowText}>&ldquo;{activeVowText}&rdquo;</Text>
+
+              {/* Divider */}
+              <View style={styles.rule} />
+
+              {/* Meta rows */}
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Witness</Text>
+                <Text style={styles.metaValue}>{isSelfWitness ? 'Self' : vow.witnessName}</Text>
+              </View>
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Stake</Text>
+                <Text style={styles.metaValueSuccess}>
+                  {isZeroStake ? 'Accountability only' : `$${vow.stake.amount} saved`}
+                </Text>
+              </View>
+              {streak > 0 && (
+                <View style={styles.metaRow}>
+                  <Text style={styles.metaLabel}>Streak</Text>
+                  <Text style={styles.streakValue}>🔥 {streak} in a row</Text>
+                </View>
+              )}
+
+              {/* Watermark */}
+              <View style={styles.watermarkRow}>
+                <Text style={styles.watermarkText}>unbreakablevow.app</Text>
+              </View>
+            </View>
+          </RitualCard>
+        </View>
       </Animated.View>
 
       {/* Pay it forward section — staked vows with destination only */}
@@ -294,5 +319,26 @@ const styles = StyleSheet.create({
     color: palette.goldBright,
     fontSize: 14,
     fontWeight: '600',
+  },
+  headerStamp: {
+    alignItems: 'center',
+  },
+  headerStampTextKept: {
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 3,
+    color: palette.goldBright,
+    textTransform: 'uppercase',
+  },
+  watermarkRow: {
+    alignItems: 'center',
+    paddingTop: 2,
+  },
+  watermarkText: {
+    fontSize: 10,
+    letterSpacing: 1,
+    fontWeight: '600',
+    color: palette.textMuted,
+    opacity: 0.5,
   },
 });
