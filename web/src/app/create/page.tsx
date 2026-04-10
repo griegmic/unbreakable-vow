@@ -14,7 +14,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import {
   analyzeVow, generateSuggestion, charities, antiCauses,
-  consequenceOptions, type ConsequenceType,
+  type ConsequenceType,
 } from '@/lib/vow-logic';
 
 /** Ensure a public.users row exists before inserting a vow (foreign key requirement). */
@@ -114,6 +114,11 @@ export default function CreatePage() {
           if (unique.length >= 5) break;
         }
         setRecentWitnesses(unique);
+        // Pre-select last witness for returning users
+        if (unique.length > 0 && !witnessName) {
+          setWitnessName(unique[0].name);
+          setWitnessPhone(unique[0].phone);
+        }
       }
 
       // Vow count for oath copy
@@ -349,7 +354,12 @@ export default function CreatePage() {
                 setSealed(false);
                 setVowId(null);
                 setWitnessToken(null);
+                setClientSecret(null);
                 setVowText('');
+                setSuggestion('');
+                setWitnessName('');
+                setWitnessPhone('');
+                setShowNewWitness(false);
                 setOathChecked(false);
                 setError('');
               }}
@@ -451,12 +461,19 @@ export default function CreatePage() {
     <>
       <RitualScreen
         footer={
-          <PrimaryButton
-            label={stakeAmount > 0 ? `Seal vow & pay $${stakeAmount}` : 'Seal this vow'}
-            onPress={handleSeal}
-            disabled={!oathChecked || !vowText.trim()}
-            loading={sealing}
-          />
+          <div>
+            <PrimaryButton
+              label="Seal this vow"
+              onPress={handleSeal}
+              disabled={!oathChecked || !vowText.trim()}
+              loading={sealing}
+            />
+            {stakeAmount > 0 && (
+              <p className="text-center text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                ${stakeAmount} held until verdict
+              </p>
+            )}
+          </div>
         }
       >
         {/* Back to Dashboard */}
@@ -476,20 +493,20 @@ export default function CreatePage() {
             className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
             style={{ color: 'var(--text)' }}
           >
-            QuickVow
+            New Vow
           </h1>
         </FadeUp>
 
         {/* Vow text input */}
         <FadeUp delay={0.1}>
           <RitualCard>
-            <SectionLabel>What are you committing to?</SectionLabel>
+            <SectionLabel>Your vow</SectionLabel>
             <div className="relative">
               <textarea
                 ref={textareaRef}
                 value={vowText}
                 onChange={(e) => setVowText(e.target.value)}
-                placeholder="e.g. Go to the gym 3x this week"
+                placeholder="I will..."
                 rows={3}
                 className="w-full bg-transparent text-[16px] leading-[24px] outline-none resize-none"
                 style={{ color: 'var(--text)' }}
@@ -542,7 +559,7 @@ export default function CreatePage() {
         {/* Vow type toggle */}
         <FadeUp delay={0.15}>
           <RitualCard>
-            <SectionLabel>Who is this vow for?</SectionLabel>
+            <SectionLabel>Vow type</SectionLabel>
             <div className="flex flex-wrap">
               <ChoiceChip label="Me" active={vowType === 'self'} onPress={() => setLocalVowType('self')} />
               <ChoiceChip label="Someone else" active={vowType === 'challenge'} onPress={() => setLocalVowType('challenge')} />
@@ -555,7 +572,7 @@ export default function CreatePage() {
           <RitualCard>
             {vowType === 'self' ? (
               <>
-                <SectionLabel>Witness (optional)</SectionLabel>
+                <SectionLabel>Your witness</SectionLabel>
                 {recentWitnesses.length > 0 && !showNewWitness && (
                   <div className="flex flex-wrap">
                     {recentWitnesses.map((w) => (
@@ -596,7 +613,7 @@ export default function CreatePage() {
               </>
             ) : (
               <>
-                <SectionLabel>Who are you challenging?</SectionLabel>
+                <SectionLabel>Your target</SectionLabel>
                 <div className="flex flex-col gap-2">
                   <input
                     type="text"
@@ -628,7 +645,7 @@ export default function CreatePage() {
               {STAKE_OPTIONS.map((amt) => (
                 <ChoiceChip
                   key={amt}
-                  label={amt === 0 ? '$0 (free)' : `$${amt}`}
+                  label={amt === 0 ? '$0' : `$${amt}`}
                   active={stakeAmount === amt}
                   onPress={() => setStakeAmount(amt)}
                 />
@@ -638,17 +655,46 @@ export default function CreatePage() {
             {stakeAmount > 0 && (
               <>
                 <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-                <SectionLabel>If you break your vow, money goes to...</SectionLabel>
-                <div className="flex flex-wrap">
-                  {consequenceOptions.map((opt) => (
-                    <ChoiceChip
-                      key={opt.id}
-                      label={opt.label}
-                      active={consequence === opt.id}
-                      onPress={() => setConsequence(opt.id)}
-                    />
-                  ))}
+
+                {/* Consequence sentence */}
+                <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
+                  If you break this vow,{' '}
+                  <span
+                    className="font-bold font-serif text-[17px]"
+                    style={{ color: 'var(--gold)' }}
+                  >
+                    ${stakeAmount} goes to {destination}.
+                  </span>
+                </p>
+
+                {/* Toggle: A good cause / An anti-cause */}
+                <div
+                  className="flex rounded-xl overflow-hidden"
+                  style={{ border: '1px solid var(--border)' }}
+                >
+                  <button
+                    onClick={() => setConsequence('charity')}
+                    className="flex-1 py-2.5 text-center text-[13px] font-semibold transition-colors"
+                    style={{
+                      backgroundColor: consequence === 'charity' ? 'rgba(212,162,79,0.12)' : 'transparent',
+                      color: consequence === 'charity' ? 'var(--gold-bright)' : 'var(--text-muted)',
+                    }}
+                  >
+                    A good cause
+                  </button>
+                  <button
+                    onClick={() => setConsequence('anti')}
+                    className="flex-1 py-2.5 text-center text-[13px] font-semibold transition-colors"
+                    style={{
+                      backgroundColor: consequence === 'anti' ? 'rgba(212,162,79,0.12)' : 'transparent',
+                      color: consequence === 'anti' ? 'var(--gold-bright)' : 'var(--text-muted)',
+                    }}
+                  >
+                    An anti-cause
+                  </button>
                 </div>
+
+                {/* Destination chips */}
                 <div className="flex flex-wrap">
                   {destinations.map((d) => (
                     <ChoiceChip
@@ -659,6 +705,13 @@ export default function CreatePage() {
                     />
                   ))}
                 </div>
+
+                {/* Flavor text — anti-cause only */}
+                {consequence === 'anti' && (
+                  <p className="text-[12px] italic" style={{ color: 'var(--text-muted)' }}>
+                    Maximum pain. Maximum motivation.
+                  </p>
+                )}
               </>
             )}
           </RitualCard>
@@ -712,7 +765,7 @@ export default function CreatePage() {
           <OathCheckbox
             checked={oathChecked}
             onChange={setOathChecked}
-            label={vowCount >= 2 ? "I mean it." : "I solemnly swear to honor this vow and accept the consequences."}
+            label={vowCount >= 2 ? "I swear it." : "I solemnly swear to keep this vow — or pay the price."}
           />
         </FadeUp>
 
@@ -740,15 +793,27 @@ export default function CreatePage() {
         <PaymentModal
           clientSecret={clientSecret}
           onSuccess={handlePaymentSuccess}
-          onCancel={() => { setShowPayment(false); setSealing(false); }}
-          onSkip={async () => {
+          onCancel={async () => {
+            setShowPayment(false);
+            setSealing(false);
+            // Void the orphaned draft vow to prevent leaks
             if (vowId) {
-              await supabase.from('vows').update({
-                stripe_payment_intent_id: null,
-                stake_amount: 0,
-              }).eq('id', vowId);
+              try {
+                const { data: { session: s } } = await supabase.auth.getSession();
+                if (s) {
+                  await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/void-vow`, {
+                    method: 'POST',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      'Authorization': `Bearer ${s.access_token}`,
+                      'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                    },
+                    body: JSON.stringify({ vow_id: vowId }),
+                  });
+                }
+              } catch {}
+              setVowId(null);
             }
-            handlePaymentSuccess();
           }}
         />
       )}

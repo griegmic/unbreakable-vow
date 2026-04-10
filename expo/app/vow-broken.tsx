@@ -1,41 +1,56 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowRight, CircleDollarSign, ReceiptText } from 'lucide-react-native';
+import { AlertTriangle, Share2 } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { palette } from '@/constants/unbreakable';
+import { palette, serifFont } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
+const ANTI_CAUSES = ['Donald Trump', 'NRA', 'Flat Earth Society'];
+
+function isAntiCause(destination: string): boolean {
+  return ANTI_CAUSES.some(c => destination.toLowerCase().includes(c.toLowerCase()));
+}
+
 export default function VowBrokenScreen() {
-  const { activeVowText, resetVow, vow, isSelfWitness } = useVowFlow();
+  const { activeVowText, resetVow, vow, isSelfWitness, setRawInput } = useVowFlow();
 
   const destination = vow.stake.destination;
+  const amount = vow.stake.amount;
+  const isZeroStake = amount === 0;
+  const antiCause = isAntiCause(destination);
 
   const firstName = isSelfWitness ? 'You' : vow.witnessName.split(' ')[0];
 
   const alertScale = useRef(new Animated.Value(0.5)).current;
   const alertOpacity = useRef(new Animated.Value(0)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
-  const receiptSlide = useRef(new Animated.Value(20)).current;
-  const receiptFade = useRef(new Animated.Value(0)).current;
+  const cardShakeX = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     console.log('[VowBrokenScreen] vow broken, destination:', destination);
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
 
     Animated.sequence([
+      // Scale in the alert icon
       Animated.parallel([
         Animated.spring(alertScale, { toValue: 1, useNativeDriver: true, speed: 10, bounciness: 8 }),
         Animated.timing(alertOpacity, { toValue: 1, duration: 350, useNativeDriver: true }),
       ]),
+      // Fade in content
       Animated.timing(contentFade, { toValue: 1, duration: 400, useNativeDriver: true }),
-      Animated.parallel([
-        Animated.timing(receiptFade, { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.timing(receiptSlide, { toValue: 0, duration: 350, useNativeDriver: true }),
-      ]),
-    ]).start();
+    ]).start(() => {
+      // Shake the card after content is visible
+      Animated.sequence([
+        Animated.timing(cardShakeX, { toValue: -3, duration: 50, useNativeDriver: true }),
+        Animated.timing(cardShakeX, { toValue: 3, duration: 50, useNativeDriver: true }),
+        Animated.timing(cardShakeX, { toValue: -2, duration: 50, useNativeDriver: true }),
+        Animated.timing(cardShakeX, { toValue: 2, duration: 50, useNativeDriver: true }),
+        Animated.timing(cardShakeX, { toValue: 0, duration: 50, useNativeDriver: true }),
+      ]).start();
+    });
 
     setTimeout(() => {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
@@ -43,76 +58,136 @@ export default function VowBrokenScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const title = isSelfWitness ? 'You took the L.' : `${firstName} called it.`;
+
+  const subtitle = (() => {
+    if (antiCause && !isZeroStake) {
+      return `Yeah... $${amount} just went to ${destination}. Time for a redemption arc.`;
+    }
+    if (!isZeroStake) {
+      return `$${amount} → ${destination}. Honesty noted.`;
+    }
+    return "Broken. But you told the truth.";
+  })();
+
+  const handleShare = async () => {
+    void Haptics.selectionAsync();
+    if (Platform.OS === 'web') return;
+
+    let text: string;
+    if (isZeroStake) {
+      text = `I broke my vow: "${activeVowText}" — unbreakablevow.app`;
+    } else if (antiCause) {
+      text = `I broke my vow and just donated $${amount} to ${destination}. Don't be like me → unbreakablevow.app`;
+    } else {
+      text = `I broke my vow: "${activeVowText}" — $${amount} donated to ${destination}. unbreakablevow.app`;
+    }
+
+    try {
+      await Share.share({ message: text });
+    } catch {
+      console.log('[VowBroken] share failed');
+    }
+  };
+
   return (
     <RitualScreen
       footer={
         <>
           <PrimaryButton
-            label="Make a redemption vow"
+            label="Double down"
+            onPress={() => {
+              const textToKeep = activeVowText;
+              resetVow();
+              setRawInput(textToKeep);
+              router.replace('/');
+            }}
+            testID="broken-double-down"
+          />
+          <SecondaryButton
+            label="Challenge a friend"
             onPress={() => {
               resetVow();
               router.replace('/');
             }}
-            testID="broken-new-vow"
+            testID="broken-challenge"
           />
-          <SecondaryButton label="View your record" onPress={() => router.push('/history')} testID="broken-history" />
+          <SecondaryButton
+            label="View your record"
+            onPress={() => router.push('/history')}
+            testID="broken-history"
+          />
         </>
       }
     >
       <Stack.Screen options={{ headerShown: false }} />
 
+      {/* Dramatic icon — animated scale-in */}
       <View style={styles.alertWrap}>
         <Animated.View style={[styles.alertBadge, { opacity: alertOpacity, transform: [{ scale: alertScale }] }]}>
-          <CircleDollarSign color={palette.warmAmber} size={28} />
+          <AlertTriangle color="#FF7B7B" size={32} />
         </Animated.View>
       </View>
 
+      {/* Title + subtitle */}
       <Animated.View style={{ opacity: contentFade }}>
-        <TitleBlock
-          title={isSelfWitness ? 'You were honest.' : `${firstName} called it.`}
-          subtitle={vow.stake.amount > 0 ? `$${vow.stake.amount} goes to ${destination}.` : 'The vow was broken. The record stands.'}
-        />
+        <TitleBlock title={title} subtitle={subtitle} />
       </Animated.View>
 
-      <Animated.View style={{ opacity: contentFade }}>
-        <RitualCard>
-          <Text style={styles.vowText}>{activeVowText}</Text>
+      {/* Vow card with amber/red border accent + shake animation */}
+      <Animated.View style={{ opacity: contentFade, transform: [{ translateX: cardShakeX }] }}>
+        <RitualCard style={styles.vowCard}>
+          {/* Subtle BROKEN watermark */}
+          <View style={styles.brokenStamp} pointerEvents="none">
+            <Text style={styles.brokenStampText}>BROKEN</Text>
+          </View>
+
+          {/* Vow text in serif */}
+          <Text style={styles.vowText}>&ldquo;{activeVowText}&rdquo;</Text>
+
           <View style={styles.rule} />
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Witness</Text>
-            <Text style={styles.metaValue}>{vow.witnessName}</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Stake</Text>
-            <Text style={styles.metaValueAmber}>Donated to {destination}</Text>
-          </View>
+
+          {/* Witness */}
+          {!isSelfWitness && (
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Witness</Text>
+              <Text style={styles.metaValue}>{vow.witnessName}</Text>
+            </View>
+          )}
+
+          {/* Payment line or accountability line */}
+          {!isZeroStake ? (
+            <View style={styles.paymentLine}>
+              <Text style={styles.paymentText}>
+                ${amount} → {destination} · Processed ✓
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.paymentLine}>
+              <Text style={styles.accountabilityText}>Accountability only</Text>
+            </View>
+          )}
         </RitualCard>
       </Animated.View>
 
-      <Animated.View style={{ opacity: receiptFade, transform: [{ translateY: receiptSlide }] }}>
-        <RitualCard style={styles.receiptCard}>
-          <View style={styles.receiptHeader}>
-            <ReceiptText color={palette.textSecondary} size={18} />
-            <Text style={styles.receiptTitle}>Settlement</Text>
-          </View>
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Amount</Text>
-            <Text style={styles.receiptValue}>${vow.stake.amount}</Text>
-          </View>
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Donated to</Text>
-            <Text style={styles.receiptValue}>{destination}</Text>
-          </View>
-          <View style={styles.receiptRow}>
-            <Text style={styles.receiptLabel}>Status</Text>
-            <Text style={styles.receiptValueAmber}>Payment processed</Text>
-          </View>
-        </RitualCard>
-      </Animated.View>
-
-      <Animated.View style={[styles.redemptionHint, { opacity: receiptFade }]}>
-        <ArrowRight color={palette.goldBright} size={14} />
-        <Text style={styles.redemptionText}>Make a new vow. Come back stronger.</Text>
+      {/* Share section */}
+      <Animated.View style={[styles.shareRow, { opacity: contentFade }]}>
+        <Pressable
+          onPress={handleShare}
+          style={[
+            styles.shareButton,
+            antiCause && !isZeroStake ? styles.shareButtonAnti : null,
+          ]}
+          testID="broken-share"
+        >
+          <Share2 color={antiCause && !isZeroStake ? '#FF7B7B' : palette.goldBright} size={16} />
+          <Text style={[
+            styles.shareText,
+            antiCause && !isZeroStake ? styles.shareTextAnti : null,
+          ]}>
+            Share the damage
+          </Text>
+        </Pressable>
       </Animated.View>
     </RitualScreen>
   );
@@ -130,20 +205,44 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.warmAmberMuted,
+    backgroundColor: 'rgba(255,123,123,0.14)',
     borderWidth: 1,
-    borderColor: palette.warmAmberBorder,
-    shadowColor: palette.warmAmber,
+    borderColor: 'rgba(255,123,123,0.28)',
+    shadowColor: '#FF7B7B',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.2,
     shadowRadius: 20,
     elevation: 8,
   },
+  vowCard: {
+    borderColor: palette.warmAmber,
+    borderWidth: 1.5,
+    overflow: 'hidden',
+  },
+  brokenStamp: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ rotate: '-18deg' }],
+  },
+  brokenStampText: {
+    fontSize: 48,
+    fontWeight: '900',
+    letterSpacing: 6,
+    color: 'rgba(255,123,123,0.06)',
+    textTransform: 'uppercase',
+  },
   vowText: {
     color: palette.text,
     fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '600' as const,
+    lineHeight: 28,
+    fontWeight: '500',
+    fontFamily: serifFont,
+    textAlign: 'center',
   },
   rule: {
     height: 1,
@@ -161,59 +260,47 @@ const styles = StyleSheet.create({
   metaValue: {
     color: palette.text,
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '600',
   },
-  metaValueAmber: {
+  paymentLine: {
+    alignItems: 'center',
+  },
+  paymentText: {
     color: palette.warmAmber,
     fontSize: 14,
-    fontWeight: '700' as const,
+    fontWeight: '700',
   },
-  receiptCard: {
-    backgroundColor: '#0D1219',
-  },
-  receiptHeader: {
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center',
-  },
-  receiptTitle: {
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '700' as const,
-  },
-  receiptRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  receiptLabel: {
+  accountabilityText: {
     color: palette.textMuted,
-    fontSize: 13,
-  },
-  receiptValue: {
-    color: palette.textSecondary,
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '600',
   },
-  receiptValueAmber: {
-    color: palette.warmAmber,
-    fontSize: 14,
-    fontWeight: '600' as const,
-  },
-  redemptionHint: {
-    flexDirection: 'row',
-    gap: 10,
+  shareRow: {
     alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderRadius: 14,
+  },
+  shareButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: 'rgba(212,162,79,0.12)',
     borderWidth: 1,
-    borderColor: palette.border,
-    padding: 14,
+    borderColor: palette.borderStrong,
+    width: '100%',
+    justifyContent: 'center',
   },
-  redemptionText: {
-    flex: 1,
-    color: palette.textMuted,
-    fontSize: 13,
-    lineHeight: 19,
+  shareButtonAnti: {
+    backgroundColor: 'rgba(255,123,123,0.12)',
+    borderColor: 'rgba(255,123,123,0.28)',
+  },
+  shareText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  shareTextAnti: {
+    color: '#FF7B7B',
   },
 });

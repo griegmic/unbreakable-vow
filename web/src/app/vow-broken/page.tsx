@@ -1,8 +1,14 @@
 'use client';
 import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Share2, AlertTriangle } from 'lucide-react';
+import { Share2, AlertTriangle, RotateCcw, Users, ClipboardList } from 'lucide-react';
 import { RitualScreen, TitleBlock, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
+
+const ANTI_CAUSES = ['Donald Trump', 'NRA', 'Flat Earth Society'];
+
+function isAntiCause(destination: string): boolean {
+  return ANTI_CAUSES.some(c => destination.toLowerCase().includes(c.toLowerCase()));
+}
 
 function VowBrokenContent() {
   const router = useRouter();
@@ -10,23 +16,38 @@ function VowBrokenContent() {
   const vowText = params.get('text') || 'Your vow';
   const amount = params.get('amount') || '0';
   const destination = params.get('destination') || 'charity';
+  const witness = params.get('witness') || '';
+  const selfWitness = params.get('self') === '1';
   const isZeroStake = !amount || amount === '0';
+  const antiCause = isAntiCause(destination);
   const [copied, setCopied] = useState(false);
 
-  // Anti-causes get the viral "I just donated to X" framing
-  const isAntiCause = ['Donald Trump', 'NRA', 'Flat Earth Society'].some(
-    c => destination.toLowerCase().includes(c.toLowerCase())
-  ) || destination !== 'charity';
+  const firstName = selfWitness ? 'You' : (witness.split(' ')[0] || 'Your witness');
+
+  const title = selfWitness ? 'You took the L.' : `${firstName} called it.`;
+
+  const subtitle = (() => {
+    if (antiCause && !isZeroStake) {
+      return `Yeah... $${amount} just went to ${destination}. Time for a redemption arc.`;
+    }
+    if (!isZeroStake) {
+      return `$${amount} → ${destination}. Honesty noted.`;
+    }
+    return "Broken. But you told the truth.";
+  })();
+
+  const getShareText = () => {
+    if (isZeroStake) {
+      return `I broke my vow: "${vowText}" — unbreakablevow.app`;
+    }
+    if (antiCause) {
+      return `I broke my vow and just donated $${amount} to ${destination}. Don't be like me → unbreakablevow.app`;
+    }
+    return `I broke my vow: "${vowText}" — $${amount} donated to ${destination}. unbreakablevow.app`;
+  };
 
   const handleShare = () => {
-    let text: string;
-    if (isZeroStake) {
-      text = `I broke my vow: "${vowText}" — unbreakablevow.app`;
-    } else if (isAntiCause && destination !== 'charity') {
-      text = `I broke my vow and just donated $${amount} to ${destination}. unbreakablevow.app`;
-    } else {
-      text = `I broke my vow: "${vowText}" — $${amount} donated to ${destination}. unbreakablevow.app`;
-    }
+    const text = getShareText();
     if (navigator.share) {
       navigator.share({ text }).catch(() => {});
     } else {
@@ -41,145 +62,171 @@ function VowBrokenContent() {
     <RitualScreen
       footer={
         <>
-          <PrimaryButton label="Make a redemption vow" onPress={() => router.push('/create')} />
-          <SecondaryButton label="My Vows" onPress={() => router.push('/dashboard')} />
+          <PrimaryButton
+            label="Double down"
+            onPress={() => router.push(`/create?text=${encodeURIComponent(vowText)}&stake=${amount}`)}
+          />
+          <SecondaryButton
+            label="Challenge a friend"
+            onPress={() => router.push('/create')}
+          />
+          <SecondaryButton
+            label="View your record"
+            onPress={() => router.push('/dashboard')}
+          />
         </>
       }
     >
+      {/* Dramatic icon */}
       <FadeUp>
-        <TitleBlock
-          title="You were honest."
-          subtitle={isZeroStake ? 'The vow was broken, but you told the truth.' : `Your $${amount} goes to ${destination}. But you told the truth.`}
-        />
-      </FadeUp>
-
-      {/* Receipt card */}
-      <FadeUp delay={0.1}>
-        <div
-          style={{
-            backgroundColor: 'var(--surface)',
-            border: '1px solid var(--warm-amber)',
-            borderRadius: 22,
-            padding: '28px 22px',
-            boxShadow: '0 16px 28px rgba(0,0,0,0.26), 0 0 0 1px rgba(212,162,79,0.15)',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 18,
-          }}
-        >
-          {/* Badge */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-          }}>
-            <div style={{
-              width: 28,
-              height: 28,
+        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 4 }}>
+          <div
+            className="animate-scale-in"
+            style={{
+              width: 80,
+              height: 80,
               borderRadius: '50%',
-              backgroundColor: 'var(--warm-amber-muted)',
+              backgroundColor: 'rgba(255,123,123,0.14)',
+              border: '1px solid rgba(255,123,123,0.28)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              flexShrink: 0,
-            }}>
-              <AlertTriangle style={{ width: 14, height: 14, color: 'var(--warm-amber)' }} />
-            </div>
-            <span style={{
-              fontSize: 13,
-              fontWeight: 800,
-              letterSpacing: '1.6px',
-              textTransform: 'uppercase' as const,
-              color: 'var(--warm-amber)',
-            }}>
-              Vow Broken
-            </span>
+              boxShadow: '0 8px 24px rgba(255,123,123,0.2)',
+            }}
+          >
+            <AlertTriangle style={{ width: 32, height: 32, color: '#FF7B7B' }} />
+          </div>
+        </div>
+      </FadeUp>
+
+      {/* Title + subtitle */}
+      <FadeUp delay={0.05}>
+        <TitleBlock title={title} subtitle={subtitle} />
+      </FadeUp>
+
+      {/* Vow card with amber/red border */}
+      <FadeUp delay={0.1}>
+        <div
+          className="vow-broken-card"
+          style={{
+            backgroundColor: 'var(--surface)',
+            border: '1px solid',
+            borderImage: 'linear-gradient(135deg, var(--warm-amber), #FF7B7B) 1',
+            borderRadius: 22,
+            padding: '24px 20px',
+            boxShadow: '0 16px 28px rgba(0,0,0,0.26), 0 0 0 1px rgba(255,123,123,0.12)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 14,
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Subtle BROKEN watermark */}
+          <div style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%) rotate(-18deg)',
+            fontSize: 48,
+            fontWeight: 900,
+            letterSpacing: '6px',
+            color: 'rgba(255,123,123,0.06)',
+            textTransform: 'uppercase',
+            pointerEvents: 'none',
+            userSelect: 'none',
+            whiteSpace: 'nowrap',
+          }}>
+            BROKEN
           </div>
 
-          {/* Divider */}
-          <div style={{ width: '100%', height: 1, backgroundColor: 'var(--border)' }} />
-
-          {/* Vow text */}
+          {/* Vow text in serif */}
           <p style={{
-            fontSize: 17,
+            fontSize: 18,
             fontFamily: 'var(--font-serif, Georgia, serif)',
             fontWeight: 500,
             color: 'var(--text)',
             textAlign: 'center',
-            lineHeight: '26px',
+            lineHeight: '28px',
             margin: 0,
+            position: 'relative',
           }}>
             &ldquo;{vowText}&rdquo;
           </p>
 
-          {/* Amount */}
-          {!isZeroStake && (
-            <span style={{
-              fontSize: 28,
-              fontWeight: 800,
-              color: 'var(--warm-amber)',
-              letterSpacing: '-0.5px',
-            }}>
-              ${amount} donated
-            </span>
-          )}
-
-          {/* Destination */}
-          {!isZeroStake && (
-            <span style={{
-              fontSize: 15,
-              fontWeight: 600,
-              color: 'var(--text)',
-            }}>
-              to {destination}
-            </span>
-          )}
-
-          {isZeroStake && (
-            <span style={{
-              fontSize: 22,
-              fontWeight: 700,
-              color: 'var(--warm-amber)',
-            }}>
-              Broken
-            </span>
-          )}
-
           {/* Divider */}
           <div style={{ width: '100%', height: 1, backgroundColor: 'var(--border)' }} />
 
-          {/* Branding */}
-          <span style={{
-            fontSize: 11,
-            fontWeight: 600,
-            letterSpacing: '0.8px',
-            color: 'var(--text-muted)',
-          }}>
-            unbreakablevow.app
-          </span>
+          {/* Witness */}
+          {witness && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Witness</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{witness}</span>
+            </div>
+          )}
+
+          {/* Payment line (staked) or accountability line ($0) */}
+          {!isZeroStake ? (
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
+              <span style={{
+                fontSize: 14,
+                fontWeight: 700,
+                color: 'var(--warm-amber)',
+              }}>
+                ${amount} → {destination} · Processed ✓
+              </span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', justifyContent: 'center' }}>
+              <span style={{
+                fontSize: 14,
+                fontWeight: 600,
+                color: 'var(--text-muted)',
+              }}>
+                Accountability only
+              </span>
+            </div>
+          )}
         </div>
       </FadeUp>
 
-      {/* Share */}
+      {/* Share section */}
       <FadeUp delay={0.15}>
         <button
           onClick={handleShare}
-          className="w-full rounded-[18px] min-h-[48px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"
-          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+          className="w-full rounded-[18px] min-h-[52px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"
+          style={{
+            backgroundColor: antiCause && !isZeroStake ? 'rgba(255,123,123,0.12)' : 'rgba(212,162,79,0.12)',
+            border: `1px solid ${antiCause && !isZeroStake ? 'rgba(255,123,123,0.28)' : 'var(--border-strong)'}`,
+          }}
         >
-          <Share2 className="w-4 h-4" style={{ color: 'var(--warm-amber)' }} />
-          <span className="text-[14px] font-bold" style={{ color: 'var(--warm-amber)' }}>
-            {copied ? 'Copied!' : 'Share'}
+          <Share2 className="w-4 h-4" style={{ color: antiCause && !isZeroStake ? '#FF7B7B' : 'var(--warm-amber)' }} />
+          <span className="text-[14px] font-extrabold" style={{ color: antiCause && !isZeroStake ? '#FF7B7B' : 'var(--warm-amber)' }}>
+            {copied ? 'Copied!' : 'Share the damage'}
           </span>
         </button>
       </FadeUp>
 
-      <FadeUp delay={0.2}>
-        <p className="text-[14px] text-center" style={{ color: 'var(--text-secondary)' }}>
-          You were honest. Now come back stronger.
-        </p>
-      </FadeUp>
+      {/* CSS shake animation */}
+      <style>{`
+        @keyframes shake {
+          0%, 100% { transform: translateX(0); }
+          20% { transform: translateX(-3px); }
+          40% { transform: translateX(3px); }
+          60% { transform: translateX(-2px); }
+          80% { transform: translateX(2px); }
+        }
+        .vow-broken-card {
+          animation: shake 0.15s ease-in-out 0.4s 2;
+        }
+        @keyframes scaleIn {
+          0% { transform: scale(0.5); opacity: 0; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-scale-in {
+          animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+      `}</style>
     </RitualScreen>
   );
 }

@@ -1,11 +1,11 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { PartyPopper, ShieldCheck, Share2 } from 'lucide-react-native';
+import { ShieldCheck, Share2, ArrowRight } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
-import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Animated, Linking, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
-import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, StatPill, TitleBlock } from '@/components/vow-ui';
-import { palette } from '@/constants/unbreakable';
+import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
+import { palette, serifFont } from '@/constants/unbreakable';
 import { getVowHistory } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 import type { Database } from '@/types/database';
@@ -15,16 +15,34 @@ type VowRow = Database['public']['Tables']['vows']['Row'];
 export default function VowKeptScreen() {
   const { activeVowText, resetVow, vow, isSelfWitness } = useVowFlow();
   const [keptCount, setKeptCount] = useState(0);
+  const [streak, setStreak] = useState(0);
 
   useEffect(() => {
     getVowHistory()
       .then((data) => {
-        const kept = (data as VowRow[]).filter((v) => v.verdict === 'kept').length + 1; // +1 for this one
+        const rows = data as VowRow[];
+        const kept = rows.filter((v) => v.verdict === 'kept').length + 1; // +1 for this one
         setKeptCount(kept);
+        // Calculate streak
+        let s = 1; // this one counts
+        // Sort by verdict_at descending (should already be)
+        const sorted = rows
+          .filter((v) => v.verdict !== null)
+          .sort((a, b) => {
+            const da = a.verdict_at ? new Date(a.verdict_at).getTime() : 0;
+            const db = b.verdict_at ? new Date(b.verdict_at).getTime() : 0;
+            return db - da;
+          });
+        for (const v of sorted) {
+          if (v.verdict === 'kept') s++;
+          else break;
+        }
+        setStreak(s);
       })
       .catch((err) => {
         console.error('[VowKeptScreen] failed to load history:', err);
-        setKeptCount(1); // fallback: at least this one
+        setKeptCount(1);
+        setStreak(1);
       });
   }, []);
 
@@ -32,10 +50,13 @@ export default function VowKeptScreen() {
   const medalOpacity = useRef(new Animated.Value(0)).current;
   const glowScale = useRef(new Animated.Value(0.5)).current;
   const glowOpacity = useRef(new Animated.Value(0)).current;
+  const glowPulse = useRef(new Animated.Value(0.3)).current;
   const contentFade = useRef(new Animated.Value(0)).current;
   const confettiScale = useRef(new Animated.Value(0)).current;
 
   const firstName = isSelfWitness ? 'You' : vow.witnessName.split(' ')[0];
+  const isZeroStake = vow.stake.amount <= 0;
+  const destination = vow.stake.destination;
 
   useEffect(() => {
     console.log('[VowKeptScreen] vow kept! playing celebration');
@@ -54,6 +75,14 @@ export default function VowKeptScreen() {
       ]),
     ]).start();
 
+    // Gold glow pulse loop
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(glowPulse, { toValue: 0.6, duration: 1000, useNativeDriver: true }),
+        Animated.timing(glowPulse, { toValue: 0.3, duration: 1000, useNativeDriver: true }),
+      ])
+    ).start();
+
     setTimeout(() => {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }, 300);
@@ -65,23 +94,48 @@ export default function VowKeptScreen() {
 
   const handleShare = async () => {
     void Haptics.selectionAsync();
+    const shareText = isZeroStake
+      ? `I kept my Unbreakable Vow: "${activeVowText}" 🔥 ${streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`
+      : `I kept my Unbreakable Vow: "${activeVowText}" — $${vow.stake.amount} protected. 🔥 ${streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`;
+
     if (Platform.OS !== 'web') {
       try {
-        await Share.share({
-          message: `I kept my Unbreakable Vow: "${activeVowText}" — $${vow.stake.amount} protected. 💪\nhttps://unbreakablevow.app/outcome/${vow.vowId}`,
-        });
+        await Share.share({ message: shareText });
       } catch {
         console.log('[VowKept] share failed');
       }
     }
   };
 
+  const handleDonate = () => {
+    const url = `https://www.google.com/search?q=donate+${encodeURIComponent(destination)}`;
+    Linking.openURL(url).catch(() => {});
+  };
+
+  const title = isSelfWitness ? 'Unbroken.' : `${firstName} confirmed it.`;
+  const subtitle = isZeroStake
+    ? 'Word honored. Another one in the books.'
+    : `Your $${vow.stake.amount} stays safe. Another one in the books.`;
+
   return (
     <RitualScreen
       footer={
         <>
           <PrimaryButton
-            label="Make another vow"
+            label="Share your streak"
+            onPress={handleShare}
+            testID="kept-share"
+          />
+          <SecondaryButton
+            label="Challenge a friend"
+            onPress={() => {
+              resetVow();
+              router.replace('/');
+            }}
+            testID="kept-challenge"
+          />
+          <SecondaryButton
+            label="Go again"
             onPress={() => {
               resetVow();
               router.replace('/');
@@ -94,51 +148,64 @@ export default function VowKeptScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
 
+      {/* Trophy icon with gold glow pulse */}
       <View style={styles.medalWrap}>
-        <Animated.View style={[styles.medalGlow, { opacity: glowOpacity, transform: [{ scale: glowScale }] }]} />
+        <Animated.View style={[styles.medalGlow, { opacity: glowPulse, transform: [{ scale: glowScale }] }]} />
         <Animated.View style={[styles.medal, { opacity: medalOpacity, transform: [{ scale: medalScale }] }]}>
-          <ShieldCheck color={palette.success} size={32} />
+          <ShieldCheck color={palette.goldBright} size={32} />
         </Animated.View>
       </View>
 
+      {/* Title + subtitle */}
       <Animated.View style={{ opacity: contentFade }}>
-        <TitleBlock
-          title={isSelfWitness ? 'You kept your word.' : `${firstName} confirmed: vow kept.`}
-          subtitle={vow.stake.amount > 0 ? `Your word held. $${vow.stake.amount} stays safe \u2014 you won\u2019t be charged.` : 'Your word held. Vow honored.'}
-        />
+        <TitleBlock title={title} subtitle={subtitle} />
       </Animated.View>
 
+      {/* Trophy vow card — gold border */}
       <Animated.View style={{ opacity: contentFade }}>
         <RitualCard>
-          <Text style={styles.vowText}>{activeVowText}</Text>
-          <View style={styles.rule} />
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Witness</Text>
-            <Text style={styles.metaValue}>{vow.witnessName}</Text>
-          </View>
-          <View style={styles.metaRow}>
-            <Text style={styles.metaLabel}>Your stake</Text>
-            <Text style={styles.metaValueSuccess}>Not charged</Text>
+          <View style={styles.trophyCardInner}>
+            {/* Vow text in serif */}
+            <Text style={styles.vowText}>&ldquo;{activeVowText}&rdquo;</Text>
+
+            {/* Divider */}
+            <View style={styles.rule} />
+
+            {/* Meta rows */}
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Witness</Text>
+              <Text style={styles.metaValue}>{isSelfWitness ? 'Self' : vow.witnessName}</Text>
+            </View>
+            <View style={styles.metaRow}>
+              <Text style={styles.metaLabel}>Stake</Text>
+              <Text style={styles.metaValueSuccess}>
+                {isZeroStake ? 'Accountability only' : `$${vow.stake.amount} saved`}
+              </Text>
+            </View>
+            {streak > 0 && (
+              <View style={styles.metaRow}>
+                <Text style={styles.metaLabel}>Streak</Text>
+                <Text style={styles.streakValue}>🔥 {streak} in a row</Text>
+              </View>
+            )}
           </View>
         </RitualCard>
       </Animated.View>
 
-      <Animated.View style={[styles.statsRow, { opacity: contentFade }]}>
-        <StatPill value={`${keptCount}`} label="vows kept" tone="success" />
-        <StatPill value={`${keptCount}`} label="in a row" tone="success" />
-      </Animated.View>
-
-      <Animated.View style={[styles.shareRow, { opacity: contentFade, transform: [{ scale: confettiScale }] }]}>
-        <Pressable onPress={handleShare} style={styles.shareButton} testID="kept-share">
-          <Share2 color={palette.goldBright} size={16} />
-          <Text style={styles.shareText}>Share your win</Text>
-        </Pressable>
-      </Animated.View>
-
-      <Animated.View style={[styles.celebrateRow, { opacity: contentFade }]}>
-        <PartyPopper color={palette.goldBright} size={16} />
-        <Text style={styles.celebrateText}>Another vow, another week owned.</Text>
-      </Animated.View>
+      {/* Pay it forward section — staked vows with destination only */}
+      {!isZeroStake && destination ? (
+        <Animated.View style={{ opacity: contentFade }}>
+          <RitualCard>
+            <Text style={styles.payForwardText}>
+              You saved ${vow.stake.amount}. Pay it forward?
+            </Text>
+            <Pressable onPress={handleDonate} style={styles.donateButton}>
+              <Text style={styles.donateText}>Donate to {destination} anyway</Text>
+              <ArrowRight color={palette.goldBright} size={14} />
+            </Pressable>
+          </RitualCard>
+        </Animated.View>
+      ) : null}
     </RitualScreen>
   );
 }
@@ -154,7 +221,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 100,
-    backgroundColor: 'rgba(82,214,154,0.18)',
+    backgroundColor: 'rgba(212,162,79,0.2)',
   },
   medal: {
     width: 80,
@@ -162,20 +229,25 @@ const styles = StyleSheet.create({
     borderRadius: 40,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: palette.successMuted,
-    borderWidth: 1,
-    borderColor: 'rgba(82,214,154,0.28)',
-    shadowColor: '#52D69A',
+    backgroundColor: 'rgba(212,162,79,0.12)',
+    borderWidth: 2,
+    borderColor: 'rgba(212,162,79,0.3)',
+    shadowColor: '#D4A24F',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.3,
     shadowRadius: 20,
     elevation: 8,
   },
+  trophyCardInner: {
+    gap: 12,
+  },
   vowText: {
     color: palette.text,
-    fontSize: 18,
+    fontSize: 17,
     lineHeight: 26,
-    fontWeight: '600' as const,
+    fontFamily: serifFont,
+    fontWeight: '500',
+    textAlign: 'center',
   },
   rule: {
     height: 1,
@@ -193,50 +265,34 @@ const styles = StyleSheet.create({
   metaValue: {
     color: palette.text,
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '600',
   },
   metaValueSuccess: {
     color: palette.success,
     fontSize: 14,
-    fontWeight: '700' as const,
+    fontWeight: '700',
   },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  shareRow: {
-    alignItems: 'center',
-  },
-  shareButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 999,
-    backgroundColor: 'rgba(212,162,79,0.1)',
-    borderWidth: 1,
-    borderColor: palette.borderStrong,
-  },
-  shareText: {
+  streakValue: {
     color: palette.goldBright,
     fontSize: 14,
-    fontWeight: '600' as const,
+    fontWeight: '700',
   },
-  celebrateRow: {
+  payForwardText: {
+    color: palette.text,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  donateButton: {
     flexDirection: 'row',
-    gap: 10,
     alignItems: 'center',
-    backgroundColor: palette.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: palette.border,
-    padding: 14,
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
   },
-  celebrateText: {
-    flex: 1,
-    color: palette.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
+  donateText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

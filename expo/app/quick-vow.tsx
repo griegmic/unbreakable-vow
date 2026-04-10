@@ -189,6 +189,11 @@ export default function QuickVowScreen() {
           if (unique.length >= 5) break;
         }
         setRecentWitnesses(unique);
+        // Pre-select last witness for returning users (zero-tap)
+        if (unique.length > 0 && !witnessName) {
+          setWitnessName(unique[0].name);
+          setWitnessPhone(unique[0].phone);
+        }
       }
 
       // Vow count (for oath copy)
@@ -271,7 +276,8 @@ export default function QuickVowScreen() {
       setSealedVowId(devVowId);
       setWitnessToken(devToken);
       setSealing(false);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setTimeout(() => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 150);
       await handleSealSuccess(devVowId, devToken);
       return;
     }
@@ -301,7 +307,8 @@ export default function QuickVowScreen() {
         // $0 vow: seal directly, no payment
         await invokeSealEdgeFunction(vowId);
         setSealing(false);
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setTimeout(() => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 150);
         await handleSealSuccess(vowId, witnessInviteToken);
         return;
       }
@@ -322,7 +329,8 @@ export default function QuickVowScreen() {
       setPaidVowId(vowId);
       await invokeSealEdgeFunction(vowId);
       setSealing(false);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      setTimeout(() => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 150);
       await handleSealSuccess(vowId!, witnessInviteToken);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -421,12 +429,17 @@ export default function QuickVowScreen() {
       <RitualScreen
         scroll
         footer={
-          <PrimaryButton
-            testID="quickvow-seal"
-            label={sealing ? 'Processing...' : stakeAmount > 0 ? `Seal vow & pay $${stakeAmount}` : 'Seal this vow'}
-            onPress={handleSeal}
-            disabled={!oathChecked || !vowText.trim() || sealing}
-          />
+          <View>
+            <PrimaryButton
+              testID="quickvow-seal"
+              label={sealing ? 'Processing...' : 'Seal this vow'}
+              onPress={handleSeal}
+              disabled={!oathChecked || !vowText.trim() || sealing}
+            />
+            {stakeAmount > 0 && (
+              <Text style={styles.ctaSubtext}>${stakeAmount} held until verdict</Text>
+            )}
+          </View>
         }
       >
         <Stack.Screen options={{ headerShown: false }} />
@@ -437,15 +450,15 @@ export default function QuickVowScreen() {
           <Text style={styles.backLabel}>Dashboard</Text>
         </Pressable>
 
-        <Text style={styles.pageTitle}>QuickVow</Text>
+        <Text style={styles.pageTitle}>New Vow</Text>
 
         {/* Vow text + inline deadline */}
         <RitualCard>
-          <Text style={styles.sectionLabel}>WHAT ARE YOU COMMITTING TO?</Text>
+          <Text style={styles.sectionLabel}>YOUR VOW</Text>
           <TextInput
             value={vowText}
             onChangeText={setVowText}
-            placeholder="e.g. Go to the gym 3x this week"
+            placeholder="I will..."
             placeholderTextColor={palette.textMuted}
             multiline
             style={styles.textInput}
@@ -481,28 +494,35 @@ export default function QuickVowScreen() {
             </View>
           </View>
           {showDatePicker && deadlinePreset === 'custom' ? (
-            <DateTimePicker
-              value={customDate}
-              mode="date"
-              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-              minimumDate={new Date()}
-              themeVariant="dark"
-              onChange={(_: unknown, date?: Date) => {
-                if (Platform.OS === 'android') setShowDatePicker(false);
-                if (date) {
-                  date.setHours(23, 59, 59, 0);
-                  setCustomDate(date);
-                }
-              }}
-            />
+            <>
+              <DateTimePicker
+                value={customDate}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                minimumDate={new Date()}
+                themeVariant="dark"
+                onChange={(_: unknown, date?: Date) => {
+                  if (Platform.OS === 'android') setShowDatePicker(false);
+                  if (date) {
+                    date.setHours(23, 59, 59, 0);
+                    setCustomDate(date);
+                  }
+                }}
+              />
+              {Platform.OS === 'ios' && (
+                <Pressable onPress={() => setShowDatePicker(false)} style={styles.datePickerDone}>
+                  <Text style={styles.datePickerDoneText}>Done</Text>
+                </Pressable>
+              )}
+            </>
           ) : null}
           <Text style={styles.deadlineHint}>{formatDateShort(deadlineDate)}</Text>
         </RitualCard>
 
         {/* Witness */}
         <RitualCard>
-          <Text style={styles.sectionLabel}>WHO'S HOLDING YOU TO IT?</Text>
-          <Text style={styles.witnessSubline}>Witnessed vows are kept 3x more often.</Text>
+          <Text style={styles.sectionLabel}>YOUR WITNESS</Text>
+          <Text style={styles.witnessSubline}>A vow without a witness is just a promise to yourself.</Text>
 
           {/* Selected witness display */}
           {witnessName && witnessName !== 'Just me' ? (
@@ -527,7 +547,7 @@ export default function QuickVowScreen() {
                     <Text style={styles.contactPickerHeroText}>Pick from contacts</Text>
                   </Pressable>
                   <Pressable onPress={() => { setWitnessName('Just me'); setWitnessPhone(''); }}>
-                    <Text style={styles.manualEntryLink}>I'll hold myself accountable</Text>
+                    <Text style={styles.manualEntryLink}>Skip witness</Text>
                   </Pressable>
                 </View>
               ) : null}
@@ -561,7 +581,7 @@ export default function QuickVowScreen() {
             {STAKE_OPTIONS.map((amt) => (
               <ChoiceChip
                 key={amt}
-                label={amt === 0 ? '$0 (free)' : `$${amt}`}
+                label={amt === 0 ? '$0' : `$${amt}`}
                 active={stakeAmount === amt}
                 onPress={() => setStakeAmount(amt)}
               />
@@ -571,16 +591,42 @@ export default function QuickVowScreen() {
           {stakeAmount > 0 ? (
             <>
               <View style={styles.divider} />
-              <Text style={styles.sectionLabel}>IF YOU BREAK YOUR VOW, MONEY GOES TO...</Text>
-              <View style={styles.chipRow}>
-                <ChoiceChip label="A charity" active={consequence === 'charity'} onPress={() => setConsequence('charity')} />
-                <ChoiceChip label="A cause you hate" active={consequence === 'anti'} onPress={() => setConsequence('anti')} />
+
+              {/* Consequence sentence */}
+              <Text style={styles.consequenceSentence}>
+                If you break this vow,{'\n'}
+                <Text style={styles.consequenceAmount}>${stakeAmount} goes to {destination}.</Text>
+              </Text>
+
+              {/* Toggle: A good cause / An anti-cause */}
+              <View style={styles.consequenceToggle}>
+                <Pressable
+                  onPress={() => setConsequence('charity')}
+                  style={[styles.toggleSegment, consequence === 'charity' && styles.toggleSegmentActive]}
+                >
+                  <Text style={[styles.toggleText, consequence === 'charity' && styles.toggleTextActive]}>A good cause</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => setConsequence('anti')}
+                  style={[styles.toggleSegment, consequence === 'anti' && styles.toggleSegmentActive]}
+                >
+                  <Text style={[styles.toggleText, consequence === 'anti' && styles.toggleTextActive]}>An anti-cause</Text>
+                </Pressable>
               </View>
+
+              {/* Destination chips */}
               <View style={styles.chipRow}>
                 {destinations.map((d) => (
                   <ChoiceChip key={d} label={d} active={destination === d} onPress={() => setDestination(d)} />
                 ))}
               </View>
+
+              {/* Flavor text — anti-cause only */}
+              {consequence === 'anti' && (
+                <Text style={styles.consequenceFlavor}>
+                  Maximum pain. Maximum motivation.
+                </Text>
+              )}
             </>
           ) : null}
         </RitualCard>
@@ -600,7 +646,7 @@ export default function QuickVowScreen() {
             {oathChecked ? <Text style={styles.checkmark}>✓</Text> : null}
           </View>
           <Text style={styles.oathText}>
-            {vowCount >= 2 ? 'I mean it.' : 'I solemnly swear to honor this vow and accept the consequences.'}
+            {vowCount >= 2 ? 'I swear it.' : 'I solemnly swear to keep this vow — or pay the price.'}
           </Text>
         </Pressable>
 
@@ -746,6 +792,50 @@ const styles = StyleSheet.create({
     backgroundColor: palette.border,
     marginVertical: 8,
   },
+  consequenceSentence: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+  consequenceAmount: {
+    color: palette.gold,
+    fontFamily: serifFont,
+    fontSize: 17,
+    fontWeight: '700',
+  },
+  consequenceToggle: {
+    flexDirection: 'row',
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: palette.border,
+    marginBottom: 8,
+  },
+  toggleSegment: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  toggleSegmentActive: {
+    backgroundColor: 'rgba(212,162,79,0.12)',
+    borderColor: palette.borderStrong,
+  },
+  toggleText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  toggleTextActive: {
+    color: palette.goldBright,
+  },
+  consequenceFlavor: {
+    color: palette.textMuted,
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 4,
+  },
   inlineDeadlineDivider: {
     height: 1,
     backgroundColor: palette.border,
@@ -813,5 +903,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     textDecorationLine: 'underline',
     paddingVertical: 8,
+  },
+  ctaSubtext: {
+    color: palette.textMuted,
+    fontSize: 12,
+    textAlign: 'center' as const,
+    marginTop: 6,
+  },
+  datePickerDone: {
+    alignSelf: 'flex-end',
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  datePickerDoneText: {
+    color: palette.goldBright,
+    fontSize: 15,
+    fontWeight: '600',
   },
 });

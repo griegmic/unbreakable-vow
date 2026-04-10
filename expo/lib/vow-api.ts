@@ -244,7 +244,7 @@ export async function getVowByWitnessToken(token: string): Promise<{ success: bo
 export async function acceptWitnessInvite(token: string): Promise<{ success: boolean; error?: string }> {
   console.log('[vow-api] acceptWitnessInvite with token:', token);
   try {
-    const { data, error, response } = await supabase.functions.invoke('accept-witness', {
+    const { data, error } = await supabase.functions.invoke('accept-witness', {
       body: { token, action: 'accept' },
     }) as { data: any; error: any };
     if (error) {
