@@ -18,6 +18,10 @@ function getStatusConfig(vow: VowRow, role: string) {
   if (role === 'challenge' && vow.challenge_status === 'pending') {
     return { color: '#FF9F43', label: 'Challenge received', pulse: false };
   }
+  // For challenge vows with pending challenge_status, show waiting state
+  if (vow.vow_type === 'challenge' && vow.challenge_status === 'pending' && role !== 'challenge') {
+    return { color: '#F0C86E', label: 'Waiting for response', pulse: false };
+  }
   switch (vow.status) {
     case 'active':
       return { color: '#52D69A', label: 'Active', pulse: false };
@@ -29,6 +33,12 @@ function getStatusConfig(vow: VowRow, role: string) {
       return { color: '#FF7B7B', label: 'Broken', pulse: false };
     case 'voided':
       return { color: '#667085', label: 'Withdrawn', pulse: false };
+    case 'sealed':
+    case 'draft':
+      if (vow.vow_type === 'challenge') {
+        return { color: '#F0C86E', label: 'Waiting for response', pulse: false };
+      }
+      return { color: '#667085', label: vow.status === 'sealed' ? 'Sealed' : 'Draft', pulse: false };
     default:
       return { color: '#667085', label: vow.status, pulse: false };
   }
@@ -65,8 +75,16 @@ function getCountdownText(vow: VowRow): string {
 }
 
 function getPersonLabel(vow: VowRow, role: string): string {
-  if (role === 'witness' || role === 'challenge') {
+  if (role === 'witness') {
     return vow.witness_name || 'Unknown';
+  }
+  if (role === 'challenge') {
+    // Target sees the challenger's name (who is also the witness)
+    return `By ${vow.witness_name || 'someone'}`;
+  }
+  // Maker: for challenge vows, witness_name is the challenger's own name — show "Challenge sent"
+  if (vow.vow_type === 'challenge') {
+    return 'Challenge sent';
   }
   return vow.witness_name || 'Solo';
 }

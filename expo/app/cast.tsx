@@ -134,6 +134,9 @@ export default function CastScreen() {
           endsAt: data.ends_at,
         });
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        clearInterval(interval);
+      } else if (data?.challenge_status === 'declined') {
+        clearInterval(interval);
       }
     }, 5000);
 
@@ -537,11 +540,11 @@ export default function CastScreen() {
 
         {/* Vow text */}
         <RitualCard>
-          <Text style={styles.sectionLabel}>WHAT&apos;S THE VOW?</Text>
+          <Text style={styles.sectionLabel}>THE DARE</Text>
           <TextInput
             value={vowText}
             onChangeText={setVowText}
-            placeholder="e.g. Run a marathon this year"
+            placeholder="e.g. No phone for a week"
             placeholderTextColor={palette.textMuted}
             multiline
             style={styles.textInput}

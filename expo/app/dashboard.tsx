@@ -136,7 +136,13 @@ function VowCard({
   const stakeLabel = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} stake` : 'no stake';
   const isChallenge = sectionId === 'attention' && vow.challenge_status === 'pending';
   const isActiveOwn = sectionId === 'yours' && (vow.status === 'draft' || vow.status === 'active' || vow.status === 'sealed' || vow.status === 'awaiting_verdict');
-  const personLabel = sectionId === 'witnessing' ? "You're witnessing" : vow.witness_name;
+  const personLabel = sectionId === 'witnessing'
+    ? "You're witnessing"
+    : vow.vow_type === 'challenge' && sectionId === 'yours'
+    ? 'Challenge sent'
+    : vow.vow_type === 'challenge' && sectionId === 'attention'
+    ? `By ${vow.witness_name || 'someone'}`
+    : vow.witness_name;
 
   // Witness status badge
   const isSolo = !vow.witness_name || vow.witness_name === 'Just me';

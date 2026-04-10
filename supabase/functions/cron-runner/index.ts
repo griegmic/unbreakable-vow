@@ -40,6 +40,10 @@ Deno.serve(async (req) => {
   const now = new Date();
   const results: Record<string, unknown> = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, sms_retry: 0, refund_retry: 0, vow_lifecycle: 0, challenge_expire: 0, push: 0, errors: [] as string[] };
 
+  // For challenge vows, the "vow keeper" is target_user_id, not user_id
+  const getVowKeeperId = (vow: { vow_type?: string; target_user_id?: string; user_id: string }) =>
+    (vow.vow_type === 'challenge' && vow.target_user_id) ? vow.target_user_id : vow.user_id;
+
   try {
     // === TASK 0: Send witness acceptance reminders ===
     // Find active vows sealed >24h ago where witness hasn't accepted
@@ -118,7 +122,8 @@ Deno.serve(async (req) => {
       if (existing) continue;
 
       try {
-        const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
+        const keeperId = getVowKeeperId(vow);
+        const { data: profile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
         const ownerName = profile?.display_name || 'Someone';
         const body = warmupMessage(ownerName, vow.refined_text);
         const sid = await sendSMS(vow.witness_phone!, body);
@@ -258,14 +263,15 @@ Deno.serve(async (req) => {
         const hasRealPI = vow.stripe_payment_intent_id && vow.stripe_payment_intent_id.startsWith('pi_');
         const noRealPayment = vow.stake_amount === 0 || !hasRealPI;
 
-        // SMS #4 to witness
+        // SMS #4 to witness — use vow keeper's name
         if (vow.witness_phone) {
           try {
-            const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
-            const ownerName = profile?.display_name || 'Someone';
+            const keeperId = getVowKeeperId(vow);
+            const { data: profile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
+            const keeperName = profile?.display_name || 'Someone';
             const body = noRealPayment
-              ? `No verdict received. ${ownerName}'s vow auto-resolved as kept.`
-              : `No verdict received. ${ownerName}'s vow auto-resolved as kept. $${amountDollars} refunded.`;
+              ? `No verdict received. ${keeperName}'s vow auto-resolved as kept.`
+              : `No verdict received. ${keeperName}'s vow auto-resolved as kept. $${amountDollars} refunded.`;
             const sid = await sendSMS(vow.witness_phone, body);
             await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'outcome', twilio_sid: sid });
           } catch (smsErr) {
@@ -273,16 +279,29 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Push notification to owner
+        // Push notification to challenger/maker
         await supabase.from('push_queue').insert({
           user_id: vow.user_id,
           title: 'Vow auto-resolved: Kept!',
           body: noRealPayment
-            ? 'No verdict was received, so your vow was auto-resolved as kept.'
-            : `No verdict was received, so your vow was auto-resolved as kept. $${amountDollars} refunded.`,
+            ? 'No verdict was received, so the vow was auto-resolved as kept.'
+            : `No verdict was received, so the vow was auto-resolved as kept. $${amountDollars} refunded.`,
           data: { vow_id: vow.id, verdict: 'kept' },
           send_after: now.toISOString(),
         });
+
+        // For challenge vows, also notify the target (vow keeper)
+        if (vow.vow_type === 'challenge' && vow.target_user_id) {
+          await supabase.from('push_queue').insert({
+            user_id: vow.target_user_id,
+            title: 'Vow auto-resolved: Kept!',
+            body: noRealPayment
+              ? 'No verdict was received, so your vow was auto-resolved as kept.'
+              : `No verdict was received, so your vow was auto-resolved as kept. $${amountDollars} refunded.`,
+            data: { vow_id: vow.id, verdict: 'kept' },
+            send_after: now.toISOString(),
+          });
+        }
 
         results.auto_resolve++;
       } catch (err) {
@@ -457,15 +476,18 @@ Deno.serve(async (req) => {
           results.vow_lifecycle++;
         }
 
+        // For challenge vows, lifecycle pushes go to the vow keeper (target), not the challenger
+        const keeperId = getVowKeeperId(vow);
+
         try {
           // --- #2: 24 hours after start: "Day 1 down." ---
           const day1 = new Date(startsAt.getTime() + 24 * 60 * 60 * 1000);
           if (now >= day1) {
-            if (!(await alreadyQueued('vow_day1'))) {
+            if (!(await alreadyQueued('vow_day1', keeperId))) {
               const body = vow.witness_name && vow.witness_user_id
                 ? `Day 1 down. ${vow.witness_name} is watching.`
                 : 'Day 1 down. You made a promise.';
-              await queuePush(vow.user_id, 'Day 1', body, 'vow_day1', day1);
+              await queuePush(keeperId, 'Day 1', body, 'vow_day1', day1);
             }
           }
 
@@ -474,8 +496,8 @@ Deno.serve(async (req) => {
           // Only send midpoint if vow is at least 3 days long (avoid spamming short vows)
           const vowDurationMs = endsAt.getTime() - startsAt.getTime();
           if (vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
-            if (!(await alreadyQueued('vow_midpoint'))) {
-              await queuePush(vow.user_id, 'Halfway', 'Halfway. Still standing?', 'vow_midpoint', midpoint);
+            if (!(await alreadyQueued('vow_midpoint', keeperId))) {
+              await queuePush(keeperId, 'Halfway', 'Halfway. Still standing?', 'vow_midpoint', midpoint);
             }
           }
 
@@ -483,23 +505,24 @@ Deno.serve(async (req) => {
           const fortyEightBefore = new Date(endsAt.getTime() - 48 * 60 * 60 * 1000);
           // Only send if 48h-before is after the midpoint (avoid sending before midpoint on short vows)
           if (fortyEightBefore > midpoint && now >= fortyEightBefore) {
-            if (!(await alreadyQueued('vow_48h_warning'))) {
+            if (!(await alreadyQueued('vow_48h_warning', keeperId))) {
               const daysLeft = Math.ceil((endsAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
               const body = `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left. You know what's on the line.`;
-              await queuePush(vow.user_id, 'Deadline approaching', body, 'vow_48h_warning', fortyEightBefore);
+              await queuePush(keeperId, 'Deadline approaching', body, 'vow_48h_warning', fortyEightBefore);
             }
           }
 
           // --- #6: Verdict day — notify witness when ends_at is reached ---
           if (now >= endsAt && vow.witness_user_id) {
             if (!(await alreadyQueued('vow_verdict_day_witness', vow.witness_user_id))) {
-              // Get maker's display name
-              const { data: makerProfile } = await supabase
+              // Get vow keeper's display name (for challenge vows, this is the target)
+              const keeperIdForPush = getVowKeeperId(vow);
+              const { data: keeperProfile } = await supabase
                 .from('users')
                 .select('display_name')
-                .eq('id', vow.user_id)
+                .eq('id', keeperIdForPush)
                 .single();
-              const makerName = makerProfile?.display_name || 'Someone';
+              const makerName = keeperProfile?.display_name || 'Someone';
               await queuePush(
                 vow.witness_user_id,
                 'Verdict time',

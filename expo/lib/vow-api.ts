@@ -367,7 +367,7 @@ export async function getMyVows(): Promise<VowRow[]> {
     .select('*')
     .eq('target_user_id', session.user.id)
     .eq('challenge_status', 'accepted')
-    .in('status', ['active', 'awaiting_verdict'])
+    .in('status', ['draft', 'sealed', 'active', 'awaiting_verdict', 'kept', 'broken'])
     .order('created_at', { ascending: false });
   if (challengeError) { console.error('[vow-api] getMyVows challenge error:', challengeError); }
   // Merge, avoiding duplicates
@@ -431,10 +431,35 @@ export async function getRecentVows(limit: number = 5): Promise<VowRow[]> {
 export async function acceptChallenge(token: string): Promise<{ success: boolean; error?: string }> {
   console.log('[vow-api] acceptChallenge:', token);
   try {
-    const { error } = await supabase.from('vows')
-      .update({ challenge_status: 'accepted' })
-      .eq('challenge_invite_token', token);
-    if (error) { console.error('[vow-api] acceptChallenge error:', error); return { success: false, error: error.message }; }
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return { success: false, error: 'Not authenticated' };
+
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+
+    const res = await fetch(`${supabaseUrl}/functions/v1/accept-challenge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': anonKey,
+        'Authorization': `Bearer ${session.access_token}`,
+      },
+      body: JSON.stringify({
+        token,
+        action: 'accept',
+        email: session.user.email,
+        display_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
+        stake_amount: 0,
+        destination: '',
+      }),
+    });
+
+    const body = await res.json().catch(() => null);
+    if (!res.ok || body?.error) {
+      const errMsg = body?.error ? String(body.error) : `HTTP ${res.status}`;
+      console.error('[vow-api] acceptChallenge error:', errMsg);
+      return { success: false, error: errMsg };
+    }
     return { success: true };
   } catch (err) {
     console.error('[vow-api] acceptChallenge exception:', err);
@@ -445,10 +470,33 @@ export async function acceptChallenge(token: string): Promise<{ success: boolean
 export async function declineChallenge(token: string): Promise<{ success: boolean; error?: string }> {
   console.log('[vow-api] declineChallenge:', token);
   try {
-    const { error } = await supabase.from('vows')
-      .update({ challenge_status: 'declined' })
-      .eq('challenge_invite_token', token);
-    if (error) { console.error('[vow-api] declineChallenge error:', error); return { success: false, error: error.message }; }
+    const { data: { session } } = await supabase.auth.getSession();
+
+    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
+    const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
+
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'apikey': anonKey,
+      'Authorization': `Bearer ${session?.access_token || anonKey}`,
+    };
+
+    const res = await fetch(`${supabaseUrl}/functions/v1/accept-challenge`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        token,
+        action: 'decline',
+        display_name: session?.user?.user_metadata?.full_name || undefined,
+      }),
+    });
+
+    const body = await res.json().catch(() => null);
+    if (!res.ok || body?.error) {
+      const errMsg = body?.error ? String(body.error) : `HTTP ${res.status}`;
+      console.error('[vow-api] declineChallenge error:', errMsg);
+      return { success: false, error: errMsg };
+    }
     return { success: true };
   } catch (err) {
     console.error('[vow-api] declineChallenge exception:', err);

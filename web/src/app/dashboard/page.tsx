@@ -142,6 +142,7 @@ export default function DashboardPage() {
   const [challenges, setChallenges] = useState<VowRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
+  const [acceptedChallengeIds, setAcceptedChallengeIds] = useState<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -159,6 +160,7 @@ export default function DashboardPage() {
         .from('vows')
         .select('*')
         .eq('witness_user_id', session.user.id)
+        .neq('user_id', session.user.id)
         .in('status', ['active', 'awaiting_verdict'])
         .order('ends_at', { ascending: true }),
       supabase
@@ -180,7 +182,8 @@ export default function DashboardPage() {
     // Merge accepted challenges into myVows so they appear in active/stats
     const myVowsData = myRes.data ?? [];
     const acceptedChallenges = acceptedChallengeRes.data ?? [];
-    const acceptedIds = new Set(acceptedChallenges.map(v => v.id));
+    const newAcceptedIds = new Set(acceptedChallenges.map(v => v.id));
+    setAcceptedChallengeIds(newAcceptedIds);
     // Avoid duplicates (in case user is both maker and target somehow)
     const merged = [...myVowsData, ...acceptedChallenges.filter(v => !myVowsData.some(m => m.id === v.id))];
 
@@ -208,7 +211,9 @@ export default function DashboardPage() {
     ...challenges,
   ];
   const active = myVows
-    .filter(v => ['active', 'sealed'].includes(v.status))
+    .filter(v => ['active', 'sealed'].includes(v.status) ||
+      // Include pending challenge dares (draft, waiting for target to accept)
+      (v.vow_type === 'challenge' && v.challenge_status === 'pending' && v.status === 'draft'))
     .sort((a, b) => (a.ends_at ?? '').localeCompare(b.ends_at ?? ''));
   const witnessing = witnessingVows.filter(v => v.status === 'active');
   const recent = myVows.filter(v => ['kept', 'broken', 'voided'].includes(v.status)).slice(0, 5);
@@ -227,19 +232,10 @@ export default function DashboardPage() {
   })();
 
   const handleAcceptChallenge = async (vowId: string) => {
-    setActionBusy(vowId);
-    try {
-      const vow = challenges.find(v => v.id === vowId);
-      if (!vow?.challenge_invite_token) return;
-      await supabase.functions.invoke('accept-challenge', {
-        body: { token: vow.challenge_invite_token, action: 'accept' },
-      });
-      await fetchData();
-    } catch (err) {
-      console.error('Accept challenge failed:', err);
-    } finally {
-      setActionBusy(null);
-    }
+    const vow = challenges.find(v => v.id === vowId);
+    if (!vow?.challenge_invite_token) return;
+    // Redirect to the full challenge accept page with stake selection UX
+    router.push(`/c/${vow.challenge_invite_token}`);
   };
 
   const handleDeclineChallenge = async (vowId: string) => {
@@ -262,6 +258,8 @@ export default function DashboardPage() {
   const getRoleForVow = (vow: VowRow, section: 'mine' | 'witnessing' | 'challenge'): 'maker' | 'witness' | 'target' => {
     if (section === 'witnessing') return 'witness';
     if (section === 'challenge') return 'target';
+    // Accepted challenges where I'm the target show as 'target' not 'maker'
+    if (vow.vow_type === 'challenge' && acceptedChallengeIds.has(vow.id)) return 'target';
     return 'maker';
   };
 
@@ -414,7 +412,7 @@ export default function DashboardPage() {
               <VowCard
                 key={v.id}
                 vow={v}
-                role="maker"
+                role={getRoleForVow(v, 'mine')}
                 onTap={() => router.push(`/vow/${v.id}`)}
               />
             ))}
@@ -448,7 +446,7 @@ export default function DashboardPage() {
               <VowCard
                 key={v.id}
                 vow={v}
-                role="maker"
+                role={getRoleForVow(v, 'mine')}
                 onTap={() => router.push(`/vow/${v.id}`)}
               />
             ))}

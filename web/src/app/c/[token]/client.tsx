@@ -345,7 +345,7 @@ export default function ChallengeInviteClient({
           <FadeUp delay={0.35}>
             <div className="flex flex-col items-center gap-3 w-full max-w-[320px]">
               <PrimaryButton
-                label="Accept the vow"
+                label="Accept the dare"
                 onPress={() => setStep('stakes')}
               />
               <button

@@ -18,7 +18,7 @@ async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, 
   );
 }
 
-const SUGGESTED_STAKES = [10, 25, 50, 100];
+const SUGGESTED_STAKES = [0, 10, 25, 50, 100];
 
 const DEADLINE_PRESETS = [
   { label: 'This Friday', days: () => { const d = new Date(); const diff = 5 - d.getDay(); return diff <= 0 ? diff + 7 : diff; } },
@@ -35,7 +35,7 @@ export default function CastPage() {
   const [vowText, setVowText] = useState('');
   const [suggestion, setSuggestion] = useState('');
   const [targetName, setTargetName] = useState('');
-  const [suggestedStake, setSuggestedStake] = useState<number | null>(25);
+  const [suggestedStake, setSuggestedStake] = useState<number>(25);
   const [deadlineLabel, setDeadlineLabel] = useState('In 7 days');
   const [customDate, setCustomDate] = useState('');
   const [showCustomDate, setShowCustomDate] = useState(false);
@@ -358,7 +358,7 @@ export default function CastPage() {
               className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
               style={{ color: 'var(--text)' }}
             >
-              Waiting for {targetName}...
+              Waiting for {targetName} to respond...
             </h1>
             <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
               No reply? Send it again &mdash; or try a different app.
@@ -502,13 +502,13 @@ export default function CastPage() {
         {/* Vow text */}
         <FadeUp delay={0.1}>
           <RitualCard>
-            <SectionLabel>What&apos;s the vow?</SectionLabel>
+            <SectionLabel>The dare</SectionLabel>
             <div className="relative">
               <textarea
                 ref={textareaRef}
                 value={vowText}
                 onChange={(e) => setVowText(e.target.value)}
-                placeholder="They can't..."
+                placeholder="e.g. No phone for a week"
                 rows={3}
                 className="w-full bg-transparent text-[16px] leading-[24px] outline-none resize-none"
                 style={{ color: 'var(--text)' }}
@@ -579,19 +579,14 @@ export default function CastPage() {
               {SUGGESTED_STAKES.map((amt) => (
                 <ChoiceChip
                   key={amt}
-                  label={`$${amt}`}
+                  label={amt === 0 ? 'Free' : `$${amt}`}
                   active={suggestedStake === amt}
                   onPress={() => setSuggestedStake(amt)}
                 />
               ))}
-              <ChoiceChip
-                label="No suggestion"
-                active={suggestedStake === null}
-                onPress={() => setSuggestedStake(null)}
-              />
             </div>
             <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-              This anchors their choice. You don&apos;t pay anything.
+              They choose their own stake. This is just a nudge.
             </p>
           </RitualCard>
         </FadeUp>

@@ -17,6 +17,9 @@ function getStatusDisplay(vow: VowRow, role: string) {
   if (role === 'target' && vow.challenge_status === 'pending') {
     return { label: 'Challenge received', color: '#F59E0B', icon: AlertCircle, pulse: false };
   }
+  if (vow.vow_type === 'challenge' && vow.challenge_status === 'pending' && role === 'maker') {
+    return { label: 'Waiting for response', color: '#F59E0B', icon: Clock, pulse: false };
+  }
   if (vow.status === 'active' && !vow.witness_accepted_at && vow.witness_name !== 'Just me') {
     return { label: 'Witness pending', color: '#60A5FA', icon: Clock, pulse: false };
   }
@@ -90,10 +93,10 @@ export default function VowCard({ vow, role, onTap, onAcceptChallenge, onDecline
 
   const stakeLabel = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} stake` : 'no stake';
   const personLabel = role === 'maker'
-    ? `Witness: ${vow.witness_name}`
+    ? (vow.vow_type === 'challenge' ? 'Challenge sent' : `Witness: ${vow.witness_name}`)
     : role === 'witness'
     ? 'You\'re witnessing'
-    : 'Challenged you';
+    : `By ${vow.witness_name || 'someone'}`;
 
   return (
     <div onClick={onTap} className={onTap ? 'cursor-pointer transition-transform active:scale-[0.98]' : ''}>
