@@ -262,7 +262,7 @@ export default function SealScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, paidVowId, vow, activeVowText]);
 
-  const canSeal = isSelfWitness ? sworn : true;
+  const canSeal = sworn;
 
   const handleSeal = async () => {
     if (!canSeal || loading) return;
@@ -387,13 +387,13 @@ export default function SealScreen() {
         </View>
       </RitualCard>
 
-      {sealed && isSelfWitness ? (
+      {sealed ? (
         <Animated.View style={[styles.oathFlash, { opacity: oathFlashOpacity }]} pointerEvents="none">
           <Text style={styles.oathFlashText}>I solemnly swear{"\n"}to keep my word this week.</Text>
         </Animated.View>
       ) : null}
 
-      {!sealed && isSelfWitness ? (
+      {!sealed ? (
         <Animated.View style={[styles.swearCard, { borderColor: swearBorderColor }]}>
           <Animated.View style={[styles.swearGlowBg, { opacity: swearBgOpacity }]} />
           <Text style={styles.oathHeroText}>I solemnly swear{"\n"}to keep my word this week.</Text>

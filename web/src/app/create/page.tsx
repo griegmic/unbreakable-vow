@@ -73,7 +73,6 @@ export default function CreatePage() {
   const [witnessToken, setWitnessToken] = useState<string | null>(null);
   const [sealed, setSealed] = useState(false);
 
-  const [vowCount, setVowCount] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Compute suggestion as user types
@@ -120,14 +119,6 @@ export default function CreatePage() {
           setWitnessPhone(unique[0].phone);
         }
       }
-
-      // Vow count for oath copy
-      const { count } = await supabase
-        .from('vows')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', session.user.id)
-        .neq('status', 'draft');
-      if (count) setVowCount(count);
 
       // Smart defaults
       try {
@@ -765,7 +756,7 @@ export default function CreatePage() {
           <OathCheckbox
             checked={oathChecked}
             onChange={setOathChecked}
-            label={vowCount >= 2 ? "I swear it." : "I solemnly swear to keep this vow — or pay the price."}
+            label="I solemnly swear to honor this vow and accept the consequences."
           />
         </FadeUp>
 

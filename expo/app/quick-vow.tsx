@@ -88,7 +88,6 @@ export default function QuickVowScreen() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [oathChecked, setOathChecked] = useState(false);
   const [recentWitnesses, setRecentWitnesses] = useState<RecentWitness[]>([]);
-  const [vowCount, setVowCount] = useState(0); // For oath copy evolution
 
   // Witness contact picker
   const [contactPickerVisible, setContactPickerVisible] = useState(false);
@@ -195,14 +194,6 @@ export default function QuickVowScreen() {
           setWitnessPhone(unique[0].phone);
         }
       }
-
-      // Vow count (for oath copy)
-      const { count } = await supabase
-        .from('vows')
-        .select('id', { count: 'exact', head: true })
-        .eq('user_id', session.user.id)
-        .neq('status', 'draft');
-      if (count) setVowCount(count);
 
       // Smart defaults from last vow
       try {
@@ -646,7 +637,7 @@ export default function QuickVowScreen() {
             {oathChecked ? <Text style={styles.checkmark}>✓</Text> : null}
           </View>
           <Text style={styles.oathText}>
-            {vowCount >= 2 ? 'I swear it.' : 'I solemnly swear to keep this vow — or pay the price.'}
+            I solemnly swear to honor this vow and accept the consequences.
           </Text>
         </Pressable>
 
