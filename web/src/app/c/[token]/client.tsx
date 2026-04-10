@@ -882,31 +882,54 @@ export default function ChallengeInviteClient({
           </FadeUp>
         )}
 
-        {/* Primary CTA: Text the darer */}
-        {makerPhone && (
-          <FadeUp delay={0.22}>
-            <button
-              type="button"
-              onClick={() => {
-                const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
-                const message = encodeURIComponent(`I accepted your dare. Game on.`);
-                window.location.href = `sms:${cleanPhone}&body=${message}`;
-              }}
-              className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-              style={{
-                background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-              }}
-            >
-              <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-                <MessageCircle className="w-5 h-5" style={{ color: '#0B0D11' }} />
-                <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                  Text {makerLabel}
-                </span>
-              </div>
-            </button>
-          </FadeUp>
-        )}
+        {/* Primary CTA: Text the darer — time-based contextual copy */}
+        <FadeUp delay={0.22}>
+          {(() => {
+            // Time-based nudge label
+            const elapsed = (start && end) ? Math.min(1, Math.max(0, (now.getTime() - start.getTime()) / (end.getTime() - start.getTime()))) : 0;
+            const nudgeLabel = elapsed < 0.05
+              ? `Game on, ${makerLabel}`
+              : elapsed < 0.15
+              ? `Show ${makerLabel} you're on it`
+              : elapsed < 0.85
+              ? `Check in with ${makerLabel}`
+              : `Almost time — message ${makerLabel}`;
+            const smsBody = elapsed < 0.05
+              ? `I accepted your dare. Game on.`
+              : elapsed < 0.15
+              ? `Just checking in on the dare. I'm on it.`
+              : elapsed < 0.85
+              ? `Still going strong on the dare.`
+              : `Almost verdict time. I'm still in.`;
+
+            return (
+              <button
+                type="button"
+                onClick={() => {
+                  const message = encodeURIComponent(smsBody);
+                  if (makerPhone) {
+                    const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
+                    window.location.href = `sms:${cleanPhone}&body=${message}`;
+                  } else {
+                    window.location.href = `sms:?body=${message}`;
+                  }
+                }}
+                className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                style={{
+                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                }}
+              >
+                <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
+                  <MessageCircle className="w-5 h-5" style={{ color: '#0B0D11' }} />
+                  <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                    {nudgeLabel}
+                  </span>
+                </div>
+              </button>
+            );
+          })()}
+        </FadeUp>
 
         {/* Phone capture — auto-expanded on first visit (peak engagement moment) */}
         <FadeUp delay={0.26}>
