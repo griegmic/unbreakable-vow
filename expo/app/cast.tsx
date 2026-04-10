@@ -386,7 +386,7 @@ export default function CastScreen() {
       <RitualScreen
         footer={
           <>
-            <PrimaryButton label="Share the dare →" onPress={handleShare} testID="cast-share" />
+            <PrimaryButton label={`Send to ${targetName} →`} onPress={handleShare} testID="cast-share" />
             <SecondaryButton
               label={copied ? '✓ Copied!' : 'Copy link'}
               onPress={handleCopyLink}
@@ -404,12 +404,12 @@ export default function CastScreen() {
         </View>
 
         <View style={styles.sentTextWrap}>
-          <Text style={styles.sentStamp}>DARE SENT</Text>
+          <Text style={styles.sentStamp}>DARE CREATED</Text>
           <Text style={styles.sentTitle}>
-            Now send it to {targetName}
+            Send it to {targetName}
           </Text>
           <Text style={styles.sentSubtitle}>
-            Share the link below. They have 48 hours to accept or back down.
+            {targetName} has 48 hours to accept or back down.
           </Text>
         </View>
 

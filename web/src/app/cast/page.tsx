@@ -363,7 +363,7 @@ export default function CastPage() {
               className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
               style={{ color: 'var(--text)' }}
             >
-              Now send it to {targetName}.
+              Send it to {targetName}.
             </h1>
             <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
               {targetName} has 48 hours to accept or back down.
