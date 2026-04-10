@@ -338,7 +338,7 @@ export default function WitnessInviteScreen() {
 
           {/* Tertiary: Viral CTA */}
           <Pressable
-            onPress={() => Linking.openURL('https://unbreakablevow.app/?new=1')}
+            onPress={() => Linking.openURL('https://unbreakablevow.app/create')}
             style={styles.outlinedButton}
           >
             <Text style={styles.outlinedButtonText}>Your turn — what will you commit to?</Text>
@@ -383,7 +383,7 @@ export default function WitnessInviteScreen() {
             </Pressable>
 
             <Pressable
-              onPress={() => Linking.openURL('https://unbreakablevow.app/?new=1')}
+              onPress={() => Linking.openURL('https://unbreakablevow.app/create')}
               style={styles.outlinedButton}
             >
               <Text style={styles.outlinedButtonText}>Your turn — what will you commit to?</Text>
@@ -483,7 +483,7 @@ export default function WitnessInviteScreen() {
 
           {/* Tertiary: Viral CTA */}
           <Pressable
-            onPress={() => Linking.openURL('https://unbreakablevow.app/?new=1')}
+            onPress={() => Linking.openURL('https://unbreakablevow.app/create')}
             style={styles.outlinedButton}
           >
             <Text style={styles.outlinedButtonText}>Your turn — what will you commit to?</Text>

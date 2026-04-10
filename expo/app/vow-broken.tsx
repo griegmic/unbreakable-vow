@@ -127,11 +127,8 @@ export default function VowBrokenScreen() {
             testID="broken-double-down"
           />
           <SecondaryButton
-            label="Challenge a friend"
-            onPress={() => {
-              resetVow();
-              router.replace('/');
-            }}
+            label="Challenge a friend — coming soon"
+            onPress={() => {}}
             testID="broken-challenge"
           />
           <SecondaryButton

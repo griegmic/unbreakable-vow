@@ -68,8 +68,8 @@ function VowBrokenContent() {
             onPress={() => router.push(`/create?text=${encodeURIComponent(vowText)}&stake=${amount}`)}
           />
           <SecondaryButton
-            label="Challenge a friend"
-            onPress={() => router.push('/create')}
+            label="Challenge a friend — coming soon"
+            onPress={() => {}}
           />
           <SecondaryButton
             label="View your record"
