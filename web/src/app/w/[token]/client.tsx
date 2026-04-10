@@ -170,8 +170,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     if (makerPhone) {
       // Sanitize phone: keep only digits, +, and hyphens
       const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
-      // Use &body= (not ?body=) when recipient is present — required for iOS Safari
-      window.location.href = `sms:${cleanPhone}&body=${message}`;
+      window.location.href = `sms:${cleanPhone}?body=${message}`;
     } else {
       window.location.href = `sms:?body=${message}`;
     }

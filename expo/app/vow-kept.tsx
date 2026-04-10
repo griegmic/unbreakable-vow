@@ -13,6 +13,12 @@ import type { Database } from '@/types/database';
 
 type VowRow = Database['public']['Tables']['vows']['Row'];
 
+const ANTI_CAUSES = ['Donald Trump', 'NRA', 'Flat Earth Society'];
+
+function isAntiCause(destination: string): boolean {
+  return ANTI_CAUSES.some(c => destination.toLowerCase().includes(c.toLowerCase()));
+}
+
 export default function VowKeptScreen() {
   const { activeVowText, resetVow, vow, isSelfWitness } = useVowFlow();
   const receiptRef = useRef<View>(null);
@@ -223,7 +229,7 @@ export default function VowKeptScreen() {
       </Animated.View>
 
       {/* Pay it forward section — staked vows with destination only */}
-      {!isZeroStake && destination ? (
+      {!isZeroStake && destination && !isAntiCause(destination) ? (
         <Animated.View style={{ opacity: contentFade }}>
           <RitualCard>
             <Text style={styles.payForwardText}>

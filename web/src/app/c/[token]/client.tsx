@@ -370,8 +370,13 @@ export default function ChallengeInviteClient({
         setVerdictBusy(false);
         return;
       }
-      // Redirect to outcome page
-      window.location.href = verdict === 'kept' ? '/vow-kept' : '/vow-broken';
+      // Redirect to outcome page with vow data
+      const amountDollars = Math.round((sealedVow?.stake ?? vow.stake_amount) / 100);
+      const outText = encodeURIComponent(vow.refined_text || '');
+      const outDest = encodeURIComponent(sealedVow?.charity ?? vow.destination ?? '');
+      const outWitness = encodeURIComponent(makerName);
+      const base = verdict === 'kept' ? '/vow-kept' : '/vow-broken';
+      window.location.href = `${base}?amount=${amountDollars}&text=${outText}&destination=${outDest}&witness=${outWitness}`;
     } catch {
       setError('Network error. Please check your connection.');
       setVerdictBusy(false);
@@ -382,7 +387,7 @@ export default function ChallengeInviteClient({
   if (step === 'dare') {
     return (
       <RitualScreen>
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[70dvh] gap-8 text-center px-2">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[70dvh] gap-5 text-center px-4">
           <FadeUp>
             <HeaderBadge />
           </FadeUp>
@@ -416,11 +421,22 @@ export default function ChallengeInviteClient({
           )}
 
           <FadeUp delay={0.3}>
-            <div className="flex flex-col items-center gap-3 w-full max-w-[320px]">
-              <PrimaryButton
-                label="I solemnly swear"
-                onPress={() => setStep('stakes')}
-              />
+            <div className="flex flex-col items-center gap-2 w-full max-w-[320px]">
+              <button
+                type="button"
+                onClick={() => setStep('stakes')}
+                className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                style={{
+                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                }}
+              >
+                <div className="min-h-[56px] flex items-center justify-center px-5">
+                  <span className="text-[16px] font-bold font-serif tracking-[-0.2px]" style={{ color: '#0B0D11' }}>
+                    I solemnly swear
+                  </span>
+                </div>
+              </button>
               <button
                 type="button"
                 onClick={() => setStep('back-down-confirm')}
@@ -904,7 +920,7 @@ export default function ChallengeInviteClient({
                   const message = encodeURIComponent(smsBody);
                   if (makerPhone) {
                     const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
-                    window.location.href = `sms:${cleanPhone}&body=${message}`;
+                    window.location.href = `sms:${cleanPhone}?body=${message}`;
                   } else {
                     window.location.href = `sms:?body=${message}`;
                   }

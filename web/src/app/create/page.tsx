@@ -1,6 +1,6 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Sparkles, User, DollarSign, Calendar, Scale, Plus, CheckCircle } from 'lucide-react';
 import {
   RitualScreen, RitualCard, PrimaryButton, ChoiceChip,
@@ -40,17 +40,24 @@ interface RecentWitness {
   phone: string;
 }
 
-export default function CreatePage() {
+function CreatePageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { isAuthenticated, session } = useAuth();
   const { resetVow } = useVowFlow();
 
+  // Pre-populate from URL params (e.g. "Double down" from vow-broken page)
+  const initialText = searchParams.get('text') || '';
+  const initialStake = parseInt(searchParams.get('stake') || '0', 10);
+
   // Form state
-  const [vowText, setVowText] = useState('');
+  const [vowText, setVowText] = useState(initialText);
   const [suggestion, setSuggestion] = useState('');
   const [witnessName, setWitnessName] = useState('');
   const [witnessPhone, setWitnessPhone] = useState('');
-  const [stakeAmount, setStakeAmount] = useState(10);
+  const [stakeAmount, setStakeAmount] = useState(
+    STAKE_OPTIONS.includes(initialStake) ? initialStake : 10
+  );
   const [consequence, setConsequence] = useState<ConsequenceType>('charity');
   const [destination, setDestination] = useState('ALS Association');
   const [deadlineLabel, setDeadlineLabel] = useState('In 7 days');
@@ -777,5 +784,13 @@ export default function CreatePage() {
         />
       )}
     </>
+  );
+}
+
+export default function CreatePage() {
+  return (
+    <Suspense>
+      <CreatePageContent />
+    </Suspense>
   );
 }

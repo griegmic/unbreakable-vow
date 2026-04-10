@@ -1,30 +1,48 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Mail, ArrowLeft } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-type Step = 'pick' | 'email' | 'otp';
+type Step = 'pick' | 'email' | 'otp' | 'name';
 
 export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean; onDismiss: () => void; onSuccess: () => void }) {
   const [step, setStep] = useState<Step>('pick');
   const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [displayName, setDisplayName] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const otpInputRef = useRef<HTMLInputElement>(null);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (visible) {
       setStep('pick');
       setEmail('');
-      setOtp('');
+      setOtp(['', '', '', '', '', '']);
+      setDisplayName('');
       setError('');
       setBusy(false);
       setCooldown(0);
     }
   }, [visible]);
+
+  // Listen for auth state changes (Google OAuth return, or magic link clicked as fallback)
+  useEffect(() => {
+    if (!visible) return;
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        const fullName = session.user?.user_metadata?.full_name;
+        if (!fullName) {
+          setStep('name');
+        } else {
+          onSuccess();
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [visible, onSuccess]);
 
   // Escape key to dismiss
   useEffect(() => {
@@ -71,37 +89,16 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
       return;
     }
     startCooldown();
+    setOtp(['', '', '', '', '', '']);
     setStep('otp');
-    setTimeout(() => otpInputRef.current?.focus(), 100);
-  };
-
-  const handleVerifyOtp = async (code: string) => {
-    if (code.length !== 6 || busy) return;
-    setBusy(true);
-    setError('');
-    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code, type: 'email' });
-    setBusy(false);
-    if (error) {
-      setError(error.message);
-      return;
-    }
-    onSuccess();
-  };
-
-  const handleOtpChange = (value: string) => {
-    const cleaned = value.replace(/\D/g, '').slice(0, 6);
-    setOtp(cleaned);
-    if (cleaned.length === 6) {
-      handleVerifyOtp(cleaned);
-    }
+    // Focus first OTP input after render
+    setTimeout(() => otpRefs.current[0]?.focus(), 100);
   };
 
   const handleGoogleSignIn = async () => {
     if (busy) return;
     setBusy(true);
     setError('');
-    // Encode return path in the callback URL so it survives mobile Safari's
-    // localStorage clearing during cross-origin OAuth redirects.
     let returnPath = window.location.pathname;
     if (returnPath === '/') {
       try {
@@ -112,14 +109,11 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
         }
       } catch {}
     }
-    // Cookies survive cross-origin OAuth redirects (localStorage may be wiped in Safari/in-app browsers).
-    // Save return path AND the entire vow flow state so nothing is lost.
     try { document.cookie = `auth_return_path=${encodeURIComponent(returnPath)}; path=/; max-age=300; SameSite=Lax`; } catch {}
     try {
       const flow = localStorage.getItem('unbreakable-vow-flow');
       if (flow) document.cookie = `vow_flow_backup=${encodeURIComponent(flow)}; path=/; max-age=300; SameSite=Lax`;
     } catch {}
-    // Also save to localStorage as fallback
     try { localStorage.setItem('auth-return-path', returnPath); } catch {}
     const callbackUrl = new URL('/auth/callback', window.location.origin);
     callbackUrl.searchParams.set('return_to', returnPath);
@@ -129,7 +123,6 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
         redirectTo: callbackUrl.toString(),
       },
     });
-    // If we get here, the redirect didn't happen (error case)
     if (error) {
       setError(error.message);
       setBusy(false);
@@ -151,6 +144,98 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
       return;
     }
     startCooldown();
+    setOtp(['', '', '', '', '', '']);
+    setTimeout(() => otpRefs.current[0]?.focus(), 100);
+  };
+
+  const handleOtpChange = useCallback((index: number, value: string) => {
+    // Only allow digits
+    const digit = value.replace(/\D/g, '').slice(-1);
+    setOtp((prev) => {
+      const next = [...prev];
+      next[index] = digit;
+      return next;
+    });
+    setError('');
+    // Auto-advance to next input
+    if (digit && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  }, []);
+
+  const handleOtpKeyDown = useCallback((index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  }, [otp]);
+
+  const handleOtpPaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const digits = pasted.split('');
+    setOtp((prev) => {
+      const next = [...prev];
+      digits.forEach((d, i) => { next[i] = d; });
+      return next;
+    });
+    // Focus the input after the last pasted digit
+    const focusIndex = Math.min(digits.length, 5);
+    otpRefs.current[focusIndex]?.focus();
+  }, []);
+
+  const handleVerifyOtp = async () => {
+    const code = otp.join('');
+    if (code.length !== 6 || busy) return;
+    setBusy(true);
+    setError('');
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code,
+      type: 'email',
+    });
+    setBusy(false);
+    if (error) {
+      setError(error.message.includes('expired') ? 'Code expired. Please request a new one.' : 'Invalid code. Please try again.');
+      return;
+    }
+    // Successful verification — check if name is needed
+    const fullName = data.session?.user?.user_metadata?.full_name;
+    if (!fullName) {
+      setStep('name');
+    } else {
+      onSuccess();
+    }
+  };
+
+  // Auto-submit when all 6 digits entered
+  useEffect(() => {
+    if (step === 'otp' && otp.every(d => d !== '') && !busy) {
+      handleVerifyOtp();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otp, step]);
+
+  const handleSaveName = async () => {
+    if (!displayName.trim() || busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await supabase.auth.updateUser({
+        data: { full_name: displayName.trim() },
+      });
+      const { data: { session: s } } = await supabase.auth.getSession();
+      if (s?.user) {
+        await supabase.from('users').upsert(
+          { id: s.user.id, display_name: displayName.trim() },
+          { onConflict: 'id' },
+        );
+      }
+    } catch {
+      // Non-critical — continue even if save fails
+    }
+    setBusy(false);
+    onSuccess();
   };
 
   if (!visible) return null;
@@ -280,7 +365,7 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
         {step === 'otp' && (
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
-              <button onClick={() => { setStep('email'); setOtp(''); setError(''); }} className="p-1">
+              <button onClick={() => { setStep('email'); setError(''); setOtp(['', '', '', '', '', '']); }} className="p-1">
                 <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text)' }} />
               </button>
               <div>
@@ -289,34 +374,29 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
               </div>
             </div>
 
-            {/* OTP Boxes */}
-            <div className="relative">
-              <div className="flex gap-2 justify-center">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-[42px] h-[50px] rounded-xl flex items-center justify-center text-[22px] font-bold"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      border: `1.5px solid ${i === otp.length ? 'var(--gold-bright)' : otp[i] ? 'var(--border-strong)' : 'var(--border)'}`,
-                      color: 'var(--text)',
-                    }}
-                  >
-                    {otp[i] || ''}
-                  </div>
-                ))}
-              </div>
-              <input
-                ref={otpInputRef}
-                type="tel"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                aria-label="Enter 6-digit verification code"
-                value={otp}
-                onChange={(e) => handleOtpChange(e.target.value)}
-                className="absolute inset-0 opacity-0 w-full h-full"
-                autoFocus
-              />
+            {/* 6-digit OTP input */}
+            <div className="flex justify-center gap-2" onPaste={handleOtpPaste}>
+              {otp.map((digit, i) => (
+                <input
+                  key={i}
+                  ref={(el) => { otpRefs.current[i] = el; }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleOtpChange(i, e.target.value)}
+                  onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                  className="w-12 h-14 rounded-xl text-center text-[22px] font-bold outline-none transition-all focus:ring-2"
+                  style={{
+                    backgroundColor: 'var(--surface)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
+                    caretColor: 'var(--gold)',
+                    // @ts-expect-error CSS custom property
+                    '--tw-ring-color': 'var(--gold)',
+                  }}
+                />
+              ))}
             </div>
 
             {error && <p className="text-sm text-center" style={{ color: 'var(--danger)' }}>{error}</p>}
@@ -334,6 +414,52 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
               style={{ color: cooldown > 0 ? 'var(--text-muted)' : 'var(--gold)' }}
             >
               {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
+            </button>
+          </div>
+        )}
+
+        {step === 'name' && (
+          <div className="flex flex-col gap-5">
+            <div>
+              <h2 className="text-xl font-bold font-serif" style={{ color: 'var(--text)' }}>What should we call you?</h2>
+              <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
+                This is how your name appears to witnesses.
+              </p>
+            </div>
+            <div
+              className="rounded-[18px] p-4 flex flex-col gap-2"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <label className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>
+                YOUR NAME
+              </label>
+              <input
+                type="text"
+                value={displayName}
+                onChange={(e) => setDisplayName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveName()}
+                placeholder="e.g. Alex"
+                autoFocus
+                className="bg-transparent text-[17px] outline-none"
+                style={{ color: 'var(--text)' }}
+              />
+            </div>
+            {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
+            <button
+              onClick={handleSaveName}
+              disabled={!displayName.trim() || busy}
+              className="w-full min-h-[52px] rounded-2xl flex items-center justify-center transition-transform active:scale-[0.975] disabled:active:scale-100"
+              style={{
+                background: !displayName.trim() || busy ? '#29303C' : 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+              }}
+            >
+              {busy ? (
+                <div className="w-5 h-5 border-2 border-[#0B0D11] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <span className="text-[15px] font-extrabold" style={{ color: !displayName.trim() ? 'var(--text-muted)' : '#0B0D11' }}>
+                  Continue
+                </span>
+              )}
             </button>
           </div>
         )}

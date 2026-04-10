@@ -17,21 +17,24 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
     setLoading(true);
     setError('');
 
-    const { error } = await stripe.confirmPayment({
+    const result = await stripe.confirmPayment({
       elements,
       confirmParams: { return_url: window.location.origin + '/sent' },
       redirect: 'if_required',
     });
 
-    if (error) {
-      if (error.type === 'card_error' || error.type === 'validation_error') {
-        setError(error.message || 'Payment failed.');
+    if (result.error) {
+      if (result.error.type === 'card_error' || result.error.type === 'validation_error') {
+        setError(result.error.message || 'Payment failed.');
       } else {
         setError('An unexpected error occurred.');
       }
       setLoading(false);
-    } else {
+    } else if (result.paymentIntent && (result.paymentIntent.status === 'succeeded' || result.paymentIntent.status === 'requires_capture')) {
       onSuccess();
+    } else {
+      setError('Payment could not be completed. Please try again.');
+      setLoading(false);
     }
   };
 

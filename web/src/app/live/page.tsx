@@ -201,7 +201,7 @@ export default function LivePage() {
     if (phone) {
       const cleanPhone = phone.replace(/[^\d+\-]/g, '');
       // ?&body= works cross-platform (iOS Safari + Android)
-      window.location.href = `sms:${cleanPhone}?&body=${body}`;
+      window.location.href = `sms:${cleanPhone}?body=${body}`;
     } else {
       // Desktop or no phone: copy message to clipboard
       const msg = decodeURIComponent(body);
@@ -343,7 +343,7 @@ export default function LivePage() {
           </FadeUp>
         )}
 
-        {/* Send to a friend */}
+        {/* Witness pending — nudge card */}
         {!witnessDeclined && witnessUrl && (
           <FadeUp delay={0.12}>
             <div
@@ -355,21 +355,17 @@ export default function LivePage() {
                   <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--gold)' }} />
                 </div>
                 <div>
-                  <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Now send it to your witness</span>
-                  <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>They&apos;ll tap the link to accept and start watching.</span>
+                  <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Waiting for {vow.witness_name} to accept</span>
+                  <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+                    {vow.witness_phone ? 'We texted them an invite. Nudge them if they haven\u2019t checked yet.' : 'Share the invite so they can accept and start watching.'}
+                  </span>
                 </div>
               </div>
               <ShareButton
                 url={witnessUrl}
                 text={nudgeShareText}
-                buttonText="Share with a friend"
+                buttonText={vow.witness_phone ? `Nudge ${vow.witness_name}` : `Send to ${vow.witness_name}`}
               />
-              <div className="flex items-center gap-2">
-                <div className="rounded-[10px] py-2 px-3 flex-1 min-w-0" style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}>
-                  <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{witnessUrl}</p>
-                </div>
-                <CopyLinkButton url={witnessUrl} />
-              </div>
             </div>
           </FadeUp>
         )}

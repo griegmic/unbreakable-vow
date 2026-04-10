@@ -360,7 +360,11 @@ export default function CastPage() {
                       });
                       const data = await res.json().catch(() => null);
                       if (!res.ok || data?.error) { setVerdictError(data?.error || `Error ${res.status}`); setVerdictBusy(false); return; }
-                      window.location.href = '/vow-kept';
+                      const amtD = acceptedVowDetails ? Math.round(acceptedVowDetails.stakeAmount / 100) : 0;
+                      const txtE = encodeURIComponent(formattedText);
+                      const destE = encodeURIComponent(acceptedVowDetails?.destination || '');
+                      const witE = encodeURIComponent(senderName || 'You');
+                      window.location.href = `/vow-kept?amount=${amtD}&text=${txtE}&destination=${destE}&witness=${witE}&self=1`;
                     } catch { setVerdictError('Network error'); setVerdictBusy(false); }
                   }}
                   disabled={verdictBusy}
@@ -389,7 +393,11 @@ export default function CastPage() {
                       });
                       const data = await res.json().catch(() => null);
                       if (!res.ok || data?.error) { setVerdictError(data?.error || `Error ${res.status}`); setVerdictBusy(false); return; }
-                      window.location.href = '/vow-broken';
+                      const amtD2 = acceptedVowDetails ? Math.round(acceptedVowDetails.stakeAmount / 100) : 0;
+                      const txtE2 = encodeURIComponent(formattedText);
+                      const destE2 = encodeURIComponent(acceptedVowDetails?.destination || '');
+                      const witE2 = encodeURIComponent(senderName || 'You');
+                      window.location.href = `/vow-broken?amount=${amtD2}&text=${txtE2}&destination=${destE2}&witness=${witE2}&self=1`;
                     } catch { setVerdictError('Network error'); setVerdictBusy(false); }
                   }}
                   disabled={verdictBusy}

@@ -173,7 +173,13 @@ export default function VowDetailPage() {
         setVerdictBusy(false);
         return;
       }
-      window.location.href = verdict === 'kept' ? '/vow-kept' : '/vow-broken';
+      const amountDollars = Math.round((vow.stake_amount || 0) / 100);
+      const outText = encodeURIComponent(vow.refined_text || '');
+      const outDest = encodeURIComponent(vow.destination || '');
+      const outWitness = encodeURIComponent(vow.witness_name || '');
+      const isSelf = vow.witness_user_id === userId ? '&self=1' : '';
+      const base = verdict === 'kept' ? '/vow-kept' : '/vow-broken';
+      window.location.href = `${base}?amount=${amountDollars}&text=${outText}&destination=${outDest}&witness=${outWitness}${isSelf}`;
     } catch {
       setVerdictError('Network error');
       setVerdictBusy(false);
@@ -186,7 +192,7 @@ export default function VowDetailPage() {
       `Checking in on my vow: "${vow.refined_text}"${vow.stake_amount > 0 ? ` — $${vow.stake_amount / 100} on the line` : ''}`
     );
     const cleanPhone = vow.witness_phone.replace(/[^\d+\-]/g, '');
-    window.location.href = `sms:${cleanPhone}?&body=${body}`;
+    window.location.href = `sms:${cleanPhone}?body=${body}`;
   };
 
   return (

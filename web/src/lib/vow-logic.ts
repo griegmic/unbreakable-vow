@@ -204,16 +204,24 @@ export function analyzeVow(input: string): AnalysisResult {
 
   const hasVagueTerm = vagueTerms.some((term) => lowered.includes(term));
   const tooShort = lowered.split(' ').length < 3;
+
   const hasVagueAction = /(more|less|better|some|a bit|a little|a few)\s+(\w+)/i.test(lowered)
     && !/\d+/.test(lowered)
     && !/(no\s+|don't\s+|stop\s+|avoid\s+|quit\s+)/i.test(lowered);
   const hasNoMeasurable = !/(\d+|every|all\s+week|all\s+month|daily|no\s+|don't|stop|avoid|quit|before\s+\d|by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|by\s+end)/i.test(lowered);
 
+  // Reject explicitly vague or too-short vows first
   if (hasVagueTerm || tooShort) {
     return { type: 'vague', suggestions: getContextualSuggestions(input) };
   }
   if (hasVagueAction && hasNoMeasurable) {
     return { type: 'vague', suggestions: getContextualSuggestions(input) };
+  }
+
+  // If vow has a clear action verb and is long enough, accept it —
+  // the app has a separate date picker that adds the deadline.
+  if (hasActionVerb(lowered) && lowered.split(' ').length >= 4) {
+    return { type: 'already_good' };
   }
 
   // Action + relative time reference = good enough (e.g. "go to the gym tomorrow morning")

@@ -5,6 +5,7 @@ import { Share2, ShieldCheck, ArrowRight, Camera } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
+import { antiCauses } from '@/lib/vow-logic';
 
 const confettiCSS = `
 @keyframes confetti-fall {
@@ -79,6 +80,10 @@ function ConfettiEffect() {
       ))}
     </div>
   );
+}
+
+function isAntiCause(dest: string): boolean {
+  return antiCauses.some(c => dest.toLowerCase().includes(c.toLowerCase()));
 }
 
 function VowKeptContent() {
@@ -261,7 +266,7 @@ function VowKeptContent() {
         </FadeUp>
 
         {/* Pay it forward section — staked vows with destination only */}
-        {!isZeroStake && destination && (
+        {!isZeroStake && destination && !isAntiCause(destination) && (
           <FadeUp delay={0.18}>
             <RitualCard>
               <p style={{

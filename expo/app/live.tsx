@@ -639,7 +639,7 @@ export default function LiveScreen() {
         </View>
         <Text style={styles.pendingDesc}>
           {vow.phoneNumber
-            ? `We sent them an invite. Share the link below to nudge them personally.`
+            ? `We texted them an invite. Nudge them if they haven't checked yet.`
             : `Share the invite so ${vow.witnessName} can accept and hold you to it.`
           }
         </Text>
@@ -649,7 +649,7 @@ export default function LiveScreen() {
           testID="live-share-invite"
         >
           <Share2 color="#0B0D11" size={16} />
-          <Text style={styles.shareInviteText}>Share with {vow.witnessName}</Text>
+          <Text style={styles.shareInviteText}>{vow.phoneNumber ? `Nudge ${vow.witnessName}` : `Send to ${vow.witnessName}`}</Text>
         </Pressable>
         <Pressable
           style={[styles.goSoloLink, goingSolo && { opacity: 0.5 }]}
@@ -973,35 +973,7 @@ export default function LiveScreen() {
         subtitle={`$${vow.stake.amount} at stake \u00B7 Goes to ${brokenTarget} if broken`}
       />
 
-      {/* Share banner for witnessed vows */}
-      {!isSelfWitness && !witnessAccepted && !shareBannerDismissed && vow.witnessName && (
-        <View style={styles.shareBanner}>
-          <View style={styles.shareBannerContent}>
-            <Text style={styles.shareBannerText}>Send your vow to {vow.witnessName}</Text>
-            <View style={styles.shareBannerActions}>
-              <Pressable
-                onPress={async () => {
-                  const witnessUrl = vow.witnessInviteToken ? `https://unbreakablevow.app/w/${vow.witnessInviteToken}` : '';
-                  if (witnessUrl) {
-                    try {
-                      await Share.share({
-                        message: `I just made a vow: "${activeVowText}" — I picked you to hold me accountable. Tap here to accept: ${witnessUrl}`,
-                      });
-                    } catch {}
-                  }
-                }}
-                style={styles.shareBannerBtn}
-              >
-                <Share2 color="#0B0D11" size={14} />
-                <Text style={styles.shareBannerBtnText}>Share</Text>
-              </Pressable>
-              <Pressable onPress={() => setShareBannerDismissed(true)} hitSlop={8}>
-                <X color={palette.textMuted} size={16} />
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      )}
+      {/* Removed redundant share banner — invite is already sent, nudge lives in the pending card below */}
 
       {phase === 'witness_pending' && renderWitnessPendingCard()}
       {phase === 'vow_active' && renderVowActiveCard()}
