@@ -224,10 +224,9 @@ export default function CastScreen() {
       // Auto-trigger share sheet immediately
       const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
       const name = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || '';
-      const firstName = name.split(' ')[0];
-      const shareText = firstName
-        ? `${firstName} doesn't think you can ${vowPart}. Prove them wrong → ${link}`
-        : `I don't think you can ${vowPart}. Prove me wrong → ${link}`;
+      const shareText = name
+        ? `${name} dared you to make an Unbreakable Vow: ${vowPart} → ${link}`
+        : `You've been dared to make an Unbreakable Vow: ${vowPart} → ${link}`;
       try {
         const result = await Share.share({ message: shareText });
         if (result.action === Share.sharedAction) {
@@ -285,11 +284,10 @@ export default function CastScreen() {
 
   const getShareText = () => {
     const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
-    const firstName = senderName.split(' ')[0];
-    if (firstName) {
-      return `${firstName} doesn't think you can ${vowPart}. Prove them wrong → ${dareLink}`;
+    if (senderName) {
+      return `${senderName} dared you to make an Unbreakable Vow: ${vowPart} → ${dareLink}`;
     }
-    return `I don't think you can ${vowPart}. Prove me wrong → ${dareLink}`;
+    return `You've been dared to make an Unbreakable Vow: ${vowPart} → ${dareLink}`;
   };
 
   const handleShare = useCallback(async () => {

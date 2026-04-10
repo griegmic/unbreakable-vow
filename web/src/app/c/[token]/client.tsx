@@ -418,7 +418,7 @@ export default function ChallengeInviteClient({
           <FadeUp delay={0.3}>
             <div className="flex flex-col items-center gap-3 w-full max-w-[320px]">
               <PrimaryButton
-                label="I swear I will"
+                label="I solemnly swear"
                 onPress={() => setStep('stakes')}
               />
               <button

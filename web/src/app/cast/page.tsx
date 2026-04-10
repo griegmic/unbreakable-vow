@@ -181,10 +181,9 @@ export default function CastPage() {
 
       // Auto-trigger share sheet immediately
       const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
-      const firstName = senderName.split(' ')[0];
-      const shareText = firstName
-        ? `${firstName} doesn't think you can ${vowPart}. Prove them wrong → ${link}`
-        : `I don't think you can ${vowPart}. Prove me wrong → ${link}`;
+      const shareText = senderName
+        ? `${senderName} dared you to make an Unbreakable Vow: ${vowPart} → ${link}`
+        : `You've been dared to make an Unbreakable Vow: ${vowPart} → ${link}`;
       if (typeof navigator !== 'undefined' && navigator.share) {
         try {
           await navigator.share({ text: shareText });
@@ -206,11 +205,10 @@ export default function CastPage() {
 
   const getShareText = () => {
     const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
-    const firstName = senderName.split(' ')[0];
-    if (firstName) {
-      return `${firstName} doesn't think you can ${vowPart}. Prove them wrong → ${dareLink}`;
+    if (senderName) {
+      return `${senderName} dared you to make an Unbreakable Vow: ${vowPart} → ${dareLink}`;
     }
-    return `I don't think you can ${vowPart}. Prove me wrong → ${dareLink}`;
+    return `You've been dared to make an Unbreakable Vow: ${vowPart} → ${dareLink}`;
   };
 
   const handleShare = async () => {
