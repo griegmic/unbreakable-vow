@@ -269,8 +269,8 @@ export default function CastScreen() {
       <RitualScreen
         footer={
           <>
-            <PrimaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
-            <SecondaryButton label="Dashboard" onPress={() => router.push('/dashboard')} testID="cast-dashboard" />
+            <PrimaryButton label="Send again" onPress={handleShare} testID="cast-reshare" />
+            <SecondaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
           </>
         }
       >
@@ -286,9 +286,20 @@ export default function CastScreen() {
           <Text style={styles.sentStamp}>DARE SENT</Text>
           <Text style={styles.sentTitle}>Waiting for {targetName} to respond...</Text>
           <Text style={styles.sentSubtitle}>
-            You&apos;ll get a notification when they accept or back down.
+            No reply? Send it again — or try a different app.
           </Text>
         </View>
+
+        <RitualCard>
+          <Text style={styles.previewLabel}>WHAT THEY&apos;LL SEE</Text>
+          <Text style={styles.previewText}>{getShareText()}</Text>
+        </RitualCard>
+
+        <SecondaryButton
+          label={copied ? '✓ Copied!' : 'Copy link'}
+          onPress={handleCopyLink}
+          testID="cast-copy-post"
+        />
       </RitualScreen>
     );
   }
@@ -442,10 +453,13 @@ export default function CastScreen() {
           <TextInput
             value={targetName}
             onChangeText={setTargetName}
-            placeholder="Their name"
+            placeholder="First name"
             placeholderTextColor={palette.textMuted}
             style={styles.nameInput}
             autoCapitalize="words"
+            autoCorrect={false}
+            maxLength={30}
+            returnKeyType="next"
           />
         </RitualCard>
 

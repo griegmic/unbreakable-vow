@@ -210,51 +210,65 @@ export default function CastPage() {
     return (
       <RitualScreen
         footer={
-          <div className="flex flex-col gap-2">
-            <PrimaryButton
-              label="Dare someone else"
-              onPress={() => {
-                setDareSent(false);
-                setShared(false);
-                setDareLink('');
-                setVowText('');
-                setSuggestion('');
-                setTargetName('');
-                setSuggestedStake(25);
-                setError('');
-              }}
-            />
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="min-h-[44px] flex items-center justify-center"
-            >
-              <span className="text-[15px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Dashboard →</span>
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              setDareSent(false);
+              setShared(false);
+              setDareLink('');
+              setVowText('');
+              setSuggestion('');
+              setTargetName('');
+              setSuggestedStake(25);
+              setError('');
+            }}
+            className="min-h-[44px] flex items-center justify-center"
+          >
+            <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+              Dare someone else
+            </span>
+          </button>
         }
       >
         <FadeUp>
-          <div className="flex justify-center mt-8">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{
-                background: 'linear-gradient(135deg, rgba(212,162,79,0.2), rgba(212,162,79,0.08))',
-                border: '2px solid rgba(212,162,79,0.3)',
-              }}
+          <div className="text-center mt-6">
+            <h1
+              className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
+              style={{ color: 'var(--text)' }}
             >
-              <Check className="w-8 h-8" style={{ color: 'var(--gold)' }} />
-            </div>
+              Waiting for {targetName}...
+            </h1>
+            <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+              No reply? Send it again &mdash; or try a different app.
+            </p>
           </div>
         </FadeUp>
+
         <FadeUp delay={0.1}>
-          <div className="text-center">
-            <p className="text-[24px] font-serif font-bold" style={{ color: 'var(--text)' }}>
-              You&apos;re all set.
-            </p>
-            <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
-              We&apos;ll notify you when {targetName} accepts or backs down.
-            </p>
+          <div className="flex flex-col gap-2">
+            <PrimaryButton label="Send again" onPress={handleShare} />
+            <button
+              onClick={handleCopyLink}
+              className="min-h-[44px] flex items-center justify-center gap-2"
+            >
+              {copied ? (
+                <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+              ) : (
+                <Copy className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+              )}
+              <span className="text-[14px] font-semibold" style={{ color: copied ? 'var(--success)' : 'var(--text-secondary)' }}>
+                {copied ? 'Copied!' : 'Or copy the link'}
+              </span>
+            </button>
           </div>
+        </FadeUp>
+
+        <FadeUp delay={0.15}>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="min-h-[44px] flex items-center justify-center"
+          >
+            <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Dashboard →</span>
+          </button>
         </FadeUp>
       </RitualScreen>
     );
@@ -425,7 +439,7 @@ export default function CastPage() {
               type="text"
               value={targetName}
               onChange={(e) => setTargetName(e.target.value)}
-              placeholder="Their first name"
+              placeholder="First name"
               className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
               style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
             />

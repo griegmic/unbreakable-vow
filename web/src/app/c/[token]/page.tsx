@@ -3,6 +3,8 @@ import type { Metadata } from 'next';
 import ChallengeInviteClient from './client';
 import ChallengeNotFound from './not-found-client';
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   params: Promise<{ token: string }>;
 }
