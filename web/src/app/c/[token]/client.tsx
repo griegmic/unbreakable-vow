@@ -904,7 +904,7 @@ export default function ChallengeInviteClient({
             <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
               <MessageCircle className="w-5 h-5" style={{ color: '#0B0D11' }} />
               <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                Text {makerFirstName}
+                Tell {makerFirstName} you&apos;re in
               </span>
             </div>
           </button>
