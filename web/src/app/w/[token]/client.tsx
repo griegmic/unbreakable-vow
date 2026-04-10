@@ -177,8 +177,9 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     }
   };
 
-  // Use lowercase "your friend" mid-sentence when name is the fallback
-  const makerLabel = makerName === 'Your friend' ? 'your friend' : makerName;
+  // Use first name only for intimacy
+  const makerFirstName = makerName === 'Your friend' ? 'Your friend' : makerName.split(' ')[0];
+  const makerLabel = makerName === 'Your friend' ? 'your friend' : makerFirstName;
 
   const endDate = vow.ends_at
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -187,9 +188,9 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   // ─── RESOLVED STATE (voided/kept/broken) ───
   if (['voided', 'kept', 'broken'].includes(vow.status)) {
     const resolvedMessages: Record<string, { title: string; subtitle: string }> = {
-      voided: { title: 'Vow withdrawn.', subtitle: `${makerName} withdrew this vow.` },
-      kept: { title: 'Vow kept!', subtitle: `${makerName} kept their word. The verdict is in.` },
-      broken: { title: 'Vow broken.', subtitle: `${makerName} didn't follow through.` },
+      voided: { title: 'Vow withdrawn.', subtitle: `${makerFirstName} withdrew this vow.` },
+      kept: { title: 'Vow kept!', subtitle: `${makerFirstName} kept their word. The verdict is in.` },
+      broken: { title: 'Vow broken.', subtitle: `${makerFirstName} didn't follow through.` },
     };
     const msg = resolvedMessages[vow.status] || resolvedMessages.voided;
     return (
@@ -264,7 +265,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             <FadeUp delay={0.15}>
               <TitleBlock
                 title="You're locked in."
-                subtitle={`${makerName} has been notified. The vow is real now.`}
+                subtitle={`${makerFirstName} has been notified. The vow is real now.`}
               />
             </FadeUp>
             <FadeUp delay={0.3}>
@@ -346,8 +347,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               <TitleBlock
                 title={isVerdictDue ? "Time's up." : "You're watching."}
                 subtitle={isVerdictDue
-                  ? `Did ${makerName} keep the vow? Your call.`
-                  : `${makerName} is counting on your honesty.`
+                  ? `Did ${makerFirstName} keep the vow? Your call.`
+                  : `${makerFirstName} is counting on your honesty.`
                 }
               />
             </FadeUp>
@@ -364,7 +365,9 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                     &ldquo;{vow.refined_text}&rdquo;
                   </p>
                   <p className="text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                    ${vow.stake_amount / 100} at stake &middot; {vow.destination} if broken
+                    {vow.stake_amount > 0
+                      ? `$${vow.stake_amount / 100} at stake · ${vow.destination} if broken`
+                      : 'Their word is on the line'}
                   </p>
                 </div>
               </div>
@@ -531,7 +534,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         <FadeUp delay={0.1}>
           <TitleBlock
             title="Declined."
-            subtitle={`${makerName} will be notified. The vow continues without a witness.`}
+            subtitle={`${makerFirstName} will be notified. The vow continues without a witness.`}
           />
         </FadeUp>
       </RitualScreen>
@@ -572,7 +575,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
       <FadeUp delay={0.08}>
         <TitleBlock
-          title={`${makerName} made a vow.`}
+          title={`${makerFirstName} made a vow.`}
           subtitle={vow.stake_amount > 0 ? "They put real money on it — and picked you to be the one who decides if they kept it." : "They put their word on the line — and picked you to be the one who decides if they kept it."}
         />
       </FadeUp>
@@ -592,10 +595,12 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </div>
             <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>{vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : 'Accountability only'}</span>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
-            <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
-          </div>
+          {vow.stake_amount > 0 && vow.destination && (
+            <div className="flex items-center justify-between">
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
+              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4" style={{ color: 'var(--gold)' }} />
