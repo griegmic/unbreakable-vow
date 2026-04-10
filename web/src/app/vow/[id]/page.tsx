@@ -76,6 +76,8 @@ export default function VowDetailPage() {
   const [checkInCooldown, setCheckInCooldown] = useState(false);
   const [lastCheckInTime, setLastCheckInTime] = useState<Date | null>(null);
   const [timelineKey, setTimelineKey] = useState(0);
+  const [verdictBusy, setVerdictBusy] = useState(false);
+  const [verdictError, setVerdictError] = useState('');
 
   const fetchVow = useCallback(async () => {
     const { data, error } = await supabase
@@ -150,6 +152,33 @@ export default function VowDetailPage() {
 
   const witnessUrl = vow.witness_invite_token && origin ? `${origin}/w/${vow.witness_invite_token}` : '';
   const shareUrl = origin ? `${origin}/outcome/${vow.id}` : '';
+
+  const handleTestVerdict = async (verdict: 'kept' | 'broken') => {
+    if (verdictBusy || !vow.witness_invite_token) return;
+    setVerdictBusy(true);
+    setVerdictError('');
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/submit-verdict`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ token: vow.witness_invite_token, verdict }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        setVerdictError(data?.error || `Error ${res.status}`);
+        setVerdictBusy(false);
+        return;
+      }
+      window.location.href = verdict === 'kept' ? '/vow-kept' : '/vow-broken';
+    } catch {
+      setVerdictError('Network error');
+      setVerdictBusy(false);
+    }
+  };
 
   const handleTextWitness = () => {
     if (!vow.witness_phone) return;
@@ -395,6 +424,44 @@ export default function VowDetailPage() {
           )}
         </div>
       </FadeUp>
+
+      {/* Fast-forward to verdict — testing */}
+      {!isTerminal && vow.witness_invite_token && (
+        <FadeUp delay={0.35}>
+          <div className="flex flex-col gap-2">
+            <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+              Fast-forward (testing)
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => handleTestVerdict('kept')}
+                disabled={verdictBusy}
+                className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
+                style={{ backgroundColor: 'rgba(82,214,154,0.12)', border: '1px solid rgba(82,214,154,0.25)' }}
+              >
+                <span className="text-[13px] font-bold" style={{ color: 'var(--success)' }}>
+                  {verdictBusy ? '...' : 'Mark Kept'}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleTestVerdict('broken')}
+                disabled={verdictBusy}
+                className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
+                style={{ backgroundColor: 'rgba(255,123,123,0.12)', border: '1px solid rgba(255,123,123,0.25)' }}
+              >
+                <span className="text-[13px] font-bold" style={{ color: 'var(--danger)' }}>
+                  {verdictBusy ? '...' : 'Mark Broken'}
+                </span>
+              </button>
+            </div>
+            {verdictError && (
+              <p className="text-[13px] text-center" style={{ color: 'var(--danger)' }}>{verdictError}</p>
+            )}
+          </div>
+        </FadeUp>
+      )}
     </RitualScreen>
   );
 }

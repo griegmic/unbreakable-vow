@@ -982,7 +982,7 @@ export default function ChallengeInviteClient({
         </FadeUp>
 
         {/* Test verdict buttons — dev only */}
-        {vow.witness_invite_token && process.env.NODE_ENV !== 'production' && (
+        {vow.witness_invite_token && (
           <FadeUp delay={0.35}>
             <div className="flex flex-col gap-2 pt-2">
               <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
