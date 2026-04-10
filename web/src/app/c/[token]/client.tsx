@@ -1,9 +1,9 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
-import { Calendar, Shield, Sparkles, Check, MessageCircle } from 'lucide-react';
+import { Calendar, Shield, Sparkles, Check, MessageCircle, Phone } from 'lucide-react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, ChoiceChip, RitualCard } from '@/components/ui';
+import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, ChoiceChip, RitualCard, StatPill } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -15,21 +15,31 @@ interface Vow {
   suggested_stake_amount: number;
   destination: string;
   witness_name: string;
+  starts_at: string | null;
   ends_at: string | null;
   sealed_at: string | null;
   status: string;
   challenge_status: string;
+  witness_invite_token: string | null;
 }
 
 type Step = 'dare' | 'back-down-confirm' | 'backed-down' | 'stakes' | 'payment' | 'sealed';
 
 const STAKE_OPTIONS = [1000, 2500, 5000, 10000]; // cents
 const CHARITIES = [
+  'ALS Association',
   "St. Jude's",
   'Feeding America',
-  'ALS Association',
   'Local food bank',
 ];
+
+function getCountdownTint(days: number | null) {
+  if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
+  if (days <= 0) return { bg: 'rgba(255,123,123,0.10)', border: 'rgba(255,123,123,0.25)' };
+  if (days === 1) return { bg: 'rgba(255,180,80,0.10)', border: 'rgba(255,180,80,0.25)' };
+  if (days <= 3) return { bg: 'rgba(212,162,79,0.08)', border: 'rgba(212,162,79,0.20)' };
+  return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
+}
 
 const stripeAppearance = {
   theme: 'night' as const,
@@ -143,7 +153,8 @@ export default function ChallengeInviteClient({
   const [stakeAmount, setStakeAmount] = useState<number>(
     suggestedCents > 0 && STAKE_OPTIONS.includes(suggestedCents) ? suggestedCents : 0
   );
-  const [charity, setCharity] = useState('');
+  // Phase 2: Auto-select first charity
+  const [charity, setCharity] = useState(CHARITIES[0]);
   const [email, setEmail] = useState('');
   const [displayName, setDisplayName] = useState('');
 
@@ -157,6 +168,15 @@ export default function ChallengeInviteClient({
       ? { stake: vow.stake_amount, charity: vow.destination, email: '' }
       : null
   );
+
+  // Phone capture state (Phase 3)
+  const [reminderExpanded, setReminderExpanded] = useState(false);
+  const [reminderPhone, setReminderPhone] = useState('');
+  const [reminderSaving, setReminderSaving] = useState(false);
+  const [reminderSaved, setReminderSaved] = useState(false);
+
+  // Test verdict state (Phase 4)
+  const [verdictBusy, setVerdictBusy] = useState(false);
 
   // Detect existing session + listen for auth changes (Google OAuth return)
   useEffect(() => {
@@ -201,7 +221,7 @@ export default function ChallengeInviteClient({
 
   // Direct fetch to edge function — bypasses supabase.functions.invoke() which
   // wraps errors in FunctionsHttpError and makes response parsing unreliable.
-  const callAcceptChallenge = async (payload: Record<string, unknown>): Promise<{ data: Record<string, unknown> | null; errorCode: string | null }> => {
+  const callEdgeFunction = async (fnName: string, payload: Record<string, unknown>): Promise<{ data: Record<string, unknown> | null; errorCode: string | null }> => {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
@@ -212,7 +232,7 @@ export default function ChallengeInviteClient({
       if (session?.access_token) authToken = session.access_token;
     } catch {}
 
-    const res = await fetch(`${supabaseUrl}/functions/v1/accept-challenge`, {
+    const res = await fetch(`${supabaseUrl}/functions/v1/${fnName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -229,12 +249,15 @@ export default function ChallengeInviteClient({
 
     if (!res.ok || body?.error) {
       const errorCode = body?.error ? String(body.error) : `http_${res.status}`;
-      console.error('[accept-challenge] Error:', res.status, body);
+      console.error(`[${fnName}] Error:`, res.status, body);
       return { data: null, errorCode };
     }
 
     return { data: body, errorCode: null };
   };
+
+  const callAcceptChallenge = (payload: Record<string, unknown>) =>
+    callEdgeFunction('accept-challenge', payload);
 
   // Map error codes to user-friendly messages
   const mapErrorMessage = (errCode: string): string => {
@@ -280,7 +303,7 @@ export default function ChallengeInviteClient({
         token,
         action: 'accept',
         stake_amount: stakeAmount,
-        destination: charity || '',
+        destination: stakeAmount > 0 ? charity : '',
         email,
         display_name: displayName || undefined,
       };
@@ -294,7 +317,7 @@ export default function ChallengeInviteClient({
         setBusy(false);
         return;
       }
-      setSealedVow({ stake: stakeAmount, charity, email });
+      setSealedVow({ stake: stakeAmount, charity: stakeAmount > 0 ? charity : '', email });
       setStep('sealed');
     } catch {
       setError('Network error. Please check your connection.');
@@ -302,6 +325,58 @@ export default function ChallengeInviteClient({
       setBusy(false);
     }
   }, [busy, token, stakeAmount, charity, email, displayName]);
+
+  // ─── PHONE CAPTURE HANDLER (Phase 3) ───
+  const handleSavePhone = async () => {
+    if (!reminderPhone.trim() || reminderSaving) return;
+    setReminderSaving(true);
+    try {
+      // Store the phone on the vow's target_phone field via a lightweight update
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      await fetch(`${supabaseUrl}/functions/v1/accept-challenge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({
+          token,
+          action: 'save_phone',
+          phone: reminderPhone.trim(),
+        }),
+      });
+      setReminderSaved(true);
+    } catch {
+      // Silently fail — not critical
+    } finally {
+      setReminderSaving(false);
+    }
+  };
+
+  // ─── TEST VERDICT HANDLER (Phase 4) ───
+  const handleTestVerdict = async (verdict: 'kept' | 'broken') => {
+    if (verdictBusy || !vow.witness_invite_token) return;
+    setVerdictBusy(true);
+    setError(null);
+    try {
+      const { errorCode } = await callEdgeFunction('submit-verdict', {
+        token: vow.witness_invite_token,
+        verdict,
+      });
+      if (errorCode) {
+        setError(`Verdict failed: ${errorCode}`);
+        setVerdictBusy(false);
+        return;
+      }
+      // Redirect to outcome page
+      window.location.href = verdict === 'kept' ? '/vow-kept' : '/vow-broken';
+    } catch {
+      setError('Network error. Please check your connection.');
+      setVerdictBusy(false);
+    }
+  };
 
   // ─── STEP 1: THE DARE ───
   if (step === 'dare') {
@@ -493,7 +568,7 @@ export default function ChallengeInviteClient({
           </div>
         </FadeUp>
 
-        {/* Charity selector — only when staked */}
+        {/* Charity selector — only when staked, auto-selected */}
         {stakeAmount > 0 && (
           <FadeUp delay={0.2}>
             <div className="flex flex-col gap-2">
@@ -519,13 +594,11 @@ export default function ChallengeInviteClient({
             <PrimaryButton
               label={stakeAmount > 0 ? `Stake $${stakeAmount / 100}` : 'Continue'}
               onPress={() => setStep('payment')}
-              disabled={stakeAmount > 0 && !charity}
             />
             <button
               type="button"
               onClick={() => {
                 setStakeAmount(0);
-                setCharity('');
                 setStep('payment');
               }}
               className="py-2 transition-opacity hover:opacity-70"
@@ -683,162 +756,306 @@ export default function ChallengeInviteClient({
     );
   }
 
-  // ─── STEP 6: SEALED ───
+  // ─── STEP 6: SEALED — Full tracking page (Phase 1) ───
   if (step === 'sealed') {
     const displayStake = sealedVow?.stake ?? vow.stake_amount;
     const displayCharity = sealedVow?.charity ?? vow.destination;
 
+    // Compute tracking stats
+    const now = new Date();
+    const end = vow.ends_at ? new Date(vow.ends_at) : null;
+    const start = vow.starts_at ? new Date(vow.starts_at) : (vow.sealed_at ? new Date(vow.sealed_at) : now);
+    const totalDays = end ? Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000)) : 7;
+    const daysLeft = end ? Math.ceil((end.getTime() - now.getTime()) / 86400000) : null;
+    const dayNumber = daysLeft !== null ? Math.max(1, totalDays - daysLeft + 1) : null;
+    const countdownLabel = daysLeft === null ? null
+      : daysLeft <= 0 ? "Time's up"
+      : daysLeft === 1 ? 'Last day'
+      : `${daysLeft} days left`;
+    const tint = getCountdownTint(daysLeft);
+    const isVerdictDue = end ? now >= end : false;
+
     return (
       <RitualScreen>
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[60dvh] gap-6 text-center px-2">
-          <FadeUp>
-            <div className="flex justify-center pb-2">
+        <FadeUp><HeaderBadge /></FadeUp>
+
+        {/* Status badge */}
+        <FadeUp delay={0.05}>
+          <div className="flex justify-center">
+            <div
+              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full"
+              style={{
+                backgroundColor: isVerdictDue ? 'rgba(212,162,79,0.12)' : 'var(--success-muted)',
+                border: isVerdictDue ? '1px solid var(--border-strong)' : '1px solid rgba(82,214,154,0.22)',
+              }}
+            >
               <div
-                className="w-16 h-16 rounded-full flex items-center justify-center"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(212,162,79,0.2), rgba(212,162,79,0.08))',
-                  border: '2px solid rgba(212,162,79,0.3)',
-                  boxShadow: '0 0 40px rgba(212,162,79,0.15)',
-                }}
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
+              />
+              <span
+                className="text-[12px] font-bold tracking-[1px] uppercase"
+                style={{ color: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
               >
-                <Check className="w-8 h-8" style={{ color: 'var(--gold)' }} />
+                {isVerdictDue ? 'VERDICT DUE' : 'VOW ACTIVE'}
+              </span>
+            </div>
+          </div>
+        </FadeUp>
+
+        {/* Title */}
+        <FadeUp delay={0.08}>
+          <TitleBlock
+            title="THE VOW IS SEALED"
+            subtitle={`${makerName} will decide if you kept it at the deadline.`}
+          />
+        </FadeUp>
+
+        {/* Countdown card */}
+        {daysLeft !== null && (
+          <FadeUp delay={0.12}>
+            <div
+              className="rounded-[16px] p-4 flex items-center justify-between"
+              style={{ backgroundColor: tint.bg, border: `1px solid ${tint.border}` }}
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="text-[22px] font-bold font-serif" style={{ color: 'var(--text)' }}>
+                  {countdownLabel}
+                </span>
+                {endDate && (
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                    Verdict day: {endDate}
+                  </span>
+                )}
               </div>
+              <Calendar className="w-6 h-6 shrink-0" style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
             </div>
           </FadeUp>
+        )}
 
-          <FadeUp delay={0.08}>
-            <h1
-              className="text-[32px] leading-[38px] font-bold font-serif tracking-[1.5px] uppercase"
-              style={{ color: 'var(--gold)' }}
-            >
-              THE VOW IS SEALED
-            </h1>
+        {/* Vow quote card with gold left border */}
+        <FadeUp delay={0.15}>
+          <div
+            className="flex items-stretch overflow-hidden rounded-[14px]"
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+          >
+            <div className="w-[3px] shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
+            <div className="flex-1 py-3 px-3.5">
+              <p className="text-[16px] leading-[23px] font-serif font-medium" style={{ color: 'var(--text)' }}>
+                &ldquo;{vow.refined_text}&rdquo;
+              </p>
+              {displayStake > 0 && (
+                <p className="text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
+                  ${displayStake / 100} at stake &middot; {displayCharity} if broken
+                </p>
+              )}
+            </div>
+          </div>
+        </FadeUp>
+
+        {/* Stats row */}
+        {!isVerdictDue && dayNumber !== null && (
+          <FadeUp delay={0.18}>
+            <div className="flex gap-3">
+              <StatPill
+                value={`Day ${Math.min(dayNumber, totalDays)}`}
+                label={`of ${totalDays}`}
+              />
+              <StatPill
+                value={countdownLabel || '—'}
+                label={endDate ? `Verdict: ${endDate}` : '—'}
+              />
+            </div>
           </FadeUp>
+        )}
 
-          <FadeUp delay={0.15}>
-            <RitualCard>
-              <div className="flex flex-col gap-3 text-left">
-                <div className="flex items-start gap-2.5">
-                  <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--gold)' }} />
-                  <p className="text-[15px] leading-[22px] font-serif" style={{ color: 'var(--text)' }}>
-                    &ldquo;{vow.refined_text}&rdquo;
-                  </p>
-                </div>
-                <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-                {displayStake > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Stakes</span>
-                    <span className="text-[14px] font-semibold" style={{ color: 'var(--gold)' }}>
-                      ${displayStake / 100}
-                    </span>
-                  </div>
-                )}
-                {displayCharity && displayStake > 0 && (
-                  <div className="flex items-center justify-between">
-                    <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If you fail</span>
-                    <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>
-                      {displayCharity}
-                    </span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Shield className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-                    <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Dared by</span>
-                  </div>
-                  <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>
-                    {makerName}
-                  </span>
-                </div>
-                {endDate && (
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-                      <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Ends</span>
-                    </div>
-                    <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>
-                      {endDate}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </RitualCard>
-          </FadeUp>
+        {/* Dared by */}
+        <FadeUp delay={0.2}>
+          <div className="flex items-center gap-2.5 px-1">
+            <Shield className="w-4 h-4" style={{ color: 'var(--gold)' }} />
+            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+              Dared by <span className="font-semibold" style={{ color: 'var(--text)' }}>{makerName}</span>
+            </span>
+          </div>
+        </FadeUp>
 
+        {/* Primary CTA: Text the darer */}
+        {makerPhone && (
           <FadeUp delay={0.25}>
-            <p className="text-[14px] leading-[21px]" style={{ color: 'var(--text-secondary)' }}>
-              {makerName} will decide if you kept it at the deadline.
-            </p>
+            <button
+              type="button"
+              onClick={() => {
+                const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
+                const message = encodeURIComponent(`I accepted the dare! Let's go`);
+                window.location.href = `sms:${cleanPhone}&body=${message}`;
+              }}
+              className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+              style={{
+                background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+              }}
+            >
+              <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
+                <MessageCircle className="w-5 h-5" style={{ color: '#0B0D11' }} />
+                <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                  Text {makerLabel}
+                </span>
+              </div>
+            </button>
           </FadeUp>
+        )}
 
-          <FadeUp delay={0.35}>
-            <div className="flex flex-col items-center gap-4 w-full max-w-[320px]">
-              {/* Text the darer — primary CTA if phone available */}
-              {makerPhone && (
+        {/* Phone capture — "Get a text when the verdict drops" (Phase 3) */}
+        <FadeUp delay={0.3}>
+          {reminderSaved ? (
+            <div
+              className="flex items-center justify-center gap-2 py-3.5 rounded-[18px]"
+              style={{ backgroundColor: 'rgba(82,214,154,0.08)', border: '1px solid rgba(82,214,154,0.2)' }}
+            >
+              <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+              <span className="text-[14px] font-semibold" style={{ color: 'var(--success)' }}>
+                We&apos;ll text you when the verdict drops
+              </span>
+            </div>
+          ) : reminderExpanded ? (
+            <div
+              className="rounded-[18px] p-4 flex flex-col gap-3"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+            >
+              <div className="flex items-center gap-2">
+                <Phone className="w-4 h-4" style={{ color: 'var(--gold-bright)' }} />
+                <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+                  Get a text when the verdict drops
+                </span>
+              </div>
+              <input
+                type="tel"
+                value={reminderPhone}
+                onChange={(e) => setReminderPhone(e.target.value)}
+                placeholder="Phone number"
+                autoFocus
+                className="w-full bg-transparent text-[15px] outline-none py-2.5 px-3.5 rounded-xl"
+                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+              />
+              <div className="flex items-center gap-4">
                 <button
                   type="button"
-                  onClick={() => {
-                    const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
-                    const message = encodeURIComponent(`I accepted the dare! Let's go 💪`);
-                    window.location.href = `sms:${cleanPhone}&body=${message}`;
-                  }}
-                  className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                  onClick={handleSavePhone}
+                  disabled={!reminderPhone.trim() || reminderSaving}
+                  className="px-5 py-2.5 rounded-xl text-[14px] font-bold transition-opacity"
                   style={{
-                    background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                    boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                    backgroundColor: 'var(--gold-bright)',
+                    color: '#0B0D11',
+                    opacity: !reminderPhone.trim() || reminderSaving ? 0.5 : 1,
                   }}
                 >
-                  <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-                    <MessageCircle className="w-5 h-5" style={{ color: '#0B0D11' }} />
-                    <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                      Text {makerLabel}
-                    </span>
-                  </div>
+                  {reminderSaving ? 'Saving...' : 'Notify me'}
                 </button>
-              )}
-
-              <a
-                href="/dashboard"
-                className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] block"
-                style={makerPhone ? {
-                  backgroundColor: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                } : {
-                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                }}
-              >
-                <div className="min-h-[56px] flex items-center justify-center px-5">
-                  <span
-                    className="text-[15px] font-extrabold tracking-[0.2px]"
-                    style={{ color: makerPhone ? 'var(--text)' : '#0B0D11' }}
-                  >
-                    Track your vow &rarr;
-                  </span>
-                </div>
-              </a>
-
-              {/* App Store badge */}
-              <div className="flex flex-col items-center gap-2 pt-2">
-                <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                  Get the app for check-ins and updates
-                </p>
-                <a
-                  href="https://apps.apple.com/app/unbreakable-vow/id6743597637"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="transition-opacity hover:opacity-80"
+                <button
+                  type="button"
+                  onClick={() => setReminderExpanded(false)}
+                  className="text-[13px] font-medium"
+                  style={{ color: 'var(--text-muted)' }}
                 >
-                  <img
-                    src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-                    alt="Download on the App Store"
-                    className="h-[40px]"
-                  />
-                </a>
+                  No thanks
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setReminderExpanded(true)}
+              className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+            >
+              <div className="min-h-[50px] flex items-center justify-center gap-2 px-5">
+                <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                  Get a text when the verdict drops
+                </span>
+              </div>
+            </button>
+          )}
+        </FadeUp>
+
+        {/* App Store badge */}
+        <FadeUp delay={0.35}>
+          <div className="flex flex-col items-center gap-2 pt-1">
+            <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+              Get the app for check-ins and updates
+            </p>
+            <a
+              href="https://apps.apple.com/app/unbreakable-vow/id6743597637"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="transition-opacity hover:opacity-80"
+            >
+              <img
+                src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+                alt="Download on the App Store"
+                className="h-[40px]"
+              />
+            </a>
+          </div>
+        </FadeUp>
+
+        {/* Viral CTA */}
+        <FadeUp delay={0.4}>
+          <a
+            href="/"
+            className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
+            style={{
+              backgroundColor: 'var(--surface)',
+              border: '1px solid var(--border-strong)',
+            }}
+          >
+            <div className="min-h-[50px] flex items-center justify-center px-5">
+              <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                Your turn &mdash; dare someone else
+              </span>
+            </div>
+          </a>
+        </FadeUp>
+
+        {/* Test verdict buttons (Phase 4) — dev only */}
+        {vow.witness_invite_token && process.env.NODE_ENV !== 'production' && (
+          <FadeUp delay={0.45}>
+            <div className="flex flex-col gap-2 pt-2">
+              <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+                Testing only
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleTestVerdict('kept')}
+                  disabled={verdictBusy}
+                  className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
+                  style={{ backgroundColor: 'rgba(82,214,154,0.12)', border: '1px solid rgba(82,214,154,0.25)' }}
+                >
+                  <span className="text-[13px] font-bold" style={{ color: 'var(--success)' }}>
+                    {verdictBusy ? '...' : 'Test: Kept'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTestVerdict('broken')}
+                  disabled={verdictBusy}
+                  className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
+                  style={{ backgroundColor: 'rgba(255,123,123,0.12)', border: '1px solid rgba(255,123,123,0.25)' }}
+                >
+                  <span className="text-[13px] font-bold" style={{ color: 'var(--danger)' }}>
+                    {verdictBusy ? '...' : 'Test: Broken'}
+                  </span>
+                </button>
               </div>
             </div>
           </FadeUp>
-        </div>
+        )}
+
+        {error && (
+          <FadeUp>
+            <p className="text-[13px] text-center" style={{ color: 'var(--danger)' }}>{error}</p>
+          </FadeUp>
+        )}
       </RitualScreen>
     );
   }

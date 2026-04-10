@@ -71,7 +71,7 @@ export default async function ChallengeInvitePage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('id, refined_text, stake_amount, suggested_stake_amount, destination, witness_name, ends_at, sealed_at, status, user_id, challenge_status')
+    .select('id, refined_text, stake_amount, suggested_stake_amount, destination, witness_name, ends_at, starts_at, sealed_at, status, user_id, challenge_status, witness_invite_token')
     .eq('challenge_invite_token', token)
     .single();
 

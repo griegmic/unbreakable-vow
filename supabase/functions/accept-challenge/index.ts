@@ -71,6 +71,22 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'invalid_token' }, 404);
     }
 
+    // === SAVE PHONE (post-acceptance, stores target_phone for verdict SMS) ===
+    if (action === 'save_phone') {
+      const { phone } = body;
+      if (!phone) {
+        return jsonResponse({ error: 'phone required' }, 400);
+      }
+      if (vow.challenge_status !== 'accepted') {
+        return jsonResponse({ error: 'vow_not_accepted' }, 400);
+      }
+      await supabase
+        .from('vows')
+        .update({ target_phone: phone })
+        .eq('id', vow.id);
+      return jsonResponse({ success: true, action: 'phone_saved' });
+    }
+
     if (vow.challenge_status !== 'pending') {
       return jsonResponse({ error: 'already_responded', challenge_status: vow.challenge_status }, 409);
     }

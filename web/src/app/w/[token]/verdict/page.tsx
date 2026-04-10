@@ -17,7 +17,7 @@ export default async function VerdictPage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('id, refined_text, stake_amount, destination, witness_name, status, verdict, user_id')
+    .select('id, refined_text, stake_amount, destination, witness_name, status, verdict, user_id, vow_type, target_user_id')
     .eq('witness_invite_token', token)
     .single();
 
@@ -37,6 +37,17 @@ export default async function VerdictPage({ params }: Props) {
     if (user?.display_name) makerName = user.display_name;
   }
 
+  // For challenge vows, get the target's name (the person being judged)
+  let targetName = 'them';
+  if (vow.vow_type === 'challenge' && vow.target_user_id) {
+    const { data: targetUser } = await supabase
+      .from('users')
+      .select('display_name')
+      .eq('id', vow.target_user_id)
+      .single();
+    if (targetUser?.display_name) targetName = targetUser.display_name;
+  }
+
   if (vow.verdict) {
     return (
       <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--bg)' }}>
@@ -50,5 +61,5 @@ export default async function VerdictPage({ params }: Props) {
     );
   }
 
-  return <VerdictClient vow={vow} token={token} makerName={makerName} />;
+  return <VerdictClient vow={vow} token={token} makerName={makerName} targetName={vow.vow_type === 'challenge' ? targetName : undefined} />;
 }

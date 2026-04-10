@@ -15,7 +15,10 @@ interface Vow {
 type VerdictChoice = 'kept' | 'broken' | null;
 type ViewState = 'choose' | 'confirm' | 'done';
 
-export default function VerdictClient({ vow, token, makerName }: { vow: Vow; token: string; makerName: string }) {
+export default function VerdictClient({ vow, token, makerName, targetName }: { vow: Vow; token: string; makerName: string; targetName?: string }) {
+  // For challenge vows, the "maker" is the challenger/witness viewing this page,
+  // and "targetName" is the person being judged.
+  const judgeName = targetName || makerName;
   const [choice, setChoice] = useState<VerdictChoice>(null);
   const [view, setView] = useState<ViewState>('choose');
   const [busy, setBusy] = useState(false);
@@ -266,7 +269,7 @@ export default function VerdictClient({ vow, token, makerName }: { vow: Vow; tok
 
       <FadeUp delay={0.05}>
         <TitleBlock
-          title="Did they keep it?"
+          title={targetName ? `Did ${targetName} keep the vow?` : 'Did they keep it?'}
           subtitle="Be honest. That's the whole point."
         />
       </FadeUp>
