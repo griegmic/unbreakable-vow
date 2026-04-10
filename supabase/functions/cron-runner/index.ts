@@ -154,13 +154,27 @@ Deno.serve(async (req) => {
         await supabase.from('vows').update({ status: 'awaiting_verdict' }).eq('id', vow.id);
 
         if (vow.witness_phone) {
-          const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
+          // For challenge vows, the vow keeper is target_user_id — use their name
+          const nameUserId = (vow.vow_type === 'challenge' && vow.target_user_id) ? vow.target_user_id : vow.user_id;
+          const { data: profile } = await supabase.from('users').select('display_name').eq('id', nameUserId).single();
           const ownerName = profile?.display_name || 'Someone';
           const verdictUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}/verdict`;
           const body = verdictRequestMessage(ownerName, vow.refined_text, verdictUrl);
           const sid = await sendSMS(vow.witness_phone, body);
           await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'verdict_request', twilio_sid: sid });
         }
+
+        // For challenge vows, also push-notify the target (vow keeper) that verdict time is here
+        if (vow.vow_type === 'challenge' && vow.target_user_id) {
+          await supabase.from('push_queue').insert({
+            user_id: vow.target_user_id,
+            title: 'Time\'s up',
+            body: `Your vow deadline has passed. ${vow.witness_name || 'Your challenger'} will decide the verdict.`,
+            data: { vow_id: vow.id, event: 'challenge_verdict_pending' },
+            send_after: now.toISOString(),
+          });
+        }
+
         results.verdict_request++;
       } catch (err) {
         results.errors.push(`verdict_request ${vow.id}: ${err}`);

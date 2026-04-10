@@ -223,6 +223,24 @@ Deno.serve(async (req) => {
       send_after: now,
     });
 
+    // For challenge vows, also notify the target (vow keeper) of the verdict
+    if (vow.vow_type === 'challenge' && vow.target_user_id && vow.target_user_id !== vow.user_id) {
+      const targetPushTitle = verdict === 'kept' ? 'You kept your vow!' : 'Vow broken';
+      const targetPushBody = verdict === 'kept'
+        ? `${vow.witness_name || 'Your challenger'} confirmed it. Well done.`
+        : noRealPayment
+          ? `${vow.witness_name || 'Your challenger'} says you didn't keep it.`
+          : `${vow.witness_name || 'Your challenger'} says you didn't keep it. $${amountDollars} to ${vow.destination}.`;
+
+      await supabase.from('push_queue').insert({
+        user_id: vow.target_user_id,
+        title: targetPushTitle,
+        body: targetPushBody,
+        data: { vow_id: vow.id, verdict, event: `challenge_verdict_${verdict}` },
+        send_after: now,
+      });
+    }
+
     return new Response(JSON.stringify({ success: true, verdict }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });

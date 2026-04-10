@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Send, Sparkles, Copy, Check } from 'lucide-react-native';
+import { ArrowLeft, Send, Sparkles, Copy, Check, UserRound, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import {
@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 
 import AuthSheet from '@/components/auth-sheet';
+import ContactPickerModal from '@/components/contact-picker-modal';
 import { ChoiceChip, PrimaryButton, RitualCard, RitualScreen, SecondaryButton } from '@/components/vow-ui';
 import {
   analyzeVow,
@@ -27,6 +28,13 @@ import {
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
+
+function formatE164(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('1') && digits.length === 11) return `+${digits}`;
+  if (digits.length === 10) return `+1${digits}`;
+  return `+${digits}`;
+}
 
 const SUGGESTED_STAKES = [0, 10, 25, 50, 100];
 
@@ -56,6 +64,9 @@ export default function CastScreen() {
   const [vowText, setVowText] = useState('');
   const [suggestion, setSuggestion] = useState('');
   const [targetName, setTargetName] = useState('');
+  const [targetPhone, setTargetPhone] = useState<string | null>(null);
+  const [showContactPicker, setShowContactPicker] = useState(false);
+  const [showManualName, setShowManualName] = useState(false);
   const [suggestedStake, setSuggestedStake] = useState(25);
   const [deadlinePreset, setDeadlinePreset] = useState<DeadlinePreset>('in_7_days');
   const [customDate, setCustomDate] = useState<Date>(getPresetDate('in_7_days'));
@@ -69,6 +80,8 @@ export default function CastScreen() {
   const [dareSent, setDareSent] = useState(false);
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [vowId, setVowId] = useState<string | null>(null);
+  const [challengeAccepted, setChallengeAccepted] = useState(false);
   const pendingSendRef = useRef(false);
 
   // Computed
@@ -95,6 +108,26 @@ export default function CastScreen() {
       setSuggestion('');
     }
   }, [vowText]);
+
+  // Poll for challenge acceptance when waiting
+  useEffect(() => {
+    if (!vowId || (!dareSent && !shared)) return;
+    if (challengeAccepted) return;
+
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('vows')
+        .select('challenge_status')
+        .eq('id', vowId)
+        .single();
+      if (data?.challenge_status === 'accepted') {
+        setChallengeAccepted(true);
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [vowId, dareSent, shared, challengeAccepted]);
 
   const acceptSuggestion = () => {
     if (suggestion) { setVowText(suggestion); setSuggestion(''); }
@@ -148,6 +181,7 @@ export default function CastScreen() {
           stake_amount: 0,
           consequence: 'charity',
           destination: '',
+          target_phone: targetPhone ? formatE164(targetPhone) : null,
           starts_at: new Date().toISOString(),
           ends_at: deadlineDate.toISOString(),
         })
@@ -155,6 +189,14 @@ export default function CastScreen() {
         .single();
 
       if (vowError) throw new Error(`Failed to create dare: ${vowError.message}`);
+
+      // Need the id for polling - re-read it
+      const { data: createdVow } = await supabase
+        .from('vows')
+        .select('id')
+        .eq('challenge_invite_token', challengeToken)
+        .single();
+      if (createdVow) setVowId(createdVow.id);
 
       const link = `https://unbreakablevow.app/c/${challengeToken}`;
       setDareLink(link);
@@ -256,7 +298,11 @@ export default function CastScreen() {
     setVowText('');
     setSuggestion('');
     setTargetName('');
+    setTargetPhone(null);
+    setShowManualName(false);
     setSuggestedStake(25);
+    setVowId(null);
+    setChallengeAccepted(false);
     setError('');
   };
 
@@ -268,38 +314,65 @@ export default function CastScreen() {
     return (
       <RitualScreen
         footer={
-          <>
-            <PrimaryButton label="Send again" onPress={handleShare} testID="cast-reshare" />
-            <SecondaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
-          </>
+          challengeAccepted ? (
+            <>
+              <PrimaryButton label="Go to dashboard" onPress={() => router.push('/dashboard')} testID="cast-dashboard" />
+              <SecondaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
+            </>
+          ) : (
+            <>
+              <PrimaryButton label="Send again" onPress={handleShare} testID="cast-reshare" />
+              <SecondaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
+            </>
+          )
         }
       >
         <Stack.Screen options={{ headerShown: false }} />
 
         <View style={styles.sentIconWrap}>
-          <View style={styles.sentIcon}>
-            <Send color={palette.goldBright} size={28} />
+          <View style={[styles.sentIcon, challengeAccepted && { backgroundColor: 'rgba(82,214,154,0.12)' }]}>
+            {challengeAccepted ? (
+              <Check color="#52D69A" size={28} />
+            ) : (
+              <Send color={palette.goldBright} size={28} />
+            )}
           </View>
         </View>
 
         <View style={styles.sentTextWrap}>
-          <Text style={styles.sentStamp}>DARE SENT</Text>
-          <Text style={styles.sentTitle}>Waiting for {targetName} to respond...</Text>
-          <Text style={styles.sentSubtitle}>
-            No reply? Send it again — or try a different app.
-          </Text>
+          {challengeAccepted ? (
+            <>
+              <Text style={styles.sentStamp}>ACCEPTED</Text>
+              <Text style={styles.sentTitle}>{targetName} accepted!</Text>
+              <Text style={styles.sentSubtitle}>
+                The vow is sealed. You&apos;ll decide the verdict at the deadline.
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.sentStamp}>DARE SENT</Text>
+              <Text style={styles.sentTitle}>Waiting for {targetName} to respond...</Text>
+              <Text style={styles.sentSubtitle}>
+                No reply? Send it again — or try a different app.
+              </Text>
+            </>
+          )}
         </View>
 
-        <RitualCard>
-          <Text style={styles.previewLabel}>WHAT THEY&apos;LL SEE</Text>
-          <Text style={styles.previewText}>{getShareText()}</Text>
-        </RitualCard>
+        {!challengeAccepted && (
+          <>
+            <RitualCard>
+              <Text style={styles.previewLabel}>WHAT THEY&apos;LL SEE</Text>
+              <Text style={styles.previewText}>{getShareText()}</Text>
+            </RitualCard>
 
-        <SecondaryButton
-          label={copied ? '✓ Copied!' : 'Copy link'}
-          onPress={handleCopyLink}
-          testID="cast-copy-post"
-        />
+            <SecondaryButton
+              label={copied ? '✓ Copied!' : 'Copy link'}
+              onPress={handleCopyLink}
+              testID="cast-copy-post"
+            />
+          </>
+        )}
       </RitualScreen>
     );
   }
@@ -447,20 +520,65 @@ export default function CastScreen() {
           <Text style={styles.deadlineHint}>{formatDateShort(deadlineDate)}</Text>
         </RitualCard>
 
-        {/* Target name */}
+        {/* Target — contact picker or manual */}
         <RitualCard>
           <Text style={styles.sectionLabel}>WHO ARE YOU DARING?</Text>
-          <TextInput
-            value={targetName}
-            onChangeText={setTargetName}
-            placeholder="First name"
-            placeholderTextColor={palette.textMuted}
-            style={styles.nameInput}
-            autoCapitalize="words"
-            autoCorrect={false}
-            maxLength={30}
-            returnKeyType="next"
-          />
+          {targetName && !showManualName ? (
+            /* Selected contact display */
+            <View style={styles.selectedContact}>
+              <View style={styles.selectedContactAvatar}>
+                <UserRound color={palette.goldBright} size={18} />
+              </View>
+              <View style={styles.selectedContactInfo}>
+                <Text style={styles.selectedContactName}>{targetName}</Text>
+                {targetPhone && (
+                  <Text style={styles.selectedContactPhone}>{targetPhone}</Text>
+                )}
+              </View>
+              <Pressable
+                onPress={() => {
+                  setTargetName('');
+                  setTargetPhone(null);
+                }}
+                style={styles.selectedContactClear}
+              >
+                <X color={palette.textMuted} size={14} />
+              </Pressable>
+            </View>
+          ) : showManualName ? (
+            /* Manual name input */
+            <View>
+              <TextInput
+                value={targetName}
+                onChangeText={(t) => { setTargetName(t); setTargetPhone(null); }}
+                placeholder="First name"
+                placeholderTextColor={palette.textMuted}
+                style={styles.nameInput}
+                autoCapitalize="words"
+                autoCorrect={false}
+                maxLength={30}
+                returnKeyType="next"
+                autoFocus
+              />
+              <Pressable onPress={() => { setShowManualName(false); setTargetName(''); }} style={styles.switchInputLink}>
+                <Text style={styles.switchInputText}>Pick from contacts instead</Text>
+              </Pressable>
+            </View>
+          ) : (
+            /* Default: contact picker button */
+            <View style={styles.contactPickerSection}>
+              <Pressable
+                onPress={() => setShowContactPicker(true)}
+                style={styles.contactPickerButton}
+              >
+                <UserRound color={palette.goldBright} size={18} />
+                <Text style={styles.contactPickerLabel}>Pick from contacts</Text>
+              </Pressable>
+              <Pressable onPress={() => setShowManualName(true)} style={styles.switchInputLink}>
+                <Text style={styles.switchInputText}>Type a name instead</Text>
+              </Pressable>
+            </View>
+          )}
         </RitualCard>
 
         {/* Suggested stake */}
@@ -488,6 +606,17 @@ export default function CastScreen() {
           </View>
         ) : null}
       </RitualScreen>
+
+      <ContactPickerModal
+        visible={showContactPicker}
+        onSelect={(name, phone) => {
+          setTargetName(name);
+          setTargetPhone(phone);
+          setShowContactPicker(false);
+          setShowManualName(false);
+        }}
+        onClose={() => setShowContactPicker(false)}
+      />
 
       <AuthSheet
         visible={authSheetVisible}
@@ -541,6 +670,76 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     padding: 0,
     minHeight: 40,
+  },
+  contactPickerSection: {
+    gap: 12,
+  },
+  contactPickerButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(212,162,79,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.2)',
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+  },
+  contactPickerLabel: {
+    color: palette.goldBright,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  switchInputLink: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  switchInputText: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+  selectedContact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: 'rgba(212,162,79,0.06)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.15)',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+  },
+  selectedContactAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(212,162,79,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectedContactInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  selectedContactName: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  selectedContactPhone: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+  selectedContactClear: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stakeSubline: {
     color: palette.textMuted,

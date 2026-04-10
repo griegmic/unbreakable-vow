@@ -48,8 +48,33 @@ export default function CastPage() {
   const [dareSent, setDareSent] = useState(false);
   const [shared, setShared] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [vowId, setVowId] = useState<string | null>(null);
+  const [challengeAccepted, setChallengeAccepted] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Poll for challenge acceptance when waiting
+  useEffect(() => {
+    if (!vowId || (!dareSent && !shared)) return;
+    if (challengeAccepted) return;
+
+    const interval = setInterval(async () => {
+      const { data } = await supabase
+        .from('vows')
+        .select('challenge_status')
+        .eq('id', vowId)
+        .single();
+      if (data?.challenge_status === 'accepted') {
+        setChallengeAccepted(true);
+      } else if (data?.challenge_status === 'declined') {
+        setChallengeAccepted(false);
+        // Could show a "they backed down" state but for now just stop polling
+        clearInterval(interval);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [vowId, dareSent, shared, challengeAccepted]);
 
   // Compute suggestion as user types
   useEffect(() => {
@@ -138,6 +163,7 @@ export default function CastPage() {
 
       if (vowError) throw new Error(`Failed to create dare: ${vowError.message}`);
 
+      setVowId(newVow?.id || null);
       const link = `${window.location.origin}/c/${challengeToken}`;
       setDareLink(link);
 
@@ -219,6 +245,8 @@ export default function CastPage() {
               setSuggestion('');
               setTargetName('');
               setSuggestedStake(25);
+              setVowId(null);
+              setChallengeAccepted(false);
               setError('');
             }}
             className="min-h-[44px] flex items-center justify-center"
@@ -231,45 +259,74 @@ export default function CastPage() {
       >
         <FadeUp>
           <div className="text-center mt-6">
-            <h1
-              className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
-              style={{ color: 'var(--text)' }}
-            >
-              Waiting for {targetName}...
-            </h1>
-            <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
-              No reply? Send it again &mdash; or try a different app.
-            </p>
+            {challengeAccepted ? (
+              <>
+                <div className="flex justify-center mb-3">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(82,214,154,0.12)' }}>
+                    <Check className="w-6 h-6" style={{ color: 'var(--success)' }} />
+                  </div>
+                </div>
+                <h1
+                  className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
+                  style={{ color: 'var(--text)' }}
+                >
+                  {targetName} accepted!
+                </h1>
+                <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+                  The vow is sealed. You&apos;ll decide the verdict at the deadline.
+                </p>
+              </>
+            ) : (
+              <>
+                <h1
+                  className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
+                  style={{ color: 'var(--text)' }}
+                >
+                  Waiting for {targetName}...
+                </h1>
+                <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+                  No reply? Send it again &mdash; or try a different app.
+                </p>
+              </>
+            )}
           </div>
         </FadeUp>
 
         <FadeUp delay={0.1}>
           <div className="flex flex-col gap-2">
-            <PrimaryButton label="Send again" onPress={handleShare} />
-            <button
-              onClick={handleCopyLink}
-              className="min-h-[44px] flex items-center justify-center gap-2"
-            >
-              {copied ? (
-                <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
-              ) : (
-                <Copy className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-              )}
-              <span className="text-[14px] font-semibold" style={{ color: copied ? 'var(--success)' : 'var(--text-secondary)' }}>
-                {copied ? 'Copied!' : 'Or copy the link'}
-              </span>
-            </button>
+            {challengeAccepted ? (
+              <PrimaryButton label="Go to dashboard" onPress={() => router.push('/dashboard')} />
+            ) : (
+              <>
+                <PrimaryButton label="Send again" onPress={handleShare} />
+                <button
+                  onClick={handleCopyLink}
+                  className="min-h-[44px] flex items-center justify-center gap-2"
+                >
+                  {copied ? (
+                    <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+                  ) : (
+                    <Copy className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                  )}
+                  <span className="text-[14px] font-semibold" style={{ color: copied ? 'var(--success)' : 'var(--text-secondary)' }}>
+                    {copied ? 'Copied!' : 'Or copy the link'}
+                  </span>
+                </button>
+              </>
+            )}
           </div>
         </FadeUp>
 
-        <FadeUp delay={0.15}>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="min-h-[44px] flex items-center justify-center"
-          >
-            <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Dashboard →</span>
-          </button>
-        </FadeUp>
+        {!challengeAccepted && (
+          <FadeUp delay={0.15}>
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="min-h-[44px] flex items-center justify-center"
+            >
+              <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Dashboard →</span>
+            </button>
+          </FadeUp>
+        )}
       </RitualScreen>
     );
   }
@@ -288,6 +345,8 @@ export default function CastPage() {
               setSuggestion('');
               setTargetName('');
               setSuggestedStake(25);
+              setVowId(null);
+              setChallengeAccepted(false);
               setError('');
             }}
             className="min-h-[44px] flex items-center justify-center"

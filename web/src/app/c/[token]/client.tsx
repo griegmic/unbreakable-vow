@@ -744,7 +744,7 @@ export default function ChallengeInviteClient({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
                     <Shield className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-                    <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Witness</span>
+                    <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Dared by</span>
                   </div>
                   <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>
                     {makerName}
@@ -767,8 +767,7 @@ export default function ChallengeInviteClient({
 
           <FadeUp delay={0.25}>
             <p className="text-[14px] leading-[21px]" style={{ color: 'var(--text-secondary)' }}>
-              Oathkeeper has entered the chat.<br />
-              You&apos;ll hear from Oathkeeper soon.
+              {makerName} will decide if you kept it at the deadline.
             </p>
           </FadeUp>
 
@@ -789,37 +788,23 @@ export default function ChallengeInviteClient({
                 </div>
               </a>
 
-              {/* App store badges */}
+              {/* App Store badge */}
               <div className="flex flex-col items-center gap-2 pt-2">
                 <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
                   Get the app for check-ins and updates
                 </p>
-                <div className="flex gap-3">
-                  <a
-                    href="https://apps.apple.com/app/unbreakable-vow/id6743597637"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="transition-opacity hover:opacity-80"
-                  >
-                    <img
-                      src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
-                      alt="Download on the App Store"
-                      className="h-[40px]"
-                    />
-                  </a>
-                  <a
-                    href="https://play.google.com/store/apps/details?id=app.unbreakablevow"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="transition-opacity hover:opacity-80"
-                  >
-                    <img
-                      src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-                      alt="Get it on Google Play"
-                      className="h-[40px]"
-                    />
-                  </a>
-                </div>
+                <a
+                  href="https://apps.apple.com/app/unbreakable-vow/id6743597637"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="transition-opacity hover:opacity-80"
+                >
+                  <img
+                    src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
+                    alt="Download on the App Store"
+                    className="h-[40px]"
+                  />
+                </a>
               </div>
             </div>
           </FadeUp>
