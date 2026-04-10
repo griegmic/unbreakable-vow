@@ -1,15 +1,10 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { Calendar, Shield, Sparkles, Check } from 'lucide-react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, ChoiceChip, RitualCard } from '@/components/ui';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -26,7 +21,7 @@ interface Vow {
   challenge_status: string;
 }
 
-type Step = 'dare' | 'back-down-confirm' | 'backed-down' | 'stakes' | 'charity' | 'payment' | 'sealed';
+type Step = 'dare' | 'back-down-confirm' | 'backed-down' | 'stakes' | 'payment' | 'sealed';
 
 const STAKE_OPTIONS = [1000, 2500, 5000, 10000]; // cents
 const CHARITIES = [
@@ -163,6 +158,41 @@ export default function ChallengeInviteClient({
       : null
   );
 
+  // Detect existing session + listen for auth changes (Google OAuth return)
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setEmail(session.user.email || '');
+        setDisplayName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
+      }
+    };
+    checkSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setEmail(session.user.email || '');
+        setDisplayName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Restore challenge state from localStorage after OAuth return
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('challenge-pending-state');
+      if (saved) {
+        const { stakeAmount: savedStake, charity: savedCharity } = JSON.parse(saved);
+        if (typeof savedStake === 'number') setStakeAmount(savedStake);
+        if (savedCharity) setCharity(savedCharity);
+        localStorage.removeItem('challenge-pending-state');
+        // If we had pending state, jump to payment step
+        setStep('payment');
+      }
+    } catch {}
+  }, []);
+
   const makerLabel = makerName === 'Your friend' ? 'your friend' : makerName;
 
   const endDate = vow.ends_at
@@ -231,7 +261,7 @@ export default function ChallengeInviteClient({
     } finally {
       setBusy(false);
     }
-  }, [busy, token, stakeAmount, charity, email]);
+  }, [busy, token, stakeAmount, charity, email, displayName]);
 
   // ─── STEP 1: THE DARE ───
   if (step === 'dare') {
@@ -249,7 +279,7 @@ export default function ChallengeInviteClient({
 
           <FadeUp delay={0.1}>
             <p className="text-[17px] leading-[25px]" style={{ color: 'var(--text-secondary)' }}>
-              {makerName} doesn&apos;t think you can
+              {makerName}{' '}doesn&apos;t think you can
             </p>
           </FadeUp>
 
@@ -391,7 +421,7 @@ export default function ChallengeInviteClient({
     );
   }
 
-  // ─── STEP 3: STAKES ───
+  // ─── STEP 3: STAKES + CHARITY (combined) ───
   if (step === 'stakes') {
     return (
       <RitualScreen>
@@ -424,23 +454,39 @@ export default function ChallengeInviteClient({
           </div>
         </FadeUp>
 
-        <FadeUp delay={0.2}>
+        {/* Charity selector — only when staked */}
+        {stakeAmount > 0 && (
+          <FadeUp delay={0.18}>
+            <div className="flex flex-col gap-2">
+              <p className="text-[12px] font-bold tracking-[1.2px] uppercase" style={{ color: 'var(--text-muted)' }}>
+                Where does it go if you fail?
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {CHARITIES.map((name) => (
+                  <ChoiceChip
+                    key={name}
+                    label={name}
+                    active={charity === name}
+                    onPress={() => setCharity(name)}
+                  />
+                ))}
+              </div>
+            </div>
+          </FadeUp>
+        )}
+
+        <FadeUp delay={0.25}>
           <div className="flex flex-col gap-3">
             <PrimaryButton
               label={stakeAmount > 0 ? `Stake $${stakeAmount / 100}` : 'Continue'}
-              onPress={() => {
-                if (stakeAmount > 0) {
-                  setStep('charity');
-                } else {
-                  setStep('payment');
-                }
-              }}
-              disabled={false}
+              onPress={() => setStep('payment')}
+              disabled={stakeAmount > 0 && !charity}
             />
             <button
               type="button"
               onClick={() => {
                 setStakeAmount(0);
+                setCharity('');
                 setStep('payment');
               }}
               className="py-2 transition-opacity hover:opacity-70"
@@ -451,52 +497,9 @@ export default function ChallengeInviteClient({
             </button>
           </div>
         </FadeUp>
-      </RitualScreen>
-    );
-  }
 
-  // ─── STEP 4: CHARITY ───
-  if (step === 'charity') {
-    return (
-      <RitualScreen>
-        <FadeUp><HeaderBadge /></FadeUp>
-
-        <FadeUp delay={0.05}>
-          <TitleBlock
-            title="Where should the money go if you fail?"
-            subtitle={`$${stakeAmount / 100} to charity if you don't follow through.`}
-          />
-        </FadeUp>
-
-        <FadeUp delay={0.12}>
-          <div className="flex flex-col gap-2.5">
-            {CHARITIES.map((name) => (
-              <button
-                key={name}
-                type="button"
-                onClick={() => {
-                  setCharity(name);
-                  setStep('payment');
-                }}
-                className="w-full rounded-[16px] px-5 py-4 text-left transition-all active:scale-[0.98]"
-                style={{
-                  backgroundColor: charity === name ? 'rgba(212,162,79,0.12)' : 'var(--surface)',
-                  border: `1px solid ${charity === name ? 'var(--border-strong)' : 'var(--border)'}`,
-                }}
-              >
-                <span
-                  className="text-[15px] font-medium"
-                  style={{ color: charity === name ? 'var(--gold-bright)' : 'var(--text)' }}
-                >
-                  {name}
-                </span>
-              </button>
-            ))}
-          </div>
-        </FadeUp>
-
-        <FadeUp delay={0.25}>
-          <p className="text-center text-[13px]" style={{ color: 'var(--text-muted)' }}>
+        <FadeUp delay={0.3}>
+          <p className="text-center text-[12px]" style={{ color: 'var(--text-muted)' }}>
             You won&apos;t be charged unless you fail.
           </p>
         </FadeUp>
@@ -504,9 +507,53 @@ export default function ChallengeInviteClient({
     );
   }
 
-  // ─── STEP 5: PAYMENT + ACCOUNT ───
+  // ─── STEP 5: SIGN IN + PAYMENT ───
   if (step === 'payment') {
     const isStaked = stakeAmount > 0;
+
+    const handleGoogleSignIn = async () => {
+      const returnPath = `/c/${token}`;
+      // Save state in both cookie (Safari) and localStorage
+      try { document.cookie = `auth_return_path=${encodeURIComponent(returnPath)}; path=/; max-age=300; SameSite=Lax`; } catch {}
+      try { localStorage.setItem('auth-return-path', returnPath); } catch {}
+      try { localStorage.setItem('challenge-pending-state', JSON.stringify({ stakeAmount, charity })); } catch {}
+      const callbackUrl = new URL('/auth/callback', window.location.origin);
+      callbackUrl.searchParams.set('return_to', returnPath);
+      await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { redirectTo: callbackUrl.toString() },
+      });
+    };
+
+    const handleTestBypass = () => {
+      setEmail('test@unbreakablevow.app');
+      setDisplayName('Test User');
+      // Seal with no payment using test credentials
+      setBusy(true);
+      setError(null);
+      supabase.functions.invoke('accept-challenge', {
+        body: {
+          token,
+          action: 'accept',
+          stake_amount: 0,
+          destination: '',
+          email: 'test@unbreakablevow.app',
+          display_name: 'Test User',
+        },
+      }).then(({ data, error: fnError }) => {
+        if (fnError || data?.error) {
+          setError(data?.error || 'Something went wrong.');
+          setBusy(false);
+          return;
+        }
+        setSealedVow({ stake: 0, charity: '', email: 'test@unbreakablevow.app' });
+        setStep('sealed');
+        setBusy(false);
+      }).catch(() => {
+        setError('Network error. Please check your connection.');
+        setBusy(false);
+      });
+    };
 
     return (
       <RitualScreen>
@@ -518,70 +565,46 @@ export default function ChallengeInviteClient({
             subtitle={
               isStaked
                 ? `$${stakeAmount / 100} held until your vow is resolved.`
-                : 'Enter your email to seal the vow.'
+                : 'Sign in to seal the vow.'
             }
           />
         </FadeUp>
 
         <FadeUp delay={0.12}>
           <div className="flex flex-col gap-4">
-            {/* Name input */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-bold tracking-[1.2px] uppercase" style={{ color: 'var(--text-muted)' }}>
-                Your name
-              </label>
-              <input
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="First name"
-                className="w-full rounded-[14px] px-4 py-3.5 text-[15px] outline-none transition-all"
-                style={{
-                  backgroundColor: '#10141C',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: 'var(--text)',
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'rgba(255,214,102,0.18)';
-                  e.target.style.boxShadow = '0 0 0 1px rgba(255,214,102,0.18)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(255,255,255,0.08)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
+            {/* Google Sign In */}
+            {!email && (
+              <button
+                onClick={handleGoogleSignIn}
+                disabled={busy}
+                className="w-full min-h-[52px] rounded-2xl flex items-center justify-center gap-2.5 transition-opacity active:opacity-80 disabled:opacity-60"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                  <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                  <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                  <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                </svg>
+                <span className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>Continue with Google</span>
+              </button>
+            )}
 
-            {/* Email input */}
-            <div className="flex flex-col gap-1.5">
-              <label className="text-[12px] font-bold tracking-[1.2px] uppercase" style={{ color: 'var(--text-muted)' }}>
-                Email
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                required
-                className="w-full rounded-[14px] px-4 py-3.5 text-[15px] outline-none transition-all"
-                style={{
-                  backgroundColor: '#10141C',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  color: 'var(--text)',
-                }}
-                onFocus={(e) => {
-                  e.target.style.borderColor = 'rgba(255,214,102,0.18)';
-                  e.target.style.boxShadow = '0 0 0 1px rgba(255,214,102,0.18)';
-                }}
-                onBlur={(e) => {
-                  e.target.style.borderColor = 'rgba(255,255,255,0.08)';
-                  e.target.style.boxShadow = 'none';
-                }}
-              />
-            </div>
+            {/* Signed in state */}
+            {email && (
+              <div className="flex items-center gap-3 rounded-[14px] px-4 py-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
+                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(212,162,79,0.12)' }}>
+                  <Check className="w-4 h-4" style={{ color: 'var(--gold)' }} />
+                </div>
+                <div className="flex flex-col">
+                  {displayName && <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>{displayName}</span>}
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>{email}</span>
+                </div>
+              </div>
+            )}
 
-            {/* Stripe card if staked */}
-            {isStaked ? (
+            {/* Stripe card if staked + signed in */}
+            {isStaked && email ? (
               <Elements
                 stripe={stripePromise}
                 options={{
@@ -595,14 +618,25 @@ export default function ChallengeInviteClient({
                   loading={busy}
                 />
               </Elements>
-            ) : (
+            ) : email ? (
               <PrimaryButton
                 label="Seal the vow"
                 onPress={() => handleSeal()}
                 loading={busy}
-                disabled={!email.includes('@')}
               />
-            )}
+            ) : null}
+
+            {/* Testing bypass */}
+            <button
+              type="button"
+              onClick={handleTestBypass}
+              disabled={busy}
+              className="py-2 transition-opacity hover:opacity-70 disabled:opacity-40"
+            >
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                Just testing
+              </span>
+            </button>
 
             {error && (
               <p className="text-[13px]" style={{ color: 'var(--danger)' }}>{error}</p>
