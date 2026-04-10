@@ -47,6 +47,7 @@ function RootLayoutNav() {
       <Stack.Screen name="history" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="quick-vow" />
+      <Stack.Screen name="cast" />
     </Stack>
   );
 }

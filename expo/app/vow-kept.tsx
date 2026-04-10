@@ -148,6 +148,11 @@ export default function VowKeptScreen() {
             testID="kept-share"
           />
           <SecondaryButton
+            label="Challenge a friend"
+            onPress={() => router.push('/cast')}
+            testID="kept-challenge"
+          />
+          <SecondaryButton
             label="Make a new vow"
             onPress={() => {
               resetVow();

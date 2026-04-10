@@ -38,7 +38,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const now = new Date();
-  const results = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, sms_retry: 0, refund_retry: 0, vow_lifecycle: 0, push: 0, errors: [] as string[] };
+  const results: Record<string, unknown> = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, sms_retry: 0, refund_retry: 0, vow_lifecycle: 0, challenge_expire: 0, push: 0, errors: [] as string[] };
 
   try {
     // === TASK 0: Send witness acceptance reminders ===
@@ -502,6 +502,51 @@ Deno.serve(async (req) => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       results.errors.push(`vow_lifecycle: ${msg}`);
+    }
+
+    // === TASK 8: Expire unanswered challenge dares after 48h ===
+    try {
+      const challengeCutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: expiredDares } = await supabase
+        .from('vows')
+        .select('id, user_id, refined_text')
+        .eq('vow_type', 'challenge')
+        .eq('challenge_status', 'pending')
+        .eq('status', 'draft')
+        .lt('created_at', challengeCutoff);
+
+      for (const vow of expiredDares || []) {
+        try {
+          // Atomic update — only expire if still pending
+          const { data: expired } = await supabase
+            .from('vows')
+            .update({ challenge_status: 'expired', status: 'voided' })
+            .eq('id', vow.id)
+            .eq('challenge_status', 'pending')
+            .select('id')
+            .maybeSingle();
+
+          if (!expired) continue; // Already responded
+
+          await createAuditEvent(supabase, vow.id, 'challenge_expired', 'system');
+
+          // Push notification to challenger
+          await supabase.from('push_queue').insert({
+            user_id: vow.user_id,
+            title: 'Dare expired',
+            body: "They didn't respond to your dare.",
+            data: { vow_id: vow.id, event: 'challenge_expired', route: '/dashboard' },
+            send_after: now.toISOString(),
+          });
+
+          results.challenge_expire = (results.challenge_expire || 0) + 1;
+        } catch (err) {
+          results.errors.push(`challenge_expire ${vow.id}: ${err}`);
+        }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.errors.push(`challenge_expire: ${msg}`);
     }
 
     // === TASK 4: Process push notification queue ===

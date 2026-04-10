@@ -1,0 +1,476 @@
+'use client';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, Sparkles, Copy, Check, Send } from 'lucide-react';
+import {
+  RitualScreen, RitualCard, PrimaryButton, ChoiceChip,
+  SectionLabel, FadeUp, VowPreview,
+} from '@/components/ui';
+import { AuthModal } from '@/components/auth-modal';
+import { useAuth } from '@/providers/auth-provider';
+import { supabase } from '@/lib/supabase';
+import { analyzeVow, generateSuggestion } from '@/lib/vow-logic';
+
+async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, email?: string) {
+  await supabase.from('users').upsert(
+    { id: userId, display_name: (meta?.full_name as string) || email?.split('@')[0] || null },
+    { onConflict: 'id', ignoreDuplicates: true },
+  );
+}
+
+const SUGGESTED_STAKES = [10, 25, 50, 100];
+
+const DEADLINE_PRESETS = [
+  { label: 'This Friday', days: () => { const d = new Date(); const diff = 5 - d.getDay(); return diff <= 0 ? diff + 7 : diff; } },
+  { label: 'End of week', days: () => { const d = new Date(); const diff = 7 - d.getDay(); return diff === 0 ? 7 : diff; } },
+  { label: 'In 7 days', days: () => 7 },
+  { label: 'Pick date', days: () => -1 },
+];
+
+export default function CastPage() {
+  const router = useRouter();
+  const { session } = useAuth();
+
+  // Form state
+  const [vowText, setVowText] = useState('');
+  const [suggestion, setSuggestion] = useState('');
+  const [targetName, setTargetName] = useState('');
+  const [suggestedStake, setSuggestedStake] = useState<number | null>(25);
+  const [deadlineLabel, setDeadlineLabel] = useState('In 7 days');
+  const [customDate, setCustomDate] = useState('');
+  const [showCustomDate, setShowCustomDate] = useState(false);
+
+  // Flow state
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState('');
+  const [showAuth, setShowAuth] = useState(false);
+  const [dareLink, setDareLink] = useState('');
+  const [dareSent, setDareSent] = useState(false);
+  const [shared, setShared] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Compute suggestion as user types
+  useEffect(() => {
+    if (vowText.trim().length < 3) { setSuggestion(''); return; }
+    const analysis = analyzeVow(vowText);
+    if (analysis.type === 'vague') {
+      setSuggestion(generateSuggestion(vowText));
+    } else {
+      setSuggestion('');
+    }
+  }, [vowText]);
+
+  // Compute end date
+  const endDate = useMemo(() => {
+    if (showCustomDate && customDate) {
+      return new Date(customDate + 'T23:59:59');
+    }
+    const preset = DEADLINE_PRESETS.find((p) => p.label === deadlineLabel);
+    if (!preset) { const f = new Date(); f.setDate(f.getDate() + 7); f.setHours(23, 59, 59, 0); return f; }
+    const days = preset.days();
+    if (days === -1) { const f = new Date(); f.setDate(f.getDate() + 7); f.setHours(23, 59, 59, 0); return f; }
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }, [deadlineLabel, customDate, showCustomDate]);
+
+  const activeText = suggestion || vowText;
+  const formattedText = activeText.trim().charAt(0).toUpperCase() + activeText.trim().slice(1);
+
+  const handleDeadlineSelect = (label: string) => {
+    setDeadlineLabel(label);
+    if (label === 'Pick date') {
+      setShowCustomDate(true);
+    } else {
+      setShowCustomDate(false);
+      setCustomDate('');
+    }
+  };
+
+  const acceptSuggestion = () => {
+    if (suggestion) { setVowText(suggestion); setSuggestion(''); }
+  };
+
+  // Create the dare
+  const handleSendDare = useCallback(async () => {
+    if (sending || !vowText.trim() || !targetName.trim()) return;
+    setError('');
+
+    const { data: { session: currentSession } } = await supabase.auth.refreshSession();
+    if (!currentSession) {
+      setShowAuth(true);
+      return;
+    }
+
+    setSending(true);
+    try {
+      const finalText = formattedText.endsWith('.') || formattedText.endsWith('!') ? formattedText : formattedText + '.';
+
+      await ensurePublicUser(currentSession.user.id, currentSession.user.user_metadata, currentSession.user.email ?? undefined);
+
+      const challengeToken = crypto.randomUUID();
+
+      const { data: newVow, error: vowError } = await supabase
+        .from('vows')
+        .insert({
+          user_id: currentSession.user.id,
+          raw_input: vowText,
+          refined_text: finalText,
+          vow_type: 'challenge',
+          status: 'draft',
+          challenge_status: 'pending',
+          challenge_invite_token: challengeToken,
+          witness_user_id: currentSession.user.id,
+          witness_name: currentSession.user.user_metadata?.full_name || currentSession.user.email?.split('@')[0] || 'You',
+          witness_invite_token: crypto.randomUUID(),
+          suggested_stake_amount: (suggestedStake || 0) * 100,
+          stake_amount: 0, // recipient decides
+          consequence: 'charity',
+          destination: '',  // recipient decides
+          starts_at: new Date().toISOString(),
+          ends_at: endDate.toISOString(),
+        })
+        .select()
+        .single();
+
+      if (vowError) throw new Error(`Failed to create dare: ${vowError.message}`);
+
+      const link = `${window.location.origin}/c/${challengeToken}`;
+      setDareLink(link);
+      setDareSent(true);
+    } catch (err) {
+      console.error('Create dare error:', err);
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setSending(false);
+    }
+  }, [sending, vowText, targetName, formattedText, suggestedStake, endDate]);
+
+  const getShareText = () => {
+    const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
+    return `I don't think you can ${vowPart}. Prove me wrong → ${dareLink}`;
+  };
+
+  const handleShare = async () => {
+    const text = getShareText();
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try {
+        await navigator.share({ text });
+        setShared(true);
+      } catch {
+        // User cancelled share sheet — that's ok
+      }
+    } else {
+      handleCopyLink();
+    }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard?.writeText(dareLink).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
+  const handleAuthSuccess = async () => {
+    setShowAuth(false);
+    const maxAttempts = 10;
+    for (let i = 0; i < maxAttempts; i++) {
+      const { data: { session: freshSession } } = await supabase.auth.getSession();
+      if (freshSession) { handleSendDare(); return; }
+      await new Promise((r) => setTimeout(r, 300));
+    }
+    setError('Session not found after sign-in. Please try again.');
+  };
+
+  // === POST-SHARE STATE ===
+  if (shared) {
+    return (
+      <RitualScreen
+        footer={
+          <div className="flex flex-col gap-2">
+            <PrimaryButton
+              label="Dare someone else"
+              onPress={() => {
+                setDareSent(false);
+                setShared(false);
+                setDareLink('');
+                setVowText('');
+                setSuggestion('');
+                setTargetName('');
+                setSuggestedStake(25);
+                setError('');
+              }}
+            />
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="min-h-[44px] flex items-center justify-center"
+            >
+              <span className="text-[15px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Dashboard →</span>
+            </button>
+          </div>
+        }
+      >
+        <FadeUp>
+          <div className="flex justify-center mt-8">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(212,162,79,0.12)' }}
+            >
+              <Send className="w-7 h-7" style={{ color: 'var(--gold-bright)' }} />
+            </div>
+          </div>
+        </FadeUp>
+        <FadeUp delay={0.1}>
+          <div className="text-center">
+            <h1
+              className="text-[10px] font-extrabold tracking-[3px] uppercase"
+              style={{ color: 'var(--gold-bright)' }}
+            >
+              DARE SENT
+            </h1>
+            <p className="text-[22px] font-serif font-bold mt-3" style={{ color: 'var(--text)' }}>
+              Waiting for {targetName} to respond...
+            </p>
+            <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+              You&apos;ll get a notification when they accept or back down.
+            </p>
+          </div>
+        </FadeUp>
+      </RitualScreen>
+    );
+  }
+
+  // === SHARE SCREEN ===
+  if (dareSent) {
+    return (
+      <RitualScreen
+        footer={
+          <div className="flex flex-col gap-3">
+            <PrimaryButton label="Share the dare →" onPress={handleShare} />
+            <button
+              onClick={handleCopyLink}
+              className="min-h-[44px] flex items-center justify-center gap-2"
+            >
+              {copied ? (
+                <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+              ) : (
+                <Copy className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+              )}
+              <span className="text-[14px] font-semibold" style={{ color: copied ? 'var(--success)' : 'var(--text-secondary)' }}>
+                {copied ? 'Copied!' : 'Copy link'}
+              </span>
+            </button>
+          </div>
+        }
+      >
+        <FadeUp>
+          <div className="flex justify-center mt-8">
+            <div
+              className="w-14 h-14 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(212,162,79,0.12)' }}
+            >
+              <Send className="w-7 h-7" style={{ color: 'var(--gold-bright)' }} />
+            </div>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.1}>
+          <div className="text-center">
+            <h1
+              className="text-[10px] font-extrabold tracking-[3px] uppercase"
+              style={{ color: 'var(--gold-bright)' }}
+            >
+              DARE SENT
+            </h1>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.15}>
+          <VowPreview text={formattedText} />
+        </FadeUp>
+
+        <FadeUp delay={0.2}>
+          <RitualCard>
+            <div className="flex flex-col gap-2">
+              {suggestedStake && suggestedStake > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Suggested stake</span>
+                  <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${suggestedStake}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Daring</span>
+                <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{targetName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Ends</span>
+                <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                  {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            </div>
+          </RitualCard>
+        </FadeUp>
+
+        <FadeUp delay={0.25}>
+          <p className="text-[13px] text-center" style={{ color: 'var(--text-muted)' }}>
+            We&apos;ll notify you when {targetName} accepts or backs down.
+          </p>
+        </FadeUp>
+      </RitualScreen>
+    );
+  }
+
+  // === CREATION FORM ===
+  return (
+    <>
+      <RitualScreen
+        footer={
+          <div>
+            <PrimaryButton
+              label="Send the dare"
+              onPress={handleSendDare}
+              disabled={!vowText.trim() || !targetName.trim()}
+              loading={sending}
+            />
+          </div>
+        }
+      >
+        {/* Back to Dashboard */}
+        <FadeUp>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center gap-2 py-2"
+          >
+            <ArrowLeft className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Dashboard</span>
+          </button>
+        </FadeUp>
+
+        {/* Title */}
+        <FadeUp delay={0.05}>
+          <h1
+            className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
+            style={{ color: 'var(--text)' }}
+          >
+            Dare a friend to an Unbreakable Vow
+          </h1>
+        </FadeUp>
+
+        {/* What can't they do? */}
+        <FadeUp delay={0.1}>
+          <RitualCard>
+            <SectionLabel>What can&apos;t they do?</SectionLabel>
+            <div className="relative">
+              <textarea
+                ref={textareaRef}
+                value={vowText}
+                onChange={(e) => setVowText(e.target.value)}
+                placeholder="They can't..."
+                rows={3}
+                className="w-full bg-transparent text-[16px] leading-[24px] outline-none resize-none"
+                style={{ color: 'var(--text)' }}
+              />
+              {suggestion && suggestion !== vowText && (
+                <button
+                  onClick={acceptSuggestion}
+                  className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
+                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                >
+                  <Sparkles className="w-3 h-3" style={{ color: 'var(--gold)' }} />
+                  <span className="text-[13px]" style={{ color: 'var(--gold)' }}>{suggestion}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Deadline */}
+            <div className="h-px my-2" style={{ backgroundColor: 'var(--border)' }} />
+            <div className="flex items-center gap-2.5">
+              <span className="text-[13px] font-semibold" style={{ color: 'var(--text-muted)' }}>Ends</span>
+              <div className="flex flex-wrap">
+                {DEADLINE_PRESETS.map((p) => (
+                  <ChoiceChip
+                    key={p.label}
+                    label={p.label === 'Pick date' ? 'Pick' : p.label}
+                    active={deadlineLabel === p.label}
+                    onPress={() => handleDeadlineSelect(p.label)}
+                  />
+                ))}
+              </div>
+            </div>
+            {showCustomDate && (
+              <input
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
+                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+              />
+            )}
+            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+              {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+            </p>
+          </RitualCard>
+        </FadeUp>
+
+        {/* Who are you daring? */}
+        <FadeUp delay={0.15}>
+          <RitualCard>
+            <SectionLabel>Who are you daring?</SectionLabel>
+            <input
+              type="text"
+              value={targetName}
+              onChange={(e) => setTargetName(e.target.value)}
+              placeholder="Their first name"
+              className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
+              style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+            />
+          </RitualCard>
+        </FadeUp>
+
+        {/* Suggest a stake */}
+        <FadeUp delay={0.2}>
+          <RitualCard>
+            <SectionLabel>Suggest a stake</SectionLabel>
+            <div className="flex flex-wrap">
+              {SUGGESTED_STAKES.map((amt) => (
+                <ChoiceChip
+                  key={amt}
+                  label={`$${amt}`}
+                  active={suggestedStake === amt}
+                  onPress={() => setSuggestedStake(amt)}
+                />
+              ))}
+              <ChoiceChip
+                label="No suggestion"
+                active={suggestedStake === null}
+                onPress={() => setSuggestedStake(null)}
+              />
+            </div>
+            <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
+              This anchors their choice. You don&apos;t pay anything.
+            </p>
+          </RitualCard>
+        </FadeUp>
+
+        {/* Error */}
+        {error && (
+          <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--danger-muted)' }}>
+            <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
+          </div>
+        )}
+      </RitualScreen>
+
+      <AuthModal
+        visible={showAuth}
+        onDismiss={() => setShowAuth(false)}
+        onSuccess={handleAuthSuccess}
+      />
+    </>
+  );
+}

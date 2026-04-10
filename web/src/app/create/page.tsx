@@ -43,16 +43,13 @@ interface RecentWitness {
 export default function CreatePage() {
   const router = useRouter();
   const { isAuthenticated, session } = useAuth();
-  const { vow, setRawInput, setVowType, setTarget, resetVow } = useVowFlow();
+  const { resetVow } = useVowFlow();
 
   // Form state
   const [vowText, setVowText] = useState('');
   const [suggestion, setSuggestion] = useState('');
-  const [vowType, setLocalVowType] = useState<'self' | 'challenge'>('self');
   const [witnessName, setWitnessName] = useState('');
   const [witnessPhone, setWitnessPhone] = useState('');
-  const [targetName, setTargetName] = useState('');
-  const [targetPhone, setTargetPhone] = useState('');
   const [stakeAmount, setStakeAmount] = useState(10);
   const [consequence, setConsequence] = useState<ConsequenceType>('charity');
   const [destination, setDestination] = useState('ALS Association');
@@ -194,7 +191,6 @@ export default function CreatePage() {
     setSealing(true);
     try {
       const finalText = formattedText.endsWith('.') || formattedText.endsWith('!') ? formattedText : formattedText + '.';
-      const isChallenge = vowType === 'challenge';
 
       await ensurePublicUser(currentSession.user.id, currentSession.user.user_metadata, currentSession.user.email ?? undefined);
 
@@ -204,9 +200,9 @@ export default function CreatePage() {
           user_id: currentSession.user.id,
           raw_input: vowText,
           refined_text: finalText,
-          vow_type: vowType,
-          witness_name: isChallenge ? (currentSession.user.user_metadata?.full_name || currentSession.user.email?.split('@')[0] || 'Maker') : (witnessName || 'Just me'),
-          witness_phone: isChallenge ? null : (witnessPhone || null),
+          vow_type: 'self',
+          witness_name: witnessName || 'Just me',
+          witness_phone: witnessPhone || null,
           witness_invite_token: crypto.randomUUID(),
           stake_amount: stakeAmount * 100, // cents
           consequence,
@@ -214,12 +210,6 @@ export default function CreatePage() {
           status: 'draft' as const,
           starts_at: new Date().toISOString(),
           ends_at: endDate.toISOString(),
-          ...(isChallenge ? {
-            target_phone: targetPhone || null,
-            challenge_invite_token: crypto.randomUUID(),
-            challenge_status: 'pending' as const,
-            witness_user_id: currentSession.user.id,
-          } : {}),
         })
         .select()
         .single();
@@ -280,7 +270,7 @@ export default function CreatePage() {
     } finally {
       setSealing(false);
     }
-  }, [oathChecked, sealing, vowText, formattedText, vowType, witnessName, witnessPhone, targetName, targetPhone, stakeAmount, consequence, destination, endDate, resetVow, router]);
+  }, [oathChecked, sealing, vowText, formattedText, witnessName, witnessPhone, stakeAmount, consequence, destination, endDate, resetVow, router]);
 
   const handlePaymentSuccess = useCallback(async () => {
     setShowPayment(false);
@@ -410,10 +400,10 @@ export default function CreatePage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <User className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>{vowType === 'challenge' ? 'Challenge' : 'Witness'}</span>
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Witness</span>
                 </div>
                 <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                  {vowType === 'challenge' ? targetName : (witnessName || 'Just me')}
+                  {witnessName || 'Just me'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -547,86 +537,64 @@ export default function CreatePage() {
           </RitualCard>
         </FadeUp>
 
-        {/* Vow type toggle */}
+        {/* Witness section */}
         <FadeUp delay={0.15}>
           <RitualCard>
-            <SectionLabel>Vow type</SectionLabel>
-            <div className="flex flex-wrap">
-              <ChoiceChip label="Me" active={vowType === 'self'} onPress={() => setLocalVowType('self')} />
-              <ChoiceChip label="Someone else" active={vowType === 'challenge'} onPress={() => setLocalVowType('challenge')} />
-            </div>
-          </RitualCard>
-        </FadeUp>
-
-        {/* Witness / Target section */}
-        <FadeUp delay={0.2}>
-          <RitualCard>
-            {vowType === 'self' ? (
-              <>
-                <SectionLabel>Your witness</SectionLabel>
-                {recentWitnesses.length > 0 && !showNewWitness && (
-                  <div className="flex flex-wrap">
-                    {recentWitnesses.map((w) => (
-                      <ChoiceChip
-                        key={w.name + w.phone}
-                        label={w.name}
-                        active={witnessName === w.name && witnessPhone === w.phone}
-                        onPress={() => { setWitnessName(w.name); setWitnessPhone(w.phone); setShowNewWitness(false); }}
-                      />
-                    ))}
-                    <ChoiceChip
-                      label="+ New"
-                      active={showNewWitness}
-                      onPress={() => { setShowNewWitness(true); setWitnessName(''); setWitnessPhone(''); }}
-                    />
-                  </div>
-                )}
-                {(showNewWitness || recentWitnesses.length === 0) && (
-                  <div className="flex flex-col gap-2">
-                    <input
-                      type="text"
-                      value={witnessName}
-                      onChange={(e) => setWitnessName(e.target.value)}
-                      placeholder="Witness name"
-                      className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                      style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-                    />
-                    <input
-                      type="tel"
-                      value={witnessPhone}
-                      onChange={(e) => setWitnessPhone(e.target.value)}
-                      placeholder="Phone number"
-                      className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                      style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-                    />
-                  </div>
-                )}
-              </>
-            ) : (
-              <>
-                <SectionLabel>Your target</SectionLabel>
-                <div className="flex flex-col gap-2">
-                  <input
-                    type="text"
-                    value={targetName}
-                    onChange={(e) => setTargetName(e.target.value)}
-                    placeholder="Their name"
-                    className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                    style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+            <SectionLabel>Your witness</SectionLabel>
+            {recentWitnesses.length > 0 && !showNewWitness && (
+              <div className="flex flex-wrap">
+                {recentWitnesses.map((w) => (
+                  <ChoiceChip
+                    key={w.name + w.phone}
+                    label={w.name}
+                    active={witnessName === w.name && witnessPhone === w.phone}
+                    onPress={() => { setWitnessName(w.name); setWitnessPhone(w.phone); setShowNewWitness(false); }}
                   />
-                  <input
-                    type="tel"
-                    value={targetPhone}
-                    onChange={(e) => setTargetPhone(e.target.value)}
-                    placeholder="Their phone number"
-                    className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                    style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-                  />
-                </div>
-              </>
+                ))}
+                <ChoiceChip
+                  label="+ New"
+                  active={showNewWitness}
+                  onPress={() => { setShowNewWitness(true); setWitnessName(''); setWitnessPhone(''); }}
+                />
+              </div>
+            )}
+            {(showNewWitness || recentWitnesses.length === 0) && (
+              <div className="flex flex-col gap-2">
+                <input
+                  type="text"
+                  value={witnessName}
+                  onChange={(e) => setWitnessName(e.target.value)}
+                  placeholder="Witness name"
+                  className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
+                  style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                />
+                <input
+                  type="tel"
+                  value={witnessPhone}
+                  onChange={(e) => setWitnessPhone(e.target.value)}
+                  placeholder="Phone number"
+                  className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
+                  style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                />
+              </div>
             )}
           </RitualCard>
         </FadeUp>
+
+        {/* Dare a friend link — only for returning users */}
+        {recentWitnesses.length > 0 && (
+          <FadeUp delay={0.18}>
+            <div className="flex justify-center">
+              <button
+                onClick={() => router.push('/cast')}
+                className="text-[13px] font-semibold py-2"
+                style={{ color: 'var(--gold)' }}
+              >
+                or <span className="underline">dare a friend →</span>
+              </button>
+            </div>
+          </FadeUp>
+        )}
 
         {/* Stake */}
         <FadeUp delay={0.25}>
@@ -720,7 +688,7 @@ export default function CreatePage() {
                 <div className="flex items-center gap-1.5">
                   <User className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
                   <span style={{ color: 'var(--text-secondary)' }}>
-                    {vowType === 'challenge' ? `Challenge: ${targetName || '...'}` : (witnessName || 'Just me')}
+                    {witnessName || 'Just me'}
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5">
