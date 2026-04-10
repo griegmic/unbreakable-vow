@@ -224,8 +224,9 @@ export default function CastScreen() {
       // Auto-trigger share sheet immediately
       const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
       const name = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || '';
-      const shareText = name
-        ? `${name} dared you to ${vowPart}. Accept or back down → ${link}`
+      const firstName = name.split(' ')[0];
+      const shareText = firstName
+        ? `${firstName} doesn't think you can ${vowPart}. Prove them wrong → ${link}`
         : `I don't think you can ${vowPart}. Prove me wrong → ${link}`;
       try {
         const result = await Share.share({ message: shareText });
@@ -284,8 +285,9 @@ export default function CastScreen() {
 
   const getShareText = () => {
     const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
-    if (senderName) {
-      return `${senderName} dared you to ${vowPart}. Accept or back down → ${dareLink}`;
+    const firstName = senderName.split(' ')[0];
+    if (firstName) {
+      return `${firstName} doesn't think you can ${vowPart}. Prove them wrong → ${dareLink}`;
     }
     return `I don't think you can ${vowPart}. Prove me wrong → ${dareLink}`;
   };

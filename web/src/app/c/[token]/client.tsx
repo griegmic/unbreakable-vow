@@ -212,7 +212,8 @@ export default function ChallengeInviteClient({
     } catch {}
   }, []);
 
-  const makerLabel = makerName === 'Your friend' ? 'your friend' : makerName;
+  const makerFirstName = makerName === 'Your friend' ? 'Your friend' : makerName.split(' ')[0];
+  const makerLabel = makerName === 'Your friend' ? 'your friend' : makerFirstName;
 
   const endDate = vow.ends_at
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -381,45 +382,43 @@ export default function ChallengeInviteClient({
   if (step === 'dare') {
     return (
       <RitualScreen>
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[70dvh] gap-6 text-center px-2">
+        <div className="flex-1 flex flex-col items-center justify-center min-h-[70dvh] gap-8 text-center px-2">
           <FadeUp>
-            <h1
-              className="text-[36px] leading-[42px] font-bold font-serif tracking-[2px] uppercase"
-              style={{ color: 'var(--gold)' }}
-            >
-              AN UNBREAKABLE VOW
-            </h1>
+            <HeaderBadge />
           </FadeUp>
 
-          <FadeUp delay={0.1}>
-            <p className="text-[17px] leading-[25px]" style={{ color: 'var(--text-secondary)' }}>
-              {makerName}{' '}doesn&apos;t think you can
+          <FadeUp delay={0.08}>
+            <p className="text-[18px] leading-[26px]" style={{ color: 'var(--text-secondary)' }}>
+              {makerFirstName} doesn&apos;t think you can
             </p>
           </FadeUp>
 
-          <FadeUp delay={0.18}>
+          <FadeUp delay={0.16}>
             <div
-              className="rounded-[16px] px-6 py-5 max-w-[360px]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              className="flex items-stretch overflow-hidden rounded-[16px] max-w-[360px]"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
             >
-              <p className="text-[20px] leading-[28px] font-serif font-medium" style={{ color: 'var(--text)' }}>
-                &ldquo;{vow.refined_text}&rdquo;
-              </p>
+              <div className="w-[3px] shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
+              <div className="flex-1 py-5 px-5">
+                <p className="text-[22px] leading-[30px] font-serif font-medium tracking-[-0.3px]" style={{ color: 'var(--text)' }}>
+                  &ldquo;{vow.refined_text}&rdquo;
+                </p>
+              </div>
             </div>
           </FadeUp>
 
           {endDate && (
-            <FadeUp delay={0.25}>
+            <FadeUp delay={0.22}>
               <p className="text-[14px]" style={{ color: 'var(--text-muted)' }}>
-                You have until {endDate}
+                by {endDate}
               </p>
             </FadeUp>
           )}
 
-          <FadeUp delay={0.35}>
+          <FadeUp delay={0.3}>
             <div className="flex flex-col items-center gap-3 w-full max-w-[320px]">
               <PrimaryButton
-                label="Accept the dare"
+                label="I swear I will"
                 onPress={() => setStep('stakes')}
               />
               <button
@@ -812,7 +811,7 @@ export default function ChallengeInviteClient({
         <FadeUp delay={0.08}>
           <TitleBlock
             title="THE VOW IS SEALED"
-            subtitle={`${makerName} will decide if you kept it at the deadline.`}
+            subtitle={`${makerFirstName} will decide if you kept it at the deadline.`}
           />
         </FadeUp>
 

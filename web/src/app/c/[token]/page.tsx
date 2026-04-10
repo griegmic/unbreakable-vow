@@ -41,13 +41,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
-  const description = `${makerName} doesn't think you can ${truncate(vow.refined_text, 60)}. Accept or back down.`;
+  const firstName = makerName.split(' ')[0];
+  const description = `${firstName} doesn't think you can ${truncate(vow.refined_text, 60)}. Prove them wrong.`;
 
   return {
-    title: 'AN UNBREAKABLE VOW',
+    title: `${firstName} doesn't think you can`,
     description,
     openGraph: {
-      title: 'AN UNBREAKABLE VOW',
+      title: `${firstName} doesn't think you can`,
       description,
       images: [{ url: `/c/${token}/og`, width: 1200, height: 630 }],
       type: 'website',
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: 'AN UNBREAKABLE VOW',
+      title: `${firstName} doesn't think you can`,
       description,
       images: [`/c/${token}/og`],
     },
