@@ -147,6 +147,7 @@ function VowKeptContent() {
         footer={
           <>
             <PrimaryButton label="Make a new vow" onPress={() => router.push('/create')} />
+            <SecondaryButton label="Challenge a friend" onPress={() => router.push('/cast')} />
             <SecondaryButton label="View your record" onPress={() => router.push('/dashboard')} />
           </>
         }

@@ -11,19 +11,51 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY')!;
 
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+async function stripePost(endpoint: string, params: Record<string, string>, idempotencyKey?: string) {
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+  if (idempotencyKey) {
+    headers['Idempotency-Key'] = idempotencyKey;
+  }
+  const res = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
+    method: 'POST',
+    headers,
+    body: new URLSearchParams(params).toString(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `Stripe error: ${res.status}`);
+  return data;
+}
+
+async function stripeGet(endpoint: string) {
+  const res = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
+    headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `Stripe error: ${res.status}`);
+  return data;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const { token, action } = await req.json();
+    const body = await req.json();
+    const { token, action } = body;
 
     if (!token) {
-      return new Response(JSON.stringify({ error: 'token required' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'token required' }, 400);
     }
 
     const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -36,138 +68,170 @@ Deno.serve(async (req) => {
       .single();
 
     if (vowError || !vow) {
-      return new Response(JSON.stringify({ error: 'invalid_token' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'invalid_token' }, 404);
     }
 
     if (vow.challenge_status !== 'pending') {
-      return new Response(JSON.stringify({ error: 'already_responded', challenge_status: vow.challenge_status }), {
-        status: 409,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      return jsonResponse({ error: 'already_responded', challenge_status: vow.challenge_status }, 409);
     }
 
-    if (!['active', 'sealed'].includes(vow.status)) {
-      return new Response(JSON.stringify({ error: 'vow_not_active', status: vow.status }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    if (vow.status !== 'draft') {
+      return jsonResponse({ error: 'vow_not_draft', status: vow.status }, 400);
     }
 
-    // Handle decline
+    // === DECLINE ===
     if (action === 'decline') {
+      // Atomic update — only succeeds if still pending
       const { data: declined } = await supabase
         .from('vows')
-        .update({ challenge_status: 'declined' })
+        .update({ challenge_status: 'declined', status: 'voided' })
         .eq('id', vow.id)
         .eq('challenge_status', 'pending')
         .select('id')
         .maybeSingle();
 
       if (!declined) {
-        return new Response(JSON.stringify({ error: 'already_responded' }), {
-          status: 409,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return jsonResponse({ error: 'already_responded' }, 409);
       }
 
-      // Refund if staked (only for real Stripe PIs, not dev_bypass_ IDs)
-      let refundFailed = false;
-      const hasRealStripePI = vow.stripe_payment_intent_id && vow.stripe_payment_intent_id.startsWith('pi_');
-      if (vow.stake_amount > 0 && hasRealStripePI) {
-        try {
-          // Check PI status before deciding how to return money
-          const piRes = await fetch(`https://api.stripe.com/v1/payment_intents/${vow.stripe_payment_intent_id}`, {
-            headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
-          });
-          if (!piRes.ok) {
-            throw new Error(`Failed to fetch PI status: HTTP ${piRes.status}`);
-          }
-          const piData = await piRes.json();
-          const piStatus = piData.status;
-          console.log(`[accept-challenge] PI ${vow.stripe_payment_intent_id} status: ${piStatus}`);
-
-          if (piStatus === 'requires_capture') {
-            const cancelRes = await fetch(`https://api.stripe.com/v1/payment_intents/${vow.stripe_payment_intent_id}/cancel`, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-              },
-            });
-            if (!cancelRes.ok) {
-              const cancelData = await cancelRes.json();
-              throw new Error(cancelData.error?.message || 'Cancel failed');
-            }
-          } else if (piStatus === 'succeeded') {
-            const refundRes = await fetch('https://api.stripe.com/v1/refunds', {
-              method: 'POST',
-              headers: {
-                'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Idempotency-Key': `refund-${vow.id}`,
-              },
-              body: new URLSearchParams({ payment_intent: vow.stripe_payment_intent_id }).toString(),
-            });
-            if (!refundRes.ok) {
-              const refundData = await refundRes.json();
-              throw new Error(refundData.error?.message || 'Refund failed');
-            }
-          } else if (piStatus === 'canceled' || piStatus === 'requires_payment_method') {
-            // Already handled — nothing to do
-          } else {
-            throw new Error(`Cannot process refund: PI in ${piStatus} state`);
-          }
-        } catch (refundErr) {
-          console.error('Stripe refund/cancel failed on challenge decline:', refundErr);
-          refundFailed = true;
-        }
-      }
-
-      // Void the vow
-      await supabase
-        .from('vows')
-        .update({ status: 'voided', ...(refundFailed ? { refund_failed: true } : {}) })
-        .eq('id', vow.id);
+      // No Stripe refund needed — challenger never paid, vow was in draft
 
       await createAuditEvent(supabase, vow.id, 'challenge_declined', 'target');
 
-      // Push notification to maker
+      // Push notification to challenger
       await supabase.from('push_queue').insert({
         user_id: vow.user_id,
-        title: 'Challenge declined',
-        body: 'Your challenge was declined.',
+        title: 'They backed down',
+        body: `${body.display_name || 'Someone'} backed down from your dare.`,
         data: { vow_id: vow.id, event: 'challenge_declined' },
         send_after: new Date().toISOString(),
       });
 
-      return new Response(JSON.stringify({ success: true, action: 'declined' }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      return jsonResponse({ success: true, action: 'declined' });
+    }
+
+    // === ACCEPT ===
+    const {
+      stake_amount,   // cents — recipient's choice (0 = no stake)
+      destination,    // charity name
+      email,          // required — creates/finds account
+      payment_method_id, // Stripe PM (required if stake > 0)
+      display_name,   // optional
+    } = body;
+
+    if (!email) {
+      return jsonResponse({ error: 'email required' }, 400);
+    }
+
+    const stakeAmountCents = typeof stake_amount === 'number' ? stake_amount : 0;
+
+    if (stakeAmountCents > 0 && !payment_method_id) {
+      return jsonResponse({ error: 'payment_method_id required for staked vows' }, 400);
+    }
+
+    if (stakeAmountCents > 0 && (stakeAmountCents < 1000 || stakeAmountCents > 10000)) {
+      return jsonResponse({ error: 'stake_amount must be between $10 and $100' }, 400);
+    }
+
+    // 1. Find or create user account by email
+    let targetUserId: string;
+    const { data: existingUsers } = await supabase.auth.admin.listUsers();
+    const existingUser = existingUsers?.users?.find(
+      (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+    );
+
+    if (existingUser) {
+      targetUserId = existingUser.id;
+      console.log(`[accept-challenge] Found existing user: ${targetUserId}`);
+    } else {
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { full_name: display_name || '' },
+      });
+      if (createError || !newUser?.user) {
+        console.error('[accept-challenge] Failed to create user:', createError);
+        return jsonResponse({ error: 'failed_to_create_account' }, 500);
+      }
+      targetUserId = newUser.user.id;
+      console.log(`[accept-challenge] Created new user: ${targetUserId}`);
+
+      // Create users table row
+      await supabase.from('users').upsert({
+        id: targetUserId,
+        display_name: display_name || email.split('@')[0],
       });
     }
 
-    // Handle accept (default)
-    // Check if a user exists with matching target_phone
-    let targetUserId: string | null = null;
-    if (vow.target_phone) {
-      const { data: targetUser } = await supabase
+    // Update display_name if provided and user exists
+    if (display_name) {
+      await supabase.from('users').update({ display_name }).eq('id', targetUserId);
+    }
+
+    // 2. Handle Stripe payment if staked
+    let stripePaymentIntentId: string | null = null;
+
+    if (stakeAmountCents > 0) {
+      // Get or create Stripe customer for recipient
+      const { data: userProfile } = await supabase
         .from('users')
-        .select('id')
-        .eq('phone', vow.target_phone)
-        .maybeSingle();
-      if (targetUser) {
-        targetUserId = targetUser.id;
+        .select('stripe_customer_id')
+        .eq('id', targetUserId)
+        .single();
+
+      let customerId = userProfile?.stripe_customer_id;
+
+      if (!customerId) {
+        console.log('[accept-challenge] Creating Stripe customer for recipient');
+        const customer = await stripePost('customers', {
+          email,
+          'metadata[supabase_user_id]': targetUserId,
+        });
+        customerId = customer.id;
+        await supabase.from('users').update({ stripe_customer_id: customerId }).eq('id', targetUserId);
+      }
+
+      // Create payment intent with manual capture
+      console.log(`[accept-challenge] Creating PI: ${stakeAmountCents} cents`);
+      const pi = await stripePost('payment_intents', {
+        amount: String(stakeAmountCents),
+        currency: 'usd',
+        customer: customerId,
+        payment_method: payment_method_id,
+        capture_method: 'manual',
+        confirm: 'true',
+        'metadata[vow_id]': vow.id,
+        'metadata[user_id]': targetUserId,
+        'metadata[type]': 'challenge_acceptance',
+      }, `challenge-accept-${vow.id}`);
+
+      // Check PI status — should be requires_capture after confirm with manual capture
+      if (pi.status === 'requires_capture') {
+        // Capture immediately
+        const captured = await stripePost(`payment_intents/${pi.id}/capture`, {});
+        console.log(`[accept-challenge] PI captured: ${captured.id} status: ${captured.status}`);
+        stripePaymentIntentId = pi.id;
+      } else if (pi.status === 'succeeded') {
+        // Already captured (shouldn't happen with manual capture, but handle it)
+        stripePaymentIntentId = pi.id;
+      } else {
+        // Payment failed
+        console.error(`[accept-challenge] PI in unexpected state: ${pi.status}`);
+        return jsonResponse({ error: 'payment_failed', stripe_status: pi.status }, 402);
       }
     }
 
-    // Atomic update
+    // 3. Atomically update vow — only if still pending
     const { data: accepted } = await supabase
       .from('vows')
       .update({
         challenge_status: 'accepted',
         target_user_id: targetUserId,
+        stake_amount: stakeAmountCents,
+        destination: destination || '',
+        stripe_payment_intent_id: stripePaymentIntentId,
+        status: 'active',
+        sealed_at: new Date().toISOString(),
       })
       .eq('id', vow.id)
       .eq('challenge_status', 'pending')
@@ -175,31 +239,47 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (!accepted) {
-      return new Response(JSON.stringify({ error: 'already_responded' }), {
-        status: 409,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      // Race condition: someone else accepted/declined while we were processing payment
+      // Refund if we captured payment
+      if (stripePaymentIntentId) {
+        try {
+          await stripePost('refunds', {
+            payment_intent: stripePaymentIntentId,
+          }, `refund-race-${vow.id}`);
+        } catch (refundErr) {
+          console.error('[accept-challenge] Race condition refund failed:', refundErr);
+        }
+      }
+      return jsonResponse({ error: 'already_responded' }, 409);
     }
 
+    // 4. Audit events
     await createAuditEvent(supabase, vow.id, 'challenge_accepted', 'target', targetUserId);
+    await createAuditEvent(supabase, vow.id, 'vow_sealed', 'target', targetUserId, {
+      stake_amount: stakeAmountCents,
+      destination: destination || '',
+      sealed_by: 'challenge_acceptance',
+    });
 
-    // Push notification to maker
+    // 5. Push notification to challenger
+    const recipientName = display_name || email.split('@')[0];
     await supabase.from('push_queue').insert({
       user_id: vow.user_id,
-      title: 'Challenge accepted!',
-      body: 'Your challenge was accepted!',
+      title: 'Vow accepted',
+      body: `${recipientName} accepted the vow. It's live.`,
       data: { vow_id: vow.id, event: 'challenge_accepted' },
       send_after: new Date().toISOString(),
     });
 
-    return new Response(JSON.stringify({ success: true, action: 'accepted' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    return jsonResponse({
+      success: true,
+      action: 'accepted',
+      vow_id: vow.id,
+      target_user_id: targetUserId,
     });
   } catch (err) {
     console.error('accept-challenge error:', err);
-    return new Response(JSON.stringify({ error: 'Internal server error' }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    const message = err instanceof Error ? err.message : String(err);
+    return jsonResponse({ error: message }, 500);
   }
 });

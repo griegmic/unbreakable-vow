@@ -7,6 +7,11 @@ interface Props {
   params: Promise<{ token: string }>;
 }
 
+function truncate(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  return text.slice(0, maxLen).trimEnd() + '...';
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { token } = await params;
   const supabase = createClient(
@@ -34,16 +39,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     }
   }
 
+  const description = `${makerName} doesn't think you can ${truncate(vow.refined_text, 60)}. Accept or back down.`;
+
   return {
-    title: `${makerName} challenged you`,
-    description: vow.stake_amount > 0
-      ? `"${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} is on the line. Accept the challenge.`
-      : `"${vow.refined_text}" — Accept the challenge.`,
+    title: 'AN UNBREAKABLE VOW',
+    description,
     openGraph: {
-      title: `${makerName} challenged you`,
-      description: vow.stake_amount > 0
-        ? `"${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} is on the line.`
-        : `"${vow.refined_text}" — Your word is on the line.`,
+      title: 'AN UNBREAKABLE VOW',
+      description,
+      images: [{ url: `/c/${token}/og`, width: 1200, height: 630 }],
+      type: 'website',
+      siteName: 'Unbreakable Vow',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: 'AN UNBREAKABLE VOW',
+      description,
+      images: [`/c/${token}/og`],
     },
   };
 }
@@ -57,7 +69,7 @@ export default async function ChallengeInvitePage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('id, refined_text, stake_amount, destination, witness_name, ends_at, sealed_at, status, user_id, challenge_status')
+    .select('id, refined_text, stake_amount, suggested_stake_amount, destination, witness_name, ends_at, sealed_at, status, user_id, challenge_status')
     .eq('challenge_invite_token', token)
     .single();
 

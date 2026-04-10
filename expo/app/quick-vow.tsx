@@ -443,6 +443,12 @@ export default function QuickVowScreen() {
 
         <Text style={styles.pageTitle}>New Vow</Text>
 
+        {recentWitnesses.length > 0 && (
+          <Pressable onPress={() => router.push('/cast')} style={styles.dareLink}>
+            <Text style={styles.dareLinkText}>or <Text style={styles.dareLinkBold}>dare a friend →</Text></Text>
+          </Pressable>
+        )}
+
         {/* Vow text + inline deadline */}
         <RitualCard>
           <Text style={styles.sectionLabel}>YOUR VOW</Text>
@@ -910,5 +916,16 @@ const styles = StyleSheet.create({
     color: palette.goldBright,
     fontSize: 15,
     fontWeight: '600',
+  },
+  dareLink: {
+    marginBottom: 8,
+  },
+  dareLinkText: {
+    color: palette.textMuted,
+    fontSize: 14,
+  },
+  dareLinkBold: {
+    color: palette.goldBright,
+    fontWeight: '700',
   },
 });

@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Plus, ArrowLeft, Menu, X, Zap, Clock, LayoutGrid } from 'lucide-react';
+import { Settings, Plus, ArrowLeft, Menu, X, Zap, Clock, LayoutGrid, Send } from 'lucide-react';
 import { RitualScreen, HeaderBadge, SectionLabel, StatPill, PrimaryButton, FadeUp } from '@/components/ui';
 import VowCard from '@/components/vow-card';
 import { useAuth } from '@/providers/auth-provider';
@@ -31,6 +31,7 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   const items = [
     { icon: Zap, label: 'QuickVow', description: 'Create a vow in seconds', path: '/create' },
+    { icon: Send, label: 'Dare a friend', description: 'Cast a vow on someone', path: '/cast' },
     { icon: LayoutGrid, label: 'My Vows', description: 'All your active vows', path: '/dashboard' },
     { icon: Clock, label: 'History', description: 'Past vows and outcomes', path: '/history' },
     { icon: Settings, label: 'Settings', description: 'Account and preferences', path: '/settings' },

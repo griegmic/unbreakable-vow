@@ -487,6 +487,12 @@ export default function VowDashboard() {
             <Text style={styles.makeVowBtnText}>+ Make a Vow</Text>
           </LinearGradient>
         </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.dareBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+          onPress={() => router.push('/cast')}
+        >
+          <Text style={styles.dareBtnText}>Dare a friend</Text>
+        </Pressable>
       </View>
     );
   };
@@ -887,5 +893,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '800',
     letterSpacing: 0.2,
+  },
+  dareBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    borderRadius: 18,
+    backgroundColor: 'rgba(212,162,79,0.10)',
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+  },
+  dareBtnText: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '700',
   },
 });
