@@ -444,7 +444,7 @@ export default function CastScreen() {
           <Text style={styles.sentStamp}>DARE SENT</Text>
           <Text style={styles.sentTitle}>Waiting for {targetName} to respond...</Text>
           <Text style={styles.sentSubtitle}>
-            No reply? Send it again — or try a different app.
+            No reply? Send it again or copy the link below.
           </Text>
         </View>
 

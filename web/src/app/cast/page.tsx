@@ -361,7 +361,7 @@ export default function CastPage() {
               Waiting for {targetName} to respond...
             </h1>
             <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
-              No reply? Send it again &mdash; or try a different app.
+              No reply? Send it again or copy the link below.
             </p>
           </div>
         </FadeUp>
