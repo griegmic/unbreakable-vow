@@ -2,11 +2,12 @@ import Constants from 'expo-constants';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Send, Sparkles, Copy, Check, UserRound, X } from 'lucide-react-native';
+import { ArrowLeft, Send, Sparkles, Copy, Check, UserRound, X, MessageCircle, Shield, Calendar } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import {
   Alert,
+  Linking,
   Platform,
   Pressable,
   Share,
@@ -82,6 +83,11 @@ export default function CastScreen() {
   const [copied, setCopied] = useState(false);
   const [vowId, setVowId] = useState<string | null>(null);
   const [challengeAccepted, setChallengeAccepted] = useState(false);
+  const [acceptedVowDetails, setAcceptedVowDetails] = useState<{
+    stakeAmount: number;
+    destination: string;
+    endsAt: string | null;
+  } | null>(null);
   const pendingSendRef = useRef(false);
 
   // Computed
@@ -117,11 +123,16 @@ export default function CastScreen() {
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from('vows')
-        .select('challenge_status')
+        .select('challenge_status, stake_amount, destination, ends_at')
         .eq('id', vowId)
         .single();
       if (data?.challenge_status === 'accepted') {
         setChallengeAccepted(true);
+        setAcceptedVowDetails({
+          stakeAmount: data.stake_amount || 0,
+          destination: data.destination || '',
+          endsAt: data.ends_at,
+        });
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     }, 5000);
@@ -291,6 +302,21 @@ export default function CastScreen() {
     setTimeout(() => setCopied(false), 2000);
   }, [dareLink]);
 
+  const handleTextTarget = useCallback(() => {
+    void Haptics.selectionAsync();
+    const body = encodeURIComponent(`Just saw you accepted the dare! Let's go 💪`);
+    const phone = targetPhone ? formatE164(targetPhone) : '';
+    if (phone) {
+      const smsUrl = Platform.OS === 'ios'
+        ? `sms:${phone}&body=${body}`
+        : `sms:${phone}?body=${body}`;
+      Linking.openURL(smsUrl).catch(() => {});
+    } else {
+      const smsUrl = `sms:?body=${body}`;
+      Linking.openURL(smsUrl).catch(() => {});
+    }
+  }, [targetPhone]);
+
   const resetForm = () => {
     setDareSent(false);
     setShared(false);
@@ -311,68 +337,124 @@ export default function CastScreen() {
   // -----------------------------------------------------------------------
 
   if (shared) {
+    // Accepted state — rich vow overview
+    if (challengeAccepted) {
+      const stakeDollars = acceptedVowDetails ? Math.round(acceptedVowDetails.stakeAmount / 100) : 0;
+      const acceptedEndDate = acceptedVowDetails?.endsAt
+        ? new Date(acceptedVowDetails.endsAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+        : null;
+
+      return (
+        <RitualScreen
+          footer={
+            <>
+              {targetPhone ? (
+                <PrimaryButton label={`Text ${targetName}`} onPress={handleTextTarget} testID="cast-text-target" />
+              ) : (
+                <PrimaryButton label="Go to dashboard" onPress={() => router.push('/dashboard')} testID="cast-dashboard" />
+              )}
+              <SecondaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
+            </>
+          }
+        >
+          <Stack.Screen options={{ headerShown: false }} />
+
+          <View style={styles.sentIconWrap}>
+            <View style={[styles.sentIcon, { backgroundColor: 'rgba(82,214,154,0.12)' }]}>
+              <Check color="#52D69A" size={28} />
+            </View>
+          </View>
+
+          <View style={styles.sentTextWrap}>
+            <Text style={styles.sentStamp}>ACCEPTED</Text>
+            <Text style={styles.sentTitle}>{targetName} accepted!</Text>
+            <Text style={styles.sentSubtitle}>
+              You&apos;ll decide the verdict at the deadline.
+            </Text>
+          </View>
+
+          {/* Vow summary card */}
+          <RitualCard>
+            <View style={styles.acceptedVowRow}>
+              <Sparkles color={palette.gold} size={16} />
+              <Text style={styles.acceptedVowText}>&ldquo;{finalText}&rdquo;</Text>
+            </View>
+            <View style={styles.acceptedDivider} />
+            {stakeDollars > 0 && (
+              <View style={styles.acceptedDetailRow}>
+                <Text style={styles.acceptedDetailLabel}>Stakes</Text>
+                <Text style={styles.acceptedDetailValueGold}>${stakeDollars}</Text>
+              </View>
+            )}
+            {stakeDollars > 0 && acceptedVowDetails?.destination ? (
+              <View style={styles.acceptedDetailRow}>
+                <Text style={styles.acceptedDetailLabel}>If they fail</Text>
+                <Text style={styles.acceptedDetailValue}>{acceptedVowDetails.destination}</Text>
+              </View>
+            ) : null}
+            <View style={styles.acceptedDetailRow}>
+              <View style={styles.acceptedDetailIconRow}>
+                <Shield color={palette.gold} size={14} />
+                <Text style={styles.acceptedDetailLabel}>Vow keeper</Text>
+              </View>
+              <Text style={styles.acceptedDetailValue}>{targetName}</Text>
+            </View>
+            {acceptedEndDate && (
+              <View style={styles.acceptedDetailRow}>
+                <View style={styles.acceptedDetailIconRow}>
+                  <Calendar color={palette.gold} size={14} />
+                  <Text style={styles.acceptedDetailLabel}>Ends</Text>
+                </View>
+                <Text style={styles.acceptedDetailValue}>{acceptedEndDate}</Text>
+              </View>
+            )}
+          </RitualCard>
+
+          {targetPhone && (
+            <Pressable onPress={() => router.push('/dashboard')} style={styles.switchInputLink}>
+              <Text style={styles.switchInputText}>Go to dashboard →</Text>
+            </Pressable>
+          )}
+        </RitualScreen>
+      );
+    }
+
+    // Waiting state — not yet accepted
     return (
       <RitualScreen
         footer={
-          challengeAccepted ? (
-            <>
-              <PrimaryButton label="Go to dashboard" onPress={() => router.push('/dashboard')} testID="cast-dashboard" />
-              <SecondaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
-            </>
-          ) : (
-            <>
-              <PrimaryButton label="Send again" onPress={handleShare} testID="cast-reshare" />
-              <SecondaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
-            </>
-          )
+          <>
+            <PrimaryButton label="Send again" onPress={handleShare} testID="cast-reshare" />
+            <SecondaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
+          </>
         }
       >
         <Stack.Screen options={{ headerShown: false }} />
 
         <View style={styles.sentIconWrap}>
-          <View style={[styles.sentIcon, challengeAccepted && { backgroundColor: 'rgba(82,214,154,0.12)' }]}>
-            {challengeAccepted ? (
-              <Check color="#52D69A" size={28} />
-            ) : (
-              <Send color={palette.goldBright} size={28} />
-            )}
+          <View style={styles.sentIcon}>
+            <Send color={palette.goldBright} size={28} />
           </View>
         </View>
 
         <View style={styles.sentTextWrap}>
-          {challengeAccepted ? (
-            <>
-              <Text style={styles.sentStamp}>ACCEPTED</Text>
-              <Text style={styles.sentTitle}>{targetName} accepted!</Text>
-              <Text style={styles.sentSubtitle}>
-                The vow is sealed. You&apos;ll decide the verdict at the deadline.
-              </Text>
-            </>
-          ) : (
-            <>
-              <Text style={styles.sentStamp}>DARE SENT</Text>
-              <Text style={styles.sentTitle}>Waiting for {targetName} to respond...</Text>
-              <Text style={styles.sentSubtitle}>
-                No reply? Send it again — or try a different app.
-              </Text>
-            </>
-          )}
+          <Text style={styles.sentStamp}>DARE SENT</Text>
+          <Text style={styles.sentTitle}>Waiting for {targetName} to respond...</Text>
+          <Text style={styles.sentSubtitle}>
+            No reply? Send it again — or try a different app.
+          </Text>
         </View>
 
-        {!challengeAccepted && (
-          <>
-            <RitualCard>
-              <Text style={styles.previewLabel}>WHAT THEY&apos;LL SEE</Text>
-              <Text style={styles.previewText}>{getShareText()}</Text>
-            </RitualCard>
+        <RitualCard>
+          <Text style={styles.previewLabel}>WHAT THEY&apos;LL SEE</Text>
+          <Text style={styles.previewText}>{getShareText()}</Text>
+        </RitualCard>
 
-            <SecondaryButton
-              label={copied ? '✓ Copied!' : 'Copy link'}
-              onPress={handleCopyLink}
-              testID="cast-copy-post"
-            />
-          </>
-        )}
+        <SecondaryButton
+          label={copied ? '✓ Copied!' : 'Copy link'}
+          onPress={handleCopyLink}
+          testID="cast-copy-post"
+        />
       </RitualScreen>
     );
   }
@@ -740,6 +822,50 @@ const styles = StyleSheet.create({
     borderColor: palette.border,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  // Accepted vow summary
+  acceptedVowRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  acceptedVowText: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 17,
+    fontFamily: serifFont,
+    fontWeight: '500',
+    lineHeight: 24,
+  },
+  acceptedDivider: {
+    height: 1,
+    backgroundColor: palette.border,
+    marginVertical: 12,
+  },
+  acceptedDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 4,
+  },
+  acceptedDetailIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  acceptedDetailLabel: {
+    color: palette.textMuted,
+    fontSize: 13,
+  },
+  acceptedDetailValue: {
+    color: palette.text,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  acceptedDetailValueGold: {
+    color: palette.goldBright,
+    fontSize: 14,
+    fontWeight: '700',
   },
   stakeSubline: {
     color: palette.textMuted,

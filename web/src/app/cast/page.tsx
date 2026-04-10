@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Sparkles, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Sparkles, Copy, Check, Shield, Calendar, MessageCircle } from 'lucide-react';
 import {
   RitualScreen, RitualCard, PrimaryButton, ChoiceChip,
   SectionLabel, FadeUp, VowPreview,
@@ -50,6 +50,11 @@ export default function CastPage() {
   const [copied, setCopied] = useState(false);
   const [vowId, setVowId] = useState<string | null>(null);
   const [challengeAccepted, setChallengeAccepted] = useState(false);
+  const [acceptedVowDetails, setAcceptedVowDetails] = useState<{
+    stakeAmount: number;
+    destination: string;
+    endsAt: string | null;
+  } | null>(null);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -61,14 +66,17 @@ export default function CastPage() {
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from('vows')
-        .select('challenge_status')
+        .select('challenge_status, stake_amount, destination, ends_at')
         .eq('id', vowId)
         .single();
       if (data?.challenge_status === 'accepted') {
         setChallengeAccepted(true);
+        setAcceptedVowDetails({
+          stakeAmount: data.stake_amount || 0,
+          destination: data.destination || '',
+          endsAt: data.ends_at,
+        });
       } else if (data?.challenge_status === 'declined') {
-        setChallengeAccepted(false);
-        // Could show a "they backed down" state but for now just stop polling
         clearInterval(interval);
       }
     }, 5000);
@@ -231,23 +239,110 @@ export default function CastPage() {
     setError('Session not found after sign-in. Please try again.');
   };
 
-  // === POST-SHARE STATE ===
+  // === POST-SHARE: ACCEPTED STATE ===
+  if (shared && challengeAccepted) {
+    const stakeDollars = acceptedVowDetails ? Math.round(acceptedVowDetails.stakeAmount / 100) : 0;
+    const acceptedEndDate = acceptedVowDetails?.endsAt
+      ? new Date(acceptedVowDetails.endsAt).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+      : null;
+
+    return (
+      <RitualScreen
+        footer={
+          <button
+            onClick={() => {
+              setDareSent(false); setShared(false); setDareLink(''); setVowText('');
+              setSuggestion(''); setTargetName(''); setSuggestedStake(25);
+              setVowId(null); setChallengeAccepted(false); setAcceptedVowDetails(null); setError('');
+            }}
+            className="min-h-[44px] flex items-center justify-center"
+          >
+            <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+              Dare someone else
+            </span>
+          </button>
+        }
+      >
+        <FadeUp>
+          <div className="text-center mt-4">
+            <div className="flex justify-center mb-3">
+              <div className="w-14 h-14 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(82,214,154,0.12)', border: '2px solid rgba(82,214,154,0.3)' }}>
+                <Check className="w-7 h-7" style={{ color: 'var(--success)' }} />
+              </div>
+            </div>
+            <h1
+              className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
+              style={{ color: 'var(--text)' }}
+            >
+              {targetName} accepted!
+            </h1>
+            <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+              You&apos;ll decide the verdict at the deadline.
+            </p>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.1}>
+          <RitualCard>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start gap-2.5">
+                <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--gold)' }} />
+                <p className="text-[15px] leading-[22px] font-serif" style={{ color: 'var(--text)' }}>
+                  &ldquo;{formattedText}&rdquo;
+                </p>
+              </div>
+              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+              {stakeDollars > 0 && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Stakes</span>
+                  <span className="text-[14px] font-semibold" style={{ color: 'var(--gold)' }}>${stakeDollars}</span>
+                </div>
+              )}
+              {stakeDollars > 0 && acceptedVowDetails?.destination && (
+                <div className="flex items-center justify-between">
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If they fail</span>
+                  <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>{acceptedVowDetails.destination}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Shield className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Vow keeper</span>
+                </div>
+                <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>{targetName}</span>
+              </div>
+              {acceptedEndDate && (
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
+                    <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Ends</span>
+                  </div>
+                  <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>{acceptedEndDate}</span>
+                </div>
+              )}
+            </div>
+          </RitualCard>
+        </FadeUp>
+
+        <FadeUp delay={0.18}>
+          <div className="flex flex-col gap-3">
+            <PrimaryButton label="Go to dashboard" onPress={() => router.push('/dashboard')} />
+          </div>
+        </FadeUp>
+      </RitualScreen>
+    );
+  }
+
+  // === POST-SHARE: WAITING STATE ===
   if (shared) {
     return (
       <RitualScreen
         footer={
           <button
             onClick={() => {
-              setDareSent(false);
-              setShared(false);
-              setDareLink('');
-              setVowText('');
-              setSuggestion('');
-              setTargetName('');
-              setSuggestedStake(25);
-              setVowId(null);
-              setChallengeAccepted(false);
-              setError('');
+              setDareSent(false); setShared(false); setDareLink(''); setVowText('');
+              setSuggestion(''); setTargetName(''); setSuggestedStake(25);
+              setVowId(null); setChallengeAccepted(false); setAcceptedVowDetails(null); setError('');
             }}
             className="min-h-[44px] flex items-center justify-center"
           >
@@ -259,74 +354,45 @@ export default function CastPage() {
       >
         <FadeUp>
           <div className="text-center mt-6">
-            {challengeAccepted ? (
-              <>
-                <div className="flex justify-center mb-3">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(82,214,154,0.12)' }}>
-                    <Check className="w-6 h-6" style={{ color: 'var(--success)' }} />
-                  </div>
-                </div>
-                <h1
-                  className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
-                  style={{ color: 'var(--text)' }}
-                >
-                  {targetName} accepted!
-                </h1>
-                <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
-                  The vow is sealed. You&apos;ll decide the verdict at the deadline.
-                </p>
-              </>
-            ) : (
-              <>
-                <h1
-                  className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
-                  style={{ color: 'var(--text)' }}
-                >
-                  Waiting for {targetName}...
-                </h1>
-                <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
-                  No reply? Send it again &mdash; or try a different app.
-                </p>
-              </>
-            )}
+            <h1
+              className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
+              style={{ color: 'var(--text)' }}
+            >
+              Waiting for {targetName}...
+            </h1>
+            <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+              No reply? Send it again &mdash; or try a different app.
+            </p>
           </div>
         </FadeUp>
 
         <FadeUp delay={0.1}>
           <div className="flex flex-col gap-2">
-            {challengeAccepted ? (
-              <PrimaryButton label="Go to dashboard" onPress={() => router.push('/dashboard')} />
-            ) : (
-              <>
-                <PrimaryButton label="Send again" onPress={handleShare} />
-                <button
-                  onClick={handleCopyLink}
-                  className="min-h-[44px] flex items-center justify-center gap-2"
-                >
-                  {copied ? (
-                    <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
-                  ) : (
-                    <Copy className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                  )}
-                  <span className="text-[14px] font-semibold" style={{ color: copied ? 'var(--success)' : 'var(--text-secondary)' }}>
-                    {copied ? 'Copied!' : 'Or copy the link'}
-                  </span>
-                </button>
-              </>
-            )}
+            <PrimaryButton label="Send again" onPress={handleShare} />
+            <button
+              onClick={handleCopyLink}
+              className="min-h-[44px] flex items-center justify-center gap-2"
+            >
+              {copied ? (
+                <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+              ) : (
+                <Copy className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+              )}
+              <span className="text-[14px] font-semibold" style={{ color: copied ? 'var(--success)' : 'var(--text-secondary)' }}>
+                {copied ? 'Copied!' : 'Or copy the link'}
+              </span>
+            </button>
           </div>
         </FadeUp>
 
-        {!challengeAccepted && (
-          <FadeUp delay={0.15}>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="min-h-[44px] flex items-center justify-center"
-            >
-              <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Dashboard →</span>
-            </button>
-          </FadeUp>
-        )}
+        <FadeUp delay={0.15}>
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="min-h-[44px] flex items-center justify-center"
+          >
+            <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Dashboard →</span>
+          </button>
+        </FadeUp>
       </RitualScreen>
     );
   }

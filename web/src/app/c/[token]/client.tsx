@@ -1,6 +1,6 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
-import { Calendar, Shield, Sparkles, Check } from 'lucide-react';
+import { Calendar, Shield, Sparkles, Check, MessageCircle } from 'lucide-react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, ChoiceChip, RitualCard } from '@/components/ui';
@@ -773,16 +773,46 @@ export default function ChallengeInviteClient({
 
           <FadeUp delay={0.35}>
             <div className="flex flex-col items-center gap-4 w-full max-w-[320px]">
+              {/* Text the darer — primary CTA if phone available */}
+              {makerPhone && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
+                    const message = encodeURIComponent(`I accepted the dare! Let's go 💪`);
+                    window.location.href = `sms:${cleanPhone}&body=${message}`;
+                  }}
+                  className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                    boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                  }}
+                >
+                  <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
+                    <MessageCircle className="w-5 h-5" style={{ color: '#0B0D11' }} />
+                    <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                      Text {makerLabel}
+                    </span>
+                  </div>
+                </button>
+              )}
+
               <a
                 href="/dashboard"
                 className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] block"
-                style={{
+                style={makerPhone ? {
+                  backgroundColor: 'var(--surface)',
+                  border: '1px solid var(--border)',
+                } : {
                   background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
                   boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
                 }}
               >
                 <div className="min-h-[56px] flex items-center justify-center px-5">
-                  <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                  <span
+                    className="text-[15px] font-extrabold tracking-[0.2px]"
+                    style={{ color: makerPhone ? 'var(--text)' : '#0B0D11' }}
+                  >
                     Track your vow &rarr;
                   </span>
                 </div>
