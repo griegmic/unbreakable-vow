@@ -87,7 +87,10 @@ export default function CastScreen() {
     stakeAmount: number;
     destination: string;
     endsAt: string | null;
+    witnessInviteToken: string | null;
   } | null>(null);
+  const [verdictBusy, setVerdictBusy] = useState(false);
+  const [verdictError, setVerdictError] = useState('');
   const pendingSendRef = useRef(false);
 
   // Computed
@@ -123,7 +126,7 @@ export default function CastScreen() {
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from('vows')
-        .select('challenge_status, stake_amount, destination, ends_at')
+        .select('challenge_status, stake_amount, destination, ends_at, witness_invite_token')
         .eq('id', vowId)
         .single();
       if (data?.challenge_status === 'accepted') {
@@ -132,6 +135,7 @@ export default function CastScreen() {
           stakeAmount: data.stake_amount || 0,
           destination: data.destination || '',
           endsAt: data.ends_at,
+          witnessInviteToken: data.witness_invite_token || null,
         });
         void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         clearInterval(interval);
@@ -336,6 +340,52 @@ export default function CastScreen() {
   };
 
   // -----------------------------------------------------------------------
+  // Test verdict handler
+  // -----------------------------------------------------------------------
+  const handleTestVerdict = useCallback(async (verdict: 'kept' | 'broken') => {
+    const token = acceptedVowDetails?.witnessInviteToken;
+    if (verdictBusy || !token) return;
+    setVerdictBusy(true);
+    setVerdictError('');
+    try {
+      const extra = Constants.expoConfig?.extra;
+      const supabaseUrl = extra?.supabaseUrl || process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://faufcfppnkwrxabgvknt.supabase.co';
+      const anonKey = extra?.supabaseAnonKey || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdWZjZnBwbmt3cnhhYmd2a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzQyNDYsImV4cCI6MjA5MDg1MDI0Nn0.s82fzQzwSo6XvIp1tLUsomeELkZcDOs16IupjkGA4OM';
+      const res = await fetch(`${supabaseUrl}/functions/v1/submit-verdict`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+        },
+        body: JSON.stringify({ token, verdict }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || data?.error) {
+        setVerdictError(data?.error || `Error ${res.status}`);
+        setVerdictBusy(false);
+        return;
+      }
+      void Haptics.notificationAsync(
+        verdict === 'kept'
+          ? Haptics.NotificationFeedbackType.Success
+          : Haptics.NotificationFeedbackType.Warning
+      );
+      Alert.alert(
+        verdict === 'kept' ? 'Vow Kept' : 'Vow Broken',
+        verdict === 'kept'
+          ? 'The vow was honored.'
+          : `The vow was broken.${acceptedVowDetails?.stakeAmount ? ` $${Math.round(acceptedVowDetails.stakeAmount / 100)} to ${acceptedVowDetails.destination}.` : ''}`,
+        [{ text: 'OK', onPress: () => router.push('/dashboard') }],
+      );
+    } catch {
+      setVerdictError('Network error');
+    } finally {
+      setVerdictBusy(false);
+    }
+  }, [verdictBusy, acceptedVowDetails]);
+
+  // -----------------------------------------------------------------------
   // POST-SHARE STATE
   // -----------------------------------------------------------------------
 
@@ -417,6 +467,32 @@ export default function CastScreen() {
             <Pressable onPress={() => router.push('/dashboard')} style={styles.switchInputLink}>
               <Text style={styles.switchInputText}>Go to dashboard →</Text>
             </Pressable>
+          )}
+
+          {/* Fast-forward test verdict */}
+          {acceptedVowDetails?.witnessInviteToken && (
+            <View style={styles.testVerdictWrap}>
+              <Text style={styles.testVerdictLabel}>Fast-forward (testing)</Text>
+              <View style={styles.testVerdictRow}>
+                <Pressable
+                  onPress={() => handleTestVerdict('kept')}
+                  disabled={verdictBusy}
+                  style={[styles.testVerdictBtn, styles.testVerdictKept, verdictBusy && { opacity: 0.4 }]}
+                >
+                  <Text style={styles.testVerdictKeptText}>{verdictBusy ? '...' : 'Mark Kept'}</Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => handleTestVerdict('broken')}
+                  disabled={verdictBusy}
+                  style={[styles.testVerdictBtn, styles.testVerdictBroken, verdictBusy && { opacity: 0.4 }]}
+                >
+                  <Text style={styles.testVerdictBrokenText}>{verdictBusy ? '...' : 'Mark Broken'}</Text>
+                </Pressable>
+              </View>
+              {verdictError ? (
+                <Text style={styles.testVerdictError}>{verdictError}</Text>
+              ) : null}
+            </View>
           )}
         </RitualScreen>
       );
@@ -981,5 +1057,55 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 20,
+  },
+  // Test verdict
+  testVerdictWrap: {
+    gap: 8,
+    paddingTop: 8,
+  },
+  testVerdictLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    color: palette.textMuted,
+    opacity: 0.5,
+    textAlign: 'center',
+  },
+  testVerdictRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  testVerdictBtn: {
+    flex: 1,
+    minHeight: 44,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  testVerdictKept: {
+    backgroundColor: 'rgba(82,214,154,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(82,214,154,0.25)',
+  },
+  testVerdictBroken: {
+    backgroundColor: 'rgba(255,123,123,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,123,123,0.25)',
+  },
+  testVerdictKeptText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#52D69A',
+  },
+  testVerdictBrokenText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#FF7B7B',
+  },
+  testVerdictError: {
+    fontSize: 13,
+    color: palette.danger,
+    textAlign: 'center',
   },
 });

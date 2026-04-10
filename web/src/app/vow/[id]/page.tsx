@@ -425,6 +425,26 @@ export default function VowDetailPage() {
         </div>
       </FadeUp>
 
+      {/* Deliver verdict — proper verdict page link when deadline is past */}
+      {!isTerminal && isWitness && vow.witness_invite_token && vow.ends_at && new Date(vow.ends_at) <= new Date() && (
+        <FadeUp delay={0.33}>
+          <a
+            href={`/w/${vow.witness_invite_token}/verdict`}
+            className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] block"
+            style={{
+              background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+              boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+            }}
+          >
+            <div className="min-h-[56px] flex items-center justify-center px-5">
+              <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                Deliver your verdict
+              </span>
+            </div>
+          </a>
+        </FadeUp>
+      )}
+
       {/* Fast-forward to verdict — testing */}
       {!isTerminal && vow.witness_invite_token && (
         <FadeUp delay={0.35}>

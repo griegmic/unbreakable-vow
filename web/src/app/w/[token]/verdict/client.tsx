@@ -190,7 +190,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
         </FadeUp>
         <FadeUp delay={0.2}>
           <p className="text-center text-[14px]" style={{ color: 'var(--text-muted)' }}>
-            Thank you for being an honest witness.
+            {targetName ? `${targetName} has been notified.` : 'Thank you for being an honest witness.'}
           </p>
         </FadeUp>
 
@@ -222,11 +222,11 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
         <FadeUp delay={0.35}>
           <div className="flex flex-col gap-2">
             <TitleBlock
-              title="Your turn."
-              subtitle={`Make a vow and pick ${makerName} to hold you accountable.`}
+              title={targetName ? 'Dare again?' : 'Your turn.'}
+              subtitle={targetName ? 'Challenge someone else.' : `Make a vow and pick ${makerName} to hold you accountable.`}
             />
             <a
-              href={`https://unbreakablevow.app/?ref=witness&from=${encodeURIComponent(makerName)}`}
+              href={targetName ? 'https://unbreakablevow.app/cast' : `https://unbreakablevow.app/?ref=witness&from=${encodeURIComponent(makerName)}`}
               className="w-full rounded-[18px] min-h-[56px] flex items-center justify-center transition-transform active:scale-[0.975]"
               style={{
                 background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
@@ -234,7 +234,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
               }}
             >
               <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                Make my vow
+                {targetName ? 'Dare someone' : 'Make my vow'}
               </span>
             </a>
           </div>

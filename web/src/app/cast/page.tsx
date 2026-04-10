@@ -54,7 +54,10 @@ export default function CastPage() {
     stakeAmount: number;
     destination: string;
     endsAt: string | null;
+    witnessInviteToken: string | null;
   } | null>(null);
+  const [verdictBusy, setVerdictBusy] = useState(false);
+  const [verdictError, setVerdictError] = useState('');
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,7 +69,7 @@ export default function CastPage() {
     const interval = setInterval(async () => {
       const { data } = await supabase
         .from('vows')
-        .select('challenge_status, stake_amount, destination, ends_at')
+        .select('challenge_status, stake_amount, destination, ends_at, witness_invite_token')
         .eq('id', vowId)
         .single();
       if (data?.challenge_status === 'accepted') {
@@ -75,6 +78,7 @@ export default function CastPage() {
           stakeAmount: data.stake_amount || 0,
           destination: data.destination || '',
           endsAt: data.ends_at,
+          witnessInviteToken: data.witness_invite_token || null,
         });
       } else if (data?.challenge_status === 'declined') {
         clearInterval(interval);
@@ -329,6 +333,80 @@ export default function CastPage() {
             <PrimaryButton label="Go to dashboard" onPress={() => router.push('/dashboard')} />
           </div>
         </FadeUp>
+
+        {/* Fast-forward test verdict */}
+        {acceptedVowDetails?.witnessInviteToken && (
+          <FadeUp delay={0.25}>
+            <div className="flex flex-col gap-2 pt-2">
+              <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+                Fast-forward (testing)
+              </p>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (verdictBusy) return;
+                    setVerdictBusy(true);
+                    setVerdictError('');
+                    try {
+                      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/submit-verdict`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                        },
+                        body: JSON.stringify({ token: acceptedVowDetails.witnessInviteToken, verdict: 'kept' }),
+                      });
+                      const data = await res.json().catch(() => null);
+                      if (!res.ok || data?.error) { setVerdictError(data?.error || `Error ${res.status}`); setVerdictBusy(false); return; }
+                      window.location.href = '/vow-kept';
+                    } catch { setVerdictError('Network error'); setVerdictBusy(false); }
+                  }}
+                  disabled={verdictBusy}
+                  className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
+                  style={{ backgroundColor: 'rgba(82,214,154,0.12)', border: '1px solid rgba(82,214,154,0.25)' }}
+                >
+                  <span className="text-[13px] font-bold" style={{ color: 'var(--success)' }}>
+                    {verdictBusy ? '...' : 'Mark Kept'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (verdictBusy) return;
+                    setVerdictBusy(true);
+                    setVerdictError('');
+                    try {
+                      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/submit-verdict`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                        },
+                        body: JSON.stringify({ token: acceptedVowDetails.witnessInviteToken, verdict: 'broken' }),
+                      });
+                      const data = await res.json().catch(() => null);
+                      if (!res.ok || data?.error) { setVerdictError(data?.error || `Error ${res.status}`); setVerdictBusy(false); return; }
+                      window.location.href = '/vow-broken';
+                    } catch { setVerdictError('Network error'); setVerdictBusy(false); }
+                  }}
+                  disabled={verdictBusy}
+                  className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
+                  style={{ backgroundColor: 'rgba(255,123,123,0.12)', border: '1px solid rgba(255,123,123,0.25)' }}
+                >
+                  <span className="text-[13px] font-bold" style={{ color: 'var(--danger)' }}>
+                    {verdictBusy ? '...' : 'Mark Broken'}
+                  </span>
+                </button>
+              </div>
+              {verdictError && (
+                <p className="text-[13px] text-center" style={{ color: 'var(--danger)' }}>{verdictError}</p>
+              )}
+            </div>
+          </FadeUp>
+        )}
       </RitualScreen>
     );
   }
