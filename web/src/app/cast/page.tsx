@@ -140,6 +140,20 @@ export default function CastPage() {
 
       const link = `${window.location.origin}/c/${challengeToken}`;
       setDareLink(link);
+
+      // Auto-trigger share sheet immediately
+      const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
+      const shareText = senderName
+        ? `${senderName} dared you to ${vowPart}. Accept or back down → ${link}`
+        : `I don't think you can ${vowPart}. Prove me wrong → ${link}`;
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          await navigator.share({ text: shareText });
+          setShared(true);
+          return;
+        } catch {}
+      }
+      // If share cancelled or unavailable, fall through to share screen
       setDareSent(true);
     } catch (err) {
       console.error('Create dare error:', err);
@@ -149,8 +163,13 @@ export default function CastPage() {
     }
   }, [sending, vowText, targetName, formattedText, suggestedStake, endDate]);
 
+  const senderName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || '';
+
   const getShareText = () => {
     const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
+    if (senderName) {
+      return `${senderName} dared you to ${vowPart}. Accept or back down → ${dareLink}`;
+    }
     return `I don't think you can ${vowPart}. Prove me wrong → ${dareLink}`;
   };
 
@@ -364,7 +383,7 @@ export default function CastPage() {
         {/* Vow text */}
         <FadeUp delay={0.1}>
           <RitualCard>
-            <SectionLabel>What do you dare them to do?</SectionLabel>
+            <SectionLabel>What&apos;s the vow?</SectionLabel>
             <div className="relative">
               <textarea
                 ref={textareaRef}

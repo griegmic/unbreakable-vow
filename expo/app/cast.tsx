@@ -158,9 +158,24 @@ export default function CastScreen() {
 
       const link = `https://unbreakablevow.app/c/${challengeToken}`;
       setDareLink(link);
-      setDareSent(true);
       setSending(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+      // Auto-trigger share sheet immediately
+      const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
+      const name = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || '';
+      const shareText = name
+        ? `${name} dared you to ${vowPart}. Accept or back down → ${link}`
+        : `I don't think you can ${vowPart}. Prove me wrong → ${link}`;
+      try {
+        const result = await Share.share({ message: shareText });
+        if (result.action === Share.sharedAction) {
+          setShared(true);
+          return;
+        }
+      } catch {}
+      // If share was cancelled or failed, fall through to the share screen
+      setDareSent(true);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[Cast] send dare error:', errMsg);
@@ -205,8 +220,13 @@ export default function CastScreen() {
   // Share
   // -----------------------------------------------------------------------
 
+  const senderName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || '';
+
   const getShareText = () => {
     const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
+    if (senderName) {
+      return `${senderName} dared you to ${vowPart}. Accept or back down → ${dareLink}`;
+    }
     return `I don't think you can ${vowPart}. Prove me wrong → ${dareLink}`;
   };
 
@@ -351,7 +371,7 @@ export default function CastScreen() {
 
         {/* Vow text */}
         <RitualCard>
-          <Text style={styles.sectionLabel}>WHAT DO YOU DARE THEM TO DO?</Text>
+          <Text style={styles.sectionLabel}>WHAT&apos;S THE VOW?</Text>
           <TextInput
             value={vowText}
             onChangeText={setVowText}
