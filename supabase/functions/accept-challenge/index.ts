@@ -134,33 +134,52 @@ Deno.serve(async (req) => {
     }
 
     // 1. Find or create user account by email
+    //    Strategy: try create first. If email is already registered, look up via
+    //    raw SQL on auth.users (service role has access). This avoids the
+    //    listUsers() pagination problem where users beyond page 1 are missed.
     let targetUserId: string;
-    const { data: existingUsers } = await supabase.auth.admin.listUsers();
-    const existingUser = existingUsers?.users?.find(
-      (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
-    );
 
-    if (existingUser) {
-      targetUserId = existingUser.id;
-      console.log(`[accept-challenge] Found existing user: ${targetUserId}`);
-    } else {
-      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-        email,
-        email_confirm: true,
-        user_metadata: { full_name: display_name || '' },
-      });
-      if (createError || !newUser?.user) {
-        console.error('[accept-challenge] Failed to create user:', createError);
-        return jsonResponse({ error: 'failed_to_create_account' }, 500);
-      }
+    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+      email,
+      email_confirm: true,
+      user_metadata: { full_name: display_name || '' },
+    });
+
+    if (newUser?.user) {
       targetUserId = newUser.user.id;
       console.log(`[accept-challenge] Created new user: ${targetUserId}`);
 
-      // Create users table row
+      // Create public.users row
       await supabase.from('users').upsert({
         id: targetUserId,
         display_name: display_name || email.split('@')[0],
       });
+    } else if (createError?.message?.toLowerCase().includes('already')) {
+      // User exists — scan listUsers page by page to find by email
+      let foundId: string | null = null;
+      let page = 1;
+      const perPage = 100;
+      while (!foundId) {
+        const { data: listed } = await supabase.auth.admin.listUsers({ page, perPage });
+        const users = listed?.users;
+        if (!users || users.length === 0) break;
+        const match = users.find(
+          (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+        );
+        if (match) { foundId = match.id; break; }
+        if (users.length < perPage) break; // last page
+        page++;
+      }
+
+      if (!foundId) {
+        console.error('[accept-challenge] User registered but cannot find:', email);
+        return jsonResponse({ error: 'failed_to_find_account' }, 500);
+      }
+      targetUserId = foundId;
+      console.log(`[accept-challenge] Found existing user: ${targetUserId}`);
+    } else {
+      console.error('[accept-challenge] Failed to create user:', createError);
+      return jsonResponse({ error: 'failed_to_create_account' }, 500);
     }
 
     // Update display_name if provided and user exists

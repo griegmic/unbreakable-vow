@@ -23,7 +23,6 @@ import {
   generateSuggestion,
   palette,
   serifFont,
-  stakeAmounts as defaultStakeAmounts,
 } from '@/constants/unbreakable';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
@@ -250,8 +249,8 @@ export default function CastScreen() {
       <RitualScreen
         footer={
           <>
-            <PrimaryButton label="Dare someone else" onPress={resetForm} />
-            <SecondaryButton label="Dashboard" onPress={() => router.push('/dashboard')} />
+            <PrimaryButton label="Dare someone else" onPress={resetForm} testID="cast-dare-again" />
+            <SecondaryButton label="Dashboard" onPress={() => router.push('/dashboard')} testID="cast-dashboard" />
           </>
         }
       >
@@ -283,10 +282,11 @@ export default function CastScreen() {
       <RitualScreen
         footer={
           <>
-            <PrimaryButton label="Share the dare →" onPress={handleShare} />
+            <PrimaryButton label="Share the dare →" onPress={handleShare} testID="cast-share" />
             <SecondaryButton
               label={copied ? '✓ Copied!' : 'Copy link'}
               onPress={handleCopyLink}
+              testID="cast-copy"
             />
           </>
         }
@@ -334,6 +334,7 @@ export default function CastScreen() {
               label={sending ? 'Creating...' : 'Send the dare'}
               onPress={handleSend}
               disabled={!canSend || sending}
+              testID="cast-send"
             />
           </View>
         }
