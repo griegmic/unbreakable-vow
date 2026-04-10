@@ -361,10 +361,10 @@ export default function CastPage() {
           </h1>
         </FadeUp>
 
-        {/* What can't they do? */}
+        {/* Vow text */}
         <FadeUp delay={0.1}>
           <RitualCard>
-            <SectionLabel>What can&apos;t they do?</SectionLabel>
+            <SectionLabel>What do you dare them to do?</SectionLabel>
             <div className="relative">
               <textarea
                 ref={textareaRef}

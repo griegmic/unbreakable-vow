@@ -1,7 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { BookOpen, Menu, Settings, Sparkles, Trophy, Users, X, Zap } from 'lucide-react-native';
+import { BookOpen, Menu, Send, Settings, Sparkles, Trophy, Users, X, Zap } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -35,8 +35,8 @@ export function AppMenuButton({ style }: AppMenuProps) {
   const [visible, setVisible] = useState<boolean>(false);
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const panelTranslate = useRef(new Animated.Value(-SCREEN_HEIGHT)).current;
-  const itemFades = useRef([0, 1, 2, 3, 4].map(() => new Animated.Value(0))).current;
-  const itemSlides = useRef([0, 1, 2, 3, 4].map(() => new Animated.Value(-20))).current;
+  const itemFades = useRef([0, 1, 2, 3, 4, 5].map(() => new Animated.Value(0))).current;
+  const itemSlides = useRef([0, 1, 2, 3, 4, 5].map(() => new Animated.Value(-20))).current;
 
   const open = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -93,6 +93,12 @@ export function AppMenuButton({ style }: AppMenuProps) {
       label: 'My Vows',
       description: 'Active and past vows',
       route: '/dashboard',
+    },
+    {
+      icon: <Send color={palette.goldBright} size={18} />,
+      label: 'Dare a Friend',
+      description: 'Cast a vow on someone',
+      route: '/cast',
     },
     {
       icon: <Users color={palette.goldBright} size={18} />,

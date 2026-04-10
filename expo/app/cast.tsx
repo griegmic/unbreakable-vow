@@ -350,7 +350,7 @@ export default function CastScreen() {
 
         {/* Vow text */}
         <RitualCard>
-          <Text style={styles.sectionLabel}>WHAT CAN&apos;T THEY DO?</Text>
+          <Text style={styles.sectionLabel}>WHAT DO YOU DARE THEM TO DO?</Text>
           <TextInput
             value={vowText}
             onChangeText={setVowText}
