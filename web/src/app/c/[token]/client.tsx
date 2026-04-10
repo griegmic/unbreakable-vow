@@ -199,27 +199,53 @@ export default function ChallengeInviteClient({
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : null;
 
-  // Extract error code from supabase.functions.invoke response.
-  // Supabase JS v2: FunctionsHttpError has .context (Response object) for non-2xx.
-  const extractError = async (data: Record<string, unknown> | null, fnError: unknown): Promise<string | null> => {
-    // Check data.error first (when server returns 200 with error in body)
-    if (data?.error) return String(data.error);
-    if (!fnError) return null;
+  // Direct fetch to edge function — bypasses supabase.functions.invoke() which
+  // wraps errors in FunctionsHttpError and makes response parsing unreliable.
+  const callAcceptChallenge = async (payload: Record<string, unknown>): Promise<{ data: Record<string, unknown> | null; errorCode: string | null }> => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 
-    const err = fnError as { context?: Response; message?: string };
-    // FunctionsHttpError has a .context Response we can read
-    if (err.context && typeof err.context.json === 'function') {
-      try {
-        const body = await err.context.json();
-        if (body?.error) return body.error;
-      } catch {}
+    // Get current session JWT if available (for auth header)
+    let authToken = anonKey;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.access_token) authToken = session.access_token;
+    } catch {}
+
+    const res = await fetch(`${supabaseUrl}/functions/v1/accept-challenge`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': anonKey,
+        'Authorization': `Bearer ${authToken}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    let body: Record<string, unknown> | null = null;
+    try {
+      body = await res.json();
+    } catch {}
+
+    if (!res.ok || body?.error) {
+      const errorCode = body?.error ? String(body.error) : `http_${res.status}`;
+      console.error('[accept-challenge] Error:', res.status, body);
+      return { data: null, errorCode };
     }
-    // Fallback: parse error message
-    const msg = err.message || String(fnError);
-    if (msg && msg !== 'Edge Function returned a non-2xx status code') {
-      return msg;
-    }
-    return 'unknown_error';
+
+    return { data: body, errorCode: null };
+  };
+
+  // Map error codes to user-friendly messages
+  const mapErrorMessage = (errCode: string): string => {
+    if (errCode === 'already_responded') return 'This dare is no longer available.';
+    if (errCode === 'vow_not_draft') return 'This dare is no longer available.';
+    if (errCode === 'email required' || errCode === 'email_required') return 'Please sign in before sealing the vow.';
+    if (errCode === 'invalid_token') return 'This dare link is invalid or expired.';
+    if (errCode === 'payment_failed' || errCode.includes('payment') || errCode.includes('card')) return 'Payment failed. Please check your card and try again.';
+    if (errCode === 'failed_to_create_account' || errCode === 'failed_to_find_account') return 'Could not create your account. Please try again.';
+    if (errCode.startsWith('http_')) return `Server error (${errCode}). Please try again.`;
+    return errCode; // Show the actual error — no more "unknown_error"
   };
 
   // ─── DECLINE HANDLER ───
@@ -228,12 +254,11 @@ export default function ChallengeInviteClient({
     setBusy(true);
     setError(null);
     try {
-      const { data, error: fnError } = await supabase.functions.invoke('accept-challenge', {
-        body: { token, action: 'decline', display_name: displayName || undefined },
+      const { errorCode } = await callAcceptChallenge({
+        token, action: 'decline', display_name: displayName || undefined,
       });
-      const errCode = await extractError(data, fnError);
-      if (errCode) {
-        setError(errCode === 'already_responded' ? 'This dare has already been responded to.' : `Something went wrong: ${errCode}`);
+      if (errorCode) {
+        setError(errorCode === 'already_responded' ? 'This dare has already been responded to.' : mapErrorMessage(errorCode));
         setBusy(false);
         return;
       }
@@ -243,7 +268,7 @@ export default function ChallengeInviteClient({
     } finally {
       setBusy(false);
     }
-  }, [busy, token]);
+  }, [busy, token, displayName]);
 
   // ─── ACCEPT / SEAL HANDLER ───
   const handleSeal = useCallback(async (paymentMethodId?: string) => {
@@ -251,7 +276,7 @@ export default function ChallengeInviteClient({
     setBusy(true);
     setError(null);
     try {
-      const body: Record<string, unknown> = {
+      const payload: Record<string, unknown> = {
         token,
         action: 'accept',
         stake_amount: stakeAmount,
@@ -260,27 +285,12 @@ export default function ChallengeInviteClient({
         display_name: displayName || undefined,
       };
       if (paymentMethodId) {
-        body.payment_method_id = paymentMethodId;
+        payload.payment_method_id = paymentMethodId;
       }
 
-      const { data, error: fnError } = await supabase.functions.invoke('accept-challenge', {
-        body,
-      });
-      const errCode = await extractError(data, fnError);
-      if (errCode) {
-        if (errCode === 'already_responded' || errCode === 'vow_not_draft') {
-          setError('This dare is no longer available.');
-        } else if (errCode === 'email required') {
-          setError('Please sign in before sealing the vow.');
-        } else if (errCode === 'invalid_token') {
-          setError('This dare link is invalid or expired.');
-        } else if (errCode.includes('payment') || errCode.includes('card') || errCode === 'payment_failed') {
-          setError('Payment failed. Please check your card and try again.');
-        } else if (errCode === 'failed_to_create_account' || errCode === 'failed_to_find_account') {
-          setError('Could not create your account. Please try again.');
-        } else {
-          setError(`Something went wrong: ${errCode}`);
-        }
+      const { errorCode } = await callAcceptChallenge(payload);
+      if (errorCode) {
+        setError(mapErrorMessage(errorCode));
         setBusy(false);
         return;
       }
@@ -554,19 +564,16 @@ export default function ChallengeInviteClient({
       setBusy(true);
       setError(null);
       try {
-        const { data, error: fnError } = await supabase.functions.invoke('accept-challenge', {
-          body: {
-            token,
-            action: 'accept',
-            stake_amount: 0,
-            destination: '',
-            email: 'test@unbreakablevow.app',
-            display_name: 'Test User',
-          },
+        const { errorCode } = await callAcceptChallenge({
+          token,
+          action: 'accept',
+          stake_amount: 0,
+          destination: '',
+          email: 'test@unbreakablevow.app',
+          display_name: 'Test User',
         });
-        const errCode = await extractError(data, fnError);
-        if (errCode) {
-          setError(`Test seal failed: ${errCode}`);
+        if (errorCode) {
+          setError(`Test failed: ${mapErrorMessage(errorCode)}`);
           setBusy(false);
           return;
         }
