@@ -355,13 +355,26 @@ export interface AuditEvent {
 export async function getMyVows(): Promise<VowRow[]> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return [];
-  const { data, error } = await supabase.from('vows')
+  // Fetch vows I created
+  const { data: myData, error: myError } = await supabase.from('vows')
     .select('*')
     .eq('user_id', session.user.id)
     .in('status', ['draft', 'sealed', 'active', 'awaiting_verdict'])
     .order('created_at', { ascending: false });
-  if (error) { console.error('[vow-api] getMyVows error:', error); return []; }
-  return (data ?? []) as VowRow[];
+  if (myError) { console.error('[vow-api] getMyVows error:', myError); }
+  // Also fetch accepted challenges where I'm the target (vow keeper)
+  const { data: challengeData, error: challengeError } = await supabase.from('vows')
+    .select('*')
+    .eq('target_user_id', session.user.id)
+    .eq('challenge_status', 'accepted')
+    .in('status', ['active', 'awaiting_verdict'])
+    .order('created_at', { ascending: false });
+  if (challengeError) { console.error('[vow-api] getMyVows challenge error:', challengeError); }
+  // Merge, avoiding duplicates
+  const my = (myData ?? []) as VowRow[];
+  const challenges = (challengeData ?? []) as VowRow[];
+  const myIds = new Set(my.map(v => v.id));
+  return [...my, ...challenges.filter(v => !myIds.has(v.id))];
 }
 
 export async function getWitnessingVows(): Promise<VowRow[]> {
@@ -392,14 +405,27 @@ export async function getIncomingChallenges(): Promise<VowRow[]> {
 export async function getRecentVows(limit: number = 5): Promise<VowRow[]> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return [];
-  const { data, error } = await supabase.from('vows')
+  // Vows I created
+  const { data: myData, error: myError } = await supabase.from('vows')
     .select('*')
     .eq('user_id', session.user.id)
     .in('status', ['kept', 'broken', 'voided'])
     .order('created_at', { ascending: false })
     .limit(limit);
-  if (error) { console.error('[vow-api] getRecentVows error:', error); return []; }
-  return (data ?? []) as VowRow[];
+  if (myError) { console.error('[vow-api] getRecentVows error:', myError); }
+  // Completed challenge vows where I was the target
+  const { data: challengeData, error: challengeError } = await supabase.from('vows')
+    .select('*')
+    .eq('target_user_id', session.user.id)
+    .eq('challenge_status', 'accepted')
+    .in('status', ['kept', 'broken', 'voided'])
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (challengeError) { console.error('[vow-api] getRecentVows challenge error:', challengeError); }
+  // Merge and sort by created_at desc, limit
+  const merged = [...(myData ?? []), ...(challengeData ?? [])];
+  merged.sort((a, b) => (b.created_at ?? '').localeCompare(a.created_at ?? ''));
+  return merged.slice(0, limit) as VowRow[];
 }
 
 export async function acceptChallenge(token: string): Promise<{ success: boolean; error?: string }> {

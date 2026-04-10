@@ -149,7 +149,7 @@ export default function DashboardPage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const [myRes, witnessRes, challengeRes] = await Promise.all([
+    const [myRes, witnessRes, challengeRes, acceptedChallengeRes] = await Promise.all([
       supabase
         .from('vows')
         .select('*')
@@ -167,9 +167,24 @@ export default function DashboardPage() {
         .eq('target_user_id', session.user.id)
         .eq('challenge_status', 'pending')
         .order('created_at', { ascending: false }),
+      // Accepted challenges where I'm the vow keeper (target)
+      supabase
+        .from('vows')
+        .select('*')
+        .eq('target_user_id', session.user.id)
+        .eq('challenge_status', 'accepted')
+        .in('status', ['active', 'awaiting_verdict', 'kept', 'broken'])
+        .order('created_at', { ascending: false }),
     ]);
 
-    setMyVows(myRes.data ?? []);
+    // Merge accepted challenges into myVows so they appear in active/stats
+    const myVowsData = myRes.data ?? [];
+    const acceptedChallenges = acceptedChallengeRes.data ?? [];
+    const acceptedIds = new Set(acceptedChallenges.map(v => v.id));
+    // Avoid duplicates (in case user is both maker and target somehow)
+    const merged = [...myVowsData, ...acceptedChallenges.filter(v => !myVowsData.some(m => m.id === v.id))];
+
+    setMyVows(merged);
     setWitnessingVows(witnessRes.data ?? []);
     setChallenges(challengeRes.data ?? []);
     setLoading(false);
