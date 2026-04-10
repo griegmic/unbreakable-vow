@@ -34,6 +34,17 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: vow.stake_amount > 0
         ? `"${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} is on the line.`
         : `"${vow.refined_text}" — Their word is on the line.`,
+      images: [{ url: `/w/${token}/og`, width: 1200, height: 630 }],
+      type: 'website',
+      siteName: 'Unbreakable Vow',
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${vow.witness_name}, you've been named as a witness`,
+      description: vow.stake_amount > 0
+        ? `"${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} is on the line.`
+        : `"${vow.refined_text}" — Their word is on the line.`,
+      images: [`/w/${token}/og`],
     },
   };
 }
