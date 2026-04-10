@@ -1,9 +1,9 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
-import { Calendar, Shield, Sparkles, Check, MessageCircle, Phone } from 'lucide-react';
+import { Calendar, Check, MessageCircle, Phone } from 'lucide-react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, ChoiceChip, RitualCard, StatPill } from '@/components/ui';
+import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, ChoiceChip } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -170,7 +170,6 @@ export default function ChallengeInviteClient({
   );
 
   // Phone capture state (Phase 3)
-  const [reminderExpanded, setReminderExpanded] = useState(false);
   const [reminderPhone, setReminderPhone] = useState('');
   const [reminderSaving, setReminderSaving] = useState(false);
   const [reminderSaved, setReminderSaved] = useState(false);
@@ -756,7 +755,7 @@ export default function ChallengeInviteClient({
     );
   }
 
-  // ─── STEP 6: SEALED — Full tracking page (Phase 1) ───
+  // ─── STEP 6: SEALED — Full tracking page ───
   if (step === 'sealed') {
     const displayStake = sealedVow?.stake ?? vow.stake_amount;
     const displayCharity = sealedVow?.charity ?? vow.destination;
@@ -774,6 +773,12 @@ export default function ChallengeInviteClient({
       : `${daysLeft} days left`;
     const tint = getCountdownTint(daysLeft);
     const isVerdictDue = end ? now >= end : false;
+
+    // Build the meta line under the countdown (stake + day progress)
+    const metaParts: string[] = [];
+    if (displayStake > 0) metaParts.push(`$${displayStake / 100} at stake`);
+    if (dayNumber !== null && !isVerdictDue) metaParts.push(`Day ${Math.min(dayNumber, totalDays)} of ${totalDays}`);
+    if (endDate) metaParts.push(`Verdict: ${endDate}`);
 
     return (
       <RitualScreen>
@@ -811,82 +816,80 @@ export default function ChallengeInviteClient({
           />
         </FadeUp>
 
-        {/* Countdown card */}
-        {daysLeft !== null && (
-          <FadeUp delay={0.12}>
-            <div
-              className="rounded-[16px] p-4 flex items-center justify-between"
-              style={{ backgroundColor: tint.bg, border: `1px solid ${tint.border}` }}
-            >
-              <div className="flex flex-col gap-0.5">
-                <span className="text-[22px] font-bold font-serif" style={{ color: 'var(--text)' }}>
-                  {countdownLabel}
-                </span>
-                {endDate && (
-                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-                    Verdict day: {endDate}
-                  </span>
-                )}
-              </div>
-              <Calendar className="w-6 h-6 shrink-0" style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-            </div>
-          </FadeUp>
-        )}
-
-        {/* Vow quote card with gold left border */}
-        <FadeUp delay={0.15}>
+        {/* Vow quote card with gold left border — hero element */}
+        <FadeUp delay={0.12}>
           <div
             className="flex items-stretch overflow-hidden rounded-[14px]"
             style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
           >
             <div className="w-[3px] shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
-            <div className="flex-1 py-3 px-3.5">
-              <p className="text-[16px] leading-[23px] font-serif font-medium" style={{ color: 'var(--text)' }}>
+            <div className="flex-1 py-3.5 px-4">
+              <p className="text-[17px] leading-[24px] font-serif font-medium" style={{ color: 'var(--text)' }}>
                 &ldquo;{vow.refined_text}&rdquo;
               </p>
-              {displayStake > 0 && (
-                <p className="text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                  ${displayStake / 100} at stake &middot; {displayCharity} if broken
-                </p>
-              )}
+              <p className="text-[12px] mt-2" style={{ color: 'var(--text-muted)' }}>
+                Dared by {makerName}
+              </p>
             </div>
           </div>
         </FadeUp>
 
-        {/* Stats row */}
-        {!isVerdictDue && dayNumber !== null && (
-          <FadeUp delay={0.18}>
-            <div className="flex gap-3">
-              <StatPill
-                value={`Day ${Math.min(dayNumber, totalDays)}`}
-                label={`of ${totalDays}`}
-              />
-              <StatPill
-                value={countdownLabel || '—'}
-                label={endDate ? `Verdict: ${endDate}` : '—'}
-              />
+        {/* Countdown + stake + progress — single card, no redundancy */}
+        {daysLeft !== null && (
+          <FadeUp delay={0.16}>
+            <div
+              className="rounded-[16px] p-4"
+              style={{ backgroundColor: tint.bg, border: `1px solid ${tint.border}` }}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-[22px] font-bold font-serif" style={{ color: 'var(--text)' }}>
+                  {countdownLabel}
+                </span>
+                <Calendar className="w-5 h-5 shrink-0" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+              </div>
+              {metaParts.length > 0 && (
+                <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                  {metaParts.join(' \u00B7 ')}
+                </p>
+              )}
+              {/* Progress bar */}
+              {!isVerdictDue && dayNumber !== null && (
+                <div className="mt-3 h-[3px] rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}>
+                  <div
+                    className="h-full rounded-full transition-all duration-500"
+                    style={{
+                      width: `${Math.min(100, (dayNumber / totalDays) * 100)}%`,
+                      backgroundColor: daysLeft !== null && daysLeft <= 1 ? '#EF4444' : daysLeft !== null && daysLeft <= 3 ? '#F59E0B' : 'var(--gold)',
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </FadeUp>
         )}
 
-        {/* Dared by */}
-        <FadeUp delay={0.2}>
-          <div className="flex items-center gap-2.5 px-1">
-            <Shield className="w-4 h-4" style={{ color: 'var(--gold)' }} />
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-              Dared by <span className="font-semibold" style={{ color: 'var(--text)' }}>{makerName}</span>
-            </span>
-          </div>
-        </FadeUp>
+        {/* Stake callout — only if staked, separate visual weight */}
+        {displayStake > 0 && displayCharity && (
+          <FadeUp delay={0.19}>
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                If you fail: <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>{displayCharity}</span>
+              </span>
+              <span className="text-[14px] font-bold" style={{ color: 'var(--gold)' }}>
+                ${displayStake / 100}
+              </span>
+            </div>
+          </FadeUp>
+        )}
 
         {/* Primary CTA: Text the darer */}
         {makerPhone && (
-          <FadeUp delay={0.25}>
+          <FadeUp delay={0.22}>
             <button
               type="button"
               onClick={() => {
                 const cleanPhone = makerPhone.replace(/[^\d+\-]/g, '');
-                const message = encodeURIComponent(`I accepted the dare! Let's go`);
+                const message = encodeURIComponent(`I accepted your dare. Game on.`);
                 window.location.href = `sms:${cleanPhone}&body=${message}`;
               }}
               className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
@@ -905,8 +908,8 @@ export default function ChallengeInviteClient({
           </FadeUp>
         )}
 
-        {/* Phone capture — "Get a text when the verdict drops" (Phase 3) */}
-        <FadeUp delay={0.3}>
+        {/* Phone capture — auto-expanded on first visit (peak engagement moment) */}
+        <FadeUp delay={0.26}>
           {reminderSaved ? (
             <div
               className="flex items-center justify-center gap-2 py-3.5 rounded-[18px]"
@@ -917,7 +920,7 @@ export default function ChallengeInviteClient({
                 We&apos;ll text you when the verdict drops
               </span>
             </div>
-          ) : reminderExpanded ? (
+          ) : (
             <div
               className="rounded-[18px] p-4 flex flex-col gap-3"
               style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
@@ -932,57 +935,30 @@ export default function ChallengeInviteClient({
                 type="tel"
                 value={reminderPhone}
                 onChange={(e) => setReminderPhone(e.target.value)}
-                placeholder="Phone number"
-                autoFocus
+                placeholder="(555) 555-5555"
                 className="w-full bg-transparent text-[15px] outline-none py-2.5 px-3.5 rounded-xl"
                 style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
               />
-              <div className="flex items-center gap-4">
-                <button
-                  type="button"
-                  onClick={handleSavePhone}
-                  disabled={!reminderPhone.trim() || reminderSaving}
-                  className="px-5 py-2.5 rounded-xl text-[14px] font-bold transition-opacity"
-                  style={{
-                    backgroundColor: 'var(--gold-bright)',
-                    color: '#0B0D11',
-                    opacity: !reminderPhone.trim() || reminderSaving ? 0.5 : 1,
-                  }}
-                >
-                  {reminderSaving ? 'Saving...' : 'Notify me'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setReminderExpanded(false)}
-                  className="text-[13px] font-medium"
-                  style={{ color: 'var(--text-muted)' }}
-                >
-                  No thanks
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleSavePhone}
+                disabled={!reminderPhone.trim() || reminderSaving}
+                className="w-full min-h-[44px] rounded-xl text-[14px] font-bold transition-opacity"
+                style={{
+                  backgroundColor: 'var(--gold-bright)',
+                  color: '#0B0D11',
+                  opacity: !reminderPhone.trim() || reminderSaving ? 0.5 : 1,
+                }}
+              >
+                {reminderSaving ? 'Saving...' : 'Notify me'}
+              </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setReminderExpanded(true)}
-              className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-            >
-              <div className="min-h-[50px] flex items-center justify-center gap-2 px-5">
-                <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                  Get a text when the verdict drops
-                </span>
-              </div>
-            </button>
           )}
         </FadeUp>
 
-        {/* App Store badge */}
-        <FadeUp delay={0.35}>
-          <div className="flex flex-col items-center gap-2 pt-1">
-            <p className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-              Get the app for check-ins and updates
-            </p>
+        {/* App Store + viral — compact row */}
+        <FadeUp delay={0.3}>
+          <div className="flex flex-col items-center gap-3 pt-1">
             <a
               href="https://apps.apple.com/app/unbreakable-vow/id6743597637"
               target="_blank"
@@ -992,33 +968,22 @@ export default function ChallengeInviteClient({
               <img
                 src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
                 alt="Download on the App Store"
-                className="h-[40px]"
+                className="h-[36px]"
               />
+            </a>
+            <a
+              href="/"
+              className="text-[13px] font-semibold transition-opacity hover:opacity-80"
+              style={{ color: 'var(--gold-bright)' }}
+            >
+              Your turn &mdash; dare someone else
             </a>
           </div>
         </FadeUp>
 
-        {/* Viral CTA */}
-        <FadeUp delay={0.4}>
-          <a
-            href="/"
-            className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
-            style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border-strong)',
-            }}
-          >
-            <div className="min-h-[50px] flex items-center justify-center px-5">
-              <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                Your turn &mdash; dare someone else
-              </span>
-            </div>
-          </a>
-        </FadeUp>
-
-        {/* Test verdict buttons (Phase 4) — dev only */}
+        {/* Test verdict buttons — dev only */}
         {vow.witness_invite_token && process.env.NODE_ENV !== 'production' && (
-          <FadeUp delay={0.45}>
+          <FadeUp delay={0.35}>
             <div className="flex flex-col gap-2 pt-2">
               <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
                 Testing only
