@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Sparkles, Copy, Check, Send } from 'lucide-react';
+import { ArrowLeft, Sparkles, Copy, Check } from 'lucide-react';
 import {
   RitualScreen, RitualCard, PrimaryButton, ChoiceChip,
   SectionLabel, FadeUp, VowPreview,
@@ -236,26 +236,23 @@ export default function CastPage() {
         <FadeUp>
           <div className="flex justify-center mt-8">
             <div
-              className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(212,162,79,0.12)' }}
+              className="w-16 h-16 rounded-full flex items-center justify-center"
+              style={{
+                background: 'linear-gradient(135deg, rgba(212,162,79,0.2), rgba(212,162,79,0.08))',
+                border: '2px solid rgba(212,162,79,0.3)',
+              }}
             >
-              <Send className="w-7 h-7" style={{ color: 'var(--gold-bright)' }} />
+              <Check className="w-8 h-8" style={{ color: 'var(--gold)' }} />
             </div>
           </div>
         </FadeUp>
         <FadeUp delay={0.1}>
           <div className="text-center">
-            <h1
-              className="text-[10px] font-extrabold tracking-[3px] uppercase"
-              style={{ color: 'var(--gold-bright)' }}
-            >
-              DARE SENT
-            </h1>
-            <p className="text-[22px] font-serif font-bold mt-3" style={{ color: 'var(--text)' }}>
-              Waiting for {targetName} to respond...
+            <p className="text-[24px] font-serif font-bold" style={{ color: 'var(--text)' }}>
+              You&apos;re all set.
             </p>
             <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
-              You&apos;ll get a notification when they accept or back down.
+              We&apos;ll notify you when {targetName} accepts or backs down.
             </p>
           </div>
         </FadeUp>
@@ -263,13 +260,47 @@ export default function CastPage() {
     );
   }
 
-  // === SHARE SCREEN ===
+  // === SHARE SCREEN (fallback if native share was cancelled) ===
   if (dareSent) {
     return (
       <RitualScreen
         footer={
-          <div className="flex flex-col gap-3">
-            <PrimaryButton label="Share the dare →" onPress={handleShare} />
+          <button
+            onClick={() => {
+              setDareSent(false);
+              setShared(false);
+              setDareLink('');
+              setVowText('');
+              setSuggestion('');
+              setTargetName('');
+              setSuggestedStake(25);
+              setError('');
+            }}
+            className="min-h-[44px] flex items-center justify-center"
+          >
+            <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+              Dare someone else
+            </span>
+          </button>
+        }
+      >
+        <FadeUp>
+          <div className="text-center mt-6">
+            <h1
+              className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
+              style={{ color: 'var(--text)' }}
+            >
+              Now send it to {targetName}.
+            </h1>
+            <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
+              {targetName} has 48 hours to accept or back down.
+            </p>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.1}>
+          <div className="flex flex-col gap-2 mt-2">
+            <PrimaryButton label={`Send to ${targetName} →`} onPress={handleShare} />
             <button
               onClick={handleCopyLink}
               className="min-h-[44px] flex items-center justify-center gap-2"
@@ -280,65 +311,14 @@ export default function CastPage() {
                 <Copy className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
               )}
               <span className="text-[14px] font-semibold" style={{ color: copied ? 'var(--success)' : 'var(--text-secondary)' }}>
-                {copied ? 'Copied!' : 'Copy link'}
+                {copied ? 'Copied!' : 'Or copy the link'}
               </span>
             </button>
-          </div>
-        }
-      >
-        <FadeUp>
-          <div className="flex justify-center mt-8">
-            <div
-              className="w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(212,162,79,0.12)' }}
-            >
-              <Send className="w-7 h-7" style={{ color: 'var(--gold-bright)' }} />
-            </div>
-          </div>
-        </FadeUp>
-
-        <FadeUp delay={0.1}>
-          <div className="text-center">
-            <h1
-              className="text-[10px] font-extrabold tracking-[3px] uppercase"
-              style={{ color: 'var(--gold-bright)' }}
-            >
-              DARE SENT
-            </h1>
           </div>
         </FadeUp>
 
         <FadeUp delay={0.15}>
           <VowPreview text={formattedText} />
-        </FadeUp>
-
-        <FadeUp delay={0.2}>
-          <RitualCard>
-            <div className="flex flex-col gap-2">
-              {suggestedStake && suggestedStake > 0 && (
-                <div className="flex items-center justify-between">
-                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Suggested stake</span>
-                  <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${suggestedStake}</span>
-                </div>
-              )}
-              <div className="flex items-center justify-between">
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Daring</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{targetName}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Ends</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                  {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                </span>
-              </div>
-            </div>
-          </RitualCard>
-        </FadeUp>
-
-        <FadeUp delay={0.25}>
-          <p className="text-[13px] text-center" style={{ color: 'var(--text-muted)' }}>
-            We&apos;ll notify you when {targetName} accepts or backs down.
-          </p>
         </FadeUp>
       </RitualScreen>
     );
