@@ -25,7 +25,7 @@ function formatE164(phone: string): string {
 }
 
 export default function SealScreen() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, displayName } = useAuth();
   const { activeVowText, vow, setVowId, isSelfWitness } = useVowFlow();
 
   useEffect(() => {
@@ -64,6 +64,25 @@ export default function SealScreen() {
   }, [vow.deadlineIso, vow.rawInput]);
 
   const brokenLabel = `Donated to ${vow.stake.destination}`;
+
+  const hasWitnessPhone = !isSelfWitness && !!vow.phoneNumber;
+  const smsPreview = useMemo(() => {
+    if (!hasWitnessPhone) return '';
+    const senderName = displayName || 'You';
+    const stakeText = vow.stake.amount > 0
+      ? `with $${vow.stake.amount} on the line`
+      : 'accountability only — no money, just their word';
+    const vowPreview = activeVowText.length > 100
+      ? activeVowText.substring(0, 97) + '...'
+      : activeVowText;
+    return `${senderName} just made an Unbreakable Vow: "${vowPreview}" — ${stakeText}. You're the witness.`;
+  }, [hasWitnessPhone, displayName, vow.stake.amount, activeVowText]);
+
+  const sealLabel = loading
+    ? 'Processing...'
+    : hasWitnessPhone
+      ? `Seal & text ${vow.witnessName}`
+      : 'Seal this vow';
 
   const registerPush = useCallback(async () => {
     try {
@@ -250,7 +269,7 @@ export default function SealScreen() {
         setPaidVowId(vowId || paidVowId);
         Alert.alert(
           'Almost there',
-          'Your payment went through but we couldn\'t finish sealing. Tap "Seal this vow" to try again.',
+          `Your payment went through but we couldn't finish sealing. Tap "${sealLabel}" to try again.`,
         );
       } else {
         if (vowId) {
@@ -328,7 +347,7 @@ export default function SealScreen() {
       footer={
         sealed ? null : (
           <>
-            <PrimaryButton label={loading ? 'Processing...' : 'Seal this vow'} onPress={handleSeal} disabled={!canSeal || loading} testID="seal-primary" />
+            <PrimaryButton label={sealLabel} onPress={handleSeal} disabled={!canSeal || loading} testID="seal-primary" />
             <SecondaryButton label="Back" onPress={() => router.back()} testID="seal-back" />
           </>
         )
@@ -387,9 +406,18 @@ export default function SealScreen() {
         </View>
       </RitualCard>
 
+      {/* SMS preview — what the witness will receive */}
+      {!sealed && hasWitnessPhone ? (
+        <View style={styles.smsPreviewCard}>
+          <Text style={styles.smsPreviewLabel}>TEXT TO {vow.witnessName.toUpperCase()}</Text>
+          <Text style={styles.smsPreviewText}>{smsPreview}</Text>
+          <Text style={styles.smsPreviewNote}>Includes a link to accept or decline</Text>
+        </View>
+      ) : null}
+
       {sealed ? (
         <Animated.View style={[styles.oathFlash, { opacity: oathFlashOpacity }]} pointerEvents="none">
-          <Text style={styles.oathFlashText}>I solemnly swear{"\n"}to keep my word this week.</Text>
+          <Text style={styles.oathFlashText}>{activeVowText ? `"${activeVowText}"` : 'Your vow is sealed.'}</Text>
         </Animated.View>
       ) : null}
 
@@ -562,6 +590,31 @@ const styles = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 21,
+  },
+  smsPreviewCard: {
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.15)',
+    backgroundColor: 'rgba(212,162,79,0.04)',
+    padding: 16,
+    gap: 8,
+  },
+  smsPreviewLabel: {
+    color: palette.gold,
+    fontSize: 10,
+    fontWeight: '700' as const,
+    letterSpacing: 1.2,
+  },
+  smsPreviewText: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+    fontStyle: 'italic' as const,
+  },
+  smsPreviewNote: {
+    color: palette.textMuted,
+    fontSize: 11,
+    marginTop: 2,
   },
   oathFlash: {
     position: 'absolute',

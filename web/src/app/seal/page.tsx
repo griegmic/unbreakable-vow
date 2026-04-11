@@ -36,6 +36,22 @@ export default function SealPage() {
 
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
+  const hasWitnessPhone = !isSelfWitness && !!vow.witnessPhone;
+  const displayName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || null;
+  const smsPreview = (() => {
+    if (!hasWitnessPhone) return '';
+    const senderName = displayName || 'You';
+    const stakeText = vow.stake.amount > 0
+      ? `with $${vow.stake.amount} on the line`
+      : 'accountability only — no money, just their word';
+    const vowPreview = activeVowText.length > 100
+      ? activeVowText.substring(0, 97) + '...'
+      : activeVowText;
+    return `${senderName} just made an Unbreakable Vow: "${vowPreview}" — ${stakeText}. You're the witness.`;
+  })();
+
+  const sealLabel = hasWitnessPhone ? `Seal & text ${vow.witnessName}` : 'Seal this vow';
+
   useEffect(() => {
     setIsDevBypass(window.location.hostname === 'localhost');
   }, []);
@@ -358,7 +374,7 @@ export default function SealPage() {
         footer={
           <>
             <PrimaryButton
-              label="Seal this vow"
+              label={sealLabel}
               onPress={handleSealTap}
               disabled={!oathChecked}
               loading={sealing}
@@ -460,6 +476,26 @@ export default function SealPage() {
             </div>
           </RitualCard>
         </FadeUp>
+
+        {/* SMS preview — what the witness will receive */}
+        {hasWitnessPhone && (
+          <FadeUp delay={0.18}>
+            <div
+              className="rounded-[16px] p-4 flex flex-col gap-2"
+              style={{ backgroundColor: 'rgba(212,162,79,0.04)', border: '1px solid rgba(212,162,79,0.15)' }}
+            >
+              <span className="text-[10px] font-bold tracking-[1.2px] uppercase" style={{ color: 'var(--gold)' }}>
+                TEXT TO {vow.witnessName.toUpperCase()}
+              </span>
+              <p className="text-[14px] leading-[20px] italic" style={{ color: 'var(--text-secondary)' }}>
+                {smsPreview}
+              </p>
+              <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                Includes a link to accept or decline
+              </span>
+            </div>
+          </FadeUp>
+        )}
 
         {error && (
           <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--danger-muted)' }}>
