@@ -130,8 +130,8 @@ function VowKeptContent() {
     : `Your $${amount} stays safe. Another one in the books.`;
 
   const shareText = isZeroStake
-    ? `I kept my Unbreakable Vow: "${vowText}" 🔥 ${streak && streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`
-    : `I kept my Unbreakable Vow: "${vowText}" — $${amount} protected. 🔥 ${streak && streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`;
+    ? `I kept my Unbreakable Vow: "${vowText}" ${streak && streak > 1 ? `— ${streak} in a row 🔥 ` : ''}Think you could do it? → unbreakablevow.app`
+    : `I kept my Unbreakable Vow: "${vowText}" — $${amount} on the line and I didn't blink. ${streak && streak > 1 ? `${streak} in a row 🔥 ` : ''}Think you could do it? → unbreakablevow.app`;
 
   const handleShare = () => {
     if (navigator.share) {

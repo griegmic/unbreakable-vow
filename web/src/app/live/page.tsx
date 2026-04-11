@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle, LayoutGrid, ChevronRight } from 'lucide-react';
+import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle, LayoutGrid, ChevronRight, Flame, Zap, PartyPopper } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp, HeaderBadge } from '@/components/ui';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
 import { useAuth } from '@/providers/auth-provider';
@@ -47,15 +47,20 @@ export default function LivePage() {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    const { data } = await supabase.from('vows')
+    const { data: rows } = await supabase.from('vows')
       .select('id, user_id, raw_input, refined_text, status, witness_name, witness_phone, witness_invite_token, stake_amount, consequence, destination, starts_at, ends_at, verdict, verdict_at, witness_accepted_at, witness_declined, sealed_at, created_at')
       .eq('user_id', session.user.id)
       .in('status', ['sealed', 'active', 'awaiting_verdict'])
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+      .limit(5);
 
-    setVow(data);
+    // Prioritize: awaiting_verdict > active with past deadline > most recent
+    const pick = rows?.find(v => v.status === 'awaiting_verdict')
+      || rows?.find(v => v.status === 'active' && v.ends_at && new Date(v.ends_at) <= new Date())
+      || rows?.[0]
+      || null;
+
+    setVow(pick);
     setLoading(false);
   }, []);
 
@@ -78,9 +83,10 @@ export default function LivePage() {
   useEffect(() => { setOrigin(window.location.origin); }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem('lastCheckIn');
+    if (!vow) return;
+    const stored = localStorage.getItem(`lastCheckIn-${vow.id}`);
     if (stored) setLastCheckIn(Number(stored));
-  }, []);
+  }, [vow]);
 
   const checkInCooldown = lastCheckIn ? (Date.now() - lastCheckIn) < 4 * 60 * 60 * 1000 : false;
 
@@ -99,7 +105,7 @@ export default function LivePage() {
       });
       const now = Date.now();
       setLastCheckIn(now);
-      localStorage.setItem('lastCheckIn', String(now));
+      localStorage.setItem(`lastCheckIn-${vow.id}`, String(now));
       const labels = { on_track: 'On track', struggling: 'Struggling', done_early: 'Done early' };
       setActionMsg(`Checked in: ${labels[mood]}`);
       setTimeout(() => setActionMsg(''), 3000);
@@ -182,7 +188,8 @@ export default function LivePage() {
     : `${daysLeft} days left`;
 
   const tint = getCountdownTint(daysLeft);
-  const witnessLabel = isSolo ? "You're the judge" : `${vow.witness_name} is watching`;
+  const hasRealName = vow.witness_name && vow.witness_name !== 'Your witness' && vow.witness_name !== 'Just me';
+  const witnessLabel = isSolo ? "You're the judge" : hasRealName ? `${vow.witness_name} is watching` : 'Your witness is watching';
   const endDateFormatted = endsAt?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) || '—';
 
   const todaysLabel = (() => {
@@ -190,7 +197,8 @@ export default function LivePage() {
     return cheekyLabelTemplates[dayIndex].replace('{name}', vow.witness_name);
   })();
 
-  const nudgeShareText = `I made a vow: "${vow.refined_text.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept:`;
+  const stakeNudge = vow.stake_amount > 0 ? ` I put $${Math.round(vow.stake_amount / 100)} on it.` : '';
+  const nudgeShareText = `Hey, did you see my vow? "${vow.refined_text.replace(/\.$/, '')}"${stakeNudge} I need you to accept:`;
 
   const handleTextWitness = () => {
     const phone = vow.witness_phone;
@@ -355,16 +363,16 @@ export default function LivePage() {
                   <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--gold)' }} />
                 </div>
                 <div>
-                  <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Waiting for {vow.witness_name} to accept</span>
+                  <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Waiting for your witness to step forward</span>
                   <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                    {vow.witness_phone ? 'We texted them an invite. Nudge them if they haven\u2019t checked yet.' : 'Share the invite so they can accept and start watching.'}
+                    {vow.witness_phone ? 'We texted them an invite. Nudge if they haven\u2019t checked yet.' : 'Share the invite so they can accept and start watching.'}
                   </span>
                 </div>
               </div>
               <ShareButton
                 url={witnessUrl}
                 text={nudgeShareText}
-                buttonText={vow.witness_phone ? `Nudge ${vow.witness_name}` : `Send to ${vow.witness_name}`}
+                buttonText={vow.witness_phone ? 'Nudge your witness' : 'Send the invite'}
               />
               <div className="flex items-center gap-2">
                 <div className="rounded-[10px] py-2 px-3 flex-1 min-w-0" style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}>
@@ -469,7 +477,7 @@ export default function LivePage() {
               {witnessLabel}
             </span>
           </div>
-          <p className="text-[12px] italic mt-2" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <p className="text-[12px] italic mt-2" style={{ color: 'var(--text-muted)' }}>
             {dailyNudge}
           </p>
         </div>
@@ -479,18 +487,18 @@ export default function LivePage() {
       <FadeUp delay={0.14}>
         <div className="flex gap-2">
           {([
-            { mood: 'on_track' as const, label: 'On track', emoji: '💪' },
-            { mood: 'struggling' as const, label: 'Struggling', emoji: '😤' },
-            { mood: 'done_early' as const, label: 'Done early', emoji: '🎉' },
-          ]).map(({ mood, label, emoji }) => (
+            { mood: 'on_track' as const, label: 'On track', Icon: Flame },
+            { mood: 'struggling' as const, label: 'Struggling', Icon: Zap },
+            { mood: 'done_early' as const, label: 'Done early', Icon: PartyPopper },
+          ]).map(({ mood, label, Icon }) => (
             <button
               key={mood}
               onClick={() => handleCheckIn(mood)}
               disabled={actionBusy || checkInCooldown}
-              className="flex-1 rounded-[14px] py-3 flex flex-col items-center gap-1 transition-all active:scale-[0.97] disabled:opacity-40"
+              className="flex-1 rounded-[14px] py-3 flex flex-col items-center gap-1.5 transition-all active:scale-[0.97] disabled:opacity-40"
               style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
             >
-              <span className="text-[16px]">{emoji}</span>
+              <Icon className="w-4 h-4" style={{ color: 'var(--gold)' }} />
               <span className="text-[11px] font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</span>
             </button>
           ))}

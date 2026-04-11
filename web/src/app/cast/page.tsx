@@ -335,7 +335,7 @@ export default function CastPage() {
         </FadeUp>
 
         {/* Fast-forward test verdict */}
-        {acceptedVowDetails?.witnessInviteToken && (
+        {process.env.NODE_ENV === 'development' && acceptedVowDetails?.witnessInviteToken && (
           <FadeUp delay={0.25}>
             <div className="flex flex-col gap-2 pt-2">
               <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>

@@ -269,8 +269,8 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
 
       <FadeUp delay={0.05}>
         <TitleBlock
-          title={targetName ? `Did ${targetName} keep the vow?` : 'Did they keep it?'}
-          subtitle="Be honest. That's the whole point."
+          title={targetName ? `It's judgment day for ${targetName}.` : "It's judgment day."}
+          subtitle={vow.stake_amount > 0 ? `$${vow.stake_amount / 100} rides on your honesty.` : "Be honest. That's the whole point."}
         />
       </FadeUp>
 
@@ -301,8 +301,23 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
         </RitualCard>
       </FadeUp>
 
-      {/* Verdict buttons */}
+      {/* Oath framing — ceremonial weight before the irreversible action */}
       <FadeUp delay={0.15}>
+        <div
+          className="flex items-center gap-3 rounded-[14px] px-4 py-3"
+          style={{ backgroundColor: 'rgba(212,162,79,0.06)', border: '1px solid rgba(212,162,79,0.15)' }}
+        >
+          <div className="w-px h-8 shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
+          <p className="text-[13px] leading-[19px] font-medium italic" style={{ color: 'var(--text-secondary)' }}>
+            {vow.stake_amount > 0
+              ? `Your call determines whether $${vow.stake_amount / 100} is returned or donated. No favors. No grudges.`
+              : 'No favors. No grudges. Just the truth.'}
+          </p>
+        </div>
+      </FadeUp>
+
+      {/* Verdict buttons */}
+      <FadeUp delay={0.2}>
         <button
           onClick={() => handleChoose('kept')}
           disabled={busy}
@@ -323,7 +338,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
         </button>
       </FadeUp>
 
-      <FadeUp delay={0.2}>
+      <FadeUp delay={0.25}>
         <button
           onClick={() => handleChoose('broken')}
           disabled={busy}
@@ -344,9 +359,9 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
         </button>
       </FadeUp>
 
-      <FadeUp delay={0.25}>
+      <FadeUp delay={0.3}>
         <p className="text-center text-[13px]" style={{ color: 'var(--text-muted)' }}>
-          Your honesty is what makes this work.
+          Your verdict is final.
         </p>
       </FadeUp>
 
@@ -363,8 +378,8 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
           >
             <div className="flex-1 min-w-0">
               <p className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
-                Submitting: <span style={{ color: pendingVerdict === 'kept' ? 'var(--success)' : 'var(--warm-amber)' }}>
-                  {pendingVerdict === 'kept' ? 'Vow Kept' : 'Vow Broken'}
+                Your verdict: <span style={{ color: pendingVerdict === 'kept' ? 'var(--success)' : 'var(--warm-amber)' }}>
+                  {pendingVerdict === 'kept' ? 'Kept' : 'Broken'}
                 </span>
               </p>
               <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--border)' }}>

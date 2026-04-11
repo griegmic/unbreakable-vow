@@ -530,13 +530,22 @@ export default function ChallengeInviteClient({
             </p>
           </FadeUp>
           <FadeUp delay={0.2}>
-            <a
-              href="/"
-              className="text-[14px] font-semibold transition-opacity hover:opacity-80"
-              style={{ color: 'var(--gold)' }}
-            >
-              Make your own vow &rarr;
-            </a>
+            <div className="flex flex-col items-center gap-3">
+              <a
+                href="/cast"
+                className="text-[14px] font-semibold transition-opacity hover:opacity-80"
+                style={{ color: 'var(--gold-bright)' }}
+              >
+                Dare them back &rarr;
+              </a>
+              <a
+                href="/"
+                className="text-[13px] transition-opacity hover:opacity-80"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Make your own vow
+              </a>
+            </div>
           </FadeUp>
         </div>
       </RitualScreen>
@@ -744,17 +753,19 @@ export default function ChallengeInviteClient({
               />
             ) : null}
 
-            {/* Testing bypass */}
-            <button
-              type="button"
-              onClick={handleTestBypass}
-              disabled={busy}
-              className="py-2 transition-opacity hover:opacity-70 disabled:opacity-40"
-            >
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-                Just testing
-              </span>
-            </button>
+            {/* Testing bypass — dev only */}
+            {process.env.NODE_ENV === 'development' && (
+              <button
+                type="button"
+                onClick={handleTestBypass}
+                disabled={busy}
+                className="py-2 transition-opacity hover:opacity-70 disabled:opacity-40"
+              >
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                  Just testing
+                </span>
+              </button>
+            )}
 
             {error && (
               <p className="text-[13px]" style={{ color: 'var(--danger)' }}>{error}</p>
@@ -1016,7 +1027,7 @@ export default function ChallengeInviteClient({
         </FadeUp>
 
         {/* Test verdict buttons — dev only */}
-        {vow.witness_invite_token && (
+        {process.env.NODE_ENV === 'development' && vow.witness_invite_token && (
           <FadeUp delay={0.35}>
             <div className="flex flex-col gap-2 pt-2">
               <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>

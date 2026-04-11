@@ -67,6 +67,11 @@ export default async function WitnessInvitePage({ params }: Props) {
     return <WitnessNotFound token={token} />;
   }
 
+  // Draft vow: show "sealing in progress" state that polls for activation
+  if (vow.status === 'draft') {
+    return <WitnessNotFound token={token} />;
+  }
+
   // Try to get the vow maker's display name and phone
   let makerName = 'Your friend';
   let makerPhone: string | null = null;

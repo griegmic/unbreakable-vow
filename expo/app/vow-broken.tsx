@@ -6,13 +6,11 @@ import { Alert, Animated, Platform, Pressable, Share, StyleSheet, Text, View } f
 import { captureRef } from 'react-native-view-shot';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { palette, serifFont } from '@/constants/unbreakable';
+import { antiCauses, palette, serifFont } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
 
-const ANTI_CAUSES = ['Donald Trump', 'NRA', 'Flat Earth Society'];
-
 function isAntiCause(destination: string): boolean {
-  return ANTI_CAUSES.some(c => destination.toLowerCase().includes(c.toLowerCase()));
+  return antiCauses.some(c => destination.toLowerCase().includes(c.toLowerCase()));
 }
 
 export default function VowBrokenScreen() {

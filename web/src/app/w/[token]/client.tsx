@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { DollarSign, Sparkles, Calendar, Eye, MessageCircle, Check, Phone } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
+import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
 
 interface Vow {
   id: string;
@@ -19,7 +19,6 @@ interface Vow {
 export default function WitnessInviteClient({ vow, token, makerName, makerPhone }: { vow: Vow; token: string; makerName: string; makerPhone: string | null }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [oathSworn, setOathSworn] = useState(false);
   const [status, setStatus] = useState<'pending' | 'accepted' | 'declined'>(
     vow.witness_accepted_at ? 'accepted' : vow.witness_declined ? 'declined' : 'pending'
   );
@@ -200,7 +199,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         </FadeUp>
         <FadeUp delay={0.2}>
           <a
-            href="https://unbreakablevow.app/create"
+            href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
             className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
             style={{
               backgroundColor: 'var(--surface)',
@@ -209,7 +208,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
           >
             <div className="min-h-[50px] flex items-center justify-center px-5">
               <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                Your turn &mdash; what will you commit to?
+                Your turn &mdash; make a vow of your own
               </span>
             </div>
           </a>
@@ -299,7 +298,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                   </button>
                 )}
                 <a
-                  href="https://unbreakablevow.app/create"
+                  href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
                   className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
                   style={{
                     backgroundColor: 'var(--surface)',
@@ -308,7 +307,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 >
                   <div className="min-h-[50px] flex items-center justify-center px-5">
                     <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                      Your turn &mdash; what will you commit to?
+                      Your turn &mdash; make a vow and pick {makerLabel} to hold you to it
                     </span>
                   </div>
                 </a>
@@ -505,7 +504,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             {/* Tertiary: make your own vow */}
             <FadeUp delay={makerPhone ? 0.3 : 0.25}>
               <a
-                href="https://unbreakablevow.app/create"
+                href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
                 className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
                 style={{
                   backgroundColor: 'var(--surface)',
@@ -514,7 +513,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               >
                 <div className="min-h-[50px] flex items-center justify-center px-5">
                   <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                    Your turn &mdash; what will you commit to?
+                    Your turn &mdash; make a vow and pick {makerLabel} to hold you to it
                   </span>
                 </div>
               </a>
@@ -536,6 +535,19 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             subtitle={`${makerFirstName} will be notified. The vow continues without a witness.`}
           />
         </FadeUp>
+        <FadeUp delay={0.2}>
+          <a
+            href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
+            className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+          >
+            <div className="min-h-[50px] flex items-center justify-center px-5">
+              <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                Make a vow of your own
+              </span>
+            </div>
+          </a>
+        </FadeUp>
       </RitualScreen>
     );
   }
@@ -546,12 +558,18 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       footer={
         <>
           <PrimaryButton
-            label="I'm in"
+            label={`I accept — to hold ${makerLabel} to it and judge honestly`}
             onPress={handleAccept}
             loading={busy}
-            disabled={!oathSworn}
           />
-          <SecondaryButton label="Decline" onPress={handleDecline} />
+          <button
+            type="button"
+            onClick={handleDecline}
+            disabled={busy}
+            className="py-2 transition-opacity hover:opacity-70 disabled:opacity-40"
+          >
+            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>I can&apos;t do this</span>
+          </button>
         </>
       }
     >
@@ -610,36 +628,34 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         </RitualCard>
       </FadeUp>
 
-      {/* Oath checkbox */}
+      {/* What happens next */}
       <FadeUp delay={0.2}>
         <div
           className="rounded-[20px] p-[18px]"
-          style={{
-            backgroundColor: 'var(--surface)',
-            border: `1px solid ${oathSworn ? 'var(--border-strong)' : 'var(--border)'}`,
-            boxShadow: oathSworn ? '0 6px 12px rgba(212,162,79,0.06)' : 'none',
-            transition: 'border-color 0.3s, box-shadow 0.3s',
-          }}
+          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
         >
-          <label className="flex items-start gap-3 cursor-pointer select-none">
-            <div
-              className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5 transition-all"
-              style={{
-                backgroundColor: oathSworn ? 'rgba(212,162,79,0.15)' : 'var(--surface-elevated)',
-                border: `1.5px solid ${oathSworn ? 'var(--gold)' : 'var(--border)'}`,
-              }}
-              onClick={() => setOathSworn(!oathSworn)}
-            >
-              {oathSworn && <Check className="w-4 h-4" style={{ color: 'var(--gold)' }} />}
-            </div>
-            <span
-              className="text-[14px] leading-[20px] font-medium"
-              style={{ color: oathSworn ? 'var(--text)' : 'var(--text-secondary)' }}
-              onClick={() => setOathSworn(!oathSworn)}
-            >
-              I swear to judge fairly — no favors, no grudges.
-            </span>
-          </label>
+          <p className="text-[11px] font-bold tracking-[1.3px] uppercase mb-3" style={{ color: 'var(--gold)' }}>
+            WHAT HAPPENS NEXT
+          </p>
+          <div className="flex flex-col gap-2.5">
+            {[
+              { num: '1', text: `${makerFirstName} works on their vow` },
+              { num: '2', text: `We'll remind you when it's time to judge` },
+              { num: '3', text: 'You deliver your honest verdict — no favors, no grudges' },
+            ].map((step) => (
+              <div key={step.num} className="flex items-start gap-2.5">
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                  style={{ backgroundColor: 'rgba(212,162,79,0.12)' }}
+                >
+                  <span className="text-[10px] font-bold" style={{ color: 'var(--gold)' }}>{step.num}</span>
+                </div>
+                <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>
+                  {step.text}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       </FadeUp>
 

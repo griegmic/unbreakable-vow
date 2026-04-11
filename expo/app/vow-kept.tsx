@@ -6,17 +6,15 @@ import { Animated, Linking, Platform, Pressable, Share, StyleSheet, Text, View }
 import { captureRef } from 'react-native-view-shot';
 
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
-import { palette, serifFont } from '@/constants/unbreakable';
+import { antiCauses, palette, serifFont } from '@/constants/unbreakable';
 import { getVowHistory } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 import type { Database } from '@/types/database';
 
 type VowRow = Database['public']['Tables']['vows']['Row'];
 
-const ANTI_CAUSES = ['Donald Trump', 'NRA', 'Flat Earth Society'];
-
 function isAntiCause(destination: string): boolean {
-  return ANTI_CAUSES.some(c => destination.toLowerCase().includes(c.toLowerCase()));
+  return antiCauses.some(c => destination.toLowerCase().includes(c.toLowerCase()));
 }
 
 export default function VowKeptScreen() {

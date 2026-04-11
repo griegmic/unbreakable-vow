@@ -21,15 +21,16 @@ export default function WitnessPage() {
   }, [vow.rawInput, router]);
 
   const handleFriend = async () => {
-    // Generate invite token now so we can share immediately
-    const token = crypto.randomUUID();
+    // Reuse existing token if user navigated back and re-tapped
+    const token = vow.witnessInviteToken || crypto.randomUUID();
     setWitnessName('Your witness');
     setWitnessType('friend');
     setWitnessInviteToken(token);
 
     const vowText = (vow.refinedText || formalizeVow(vow.rawInput)).replace(/\.$/, '');
     const witnessUrl = `${window.location.origin}/w/${token}`;
-    const shareText = `I just made a vow: "${vowText}" — I picked you to hold me accountable. Tap here to accept: ${witnessUrl}`;
+    const stakeHook = vow.stake.amount > 0 ? ` and put $${vow.stake.amount} on it` : '';
+    const shareText = `I just made a vow to ${vowText.toLowerCase()}${stakeHook}. You're my witness: ${witnessUrl}`;
 
     // Pop native share sheet (non-blocking — navigate to seal regardless)
     if (navigator.share) {

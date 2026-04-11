@@ -3,11 +3,10 @@ import { Suspense, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Share2, AlertTriangle, Camera } from 'lucide-react';
 import { RitualScreen, TitleBlock, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
-
-const ANTI_CAUSES = ['Donald Trump', 'NRA', 'Flat Earth Society'];
+import { antiCauses } from '@/lib/vow-logic';
 
 function isAntiCause(destination: string): boolean {
-  return ANTI_CAUSES.some(c => destination.toLowerCase().includes(c.toLowerCase()));
+  return antiCauses.some(c => destination.toLowerCase().includes(c.toLowerCase()));
 }
 
 function VowBrokenContent() {
@@ -39,12 +38,12 @@ function VowBrokenContent() {
 
   const getShareText = () => {
     if (isZeroStake) {
-      return `I couldn't even keep a free vow: "${vowText}" — unbreakablevow.app`;
+      return `I broke my Unbreakable Vow: "${vowText}" — Could you do better? → unbreakablevow.app`;
     }
     if (antiCause) {
-      return `I broke my vow and just donated $${amount} to ${destination}. Don't be like me → unbreakablevow.app`;
+      return `I broke my vow and $${amount} just went to ${destination}. Don't be me. → unbreakablevow.app`;
     }
-    return `I broke my vow: "${vowText}" — $${amount} donated to ${destination}. unbreakablevow.app`;
+    return `I broke my vow: "${vowText}" — $${amount} went to ${destination}. Could you do better? → unbreakablevow.app`;
   };
 
   const handleShare = () => {
@@ -64,7 +63,7 @@ function VowBrokenContent() {
       footer={
         <>
           <PrimaryButton
-            label="Double down"
+            label="Try again"
             onPress={() => router.push(`/create?text=${encodeURIComponent(vowText)}&stake=${amount}`)}
           />
           <SecondaryButton

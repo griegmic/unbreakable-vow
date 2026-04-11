@@ -30,6 +30,7 @@ export default function SealPage() {
   const [error, setError] = useState('');
   const [sealAnimPhase, setSealAnimPhase] = useState(0);
   const [sealing, setSealing] = useState(false);
+  const sealingRef = useRef(false);
   const [isDevBypass, setIsDevBypass] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -60,60 +61,110 @@ export default function SealPage() {
     }
   }, [vow.rawInput, router]);
 
+  // ── Shared: ensure a draft vow row exists ──
+  const draftCreatingRef = useRef(false);
+  const ensureDraftVow = useCallback(async (): Promise<{ id: string } | null> => {
+    // Reuse existing draft
+    if (vow.vowId) {
+      const { data: existing } = await supabase.from('vows')
+        .select('id')
+        .eq('id', vow.vowId)
+        .eq('status', 'draft')
+        .maybeSingle();
+      if (existing) return existing;
+    }
+
+    if (draftCreatingRef.current) return null;
+    draftCreatingRef.current = true;
+
+    try {
+      const { data: { session: s } } = await supabase.auth.getSession();
+      if (!s) return null;
+
+      await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
+
+      const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
+      const { data: newVow, error: vowError } = await supabase.from('vows').insert({
+        user_id: s.user.id,
+        raw_input: vow.rawInput,
+        refined_text: activeVowText,
+        witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
+        witness_phone: vow.witnessPhone || null,
+        witness_invite_token: vow.witnessInviteToken || crypto.randomUUID(),
+        stake_amount: vow.stake.amount * 100,
+        consequence: vow.stake.consequence,
+        destination: vow.stake.destination,
+        status: 'draft',
+        starts_at: new Date().toISOString(),
+        ends_at: endDate.toISOString(),
+      }).select('id, witness_invite_token').single();
+
+      if (vowError) { console.error('Draft creation failed:', vowError.message); return null; }
+      setVowId(newVow.id, newVow.witness_invite_token);
+      return newVow;
+    } finally {
+      draftCreatingRef.current = false;
+    }
+  }, [vow, activeVowText, isSelfWitness, setVowId]);
+
+  // ── Eagerly create draft on page load when authed (makes witness link live) ──
+  useEffect(() => {
+    if (isAuthenticated && vow.rawInput && !vow.vowId) {
+      ensureDraftVow();
+    }
+  }, [isAuthenticated, vow.rawInput, vow.vowId, ensureDraftVow]);
+
+  // ── Shared: call seal-vow with silent retries ──
+  const callSealVow = useCallback(async (vowId: string): Promise<boolean> => {
+    const maxRetries = 3;
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const { data: { session: s } } = await supabase.auth.refreshSession();
+        if (!s) return false;
+        const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${s.access_token}`,
+            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+          },
+          body: JSON.stringify({ vow_id: vowId }),
+        });
+        if (res.ok) return true;
+        const data = await res.json().catch(() => null);
+        console.error(`Seal attempt ${attempt + 1} failed:`, data?.error || res.status);
+      } catch (err) {
+        console.error(`Seal attempt ${attempt + 1} error:`, err);
+      }
+      if (attempt < maxRetries - 1) {
+        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+      }
+    }
+    return false;
+  }, []);
+
   const createVowAndPay = useCallback(async () => {
-    if (sealing) return;
+    if (sealingRef.current) return;
+    sealingRef.current = true;
     setSealing(true);
     try {
       setError('');
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession) {
         setStep('auth');
+        sealingRef.current = false;
         setSealing(false);
         return;
       }
 
-      let vowData = null;
+      const draft = await ensureDraftVow();
+      if (!draft) throw new Error('Could not create vow. Please try again.');
 
-      // Reuse existing draft vow if we already created one
-      if (vow.vowId) {
-        const { data: existing } = await supabase.from('vows')
-          .select('*')
-          .eq('id', vow.vowId)
-          .eq('status', 'draft')
-          .maybeSingle();
-        if (existing) vowData = existing;
-      }
-
-      if (!vowData) {
-        await ensurePublicUser(currentSession.user.id, currentSession.user.user_metadata, currentSession.user.email ?? undefined);
-
-        const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
-
-        const { data: newVow, error: vowError } = await supabase.from('vows').insert({
-          user_id: currentSession.user.id,
-          raw_input: vow.rawInput,
-          refined_text: activeVowText,
-          witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
-          witness_phone: vow.witnessPhone || null,
-          witness_invite_token: vow.witnessInviteToken || crypto.randomUUID(),
-          stake_amount: vow.stake.amount * 100,
-          consequence: vow.stake.consequence,
-          destination: vow.stake.destination,
-          status: 'draft',
-          starts_at: new Date().toISOString(),
-          ends_at: endDate.toISOString(),
-        }).select().single();
-
-        if (vowError) throw new Error(`Vow creation failed: ${vowError.message}`);
-        vowData = newVow;
-        setVowId(vowData.id, vowData.witness_invite_token);
-      }
-
-      // Refresh session to ensure a fresh access token — the original token from
-      // getSession() may have expired while the user was navigating the flow.
+      // Refresh session for fresh access token
       const { data: { session: freshSession } } = await supabase.auth.refreshSession();
       if (!freshSession) {
         setStep('auth');
+        sealingRef.current = false;
         setSealing(false);
         return;
       }
@@ -126,7 +177,7 @@ export default function SealPage() {
           'Authorization': `Bearer ${freshSession.access_token}`,
           'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         },
-        body: JSON.stringify({ vow_id: vowData.id, amount: vow.stake.amount * 100 }),
+        body: JSON.stringify({ vow_id: draft.id, amount: vow.stake.amount * 100 }),
       });
 
       const piData = await piRes.json().catch(() => null);
@@ -146,80 +197,48 @@ export default function SealPage() {
     } catch (err) {
       console.error('Seal error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');
+      sealingRef.current = false;
       setSealing(false);
     }
-  }, [vow, activeVowText, isSelfWitness, setVowId, sealing]);
+  }, [vow, ensureDraftVow]);
 
   const handleZeroStakeSeal = useCallback(async () => {
-    if (sealing) return;
+    if (sealingRef.current) return;
+    sealingRef.current = true;
     setSealing(true);
     try {
       setError('');
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession) {
         setStep('auth');
+        sealingRef.current = false;
         setSealing(false);
         return;
       }
 
-      let vowData = null;
-      if (vow.vowId) {
-        const { data: existing } = await supabase.from('vows')
-          .select('*').eq('id', vow.vowId).eq('status', 'draft').maybeSingle();
-        if (existing) vowData = existing;
-      }
-      if (!vowData) {
-        await ensurePublicUser(currentSession.user.id, currentSession.user.user_metadata, currentSession.user.email ?? undefined);
+      // For $0 vows, update the draft to have zero stake before sealing
+      const draft = await ensureDraftVow();
+      if (!draft) throw new Error('Could not create vow. Please try again.');
 
-        const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
-        const { data: newVow, error: vowError } = await supabase.from('vows').insert({
-          user_id: currentSession.user.id,
-          raw_input: vow.rawInput,
-          refined_text: activeVowText,
-          witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
-          witness_phone: vow.witnessPhone || null,
-          witness_invite_token: vow.witnessInviteToken || crypto.randomUUID(),
-          stake_amount: 0,
-          consequence: 'none',
-          destination: 'none',
-          status: 'draft',
-          starts_at: new Date().toISOString(),
-          ends_at: endDate.toISOString(),
-        }).select().single();
-        if (vowError) throw new Error(`Vow creation failed: ${vowError.message}`);
-        vowData = newVow;
-        setVowId(vowData.id, vowData.witness_invite_token);
-      }
+      // Ensure stake is $0 on the draft
+      await supabase.from('vows').update({
+        stake_amount: 0,
+        consequence: 'none',
+        destination: 'none',
+      }).eq('id', draft.id).eq('status', 'draft');
 
-      // Refresh session for fresh token before edge function call
-      const { data: { session: sealSession } } = await supabase.auth.refreshSession();
-      if (!sealSession) {
-        setStep('auth');
-        setSealing(false);
-        return;
-      }
-
-      const sealUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`;
-      const sealRes = await fetch(sealUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${sealSession.access_token}`,
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        },
-        body: JSON.stringify({ vow_id: vowData.id }),
-      });
-      if (!sealRes.ok) {
-        const sealData = await sealRes.json().catch(() => null);
-        console.error('Seal failed:', sealData?.error || sealRes.status);
+      const sealed = await callSealVow(draft.id);
+      if (!sealed) {
+        throw new Error('Could not activate your vow. Please try again.');
       }
       router.push('/live');
     } catch (err) {
       console.error('Zero-stake seal error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');
+      sealingRef.current = false;
       setSealing(false);
     }
-  }, [vow, activeVowText, isSelfWitness, setVowId, sealing, router]);
+  }, [vow, ensureDraftVow, callSealVow, router]);
 
   const handleSealTap = () => {
     if (!oathChecked) return;
@@ -237,55 +256,14 @@ export default function SealPage() {
     setSealing(true);
     try {
       setError('');
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) {
-        setStep('auth');
-        setSealing(false);
-        return;
-      }
-
-      let vowData = null;
-
-      // Reuse existing draft vow if we already created one
-      if (vow.vowId) {
-        const { data: existing } = await supabase.from('vows')
-          .select('*')
-          .eq('id', vow.vowId)
-          .eq('status', 'draft')
-          .maybeSingle();
-        if (existing) vowData = existing;
-      }
-
-      if (!vowData) {
-        await ensurePublicUser(currentSession.user.id, currentSession.user.user_metadata, currentSession.user.email ?? undefined);
-
-        const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
-
-        const { data: newVow, error: vowError } = await supabase.from('vows').insert({
-          user_id: currentSession.user.id,
-          raw_input: vow.rawInput,
-          refined_text: activeVowText,
-          witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
-          witness_phone: vow.witnessPhone || null,
-          witness_invite_token: vow.witnessInviteToken || crypto.randomUUID(),
-          stake_amount: vow.stake.amount * 100,
-          consequence: vow.stake.consequence,
-          destination: vow.stake.destination,
-          status: 'draft',
-          starts_at: new Date().toISOString(),
-          ends_at: endDate.toISOString(),
-        }).select().single();
-
-        if (vowError) throw new Error(`Vow creation failed: ${vowError.message}`);
-        vowData = newVow;
-        setVowId(vowData.id, vowData.witness_invite_token);
-      }
+      const draft = await ensureDraftVow();
+      if (!draft) throw new Error('Could not create vow. Please try again.');
 
       // Mark vow as active directly (simulates successful payment + seal — no fake Stripe IDs)
       await supabase.from('vows').update({
         status: 'active',
         sealed_at: new Date().toISOString(),
-      }).eq('id', vowData.id);
+      }).eq('id', draft.id);
 
       handlePaymentSuccess();
     } catch (err) {
@@ -293,16 +271,17 @@ export default function SealPage() {
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setSealing(false);
     }
-  }, [vow, activeVowText, isSelfWitness, setVowId, sealing]);
+  }, [ensureDraftVow, sealing]);
 
   const handleAuthSuccess = async () => {
     setStep('review');
-    // Poll for session instead of blind setTimeout — OAuth callback may not have
-    // propagated the session cookie yet when this fires.
+    // Poll for session — OAuth callback may not have propagated yet
     const maxAttempts = 10;
     for (let i = 0; i < maxAttempts; i++) {
       const { data: { session: freshSession } } = await supabase.auth.getSession();
       if (freshSession) {
+        // Eagerly create draft so witness link resolves immediately
+        await ensureDraftVow();
         if (vow.stake.amount === 0) {
           handleZeroStakeSeal();
         } else {
@@ -318,37 +297,22 @@ export default function SealPage() {
   const handlePaymentSuccess = async () => {
     setStep('sealing');
 
+    // Silent retry: payment succeeded, so seal optimistically with retries
     if (vow.vowId) {
-      try {
-        const { data: { session: sealSession } } = await supabase.auth.refreshSession();
-        const sealUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`;
-        const sealRes = await fetch(sealUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${sealSession?.access_token}`,
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          },
-          body: JSON.stringify({ vow_id: vow.vowId }),
-        });
-        if (!sealRes.ok) {
-          const sealData = await sealRes.json().catch(() => null);
-          console.error('Failed to seal vow:', sealData?.error || sealRes.status);
-        }
-      } catch (sealErr) {
-        console.error('Failed to seal vow:', sealErr);
-        // Continue with animation — payment succeeded, seal can be retried server-side
+      const sealed = await callSealVow(vow.vowId);
+      if (!sealed) {
+        console.error('All seal retries failed after payment — cron will recover');
       }
     }
 
     // Seal animation sequence with cleanup refs
     setSealAnimPhase(1);
-    const t1 = setTimeout(() => setSealAnimPhase(2), 600);
-    const t2 = setTimeout(() => setSealAnimPhase(3), 1200);
+    const t1 = setTimeout(() => setSealAnimPhase(2), 800);
+    const t2 = setTimeout(() => setSealAnimPhase(3), 1600);
     const t3 = setTimeout(() => {
       setStep('done');
-      router.push('/live');
-    }, 2400);
+      router.push('/sent');
+    }, 3800);
     timersRef.current.push(t1, t2, t3);
   };
 
@@ -380,7 +344,7 @@ export default function SealPage() {
               className="text-center text-[22px] font-serif max-w-[280px] animate-fade-in"
               style={{ color: 'var(--gold)' }}
             >
-              I solemnly swear to keep my word this week.
+              {activeVowText ? `"${activeVowText}"` : 'Your vow is sealed.'}
             </p>
           )}
         </div>
@@ -523,7 +487,7 @@ export default function SealPage() {
           clientSecret={clientSecret}
           onSuccess={handlePaymentSuccess}
           onCancel={() => { setStep('review'); setSealing(false); }}
-          onSkip={async () => {
+          onSkip={isDevBypass ? async () => {
             // Testing bypass: seal the vow without capturing payment.
             // Clear the Stripe PI so verdict logic won't try to refund it.
             if (vow.vowId) {
@@ -533,7 +497,7 @@ export default function SealPage() {
               }).eq('id', vow.vowId);
             }
             handlePaymentSuccess();
-          }}
+          } : undefined}
         />
       )}
     </>

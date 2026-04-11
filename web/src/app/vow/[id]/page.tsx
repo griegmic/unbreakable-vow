@@ -451,8 +451,8 @@ export default function VowDetailPage() {
         </FadeUp>
       )}
 
-      {/* Fast-forward to verdict — testing */}
-      {!isTerminal && vow.witness_invite_token && (
+      {/* Fast-forward to verdict — testing only */}
+      {process.env.NODE_ENV === 'development' && !isTerminal && vow.witness_invite_token && (
         <FadeUp delay={0.35}>
           <div className="flex flex-col gap-2">
             <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>

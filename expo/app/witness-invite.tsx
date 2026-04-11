@@ -512,7 +512,7 @@ export default function WitnessInviteScreen() {
       footer={
         <>
           <PrimaryButton
-            label={accepting ? 'Accepting...' : 'I accept \u2014 hold them to it'}
+            label={accepting ? 'Accepting...' : `I accept \u2014 to hold ${makerName} to it and judge honestly`}
             onPress={handleAccept}
             disabled={!sworn || accepting}
             testID="witness-invite-accept"

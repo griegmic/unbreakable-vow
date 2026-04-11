@@ -137,10 +137,26 @@ export default function StakePage() {
         </div>
       </FadeUp>
 
+      {/* $0 escape hatch — de-emphasized per expert panel */}
+      <FadeUp delay={0.12}>
+        <div className="flex justify-center -mt-1">
+          <button
+            onClick={() => handleAmountSelect(0)}
+            className="text-[13px] font-medium py-1"
+            style={{ color: vow.stake.amount === 0 ? 'var(--gold)' : 'var(--text-muted)' }}
+          >
+            {vow.stake.amount === 0 ? '✓ Free vow — just my word' : 'or make a free vow'}
+          </button>
+        </div>
+      </FadeUp>
+
+      {vow.stake.amount > 0 && (
       <FadeUp delay={0.15}>
         <SectionLabel>IF YOU BREAK IT</SectionLabel>
       </FadeUp>
+      )}
 
+      {vow.stake.amount > 0 && (
       <FadeUp delay={0.2}>
         <div className="flex flex-col gap-2.5">
           {consequenceOptions.map((option) => {
@@ -178,8 +194,9 @@ export default function StakePage() {
           })}
         </div>
       </FadeUp>
+      )}
 
-      {destinations.length > 0 && (
+      {vow.stake.amount > 0 && destinations.length > 0 && (
         <FadeUp delay={0.25}>
           <div className="flex flex-col gap-2">
             <SectionLabel>{vow.stake.consequence === 'charity' ? 'CHOOSE A CAUSE' : 'CHOOSE A CAUSE'}</SectionLabel>
