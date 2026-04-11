@@ -313,11 +313,15 @@ export default function SealPage() {
   const handlePaymentSuccess = async () => {
     setStep('sealing');
 
-    // Silent retry: payment succeeded, so seal optimistically with retries
     if (vow.vowId) {
       const sealed = await callSealVow(vow.vowId);
       if (!sealed) {
-        console.error('All seal retries failed after payment — cron will recover');
+        // Payment captured but seal failed — show error, let user retry
+        setError('Your payment went through but we couldn\'t finish sealing. Please try again.');
+        setStep('review');
+        sealingRef.current = false;
+        setSealing(false);
+        return;
       }
     }
 
