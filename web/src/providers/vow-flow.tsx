@@ -68,6 +68,7 @@ interface VowFlowContextValue {
   setStake: (stake: StakeState) => void;
   updateConsequence: (consequence: ConsequenceType, destination: string) => void;
   setVowId: (vowId: string, witnessInviteToken: string | null) => void;
+  setWitnessInviteToken: (token: string) => void;
   setVowType: (type: 'self' | 'challenge') => void;
   setTarget: (name: string, phone: string) => void;
   setDeadline: (iso: string | null) => void;
@@ -121,6 +122,10 @@ export function VowFlowProvider({ children }: { children: React.ReactNode }) {
     setVow((c) => ({ ...c, vowId, witnessInviteToken }));
   }, []);
 
+  const setWitnessInviteToken = useCallback((token: string) => {
+    setVow((c) => ({ ...c, witnessInviteToken: token }));
+  }, []);
+
   const setVowType = useCallback((type: 'self' | 'challenge') => {
     setVow((c) => ({ ...c, vowType: type }));
   }, []);
@@ -153,8 +158,8 @@ export function VowFlowProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo(() => ({
     vow, activeVowText, isSelfWitness,
     setRawInput, setRefinedText, setWitnessType, setWitnessName, setWitnessPhone,
-    setStake, updateConsequence, setVowId, setVowType, setTarget, setDeadline, switchToSolo, resetVow, shouldSkipRefine,
-  }), [vow, activeVowText, isSelfWitness, setRawInput, setRefinedText, setWitnessType, setWitnessName, setWitnessPhone, setStake, updateConsequence, setVowId, setVowType, setTarget, setDeadline, switchToSolo, resetVow, shouldSkipRefine]);
+    setStake, updateConsequence, setVowId, setWitnessInviteToken, setVowType, setTarget, setDeadline, switchToSolo, resetVow, shouldSkipRefine,
+  }), [vow, activeVowText, isSelfWitness, setRawInput, setRefinedText, setWitnessType, setWitnessName, setWitnessPhone, setStake, updateConsequence, setVowId, setWitnessInviteToken, setVowType, setTarget, setDeadline, switchToSolo, resetVow, shouldSkipRefine]);
 
   return <VowFlowContext.Provider value={value}>{children}</VowFlowContext.Provider>;
 }

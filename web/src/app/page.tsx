@@ -13,6 +13,7 @@ export default function HomePage() {
   const { setRawInput, setRefinedText, setWitnessName } = useVowFlow();
   const { isAuthenticated, loading, session } = useAuth();
   const [input, setInput] = useState('');
+  const [isNewFlow, setIsNewFlow] = useState(false);
 
   // Pre-fill witness name from URL params (e.g. /?ref=witness&from=Joey)
   useEffect(() => {
@@ -31,6 +32,7 @@ export default function HomePage() {
       // ?guided=1 forces the full guided flow for returning users
       if (params.get('new') === '1' || params.get('guided') === '1') {
         localStorage.removeItem('unbreakable-vow-flow');
+        setIsNewFlow(true);
         window.history.replaceState({}, '', '/');
         return; // Stay on creation page
       }
@@ -70,7 +72,6 @@ export default function HomePage() {
   }, [isAuthenticated, loading, router, session]);
 
   // Show loading spinner only when redirecting (not when ?new=1 keeps us on creation page)
-  const isNewFlow = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('new') === '1';
   if (!loading && isAuthenticated && !isNewFlow) {
     return (
       <RitualScreen>

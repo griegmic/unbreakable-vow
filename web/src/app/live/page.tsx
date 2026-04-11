@@ -366,6 +366,12 @@ export default function LivePage() {
                 text={nudgeShareText}
                 buttonText={vow.witness_phone ? `Nudge ${vow.witness_name}` : `Send to ${vow.witness_name}`}
               />
+              <div className="flex items-center gap-2">
+                <div className="rounded-[10px] py-2 px-3 flex-1 min-w-0" style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}>
+                  <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{witnessUrl}</p>
+                </div>
+                <CopyLinkButton url={witnessUrl} />
+              </div>
             </div>
           </FadeUp>
         )}

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
+import { Clock } from 'lucide-react';
 import { createClient } from '@supabase/supabase-js';
 import WitnessInviteClient from './client';
 
@@ -8,8 +9,8 @@ const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 );
 
-const MAX_RETRIES = 3;
-const RETRY_INTERVAL = 2000;
+const MAX_RETRIES = 15;
+const RETRY_INTERVAL = 3000;
 
 export default function WitnessNotFound({ token }: { token: string }) {
   const [vow, setVow] = useState<any>(null);
@@ -72,16 +73,26 @@ export default function WitnessNotFound({ token }: { token: string }) {
     );
   }
 
+  // Friendly pending state — the vow maker may still be completing payment
   return (
     <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-      <div className="text-center px-6 flex flex-col items-center gap-3">
+      <div className="text-center px-6 flex flex-col items-center gap-4 max-w-[320px]">
         <div
-          className="w-8 h-8 border-2 rounded-full animate-spin"
+          className="w-14 h-14 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: 'rgba(212,162,79,0.12)', border: '1px solid rgba(212,162,79,0.2)' }}
+        >
+          <Clock className="w-6 h-6" style={{ color: 'var(--gold)' }} />
+        </div>
+        <h2 className="text-xl font-serif font-bold" style={{ color: 'var(--text)' }}>
+          Almost ready
+        </h2>
+        <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
+          Your friend is still setting up their vow. This page will update automatically.
+        </p>
+        <div
+          className="w-6 h-6 border-2 rounded-full animate-spin mt-2"
           style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }}
         />
-        <p className="text-[14px]" style={{ color: 'var(--text-muted)' }}>
-          Loading vow…
-        </p>
       </div>
     </div>
   );

@@ -4,10 +4,11 @@ import { useRouter } from 'next/navigation';
 import { Users, Shield } from 'lucide-react';
 import { RitualScreen, BackButton, TitleBlock, FadeUp } from '@/components/ui';
 import { useVowFlow } from '@/providers/vow-flow';
+import { formalizeVow } from '@/lib/vow-logic';
 
 export default function WitnessPage() {
   const router = useRouter();
-  const { vow, setWitnessName, setWitnessType, switchToSolo } = useVowFlow();
+  const { vow, setWitnessName, setWitnessType, setWitnessInviteToken, switchToSolo } = useVowFlow();
 
   useEffect(() => {
     if (!vow.rawInput) {
@@ -19,9 +20,22 @@ export default function WitnessPage() {
     }
   }, [vow.rawInput, router]);
 
-  const handleFriend = () => {
+  const handleFriend = async () => {
+    // Generate invite token now so we can share immediately
+    const token = crypto.randomUUID();
     setWitnessName('Your witness');
     setWitnessType('friend');
+    setWitnessInviteToken(token);
+
+    const vowText = (vow.refinedText || formalizeVow(vow.rawInput)).replace(/\.$/, '');
+    const witnessUrl = `${window.location.origin}/w/${token}`;
+    const shareText = `I just made a vow: "${vowText}" — I picked you to hold me accountable. Tap here to accept: ${witnessUrl}`;
+
+    // Pop native share sheet (non-blocking — navigate to seal regardless)
+    if (navigator.share) {
+      navigator.share({ text: shareText }).catch(() => {});
+    }
+
     router.push('/seal');
   };
 
