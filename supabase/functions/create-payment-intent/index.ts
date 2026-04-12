@@ -115,10 +115,10 @@ Deno.serve(async (req) => {
       console.log('[create-payment-intent] customer created:', customerId);
 
       // Upsert user row with stripe_customer_id
-      await supaRest('users', {
-        method: 'POST',
-        body: { id: user.id, stripe_customer_id: customerId },
-      });
+      await supaRest(
+        `users?id=eq.${user.id}`,
+        { method: 'PATCH', body: { stripe_customer_id: customerId } }
+      );
     }
 
     // Create PaymentIntent
@@ -134,10 +134,16 @@ Deno.serve(async (req) => {
     console.log('[create-payment-intent] PI created:', paymentIntent.id);
 
     // Save PI ID to vow
-    await supaRest(
+    const patchRes = await supaRest(
       `vows?id=eq.${vow_id}&user_id=eq.${user.id}`,
       { method: 'PATCH', body: { stripe_payment_intent_id: paymentIntent.id } }
     );
+    if (!patchRes.ok) {
+      console.error('[create-payment-intent] Failed to save PI to vow:', await patchRes.text());
+      return new Response(JSON.stringify({ error: 'Failed to link payment to vow' }), {
+        status: 500, headers: corsHeaders,
+      });
+    }
 
     return new Response(JSON.stringify({
       clientSecret: paymentIntent.client_secret,
