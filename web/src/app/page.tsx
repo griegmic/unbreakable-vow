@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles, User } from 'lucide-react';
 import { RitualScreen, HeaderBadge, PrimaryButton, FadeUp } from '@/components/ui';
+import { AuthModal } from '@/components/auth-modal';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -14,6 +15,7 @@ export default function HomePage() {
   const { isAuthenticated, loading, session } = useAuth();
   const [input, setInput] = useState('');
   const [isNewFlow, setIsNewFlow] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
 
   // Pre-fill witness name from URL params (e.g. /?ref=witness&from=Joey)
   useEffect(() => {
@@ -85,6 +87,19 @@ export default function HomePage() {
   const handleContinue = () => {
     if (!input.trim()) return;
     setRawInput(input.trim());
+
+    // Unauthenticated first-time users: auth → guided flow
+    if (!isAuthenticated) {
+      // Save vow text to localStorage so it survives OAuth redirect
+      try {
+        localStorage.setItem('auth_return_path', '/guided');
+        document.cookie = `auth_return_path=/guided;path=/;max-age=600;SameSite=Lax`;
+      } catch {}
+      setShowAuth(true);
+      return;
+    }
+
+    // Authenticated returning users: existing quick flow
     const analysis = analyzeVow(input.trim());
     if (analysis.type === 'already_good' || vowExamples.includes(input.trim())) {
       setRefinedText(input.trim());
@@ -92,6 +107,12 @@ export default function HomePage() {
     } else {
       router.push('/refine');
     }
+  };
+
+  const handleAuthSuccess = () => {
+    setShowAuth(false);
+    // VowFlowProvider already persisted rawInput to localStorage — redirect to guided
+    router.push('/guided');
   };
 
   const handleChip = (example: string) => {
@@ -191,6 +212,12 @@ export default function HomePage() {
           ))}
         </div>
       </FadeUp>
+
+      <AuthModal
+        visible={showAuth}
+        onDismiss={() => setShowAuth(false)}
+        onSuccess={handleAuthSuccess}
+      />
     </RitualScreen>
   );
 }

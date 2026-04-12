@@ -497,7 +497,7 @@ export default function QuickVowScreen() {
               <DateTimePicker
                 value={customDate}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display={Platform.OS === 'ios' ? 'compact' : 'default'}
                 minimumDate={new Date()}
                 themeVariant="dark"
                 onChange={(_: unknown, date?: Date) => {
@@ -508,11 +508,6 @@ export default function QuickVowScreen() {
                   }
                 }}
               />
-              {Platform.OS === 'ios' && (
-                <Pressable onPress={() => setShowDatePicker(false)} style={styles.datePickerDone}>
-                  <Text style={styles.datePickerDoneText}>Done</Text>
-                </Pressable>
-              )}
             </>
           ) : null}
           <Text style={styles.deadlineHint}>{formatDateShort(deadlineDate)}</Text>
