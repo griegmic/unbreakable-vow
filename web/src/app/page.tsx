@@ -1,11 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, User } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { RitualScreen, HeaderBadge, PrimaryButton, FadeUp } from '@/components/ui';
 import { AuthModal } from '@/components/auth-modal';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useVowFlow } from '@/providers/vow-flow';
 import { vowExamples, analyzeVow } from '@/lib/vow-logic';
 
@@ -132,16 +133,7 @@ export default function HomePage() {
       <FadeUp>
         <div className="flex items-center justify-between">
           <HeaderBadge />
-          {isAuthenticated && (
-            <button
-              onClick={() => router.push('/settings')}
-              aria-label="Account settings"
-              className="w-10 h-10 rounded-full flex items-center justify-center transition-opacity active:opacity-80"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <User className="w-[18px] h-[18px]" style={{ color: 'var(--text-secondary)' }} />
-            </button>
-          )}
+          {isAuthenticated && <HamburgerMenu />}
         </div>
       </FadeUp>
 

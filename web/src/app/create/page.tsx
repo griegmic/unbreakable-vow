@@ -1,7 +1,7 @@
 'use client';
 import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Sparkles, User, DollarSign, Calendar, Scale, Plus, CheckCircle } from 'lucide-react';
+import { Sparkles, User, DollarSign, Calendar, Scale, Plus, CheckCircle } from 'lucide-react';
 import {
   RitualScreen, RitualCard, PrimaryButton, ChoiceChip,
   OathCheckbox, VowPreview, SectionLabel, FadeUp,
@@ -9,6 +9,7 @@ import {
 import { AuthModal } from '@/components/auth-modal';
 import { PaymentModal } from '@/components/payment-form';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -571,25 +572,17 @@ function CreatePageContent() {
           </div>
         }
       >
-        {/* Back to Dashboard */}
+        {/* Header */}
         <FadeUp>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="flex items-center gap-2 py-2"
-          >
-            <ArrowLeft className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-            <span className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Dashboard</span>
-          </button>
-        </FadeUp>
-
-        {/* Title */}
-        <FadeUp delay={0.05}>
-          <h1
-            className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
-            style={{ color: 'var(--text)' }}
-          >
-            New Vow
-          </h1>
+          <div className="flex items-center justify-between">
+            <h1
+              className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
+              style={{ color: 'var(--text)' }}
+            >
+              New Vow
+            </h1>
+            <HamburgerMenu />
+          </div>
         </FadeUp>
 
         {/* Vow text input */}

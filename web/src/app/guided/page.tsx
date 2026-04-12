@@ -11,6 +11,7 @@ import {
 import { AuthModal } from '@/components/auth-modal';
 import { PaymentModal } from '@/components/payment-form';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -489,7 +490,10 @@ function GuidedContent() {
           }
         >
           <FadeUp>
-            <ProgressBar step={1} />
+            <div className="flex items-center gap-3">
+              <div className="flex-1"><ProgressBar step={1} /></div>
+              <HamburgerMenu />
+            </div>
           </FadeUp>
 
           <FadeUp delay={0.05}>
@@ -578,7 +582,10 @@ function GuidedContent() {
           }
         >
           <FadeUp>
-            <ProgressBar step={2} />
+            <div className="flex items-center gap-3">
+              <div className="flex-1"><ProgressBar step={2} /></div>
+              <HamburgerMenu />
+            </div>
           </FadeUp>
 
           <FadeUp delay={0.05}>
@@ -701,7 +708,10 @@ function GuidedContent() {
         }
       >
         <FadeUp>
-          <ProgressBar step={3} />
+          <div className="flex items-center gap-3">
+            <div className="flex-1"><ProgressBar step={3} /></div>
+            <HamburgerMenu />
+          </div>
         </FadeUp>
 
         {/* Ceremony display — the vow in gold serif */}
