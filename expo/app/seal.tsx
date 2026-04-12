@@ -3,7 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Check, Sparkles, Star } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Animated, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
@@ -94,7 +94,7 @@ export default function SealScreen() {
   const playSealAnimation = () => {
     Animated.timing(glow, {
       toValue: 1,
-      duration: 900,
+      duration: 500,
       useNativeDriver: false,
     }).start(() => {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -104,20 +104,29 @@ export default function SealScreen() {
         Animated.spring(checkScale, {
           toValue: 1,
           useNativeDriver: true,
-          speed: 8,
-          bounciness: 14,
+          speed: 12,
+          bounciness: 10,
         }),
         Animated.sequence([
-          Animated.timing(oathFlashOpacity, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.delay(600),
-          Animated.timing(oathFlashOpacity, { toValue: 0, duration: 500, useNativeDriver: true }),
+          Animated.timing(oathFlashOpacity, { toValue: 1, duration: 300, useNativeDriver: true }),
+          Animated.delay(300),
+          Animated.timing(oathFlashOpacity, { toValue: 0, duration: 300, useNativeDriver: true }),
         ]),
       ]).start();
 
-      setTimeout(() => {
+      setTimeout(async () => {
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        // Auto-share witness invite link (same as QuickVow)
+        if (!isSelfWitness && vow.witnessInviteToken) {
+          const inviteUrl = `https://unbreakablevow.app/w/${vow.witnessInviteToken}`;
+          try {
+            await Share.share({
+              message: `I just made a vow: "${activeVowText}" — I picked you to hold me accountable. Tap here to accept: ${inviteUrl}`,
+            });
+          } catch {}
+        }
         router.push({ pathname: '/live', params: { justSealed: '1' } });
-      }, 1600);
+      }, 700);
     });
   };
 

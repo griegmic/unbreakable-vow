@@ -326,12 +326,12 @@ export default function SealPage() {
 
     // Seal animation sequence with cleanup refs
     setSealAnimPhase(1);
-    const t1 = setTimeout(() => setSealAnimPhase(2), 800);
-    const t2 = setTimeout(() => setSealAnimPhase(3), 1600);
+    const t1 = setTimeout(() => setSealAnimPhase(2), 400);
+    const t2 = setTimeout(() => setSealAnimPhase(3), 800);
     const t3 = setTimeout(() => {
       setStep('done');
       router.push('/sent');
-    }, 3800);
+    }, 1400);
     timersRef.current.push(t1, t2, t3);
   };
 

@@ -4,6 +4,7 @@ import * as Linking from 'expo-linking';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { AlertCircle, ChevronLeft, ChevronRight, Clock, ExternalLink, FastForward, Flame, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, ThumbsUp, Trophy, User, UserMinus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import * as Clipboard from 'expo-clipboard';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { PrimaryButton, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
@@ -497,6 +498,15 @@ export default function LiveScreen() {
     ? `https://unbreakablevow.app/w/${vow.witnessInviteToken}`
     : null;
 
+  const [linkCopied, setLinkCopied] = useState(false);
+  const handleCopyLink = useCallback(async () => {
+    if (!witnessWebUrl) return;
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    await Clipboard.setStringAsync(witnessWebUrl);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
+  }, [witnessWebUrl]);
+
   const handleViewWitnessScreen = useCallback(() => {
     if (witnessWebUrl) {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -651,6 +661,15 @@ export default function LiveScreen() {
           <Share2 color="#0B0D11" size={16} />
           <Text style={styles.shareInviteText}>{vow.phoneNumber ? `Nudge ${vow.witnessName}` : `Send to ${vow.witnessName}`}</Text>
         </Pressable>
+        {witnessWebUrl ? (
+          <Pressable
+            onPress={() => { void handleCopyLink(); }}
+            style={({ pressed }) => [styles.copyLinkBtn, pressed && styles.copyLinkBtnPressed]}
+            testID="live-copy-link"
+          >
+            <Text style={styles.copyLinkText}>{linkCopied ? 'Copied!' : 'Copy invite link'}</Text>
+          </Pressable>
+        ) : null}
         <Pressable
           style={[styles.goSoloLink, goingSolo && { opacity: 0.5 }]}
           onPress={handleGoSolo}
@@ -1135,6 +1154,24 @@ const styles = StyleSheet.create({
     color: '#0B0D11',
     fontSize: 15,
     fontWeight: '700' as const,
+  },
+  copyLinkBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    minHeight: 40,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: palette.borderStrong,
+    backgroundColor: palette.surfaceElevated,
+  },
+  copyLinkBtnPressed: {
+    opacity: 0.8,
+  },
+  copyLinkText: {
+    color: palette.goldBright,
+    fontSize: 13,
+    fontWeight: '600' as const,
   },
   goSoloLink: {
     alignItems: 'center' as const,
