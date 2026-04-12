@@ -178,7 +178,7 @@ export default function LivePage() {
   const daysLeft = endsAt ? Math.ceil((endsAt.getTime() - now.getTime()) / 86400000) : null;
   const hoursLeft = endsAt ? Math.max(0, Math.floor((endsAt.getTime() - now.getTime()) / (1000 * 60 * 60))) : 0;
   const witnessUrl = vow.witness_invite_token && origin ? `${origin}/w/${vow.witness_invite_token}` : '';
-  const isSolo = vow.witness_name === 'Just me';
+  const isSolo = vow.witness_name === 'Just me' && !vow.witness_accepted_at;
 
   const witnessPending = !isSolo && !vow.witness_accepted_at && !vow.witness_declined;
   const witnessDeclined = !isSolo && vow.witness_declined;
@@ -205,6 +205,9 @@ export default function LivePage() {
 
   const stakeNudge = vow.stake_amount > 0 ? ` I put $${Math.round(vow.stake_amount / 100)} on it.` : '';
   const nudgeShareText = `Hey, did you see my vow? "${vow.refined_text.replace(/\.$/, '')}"${stakeNudge} I need you to accept:`;
+  const inviteShareText = vow.stake_amount > 0
+    ? `I vowed to ${vow.refined_text.replace(/\.$/, '').toLowerCase()} and put $${Math.round(vow.stake_amount / 100)} on it. You decide if I kept my word:`
+    : `I vowed to ${vow.refined_text.replace(/\.$/, '').toLowerCase()}. If I fail, you get to call me out:`;
 
   const handleTextWitness = () => {
     const phone = vow.witness_phone;
@@ -530,6 +533,34 @@ export default function LivePage() {
           </p>
         )}
       </FadeUp>
+
+      {/* Invite a witness — solo vows only */}
+      {isSolo && witnessUrl && (
+        <FadeUp delay={0.16}>
+          <button
+            onClick={async () => {
+              if (navigator.share) {
+                try { await navigator.share({ text: inviteShareText, url: witnessUrl }); } catch {}
+              } else {
+                await navigator.clipboard.writeText(`${inviteShareText} ${witnessUrl}`);
+                setActionMsg('Link copied');
+                setTimeout(() => setActionMsg(''), 2000);
+              }
+            }}
+            className="w-full rounded-[14px] p-3.5 flex items-center gap-3 text-left transition-all active:scale-[0.98]"
+            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+          >
+            <Eye className="w-[18px] h-[18px] shrink-0" style={{ color: 'var(--text-muted)' }} />
+            <div className="flex-1 min-w-0">
+              <span className="text-[14px] font-semibold block" style={{ color: 'var(--text-secondary)' }}>Invite a witness</span>
+              <span className="text-[12px] block mt-0.5" style={{ color: 'var(--text-muted)' }}>People keep vows 3x more with someone watching.</span>
+            </div>
+            <div onClick={(e) => e.stopPropagation()}>
+              <CopyLinkButton url={witnessUrl} />
+            </div>
+          </button>
+        </FadeUp>
+      )}
 
       {/* SMS button for friend witnesses */}
       {!isSolo && (
