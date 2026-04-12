@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle, LayoutGrid, ChevronRight, Flame, Zap, PartyPopper } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp, HeaderBadge } from '@/components/ui';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -153,7 +154,12 @@ export default function LivePage() {
       <RitualScreen
         footer={<PrimaryButton label="Make a vow" onPress={() => router.push('/create')} />}
       >
-        <FadeUp><HeaderBadge /></FadeUp>
+        <FadeUp>
+          <div className="flex items-center justify-between">
+            <HeaderBadge />
+            <HamburgerMenu />
+          </div>
+        </FadeUp>
         <FadeUp delay={0.1}>
           <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
             <p className="text-[17px] font-serif text-center" style={{ color: 'var(--text-secondary)' }}>
@@ -255,7 +261,12 @@ export default function LivePage() {
           </div>
         }
       >
-        <FadeUp><HeaderBadge /></FadeUp>
+        <FadeUp>
+          <div className="flex items-center justify-between">
+            <HeaderBadge />
+            <HamburgerMenu />
+          </div>
+        </FadeUp>
 
         {/* Status badge */}
         <FadeUp delay={0.05}>
@@ -319,7 +330,12 @@ export default function LivePage() {
           </div>
         }
       >
-        <FadeUp><HeaderBadge /></FadeUp>
+        <FadeUp>
+          <div className="flex items-center justify-between">
+            <HeaderBadge />
+            <HamburgerMenu />
+          </div>
+        </FadeUp>
 
         {/* Status badge */}
         <FadeUp delay={0.05}>
@@ -441,7 +457,12 @@ export default function LivePage() {
         </div>
       }
     >
-      <FadeUp><HeaderBadge /></FadeUp>
+      <FadeUp>
+          <div className="flex items-center justify-between">
+            <HeaderBadge />
+            <HamburgerMenu />
+          </div>
+        </FadeUp>
 
       {/* Status badge */}
       <FadeUp delay={0.05}>

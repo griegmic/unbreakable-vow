@@ -83,7 +83,8 @@ export default function SealPage() {
 
   // ── Shared: ensure a draft vow row exists ──
   const draftCreatingRef = useRef(false);
-  const ensureDraftVow = useCallback(async (): Promise<{ id: string } | null> => {
+  const draftPromiseRef = useRef<Promise<{ id: string } | null> | null>(null);
+  const ensureDraftVow = useCallback(async (): Promise<{ id: string; error?: string } | null> => {
     // Reuse existing draft
     if (vow.vowId) {
       const { data: existing } = await supabase.from('vows')
@@ -94,37 +95,52 @@ export default function SealPage() {
       if (existing) return existing;
     }
 
-    if (draftCreatingRef.current) return null;
+    // If a draft creation is already in flight, wait for it instead of returning null
+    if (draftCreatingRef.current && draftPromiseRef.current) {
+      return draftPromiseRef.current;
+    }
+
     draftCreatingRef.current = true;
 
-    try {
-      const { data: { session: s } } = await supabase.auth.getSession();
-      if (!s) return null;
+    const doCreate = async (): Promise<{ id: string; error?: string } | null> => {
+      try {
+        const { data: { session: s } } = await supabase.auth.getSession();
+        if (!s) return { id: '', error: 'Not signed in. Please sign in and try again.' };
 
-      await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
+        await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
 
-      const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
-      const { data: newVow, error: vowError } = await supabase.from('vows').insert({
-        user_id: s.user.id,
-        raw_input: vow.rawInput,
-        refined_text: activeVowText,
-        witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
-        witness_phone: vow.witnessPhone || null,
-        witness_invite_token: vow.witnessInviteToken || crypto.randomUUID(),
-        stake_amount: vow.stake.amount * 100,
-        consequence: vow.stake.consequence,
-        destination: vow.stake.destination,
-        status: 'draft',
-        starts_at: new Date().toISOString(),
-        ends_at: endDate.toISOString(),
-      }).select('id, witness_invite_token').single();
+        const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
+        // Always generate a fresh token to avoid UNIQUE constraint conflicts with old drafts
+        const { data: newVow, error: vowError } = await supabase.from('vows').insert({
+          user_id: s.user.id,
+          raw_input: vow.rawInput,
+          refined_text: activeVowText,
+          witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
+          witness_phone: vow.witnessPhone || null,
+          witness_invite_token: crypto.randomUUID(),
+          stake_amount: vow.stake.amount * 100,
+          consequence: vow.stake.consequence,
+          destination: vow.stake.destination,
+          status: 'draft',
+          starts_at: new Date().toISOString(),
+          ends_at: endDate.toISOString(),
+        }).select('id, witness_invite_token').single();
 
-      if (vowError) { console.error('Draft creation failed:', vowError.message); return null; }
-      setVowId(newVow.id, newVow.witness_invite_token);
-      return newVow;
-    } finally {
-      draftCreatingRef.current = false;
-    }
+        if (vowError) {
+          console.error('Draft creation failed:', vowError.message, vowError.details, vowError.hint);
+          return { id: '', error: `Vow creation failed: ${vowError.message}` };
+        }
+        setVowId(newVow.id, newVow.witness_invite_token);
+        return newVow;
+      } finally {
+        draftCreatingRef.current = false;
+        draftPromiseRef.current = null;
+      }
+    };
+
+    const promise = doCreate();
+    draftPromiseRef.current = promise;
+    return promise;
   }, [vow, activeVowText, isSelfWitness, setVowId]);
 
   // ── Eagerly create draft on page load when authed (makes witness link live) ──
@@ -181,7 +197,7 @@ export default function SealPage() {
       }
 
       const draft = await ensureDraftVow();
-      if (!draft) throw new Error('Could not create vow. Please try again.');
+      if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
 
       // Refresh session for fresh access token
       const { data: { session: freshSession } } = await supabase.auth.refreshSession();
@@ -241,7 +257,7 @@ export default function SealPage() {
 
       // For $0 vows, update the draft to have zero stake before sealing
       const draft = await ensureDraftVow();
-      if (!draft) throw new Error('Could not create vow. Please try again.');
+      if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
 
       const result = await callSealVow(draft.id, { skip_payment: true });
       if (!result.ok) {
@@ -272,7 +288,7 @@ export default function SealPage() {
     try {
       setError('');
       const draft = await ensureDraftVow();
-      if (!draft) throw new Error('Could not create vow. Please try again.');
+      if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
 
       // Mark vow as active directly (simulates successful payment + seal — no fake Stripe IDs)
       await supabase.from('vows').update({

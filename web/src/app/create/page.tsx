@@ -432,6 +432,13 @@ function CreatePageContent() {
         }
       >
         <FadeUp>
+          <div className="flex items-center justify-between">
+            <div />
+            <HamburgerMenu />
+          </div>
+        </FadeUp>
+
+        <FadeUp>
           <div className="flex justify-center mt-4">
             <div
               className="w-14 h-14 rounded-full flex items-center justify-center animate-scale-in"

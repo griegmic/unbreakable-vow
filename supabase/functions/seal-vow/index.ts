@@ -91,14 +91,11 @@ Deno.serve(async (req) => {
       });
     }
 
-    // If skip_payment flag is set, atomically zero out the stake server-side
+    // If skip_payment flag is set, clear Stripe PI but preserve stake_amount for display
     if (skip_payment) {
-      console.log('[seal-vow] skip_payment flag — zeroing stake atomically');
+      console.log('[seal-vow] skip_payment flag — clearing Stripe PI, preserving stake for display');
       const { error: skipErr } = await supabase.from('vows').update({
         stripe_payment_intent_id: null,
-        stake_amount: 0,
-        consequence: 'none',
-        destination: 'none',
       }).eq('id', vow_id);
       if (skipErr) {
         console.error('[seal-vow] skip_payment update failed:', skipErr);
@@ -107,12 +104,11 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      // Refresh vow data after update
-      vow.stake_amount = 0;
+      // Clear PI in local copy so Stripe block is skipped, but keep stake_amount intact
       vow.stripe_payment_intent_id = null;
     }
 
-    if (vow.stake_amount > 0) {
+    if (vow.stake_amount > 0 && !skip_payment) {
       // === EXISTING STRIPE LOGIC — DO NOT MODIFY ===
       if (!vow.stripe_payment_intent_id) {
         return new Response(JSON.stringify({ error: 'Payment not yet captured' }), {
@@ -137,8 +133,8 @@ Deno.serve(async (req) => {
       }
       // === END EXISTING LOGIC ===
     } else {
-      // $0 vow — skip Stripe entirely
-      console.log('$0 vow — skipping Stripe');
+      // $0 vow or skip_payment — skip Stripe entirely
+      console.log(skip_payment ? 'skip_payment — skipping Stripe, stake preserved for display' : '$0 vow — skipping Stripe');
     }
 
     const now = new Date().toISOString();
