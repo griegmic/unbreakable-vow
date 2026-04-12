@@ -1,7 +1,6 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
 import { RitualScreen, HeaderBadge, PrimaryButton, FadeUp } from '@/components/ui';
 import { AuthModal } from '@/components/auth-modal';
 import { useAuth } from '@/providers/auth-provider';
@@ -148,7 +147,7 @@ export default function HomePage() {
     <RitualScreen
       footer={
         <PrimaryButton
-          label="I'm in"
+          label="I vow it"
           onPress={handleContinue}
           disabled={!input.trim()}
         />
@@ -183,12 +182,9 @@ export default function HomePage() {
           className="rounded-[22px] p-4 flex flex-col gap-3"
           style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 16px 28px rgba(0,0,0,0.26)' }}
         >
-          <div className="flex items-center gap-2">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-            <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>
-              YOUR UNBREAKABLE VOW
-            </span>
-          </div>
+          <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--text-muted)' }}>
+            I WILL...
+          </span>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -203,29 +199,26 @@ export default function HomePage() {
             className="bg-transparent text-[17px] outline-none resize-none"
             style={{ color: 'var(--text)' }}
           />
-        </div>
-      </FadeUp>
-
-      <FadeUp delay={0.3}>
-        <div className="flex flex-wrap gap-[7px]">
-          {vowExamples.map((example) => (
-            <button
-              key={example}
-              onClick={() => handleChip(example)}
-              className="px-3 py-2 rounded-full transition-colors"
-              style={{
-                backgroundColor: input === example ? 'rgba(212,162,79,0.1)' : 'rgba(255,255,255,0.03)',
-                border: `1px solid ${input === example ? 'rgba(212,162,79,0.3)' : 'var(--border)'}`,
-              }}
-            >
-              <span
-                className="text-[12px] font-medium"
-                style={{ color: input === example ? 'var(--gold-bright)' : 'var(--text-secondary)' }}
+          <div className="flex flex-wrap gap-[7px]">
+            {vowExamples.map((example) => (
+              <button
+                key={example}
+                onClick={() => handleChip(example)}
+                className="px-3 py-2 rounded-full transition-colors"
+                style={{
+                  backgroundColor: input === example ? 'rgba(212,162,79,0.1)' : 'rgba(255,255,255,0.03)',
+                  border: `1px solid ${input === example ? 'rgba(212,162,79,0.3)' : 'var(--border)'}`,
+                }}
               >
-                {example}
-              </span>
-            </button>
-          ))}
+                <span
+                  className="text-[12px] font-medium"
+                  style={{ color: input === example ? 'var(--gold-bright)' : 'var(--text-secondary)' }}
+                >
+                  {example}
+                </span>
+              </button>
+            ))}
+          </div>
         </div>
       </FadeUp>
 
