@@ -44,6 +44,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
       <PaymentElement
         options={{
           layout: 'tabs',
+          wallets: { applePay: 'auto', googlePay: 'auto' },
         }}
       />
       {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
