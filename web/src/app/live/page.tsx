@@ -106,7 +106,7 @@ export default function LivePage() {
       const now = Date.now();
       setLastCheckIn(now);
       localStorage.setItem(`lastCheckIn-${vow.id}`, String(now));
-      const labels = { on_track: 'On track', struggling: 'Struggling', done_early: 'Done early' };
+      const labels = { on_track: 'On track', struggling: 'Struggling', done_early: 'Crushing it' };
       setActionMsg(`Checked in: ${labels[mood]}`);
       setTimeout(() => setActionMsg(''), 3000);
     } catch {
@@ -489,7 +489,7 @@ export default function LivePage() {
           {([
             { mood: 'on_track' as const, label: 'On track', Icon: Flame },
             { mood: 'struggling' as const, label: 'Struggling', Icon: Zap },
-            { mood: 'done_early' as const, label: 'Done early', Icon: PartyPopper },
+            { mood: 'done_early' as const, label: 'Crushing it', Icon: PartyPopper },
           ]).map(({ mood, label, Icon }) => (
             <button
               key={mood}

@@ -281,6 +281,19 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               <div className="flex flex-col gap-2.5">
                 <a
                   href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
+                  onClick={() => {
+                    // Track reciprocal CTA tap
+                    fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/audit_events`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+                        'Prefer': 'return=minimal',
+                      },
+                      body: JSON.stringify({ vow_id: vow.id, event_type: 'reciprocal_cta_tapped', actor_type: 'witness', metadata: {} }),
+                    }).catch(() => {});
+                  }}
                   className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
                   style={{
                     background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
@@ -566,9 +579,9 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             type="button"
             onClick={handleDecline}
             disabled={busy}
-            className="py-2 transition-opacity hover:opacity-70 disabled:opacity-40"
+            className="min-h-[44px] flex items-center justify-center transition-opacity hover:opacity-70 disabled:opacity-40"
           >
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>I&apos;ll pass</span>
+            <span className="text-[12px]" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>I&apos;ll pass</span>
           </button>
         </>
       }
@@ -593,7 +606,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       <FadeUp delay={0.08}>
         <TitleBlock
           title={`${makerFirstName} made a vow.`}
-          subtitle={vow.stake_amount > 0 ? "They put real money on it — and picked you to be the one who decides if they kept it." : "They put their word on the line — and picked you to be the one who decides if they kept it."}
+          subtitle={vow.stake_amount > 0 ? `${makerFirstName} put $${Math.round(vow.stake_amount / 100)} on the line — and named you the judge.` : `${makerFirstName} made a vow — and named you the judge.`}
         />
       </FadeUp>
 

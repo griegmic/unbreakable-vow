@@ -76,6 +76,8 @@ function CreatePageContent() {
   const [vowId, setVowId] = useState<string | null>(null);
   const [witnessToken, setWitnessToken] = useState<string | null>(null);
   const [sealed, setSealed] = useState(false);
+  const [showSealAnimation, setShowSealAnimation] = useState(false);
+  const [sealAnimationSkippable, setSealAnimationSkippable] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -244,6 +246,7 @@ function CreatePageContent() {
         }
         try { localStorage.setItem('quickvow-defaults', JSON.stringify({ stakeAmount, consequence, deadlineLabel })); } catch {}
         resetVow();
+        setShowSealAnimation(true);
         setSealed(true);
         return;
       }
@@ -308,6 +311,7 @@ function CreatePageContent() {
       }
     }
     resetVow();
+    setShowSealAnimation(true);
     setSealed(true);
   }, [vowId, resetVow]);
 
@@ -329,31 +333,93 @@ function CreatePageContent() {
     ? `${window.location.origin}/w/${witnessToken}`
     : '';
   const isSolo = !witnessName;
-  const shareText = `I just made a vow: "${formattedText.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept:`;
+  const truncatedVow = formattedText.replace(/\.$/, '').length > 60
+    ? formattedText.replace(/\.$/, '').slice(0, 57) + '...'
+    : formattedText.replace(/\.$/, '');
+  const shareText = stakeAmount > 0
+    ? `I made a vow: "${truncatedVow}" — $${stakeAmount} on the line and you're the judge →`
+    : `I made a vow: "${truncatedVow}" — and named you the judge →`;
+
+  // Analytics helper (fire-and-forget)
+  const trackEvent = useCallback((eventType: string) => {
+    if (!vowId) return;
+    supabase.from('audit_events').insert({
+      vow_id: vowId,
+      event_type: eventType,
+      actor_type: 'maker',
+      actor_id: session?.user?.id || null,
+      metadata: {},
+    }).then(() => {});
+  }, [vowId, session?.user?.id]);
+
+  // Seal animation lifecycle
+  useEffect(() => {
+    if (sealed && showSealAnimation) {
+      const skipTimer = setTimeout(() => setSealAnimationSkippable(true), 500);
+      const autoAdvance = setTimeout(() => setShowSealAnimation(false), 1800);
+      return () => { clearTimeout(skipTimer); clearTimeout(autoAdvance); };
+    }
+  }, [sealed, showSealAnimation]);
+
+  const handleSealAnimationTap = () => {
+    if (sealAnimationSkippable) setShowSealAnimation(false);
+  };
+
+  // Seal animation overlay
+  if (sealed && showSealAnimation) {
+    return (
+      <div
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 cursor-pointer"
+        style={{ backgroundColor: '#0A0A0F' }}
+        onClick={handleSealAnimationTap}
+      >
+        <p
+          className="text-[22px] font-serif font-medium leading-[30px] text-center animate-fade-in"
+          style={{ color: 'var(--gold)', textShadow: '0 0 40px rgba(212,162,79,0.3)' }}
+        >
+          &ldquo;{formattedText}&rdquo;
+        </p>
+        <p
+          className="text-[17px] font-semibold mt-6 animate-fade-in-delayed"
+          style={{ color: 'var(--text)', opacity: 0.9 }}
+        >
+          No turning back.
+        </p>
+      </div>
+    );
+  }
 
   if (sealed) {
+    const handleResetForAnother = () => {
+      setSealed(false);
+      setShowSealAnimation(false);
+      setSealAnimationSkippable(false);
+      setVowId(null);
+      setWitnessToken(null);
+      setClientSecret(null);
+      setVowText('');
+      setSuggestion('');
+      setWitnessName('');
+      setWitnessPhone('');
+      setShowNewWitness(false);
+      setOathChecked(false);
+      setError('');
+    };
+
     return (
       <RitualScreen
         footer={
           <div className="flex flex-col gap-2">
-            <PrimaryButton label="My Vows" onPress={() => router.push('/dashboard')} />
+            {isSolo ? (
+              <PrimaryButton label="The clock starts now" onPress={() => router.push('/live')} />
+            ) : (
+              <PrimaryButton label="The clock starts now" onPress={() => router.push('/live')} />
+            )}
             <button
-              onClick={() => {
-                setSealed(false);
-                setVowId(null);
-                setWitnessToken(null);
-                setClientSecret(null);
-                setVowText('');
-                setSuggestion('');
-                setWitnessName('');
-                setWitnessPhone('');
-                setShowNewWitness(false);
-                setOathChecked(false);
-                setError('');
-              }}
+              onClick={handleResetForAnother}
               className="min-h-[44px] flex items-center justify-center"
             >
-              <span className="text-[15px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Make another vow</span>
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Make another vow</span>
             </button>
           </div>
         }
@@ -372,12 +438,12 @@ function CreatePageContent() {
         <FadeUp delay={0.1}>
           <div className="text-center">
             <h1 className="text-[28px] font-bold font-serif" style={{ color: 'var(--text)' }}>
-              {isSolo ? 'Sealed.' : 'Sealed. Share it.'}
+              {isSolo ? 'Sealed.' : 'Your witness needs to see this.'}
             </h1>
             <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
               {isSolo
                 ? "Your vow is locked. You'll judge yourself when the time comes."
-                : 'Send the link to your witness — first to accept holds you to it.'}
+                : 'First person to accept holds you to it.'}
             </p>
           </div>
         </FadeUp>
@@ -386,21 +452,31 @@ function CreatePageContent() {
           <VowPreview text={formattedText} />
         </FadeUp>
 
+        {/* Share CTA — sole primary action when witness exists */}
         {!isSolo && witnessUrl && (
           <FadeUp delay={0.2}>
             <div className="flex flex-col gap-3">
-              <ShareButton url={witnessUrl} text={shareText} buttonText="Share with witness" />
+              <div onClick={() => trackEvent('share_initiated')}>
+                <ShareButton
+                  url={witnessUrl}
+                  text={shareText}
+                  buttonText="Share with your witness"
+                />
+              </div>
               <div
                 className="rounded-[16px] p-3 flex items-center gap-3"
                 style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
               >
                 <p className="flex-1 text-[12px] truncate" style={{ color: 'var(--text-muted)' }}>{witnessUrl}</p>
-                <CopyLinkButton url={witnessUrl} />
+                <div onClick={() => trackEvent('link_copied')}>
+                  <CopyLinkButton url={witnessUrl} />
+                </div>
               </div>
             </div>
           </FadeUp>
         )}
 
+        {/* Vow details card */}
         <FadeUp delay={0.25}>
           <RitualCard>
             <div className="flex flex-col gap-3">
@@ -420,15 +496,6 @@ function CreatePageContent() {
                 </div>
                 <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${stakeAmount}</span>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Ends</span>
-                </div>
-                <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                  {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                </span>
-              </div>
               {stakeAmount > 0 && (
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -438,6 +505,39 @@ function CreatePageContent() {
                   <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{destination}</span>
                 </div>
               )}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Verdict</span>
+                </div>
+                <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
+                  {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </span>
+              </div>
+            </div>
+          </RitualCard>
+        </FadeUp>
+
+        {/* What happens next — migrated from /sent */}
+        <FadeUp delay={0.3}>
+          <RitualCard>
+            <span className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>What happens next</span>
+            <div className="flex flex-col gap-3">
+              {[
+                { n: '1', text: isSolo ? 'Live your vow for the next 7 days.' : 'Your witness taps the link to accept.' },
+                { n: '2', text: isSolo ? "When time's up, you decide: kept or broken." : 'Live your vow. They\'re watching.' },
+                { n: '3', text: isSolo ? 'If broken, your stake goes to the cause.' : 'On verdict day, they call it: kept or broken.' },
+              ].map(({ n, text }) => (
+                <div key={n} className="flex items-start gap-3">
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center shrink-0 text-[12px] font-bold"
+                    style={{ backgroundColor: 'var(--surface-elevated)', color: 'var(--gold)' }}
+                  >
+                    {n}
+                  </div>
+                  <span className="text-[14px] leading-5" style={{ color: 'var(--text-secondary)' }}>{text}</span>
+                </div>
+              ))}
             </div>
           </RitualCard>
         </FadeUp>
@@ -622,9 +722,8 @@ function CreatePageContent() {
               <>
                 <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
 
-                {/* Consequence sentence */}
+                <SectionLabel>If you break it</SectionLabel>
                 <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
-                  If you break this vow,{' '}
                   <span
                     className="font-bold font-serif text-[17px]"
                     style={{ color: 'var(--gold)' }}
