@@ -1,7 +1,7 @@
 'use client';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users, Shield } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { RitualScreen, BackButton, TitleBlock, FadeUp } from '@/components/ui';
 import { useVowFlow } from '@/providers/vow-flow';
 import { formalizeVow } from '@/lib/vow-logic';
@@ -56,43 +56,42 @@ export default function WitnessPage() {
       </FadeUp>
 
       <FadeUp delay={0.1}>
-        <div className="flex flex-col gap-3">
-          <button
-            onClick={handleFriend}
-            className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98]"
-            style={{ backgroundColor: 'var(--surface)', border: '1.5px solid var(--border-strong)' }}
+        <button
+          onClick={handleFriend}
+          className="w-full rounded-[22px] p-[18px] flex items-center gap-3.5 text-left transition-all active:scale-[0.98]"
+          style={{
+            backgroundColor: 'var(--surface)',
+            border: '1.5px solid var(--border-strong)',
+            boxShadow: '0 6px 14px rgba(212,162,79,0.12)',
+          }}
+        >
+          <div
+            className="w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0"
+            style={{ backgroundColor: 'rgba(212,162,79,0.1)', border: '1px solid var(--border-strong)' }}
           >
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: 'rgba(212,162,79,0.15)' }}
-            >
-              <Users className="w-6 h-6" style={{ color: 'var(--gold)' }} />
-            </div>
-            <div>
-              <span className="text-[16px] font-semibold block" style={{ color: 'var(--text)' }}>A friend</span>
-              <span className="text-[13px] mt-0.5 block" style={{ color: 'var(--text-secondary)' }}>
-                Share a link — they hold you to it
-              </span>
-            </div>
-          </button>
+            <Users className="w-[22px] h-[22px]" style={{ color: 'var(--gold-bright)' }} />
+          </div>
+          <div className="flex-1">
+            <span className="text-[17px] font-bold font-serif block tracking-[-0.2px]" style={{ color: 'var(--gold-bright)' }}>Text a friend</span>
+            <span className="text-[13px] mt-0.5 block leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
+              They&apos;ll decide if you kept your word
+            </span>
+          </div>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold-bright)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
+      </FadeUp>
 
+      <FadeUp delay={0.15}>
+        <div className="flex-1 flex items-end justify-center pt-5 pb-6">
           <button
             onClick={handleSolo}
-            className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98]"
-            style={{ backgroundColor: 'var(--surface)', border: '1.5px solid var(--border)' }}
+            className="py-2 px-4"
           >
-            <div
-              className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-              style={{ backgroundColor: 'rgba(212,162,79,0.08)' }}
-            >
-              <Shield className="w-6 h-6" style={{ color: 'var(--text-muted)' }} />
-            </div>
-            <div>
-              <span className="text-[16px] font-semibold block" style={{ color: 'var(--text)' }}>Just me</span>
-              <span className="text-[13px] mt-0.5 block" style={{ color: 'var(--text-secondary)' }}>
-                You&apos;ll be your own judge
-              </span>
-            </div>
+            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+              I&apos;ll hold myself accountable
+            </span>
           </button>
         </div>
       </FadeUp>
