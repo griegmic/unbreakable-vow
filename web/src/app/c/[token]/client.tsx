@@ -566,8 +566,7 @@ export default function ChallengeInviteClient({
 
         <FadeUp delay={0.08}>
           <p className="text-[15px] leading-[22px] text-center" style={{ color: 'var(--text-secondary)' }}>
-            Prove you mean it &mdash; stake something on yourself.
-            If you fail, it goes to charity. Succeed and you get it back.
+            Prove you mean it &mdash; stake something on yourself. If you fail, it goes to charity. Succeed and you get it back.
           </p>
         </FadeUp>
 

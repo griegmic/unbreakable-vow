@@ -263,6 +263,15 @@ export default function DashboardPage() {
     return 'maker';
   };
 
+  // Route accepted challenges (where I'm the target) to /c/[token] for the full
+  // active dare experience (text-darer button, countdown, etc.)
+  const getVowDetailPath = (vow: VowRow): string => {
+    if (vow.vow_type === 'challenge' && acceptedChallengeIds.has(vow.id) && vow.challenge_invite_token) {
+      return `/c/${vow.challenge_invite_token}`;
+    }
+    return `/vow/${vow.id}`;
+  };
+
   if (loading || authLoading) {
     return (
       <RitualScreen>
@@ -393,7 +402,7 @@ export default function DashboardPage() {
                   key={v.id}
                   vow={v}
                   role={role}
-                  onTap={() => router.push(`/vow/${v.id}`)}
+                  onTap={() => router.push(getVowDetailPath(v))}
                   onAcceptChallenge={() => handleAcceptChallenge(v.id)}
                   onDeclineChallenge={() => handleDeclineChallenge(v.id)}
                 />
@@ -413,7 +422,7 @@ export default function DashboardPage() {
                 key={v.id}
                 vow={v}
                 role={getRoleForVow(v, 'mine')}
-                onTap={() => router.push(`/vow/${v.id}`)}
+                onTap={() => router.push(getVowDetailPath(v))}
               />
             ))}
           </div>
@@ -447,7 +456,7 @@ export default function DashboardPage() {
                 key={v.id}
                 vow={v}
                 role={getRoleForVow(v, 'mine')}
-                onTap={() => router.push(`/vow/${v.id}`)}
+                onTap={() => router.push(getVowDetailPath(v))}
               />
             ))}
           </div>

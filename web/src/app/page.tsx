@@ -92,7 +92,7 @@ export default function HomePage() {
     if (!isAuthenticated) {
       // Save vow text to localStorage so it survives OAuth redirect
       try {
-        localStorage.setItem('auth_return_path', '/guided');
+        localStorage.setItem('auth-return-path', '/guided');
         document.cookie = `auth_return_path=/guided;path=/;max-age=600;SameSite=Lax`;
       } catch {}
       setShowAuth(true);
