@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { vow_id } = await req.json();
+    const { vow_id, skip_payment } = await req.json();
     if (!vow_id) {
       return new Response(JSON.stringify({ error: 'vow_id required' }), {
         status: 400,
@@ -89,6 +89,27 @@ Deno.serve(async (req) => {
         status: 409,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // If skip_payment flag is set, atomically zero out the stake server-side
+    if (skip_payment) {
+      console.log('[seal-vow] skip_payment flag — zeroing stake atomically');
+      const { error: skipErr } = await supabase.from('vows').update({
+        stripe_payment_intent_id: null,
+        stake_amount: 0,
+        consequence: 'none',
+        destination: 'none',
+      }).eq('id', vow_id);
+      if (skipErr) {
+        console.error('[seal-vow] skip_payment update failed:', skipErr);
+        return new Response(JSON.stringify({ error: 'Could not skip payment' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // Refresh vow data after update
+      vow.stake_amount = 0;
+      vow.stripe_payment_intent_id = null;
     }
 
     if (vow.stake_amount > 0) {

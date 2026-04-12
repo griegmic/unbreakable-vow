@@ -9,6 +9,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,11 +65,19 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
       {onSkip && (
         <button
           type="button"
-          onClick={onSkip}
-          className="w-full min-h-[48px] rounded-2xl flex items-center justify-center transition-transform active:scale-[0.975]"
+          disabled={loading || skipping}
+          onClick={async () => {
+            setSkipping(true);
+            try { await onSkip(); } finally { setSkipping(false); }
+          }}
+          className="w-full min-h-[48px] rounded-2xl flex items-center justify-center transition-transform active:scale-[0.975] disabled:opacity-40"
           style={{ border: '1px dashed rgba(212,162,79,0.3)', background: 'rgba(212,162,79,0.06)' }}
         >
-          <span className="text-[14px] font-semibold" style={{ color: 'var(--gold)' }}>Skip payment</span>
+          {skipping ? (
+            <div className="w-5 h-5 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <span className="text-[14px] font-semibold" style={{ color: 'var(--gold)' }}>Skip payment</span>
+          )}
         </button>
       )}
       <button
