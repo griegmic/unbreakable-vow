@@ -102,10 +102,17 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
     let returnPath = window.location.pathname;
     if (returnPath === '/') {
       try {
-        const flow = localStorage.getItem('unbreakable-vow-flow');
-        if (flow) {
-          const parsed = JSON.parse(flow);
-          if (parsed.rawInput) returnPath = '/refine';
+        // Use the pre-determined destination (set by handleContinue)
+        const storedPath = localStorage.getItem('auth-return-path');
+        if (storedPath) {
+          returnPath = storedPath;
+        } else {
+          // Fallback: check flow state
+          const flow = localStorage.getItem('unbreakable-vow-flow');
+          if (flow) {
+            const parsed = JSON.parse(flow);
+            if (parsed.rawInput) returnPath = parsed.refinedText ? '/stake' : '/refine';
+          }
         }
       } catch {}
     }

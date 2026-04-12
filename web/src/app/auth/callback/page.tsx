@@ -62,7 +62,7 @@ export default function AuthCallbackPage() {
           const stored = localStorage.getItem('unbreakable-vow-flow');
           if (stored) {
             const parsed = JSON.parse(stored);
-            if (parsed.rawInput) return parsed.refinedText ? '/seal' : '/refine';
+            if (parsed.rawInput) return parsed.refinedText ? '/stake' : '/refine';
           }
         } catch {}
         return '/dashboard';

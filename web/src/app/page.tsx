@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
 import { RitualScreen, HeaderBadge, PrimaryButton, FadeUp } from '@/components/ui';
@@ -17,6 +17,7 @@ export default function HomePage() {
   const [input, setInput] = useState('');
   const [isNewFlow, setIsNewFlow] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const inlineAuthRef = useRef(false);
 
   // Pre-fill witness name from URL params (e.g. /?ref=witness&from=Joey)
   useEffect(() => {
@@ -40,6 +41,16 @@ export default function HomePage() {
         return; // Stay on creation page
       }
 
+      // If we just came from auth, use the stored return path (don't race with handleAuthSuccess)
+      try {
+        const returnPath = localStorage.getItem('auth-return-path');
+        if (returnPath) {
+          localStorage.removeItem('auth-return-path');
+          router.replace(returnPath);
+          return;
+        }
+      } catch {}
+
       // Don't redirect to dashboard if user has an in-progress vow creation
       try {
         const flow = localStorage.getItem('unbreakable-vow-flow');
@@ -47,7 +58,7 @@ export default function HomePage() {
           const parsed = JSON.parse(flow);
           if (parsed.rawInput) {
             // Resume the vow flow where they left off
-            router.replace(parsed.vowId ? '/live' : parsed.refinedText ? '/seal' : '/refine');
+            router.replace(parsed.vowId ? '/live' : parsed.refinedText ? '/stake' : '/refine');
             return;
           }
         }
@@ -69,13 +80,13 @@ export default function HomePage() {
         router.replace('/dashboard');
       }
     }
-    if (!loading && isAuthenticated) {
+    if (!loading && isAuthenticated && !inlineAuthRef.current) {
       redirectIfAuthenticated();
     }
   }, [isAuthenticated, loading, router, session]);
 
   // Show loading spinner only when redirecting (not when ?new=1 keeps us on creation page)
-  if (!loading && isAuthenticated && !isNewFlow) {
+  if (!loading && isAuthenticated && !isNewFlow && !inlineAuthRef.current) {
     return (
       <RitualScreen>
         <div className="flex items-center justify-center min-h-[60vh]">
@@ -87,33 +98,46 @@ export default function HomePage() {
 
   const handleContinue = () => {
     if (!input.trim()) return;
-    setRawInput(input.trim());
+    const trimmed = input.trim();
+    setRawInput(trimmed);
 
-    // Unauthenticated first-time users: auth → guided flow
+    // Determine destination: good vows skip /refine, vague ones go there
+    const isGoodVow = analyzeVow(trimmed).type === 'already_good' || vowExamples.includes(trimmed);
+    const destination = isGoodVow ? '/stake' : '/refine';
+
+    // If vow is good, also set refinedText so downstream pages have it
+    if (isGoodVow) {
+      setRefinedText(trimmed);
+    }
+
+    // Unauthenticated first-time users: auth → then route to destination
     if (!isAuthenticated) {
-      // Save vow text to localStorage so it survives OAuth redirect
       try {
-        localStorage.setItem('auth-return-path', '/guided');
-        document.cookie = `auth_return_path=/guided;path=/;max-age=600;SameSite=Lax`;
+        localStorage.setItem('auth-return-path', destination);
+        document.cookie = `auth_return_path=${encodeURIComponent(destination)};path=/;max-age=600;SameSite=Lax`;
       } catch {}
+      inlineAuthRef.current = true;
       setShowAuth(true);
       return;
     }
 
-    // Authenticated returning users: existing quick flow
-    const analysis = analyzeVow(input.trim());
-    if (analysis.type === 'already_good' || vowExamples.includes(input.trim())) {
-      setRefinedText(input.trim());
-      router.push('/stake');
-    } else {
-      router.push('/refine');
-    }
+    // Authenticated returning users: go directly
+    router.push(destination);
   };
 
   const handleAuthSuccess = () => {
     setShowAuth(false);
-    // VowFlowProvider already persisted rawInput to localStorage — redirect to guided
-    router.push('/guided');
+    inlineAuthRef.current = false;
+    // Read the destination we stored before auth
+    let dest = '/refine';
+    try {
+      const stored = localStorage.getItem('auth-return-path');
+      if (stored) {
+        dest = stored;
+        localStorage.removeItem('auth-return-path');
+      }
+    } catch {}
+    router.push(dest);
   };
 
   const handleChip = (example: string) => {
