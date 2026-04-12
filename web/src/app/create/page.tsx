@@ -474,7 +474,7 @@ function CreatePageContent() {
                 <ShareButton
                   url={witnessUrl}
                   text={shareText}
-                  buttonText="Share with your witness"
+                  buttonText={`Send to ${witnessName}`}
                 />
               </div>
               <div
@@ -672,24 +672,14 @@ function CreatePageContent() {
               </div>
             )}
             {(showNewWitness || recentWitnesses.length === 0) && (
-              <div className="flex flex-col gap-2">
-                <input
-                  type="text"
-                  value={witnessName}
-                  onChange={(e) => setWitnessName(e.target.value)}
-                  placeholder="Witness name"
-                  className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                  style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-                />
-                <input
-                  type="tel"
-                  value={witnessPhone}
-                  onChange={(e) => setWitnessPhone(e.target.value)}
-                  placeholder="Phone number"
-                  className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                  style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-                />
-              </div>
+              <input
+                type="text"
+                value={witnessName}
+                onChange={(e) => setWitnessName(e.target.value)}
+                placeholder="Name your witness"
+                className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
+                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+              />
             )}
           </RitualCard>
         </FadeUp>
