@@ -13,7 +13,6 @@ import {
   TitleBlock,
 } from '@/components/vow-ui';
 import {
-  analyzeVow,
   generateSuggestion,
   getContextualSuggestions,
   palette,
@@ -55,17 +54,10 @@ export default function RefineScreen() {
     const trimmed = suggestionText.trim();
     if (!trimmed) return;
 
-    const localAnalysis = analyzeVow(trimmed);
-    if (localAnalysis.type === 'vague') {
-      setVagueError('Try adding a number and a time window.');
-      triggerShake();
-      return;
-    }
-
     setVagueError('');
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     continueWith(trimmed);
-  }, [suggestionText, triggerShake, continueWith]);
+  }, [suggestionText, continueWith]);
 
   const handleKeepOriginal = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -83,7 +75,7 @@ export default function RefineScreen() {
             testID="refine-submit"
           />
           <SecondaryButton
-            label="Keep my original wording"
+            label="Nah, I'll keep mine"
             onPress={handleKeepOriginal}
             testID="refine-keep-original"
           />
@@ -122,17 +114,17 @@ export default function RefineScreen() {
       <RitualCard>
         <View style={styles.guidanceHeader}>
           <Sparkles color={palette.goldBright} size={16} />
-          <Text style={styles.guidanceTitle}>Strong vows have:</Text>
+          <Text style={styles.guidanceTitle}>Bulletproof vows have three things:</Text>
         </View>
         <View style={styles.guidanceList}>
           <Text style={styles.guidanceLine}>
-            <Text style={styles.guidanceBold}>A clear action</Text> — what exactly will you do or not do?
+            <Text style={styles.guidanceBold}>Something specific</Text> — what exactly will you do or not do?
           </Text>
           <Text style={styles.guidanceLine}>
-            <Text style={styles.guidanceBold}>A finish line</Text> — a number, a threshold, or a clear "done"
+            <Text style={styles.guidanceBold}>A deadline</Text> — when does your witness check?
           </Text>
           <Text style={styles.guidanceLine}>
-            <Text style={styles.guidanceBold}>A time window</Text> — when does your witness check?
+            <Text style={styles.guidanceBold}>A way to prove it</Text> — how will they know you did it?
           </Text>
         </View>
       </RitualCard>

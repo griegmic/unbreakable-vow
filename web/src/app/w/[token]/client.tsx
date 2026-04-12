@@ -279,38 +279,38 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </FadeUp>
             <FadeUp delay={0.45}>
               <div className="flex flex-col gap-2.5">
+                <a
+                  href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
+                  className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                    boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                  }}
+                >
+                  <div className="min-h-[56px] flex items-center justify-center px-5">
+                    <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                      Your move &mdash; make a vow and pick {makerLabel} to judge you
+                    </span>
+                  </div>
+                </a>
                 {makerPhone && (
                   <button
                     type="button"
                     onClick={handleTextMaker}
                     className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
                     style={{
-                      background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                      boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border-strong)',
                     }}
                   >
-                    <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-                      <MessageCircle className="w-[18px] h-[18px]" color="#0B0D11" />
-                      <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                    <div className="min-h-[50px] flex items-center justify-center gap-2 px-5">
+                      <MessageCircle className="w-[16px] h-[16px]" style={{ color: 'var(--gold-bright)' }} />
+                      <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
                         Tell {makerLabel} you&apos;re watching
                       </span>
                     </div>
                   </button>
                 )}
-                <a
-                  href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
-                  className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
-                  style={{
-                    backgroundColor: 'var(--surface)',
-                    border: '1px solid var(--border-strong)',
-                  }}
-                >
-                  <div className="min-h-[50px] flex items-center justify-center px-5">
-                    <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                      Your turn &mdash; make a vow and pick {makerLabel} to hold you to it
-                    </span>
-                  </div>
-                </a>
               </div>
             </FadeUp>
           </>
@@ -513,7 +513,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               >
                 <div className="min-h-[50px] flex items-center justify-center px-5">
                   <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                    Your turn &mdash; make a vow and pick {makerLabel} to hold you to it
+                    Your move &mdash; make a vow and pick {makerLabel} to judge you
                   </span>
                 </div>
               </a>
@@ -558,7 +558,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       footer={
         <>
           <PrimaryButton
-            label={`I accept — to hold ${makerLabel} to it and judge honestly`}
+            label={`I'm in — I'll judge ${makerLabel} honestly`}
             onPress={handleAccept}
             loading={busy}
           />
@@ -568,7 +568,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             disabled={busy}
             className="py-2 transition-opacity hover:opacity-70 disabled:opacity-40"
           >
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>I can&apos;t do this</span>
+            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>I&apos;ll pass</span>
           </button>
         </>
       }
@@ -584,7 +584,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
           >
             <Eye className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
             <span className="text-[11px] font-bold tracking-[1.5px] uppercase" style={{ color: 'var(--gold)' }}>
-              YOU&apos;VE BEEN CHOSEN AS A WITNESS
+              YOU&apos;RE THE WITNESS
             </span>
           </div>
         </div>
@@ -641,7 +641,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             {[
               { num: '1', text: `${makerFirstName} works on their vow` },
               { num: '2', text: `We'll remind you when it's time to judge` },
-              { num: '3', text: 'You deliver your honest verdict — no favors, no grudges' },
+              { num: '3', text: 'You deliver your verdict.' },
             ].map((step) => (
               <div key={step.num} className="flex items-start gap-2.5">
                 <div

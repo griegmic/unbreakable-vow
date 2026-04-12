@@ -31,10 +31,10 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade' }}>
       <Stack.Screen name="index" />
-      <Stack.Screen name="refine" />
-      <Stack.Screen name="witness" />
-      <Stack.Screen name="stake" />
-      <Stack.Screen name="seal" />
+      <Stack.Screen name="refine" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="witness" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="stake" options={{ animation: 'slide_from_right' }} />
+      <Stack.Screen name="seal" options={{ animation: 'slide_from_right' }} />
 
       <Stack.Screen name="dashboard" />
       <Stack.Screen name="vow-detail" />

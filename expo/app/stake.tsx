@@ -91,8 +91,8 @@ export default function StakeScreen() {
   const amountHint = useMemo(() => {
     if (amount === 10) return 'A nudge. Better than nothing.';
     if (amount === 25) return 'Enough to sting.';
-    if (amount === 50) return 'Serious without being reckless.';
-    if (amount === 100) return 'You really mean it.';
+    if (amount === 50) return 'Now we\'re talking.';
+    if (amount === 100) return 'You actually mean it.';
     return '';
   }, [amount]);
 
@@ -122,7 +122,7 @@ export default function StakeScreen() {
       <BackButton />
       <TitleBlock
         title="Set the stakes."
-        subtitle="Pick an amount you'd hate to lose."
+        subtitle="How much skin are you putting in?"
       />
       <RitualCard>
         <Animated.View style={[styles.amountDisplay, { transform: [{ scale: scaleAnim }] }]}>
@@ -147,7 +147,7 @@ export default function StakeScreen() {
       </RitualCard>
 
       <RitualCard>
-        <Text style={styles.sectionTitle}>Where does it go if you fail?</Text>
+        <Text style={styles.sectionTitle}>When you break the vow, where does the money go?</Text>
         {[
           { id: 'charity' as const, label: 'A cause you believe in', description: 'Your money does some good.', Icon: HeartHandshake },
           { id: 'anti' as const, label: 'A cause you hate', description: 'Maximum pain. Maximum motivation.', Icon: Flame },
@@ -258,7 +258,7 @@ export default function StakeScreen() {
           <ShieldCheck color={palette.textMuted} size={16} />
         </View>
         <Text style={styles.paymentText}>
-          Secure payment via Stripe. Refunded in full if you keep your vow.
+          You get it all back when you keep your vow.
         </Text>
       </View>
     </RitualScreen>

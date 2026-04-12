@@ -56,22 +56,29 @@ export default function HomeScreen() {
 
   useEffect(() => {
     console.log('[HomeScreen] mounted, starting entrance animations');
-    Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeIn, { toValue: 1, duration: 500, useNativeDriver: true }),
-        Animated.timing(slideUp, { toValue: 0, duration: 500, useNativeDriver: true }),
+    Animated.parallel([
+      Animated.timing(fadeIn, { toValue: 1, duration: 500, useNativeDriver: true }),
+      Animated.timing(slideUp, { toValue: 0, duration: 500, useNativeDriver: true }),
+      Animated.sequence([
+        Animated.delay(80),
+        Animated.parallel([
+          Animated.timing(heroFade, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(heroSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
+        ]),
       ]),
-      Animated.parallel([
-        Animated.timing(heroFade, { toValue: 1, duration: 450, useNativeDriver: true }),
-        Animated.timing(heroSlide, { toValue: 0, duration: 450, useNativeDriver: true }),
+      Animated.sequence([
+        Animated.delay(160),
+        Animated.parallel([
+          Animated.timing(inputFade, { toValue: 1, duration: 400, useNativeDriver: true }),
+          Animated.timing(inputSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
+        ]),
       ]),
-      Animated.parallel([
-        Animated.timing(inputFade, { toValue: 1, duration: 400, useNativeDriver: true }),
-        Animated.timing(inputSlide, { toValue: 0, duration: 400, useNativeDriver: true }),
-      ]),
-      Animated.parallel([
-        Animated.timing(ctaFade, { toValue: 1, duration: 350, useNativeDriver: true }),
-        Animated.timing(ctaSlide, { toValue: 0, duration: 350, useNativeDriver: true }),
+      Animated.sequence([
+        Animated.delay(240),
+        Animated.parallel([
+          Animated.timing(ctaFade, { toValue: 1, duration: 350, useNativeDriver: true }),
+          Animated.timing(ctaSlide, { toValue: 0, duration: 350, useNativeDriver: true }),
+        ]),
       ]),
     ]).start();
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -156,7 +163,7 @@ export default function HomeScreen() {
               { opacity: inputFade, transform: [{ translateY: inputSlide }] },
             ]}
           >
-            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>YOUR UNBREAKABLE VOW</Text>
+            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>I WILL...</Text>
             <TextInput
               ref={inputRef}
               style={styles.input}

@@ -34,14 +34,12 @@ export default function SealScreen() {
     }
   }, [vow.witnessName, vow.witnessType]);
 
-  const [sworn, setSworn] = useState<boolean>(false);
   const [sealed, setSealed] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [paidVowId, setPaidVowId] = useState<string | null>(null);
+  const [smsExpanded, setSmsExpanded] = useState<boolean>(false);
   const glow = useRef(new Animated.Value(0)).current;
   const checkScale = useRef(new Animated.Value(0)).current;
-  const swearGlow = useRef(new Animated.Value(0)).current;
-  const checkboxScale = useRef(new Animated.Value(1)).current;
   const oathFlashOpacity = useRef(new Animated.Value(0)).current;
 
   const [authSheetVisible, setAuthSheetVisible] = useState<boolean>(false);
@@ -62,8 +60,6 @@ export default function SealScreen() {
     }
     return getVowVerdictDate(vow.rawInput);
   }, [vow.deadlineIso, vow.rawInput]);
-
-  const brokenLabel = `Donated to ${vow.stake.destination}`;
 
   const hasWitnessPhone = !isSelfWitness && !!vow.phoneNumber;
   const smsPreview = useMemo(() => {
@@ -94,24 +90,6 @@ export default function SealScreen() {
       console.log('[SealScreen] push registration failed:', err);
     }
   }, []);
-
-  const handleSwear = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSworn(true);
-    Animated.parallel([
-      Animated.timing(swearGlow, { toValue: 1, duration: 600, useNativeDriver: false }),
-      Animated.sequence([
-        Animated.timing(checkboxScale, { toValue: 1.2, duration: 150, useNativeDriver: true }),
-        Animated.spring(checkboxScale, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 10 }),
-      ]),
-    ]).start();
-  };
-
-  const handleUnswear = () => {
-    void Haptics.selectionAsync();
-    setSworn(false);
-    Animated.timing(swearGlow, { toValue: 0, duration: 300, useNativeDriver: false }).start();
-  };
 
   const playSealAnimation = () => {
     Animated.timing(glow, {
@@ -281,10 +259,8 @@ export default function SealScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, paidVowId, vow, activeVowText]);
 
-  const canSeal = sworn;
-
   const handleSeal = async () => {
-    if (!canSeal || loading) return;
+    if (loading) return;
 
     if (!isAuthenticated) {
       setAuthSheetVisible(true);
@@ -332,22 +308,12 @@ export default function SealScreen() {
     outputRange: [palette.borderStrong, 'rgba(82,214,154,0.35)'],
   });
 
-  const swearBorderColor = swearGlow.interpolate({
-    inputRange: [0, 1],
-    outputRange: [palette.border, palette.borderStrong],
-  });
-
-  const swearBgOpacity = swearGlow.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 0.06],
-  });
-
   return (
     <RitualScreen
       footer={
         sealed ? null : (
           <>
-            <PrimaryButton label={sealLabel} onPress={handleSeal} disabled={!canSeal || loading} testID="seal-primary" />
+            <PrimaryButton label={sealLabel} onPress={handleSeal} disabled={loading} testID="seal-primary" />
             <SecondaryButton label="Back" onPress={() => router.back()} testID="seal-back" />
           </>
         )
@@ -357,7 +323,7 @@ export default function SealScreen() {
       {!sealed ? <BackButton /> : null}
       <TitleBlock
         title={sealed ? 'Sealed.' : 'Your Unbreakable Vow'}
-        subtitle={sealed ? 'The terms are locked.' : 'Review below. Once sealed, terms are final.'}
+        subtitle={sealed ? 'The terms are locked.' : 'No takebacks. No excuses.'}
       />
 
       <View style={styles.sealCenter}>
@@ -365,10 +331,10 @@ export default function SealScreen() {
         <Animated.View style={[styles.sealRing, { borderColor: ringBorderColor }]}>
           {sealed ? (
             <Animated.View style={{ transform: [{ scale: checkScale }] }}>
-              <Check color={palette.success} size={30} />
+              <Check color={palette.success} size={20} />
             </Animated.View>
           ) : (
-            <Star color={palette.goldBright} fill={palette.goldBright} size={26} />
+            <Star color={palette.goldBright} fill={palette.goldBright} size={18} />
           )}
         </Animated.View>
       </View>
@@ -390,28 +356,21 @@ export default function SealScreen() {
             <Text style={[styles.metaValue, styles.goldValue]}>${vow.stake.amount}</Text>
           </View>
         </View>
-        <View style={styles.twoCol}>
-          <View style={styles.metaCell}>
-            <Text style={styles.metaLabel}>DURATION</Text>
-            <Text style={styles.metaValue}>{dates.isCustomDate ? `Until ${dates.endLabel}` : '7 days'}</Text>
-          </View>
-          <View style={styles.metaCell}>
-            <Text style={styles.metaLabel}>IF BROKEN</Text>
-            <Text style={styles.metaValue}>{brokenLabel}</Text>
-          </View>
-        </View>
-        <View style={styles.metaCell}>
-          <Text style={styles.metaLabel}>VERDICT</Text>
-          <Text style={styles.metaValue}>{isSelfWitness ? `You decide on ${dates.endLabel}` : `${vow.witnessName} decides on ${dates.endLabel}`}</Text>
-        </View>
+        <Text style={styles.verdictNote}>{dates.verdictLabel}</Text>
       </RitualCard>
 
       {/* SMS preview — what the witness will receive */}
       {!sealed && hasWitnessPhone ? (
         <View style={styles.smsPreviewCard}>
-          <Text style={styles.smsPreviewLabel}>TEXT TO {vow.witnessName.toUpperCase()}</Text>
-          <Text style={styles.smsPreviewText}>{smsPreview}</Text>
-          <Text style={styles.smsPreviewNote}>Includes a link to accept or decline</Text>
+          <Pressable onPress={() => setSmsExpanded(!smsExpanded)} style={styles.smsPreviewRow}>
+            <Text style={styles.smsPreviewSummary}>
+              {vow.witnessName} will get a text with your vow and a link to accept
+            </Text>
+            <Text style={styles.smsExpandToggle}>{smsExpanded ? 'Hide' : 'Preview'}</Text>
+          </Pressable>
+          {smsExpanded ? (
+            <Text style={styles.smsPreviewText}>{smsPreview}</Text>
+          ) : null}
         </View>
       ) : null}
 
@@ -422,26 +381,15 @@ export default function SealScreen() {
       ) : null}
 
       {!sealed ? (
-        <Animated.View style={[styles.swearCard, { borderColor: swearBorderColor }]}>
-          <Animated.View style={[styles.swearGlowBg, { opacity: swearBgOpacity }]} />
-          <Text style={styles.oathHeroText}>I solemnly swear{"\n"}to keep my word this week.</Text>
-          <View style={styles.oathDivider} />
-          <Pressable
-            onPress={sworn ? handleUnswear : handleSwear}
-            style={styles.swearRow}
-            testID="seal-swear"
-          >
-            <Animated.View style={[styles.checkbox, sworn && styles.checkboxChecked, { transform: [{ scale: checkboxScale }] }]}>
-              {sworn ? <Check color="#0B0D11" size={14} strokeWidth={3} /> : null}
-            </Animated.View>
-            <View style={styles.swearCopy}>
-              <Text style={styles.swearTitle}>I solemnly swear</Text>
-              <Text style={styles.swearText}>
-                to honor this vow and accept the consequences.
-              </Text>
-            </View>
-          </Pressable>
-        </Animated.View>
+        <View style={styles.oathPassive}>
+          <Text style={styles.oathPassiveText}>
+            By sealing, you put your word — and your wallet — on the line.
+          </Text>
+          <Text style={styles.paymentNote}>Anyone can make a promise. You're about to back yours.</Text>
+          {vow.stake.amount > 0 ? (
+            <Text style={styles.paymentNote}>You'll confirm payment after tapping seal.</Text>
+          ) : null}
+        </View>
       ) : null}
 
       <AuthSheet
@@ -457,19 +405,19 @@ const styles = StyleSheet.create({
   sealCenter: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 110,
+    height: 56,
   },
   sealHalo: {
     position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 200,
+    width: 96,
+    height: 96,
+    borderRadius: 96,
     backgroundColor: palette.goldGlow,
   },
   sealRing: {
-    width: 100,
-    height: 100,
-    borderRadius: 100,
+    width: 48,
+    height: 48,
+    borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
@@ -524,97 +472,63 @@ const styles = StyleSheet.create({
     color: palette.goldBright,
     fontWeight: '800' as const,
   },
-  swearCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 20,
-    backgroundColor: palette.surface,
-    overflow: 'hidden',
-    shadowColor: palette.gold,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  swearGlowBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: palette.goldBright,
-  },
-  oathHeroText: {
-    color: palette.goldBright,
-    fontSize: 22,
-    fontWeight: '700' as const,
-    fontFamily: serifFont,
-    textAlign: 'center' as const,
-    lineHeight: 34,
-    marginBottom: 16,
-  },
-  oathDivider: {
-    height: 1,
-    width: '60%',
-    alignSelf: 'center' as const,
-    backgroundColor: 'rgba(212,162,79,0.2)',
-    marginBottom: 16,
-  },
-  swearRow: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'flex-start',
-  },
-  checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: palette.textMuted,
+  oathPassive: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  checkboxChecked: {
-    backgroundColor: palette.goldBright,
-    borderColor: palette.goldBright,
-  },
-  swearCopy: {
-    flex: 1,
     gap: 6,
+    paddingHorizontal: 8,
   },
-  swearTitle: {
-    color: palette.goldBright,
-    fontSize: 18,
-    fontWeight: '700' as const,
+  oathPassiveText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: 'center' as const,
     fontFamily: serifFont,
-    letterSpacing: -0.3,
+    fontStyle: 'italic' as const,
   },
-  swearText: {
-    color: palette.textSecondary,
-    fontSize: 14,
-    lineHeight: 21,
+  paymentNote: {
+    color: palette.textMuted,
+    fontSize: 12,
+    textAlign: 'center' as const,
+  },
+  verdictNote: {
+    color: palette.textMuted,
+    fontSize: 12,
+    marginTop: 2,
   },
   smsPreviewCard: {
     borderRadius: 16,
     borderWidth: 1,
     borderColor: 'rgba(212,162,79,0.15)',
     backgroundColor: 'rgba(212,162,79,0.04)',
-    padding: 16,
+    padding: 14,
     gap: 8,
   },
-  smsPreviewLabel: {
+  smsPreviewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+  },
+  smsPreviewSummary: {
+    color: palette.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
+    flex: 1,
+  },
+  smsExpandToggle: {
     color: palette.gold,
-    fontSize: 10,
-    fontWeight: '700' as const,
-    letterSpacing: 1.2,
+    fontSize: 12,
+    fontWeight: '600' as const,
   },
   smsPreviewText: {
-    color: palette.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-    fontStyle: 'italic' as const,
-  },
-  smsPreviewNote: {
     color: palette.textMuted,
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 13,
+    lineHeight: 19,
+    fontStyle: 'italic' as const,
+    marginTop: 4,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(212,162,79,0.1)',
   },
   oathFlash: {
     position: 'absolute',

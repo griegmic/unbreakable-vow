@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Sparkles, Check, User, DollarSign, Calendar, Scale } from 'lucide-react';
-import { RitualScreen, BackButton, TitleBlock, RitualCard, VowPreview, PrimaryButton, SecondaryButton, OathCheckbox, FadeUp } from '@/components/ui';
+import { Star, Sparkles, Check, User, DollarSign } from 'lucide-react';
+import { RitualScreen, BackButton, TitleBlock, RitualCard, VowPreview, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
 import { AuthModal } from '@/components/auth-modal';
 import { PaymentModal } from '@/components/payment-form';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -24,7 +24,7 @@ export default function SealPage() {
   const router = useRouter();
   const { vow, activeVowText, isSelfWitness, setVowId } = useVowFlow();
   const { isAuthenticated, session } = useAuth();
-  const [oathChecked, setOathChecked] = useState(false);
+  const [smsExpanded, setSmsExpanded] = useState(false);
   const [step, setStep] = useState<SealStep>('review');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -257,7 +257,6 @@ export default function SealPage() {
   }, [vow, ensureDraftVow, callSealVow, router]);
 
   const handleSealTap = () => {
-    if (!oathChecked) return;
     if (!isAuthenticated) {
       setStep('auth');
     } else if (vow.stake.amount === 0) {
@@ -380,14 +379,13 @@ export default function SealPage() {
             <PrimaryButton
               label={sealLabel}
               onPress={handleSealTap}
-              disabled={!oathChecked}
               loading={sealing}
             />
             <SecondaryButton label="Back" onPress={() => router.back()} />
             {isDevBypass && (
               <button
                 onClick={handleDevBypass}
-                disabled={!oathChecked || sealing}
+                disabled={sealing}
                 className="min-h-[44px] w-full flex items-center justify-center gap-2 text-sm font-medium rounded-xl transition-opacity disabled:opacity-30"
                 style={{ color: 'var(--gold)', border: '1px dashed var(--gold)', background: 'rgba(212,162,79,0.06)' }}
               >
@@ -408,21 +406,21 @@ export default function SealPage() {
         <FadeUp delay={0.05}>
           <TitleBlock
             title="Your Unbreakable Vow"
-            subtitle="Once you seal it, there's no going back."
+            subtitle="No takebacks. No excuses."
           />
         </FadeUp>
 
         {/* Seal ring */}
         <FadeUp delay={0.1}>
-          <div className="flex justify-center my-2">
+          <div className="flex justify-center my-1">
             <div
-              className="w-[100px] h-[100px] rounded-full flex items-center justify-center"
+              className="w-[48px] h-[48px] rounded-full flex items-center justify-center"
               style={{
                 border: '2px solid var(--gold)',
-                boxShadow: '0 0 30px rgba(212,162,79,0.25)',
+                boxShadow: '0 0 20px rgba(212,162,79,0.2)',
               }}
             >
-              <Star className="w-8 h-8" style={{ color: 'var(--gold)' }} />
+              <Star className="w-5 h-5" style={{ color: 'var(--gold)' }} />
             </div>
           </div>
         </FadeUp>
@@ -459,44 +457,38 @@ export default function SealPage() {
                   <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake.amount}</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>Duration</span>
-                  <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{verdictInfo.range}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Scale className="w-4 h-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>If Broken</span>
-                  <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.stake.destination}</span>
-                </div>
-              </div>
             </div>
 
-            <div className="flex items-center gap-2 mt-1">
-              <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{verdictInfo.verdictLabel}</span>
-            </div>
+            <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{verdictInfo.verdictLabel}</span>
           </RitualCard>
         </FadeUp>
 
-        {/* SMS preview — what the witness will receive */}
+        {/* SMS preview — collapsed with expand */}
         {hasWitnessPhone && (
           <FadeUp delay={0.18}>
             <div
-              className="rounded-[16px] p-4 flex flex-col gap-2"
+              className="rounded-[16px] p-3.5 flex flex-col gap-2"
               style={{ backgroundColor: 'rgba(212,162,79,0.04)', border: '1px solid rgba(212,162,79,0.15)' }}
             >
-              <span className="text-[10px] font-bold tracking-[1.2px] uppercase" style={{ color: 'var(--gold)' }}>
-                TEXT TO {vow.witnessName.toUpperCase()}
-              </span>
-              <p className="text-[14px] leading-[20px] italic" style={{ color: 'var(--text-secondary)' }}>
-                {smsPreview}
-              </p>
-              <span className="text-[11px]" style={{ color: 'var(--text-muted)' }}>
-                Includes a link to accept or decline
-              </span>
+              <button
+                onClick={() => setSmsExpanded(!smsExpanded)}
+                className="flex items-center justify-between gap-3 w-full text-left"
+              >
+                <span className="text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
+                  {vow.witnessName} will get a text with your vow and a link to accept
+                </span>
+                <span className="text-[12px] font-semibold shrink-0" style={{ color: 'var(--gold)' }}>
+                  {smsExpanded ? 'Hide' : 'Preview'}
+                </span>
+              </button>
+              {smsExpanded && (
+                <p
+                  className="text-[13px] leading-[19px] italic pt-2"
+                  style={{ color: 'var(--text-muted)', borderTop: '1px solid rgba(212,162,79,0.1)' }}
+                >
+                  {smsPreview}
+                </p>
+              )}
             </div>
           </FadeUp>
         )}
@@ -508,11 +500,17 @@ export default function SealPage() {
         )}
 
         <FadeUp delay={0.2}>
-          <OathCheckbox
-            checked={oathChecked}
-            onChange={setOathChecked}
-            label="I solemnly swear to honor this vow and accept the consequences."
-          />
+          <p className="text-[13px] text-center italic font-serif" style={{ color: 'var(--text-muted)' }}>
+            By sealing, you put your word — and your wallet — on the line.
+          </p>
+          <p className="text-[12px] text-center mt-1" style={{ color: 'var(--text-muted)' }}>
+            Anyone can make a promise. You're about to back yours.
+          </p>
+          {vow.stake.amount > 0 && (
+            <p className="text-[12px] text-center mt-1" style={{ color: 'var(--text-muted)' }}>
+              You'll confirm payment after tapping seal.
+            </p>
+          )}
         </FadeUp>
       </RitualScreen>
 

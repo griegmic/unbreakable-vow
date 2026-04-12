@@ -30,6 +30,7 @@ export const vowExamples: string[] = [
   'Go to the gym 3x this week',
   'Read every night before bed',
   'No takeout all week',
+  'No texting my ex for 30 days',
 ];
 
 export const stakeAmounts: number[] = [10, 25, 50, 100];
