@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Menu, X, Home, PlusCircle, LayoutDashboard, Settings, History } from 'lucide-react';
+import { Menu, X, Home, PlusCircle, LayoutDashboard, Settings, History, Zap } from 'lucide-react';
 
 export function HamburgerMenu() {
   const router = useRouter();
@@ -35,8 +35,8 @@ export function HamburgerMenu() {
   };
 
   const links = [
-    { label: 'Home', icon: Home, path: '/?new=1' },
-    { label: 'Dashboard', icon: LayoutDashboard, path: '/dashboard' },
+    { label: 'Home', icon: Home, path: '/dashboard' },
+    { label: 'Quick Vow', icon: Zap, path: '/?new=1' },
     { label: 'New Vow', icon: PlusCircle, path: '/create' },
     { label: 'History', icon: History, path: '/history' },
     { label: 'Settings', icon: Settings, path: '/settings' },
