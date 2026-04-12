@@ -803,7 +803,7 @@ export default function LiveScreen() {
                   testID="live-checkin-done"
                 >
                   <Trophy color={palette.goldBright} size={18} />
-                  <Text style={[styles.checkInBtnLabel, { color: palette.goldBright }]}>Done early</Text>
+                  <Text style={[styles.checkInBtnLabel, { color: palette.goldBright }]}>Crushing it</Text>
                 </Pressable>
               </Animated.View>
             </View>

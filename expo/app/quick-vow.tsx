@@ -402,7 +402,9 @@ export default function QuickVowScreen() {
     if (witnessName && shareUrl) {
       try {
         await Share.share({
-          message: `I just made a vow: "${finalText.replace(/\.$/, '')}" — I picked you to hold me accountable. Tap here to accept: ${shareUrl}`,
+          message: stakeAmount > 0
+            ? `I made a vow: "${finalText.replace(/\.$/, '').slice(0, 60)}" — $${stakeAmount} on the line and you're the judge → ${shareUrl}`
+            : `I made a vow: "${finalText.replace(/\.$/, '').slice(0, 60)}" — and named you the judge → ${shareUrl}`,
         });
       } catch {}
     }

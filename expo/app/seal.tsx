@@ -121,7 +121,9 @@ export default function SealScreen() {
           const inviteUrl = `https://unbreakablevow.app/w/${vow.witnessInviteToken}`;
           try {
             await Share.share({
-              message: `I just made a vow: "${activeVowText}" — I picked you to hold me accountable. Tap here to accept: ${inviteUrl}`,
+              message: vow.stake.amount > 0
+                ? `I made a vow: "${activeVowText.replace(/\.$/, '').slice(0, 60)}" — $${vow.stake.amount} on the line and you're the judge → ${inviteUrl}`
+                : `I made a vow: "${activeVowText.replace(/\.$/, '').slice(0, 60)}" — and named you the judge → ${inviteUrl}`,
             });
           } catch {}
         }
@@ -385,7 +387,8 @@ export default function SealScreen() {
 
       {sealed ? (
         <Animated.View style={[styles.oathFlash, { opacity: oathFlashOpacity }]} pointerEvents="none">
-          <Text style={styles.oathFlashText}>{activeVowText ? `"${activeVowText}"` : 'Your vow is sealed.'}</Text>
+          <Text style={styles.oathFlashText}>{activeVowText ? `"${activeVowText}"` : 'No turning back.'}</Text>
+          {activeVowText ? <Text style={[styles.oathFlashText, { fontSize: 17, marginTop: 12, opacity: 0.9 }]}>No turning back.</Text> : null}
         </Animated.View>
       ) : null}
 

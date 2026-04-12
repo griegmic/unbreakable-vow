@@ -446,7 +446,7 @@ export default function VowDetailScreen() {
                 testID="checkin-done-early"
                 accessibilityLabel="Check in as done early"
               >
-                <Text style={styles.checkInBtnText}>Done early</Text>
+                <Text style={styles.checkInBtnText}>Crushing it</Text>
               </Pressable>
             </View>
           </View>

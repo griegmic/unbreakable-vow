@@ -38,7 +38,7 @@ function VowBrokenContent() {
 
   const getShareText = () => {
     if (isZeroStake) {
-      return `I broke my Unbreakable Vow: "${vowText}" — Could you do better? → unbreakablevow.app`;
+      return `I couldn't even keep a free vow: "${vowText}" — unbreakablevow.app`;
     }
     if (antiCause) {
       return `I broke my vow and $${amount} just went to ${destination}. Don't be me. → unbreakablevow.app`;
@@ -63,16 +63,12 @@ function VowBrokenContent() {
       footer={
         <>
           <PrimaryButton
-            label="Try again"
+            label="Double down"
             onPress={() => router.push(`/create?text=${encodeURIComponent(vowText)}&stake=${amount}`)}
           />
           <SecondaryButton
             label="Challenge a friend"
             onPress={() => router.push('/cast')}
-          />
-          <SecondaryButton
-            label="View your record"
-            onPress={() => router.push('/dashboard')}
           />
         </>
       }

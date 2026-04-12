@@ -29,9 +29,9 @@ async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, 
 const STAKE_OPTIONS = [0, 10, 25, 50, 100];
 
 const DEADLINE_PRESETS = [
-  { label: 'This Friday', days: () => { const d = new Date(); const diff = 5 - d.getDay(); return diff <= 0 ? diff + 7 : diff; } },
+  { label: 'Tomorrow', days: () => 1 },
   { label: 'End of week', days: () => { const d = new Date(); const diff = 7 - d.getDay(); return diff === 0 ? 7 : diff; } },
-  { label: 'In 7 days', days: () => 7 },
+  { label: '7 days', days: () => 7 },
   { label: 'Pick date', days: () => -1 },
 ];
 
