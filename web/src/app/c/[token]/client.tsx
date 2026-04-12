@@ -394,7 +394,7 @@ export default function ChallengeInviteClient({
 
           <FadeUp delay={0.08}>
             <p className="text-[18px] leading-[26px]" style={{ color: 'var(--text-secondary)' }}>
-              {makerFirstName} doesn&apos;t think you can
+              {`${makerFirstName} doesn't think you can`}
             </p>
           </FadeUp>
 
@@ -555,23 +555,46 @@ export default function ChallengeInviteClient({
   // ─── STEP 3: STAKES + CHARITY (combined) ───
   if (step === 'stakes') {
     return (
-      <RitualScreen>
+      <RitualScreen
+        footer={
+          <div className="flex flex-col gap-2">
+            <PrimaryButton
+              label={stakeAmount > 0 ? `Stake $${stakeAmount / 100}` : 'Continue'}
+              onPress={() => setStep('payment')}
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setStakeAmount(0);
+                setStep('payment');
+              }}
+              className="py-2 transition-opacity hover:opacity-70"
+            >
+              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                skip — my word is enough
+              </span>
+            </button>
+          </div>
+        }
+      >
         <FadeUp>
           <div className="text-center">
             <h2 className="text-[28px] font-bold font-serif" style={{ color: 'var(--text)' }}>
               You&apos;re in.
             </h2>
+            <p className="text-[15px] mt-1" style={{ color: 'var(--text-secondary)' }}>
+              Stake something. Fail and it goes to charity.
+            </p>
           </div>
         </FadeUp>
 
         <FadeUp delay={0.08}>
-          <p className="text-[15px] leading-[22px] text-center" style={{ color: 'var(--text-secondary)' }}>
-            Prove you mean it &mdash; stake something on yourself. If you fail, it goes to charity. Succeed and you get it back.
-          </p>
-        </FadeUp>
-
-        <FadeUp delay={0.15}>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 items-center">
+            {suggestedCents > 0 && (
+              <p className="text-[13px]" style={{ color: 'var(--gold)' }}>
+                {`${makerFirstName} suggested $${suggestedCents / 100}`}
+              </p>
+            )}
             <div className="flex flex-wrap justify-center">
               {STAKE_OPTIONS.map((cents) => (
                 <ChoiceChip
@@ -582,20 +605,14 @@ export default function ChallengeInviteClient({
                 />
               ))}
             </div>
-            {suggestedCents > 0 && (
-              <p className="text-[13px] text-center" style={{ color: 'var(--text-muted)' }}>
-                {makerName}&apos;s suggestion: ${suggestedCents / 100}
-              </p>
-            )}
           </div>
         </FadeUp>
 
-        {/* Charity selector — only when staked, auto-selected */}
         {stakeAmount > 0 && (
-          <FadeUp delay={0.2}>
+          <FadeUp delay={0.15}>
             <div className="flex flex-col gap-2">
-              <p className="text-[12px] font-bold tracking-[1.2px] uppercase" style={{ color: 'var(--text-muted)' }}>
-                Where does the money go?
+              <p className="text-[11px] tracking-[1px] uppercase" style={{ color: 'var(--text-muted)' }}>
+                If you fail, it goes to
               </p>
               <div className="flex flex-wrap gap-2">
                 {CHARITIES.map((name) => (
@@ -610,27 +627,6 @@ export default function ChallengeInviteClient({
             </div>
           </FadeUp>
         )}
-
-        <FadeUp delay={0.28}>
-          <div className="flex flex-col gap-3">
-            <PrimaryButton
-              label={stakeAmount > 0 ? `Stake $${stakeAmount / 100}` : 'Continue'}
-              onPress={() => setStep('payment')}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setStakeAmount(0);
-                setStep('payment');
-              }}
-              className="py-2 transition-opacity hover:opacity-70"
-            >
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-                skip &mdash; my word is enough
-              </span>
-            </button>
-          </div>
-        </FadeUp>
       </RitualScreen>
     );
   }
