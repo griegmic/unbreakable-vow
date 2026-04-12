@@ -1,8 +1,8 @@
 'use client';
 import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Share2, ShieldCheck, ArrowRight, Camera } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
+import { Share2, ShieldCheck, ArrowRight } from 'lucide-react';
+import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, FadeUp } from '@/components/ui';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { antiCauses } from '@/lib/vow-logic';
@@ -152,7 +152,20 @@ function VowKeptContent() {
         footer={
           <>
             <PrimaryButton label="Challenge a friend" onPress={() => router.push('/cast')} />
-            <SecondaryButton label="Make another vow" onPress={() => router.push('/create')} />
+            <button
+              onClick={() => router.push('/create')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-secondary)',
+                fontSize: 14,
+                fontWeight: 500,
+                padding: '12px 0',
+                cursor: 'pointer',
+              }}
+            >
+              Make another vow
+            </button>
           </>
         }
       >

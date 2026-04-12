@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { AlertTriangle, Share2, Camera } from 'lucide-react-native';
+import { AlertTriangle, Share2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';

@@ -1,6 +1,6 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ShieldCheck, Share2, ArrowRight } from 'lucide-react-native';
+import { ShieldCheck, ArrowRight } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Linking, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
@@ -361,7 +361,7 @@ const styles = StyleSheet.create({
   },
   textLink: {
     alignItems: 'center',
-    paddingVertical: 8,
+    paddingVertical: 12,
   },
   textLinkLabel: {
     color: palette.textSecondary,

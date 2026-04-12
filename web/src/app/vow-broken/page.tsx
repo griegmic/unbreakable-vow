@@ -1,7 +1,7 @@
 'use client';
 import { Suspense, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Share2, AlertTriangle, Camera } from 'lucide-react';
+import { Share2, AlertTriangle } from 'lucide-react';
 import { RitualScreen, TitleBlock, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
 import { antiCauses } from '@/lib/vow-logic';
 
