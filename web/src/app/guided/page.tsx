@@ -91,7 +91,15 @@ function GuidedContent() {
   const [witnessToken, setWitnessToken] = useState<string | null>(null);
   const [showSealAnimation, setShowSealAnimation] = useState(false);
   const [sealAnimationSkippable, setSealAnimationSkippable] = useState(false);
-  const [isDevBypass, setIsDevBypass] = useState(true);
+  const [isDevBypass, setIsDevBypass] = useState(false);
+
+  useEffect(() => {
+    const isLocal = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+    setIsDevBypass(isLocal);
+  }, []);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -887,13 +895,41 @@ function GuidedContent() {
             }
           }}
           onSkip={isDevBypass ? async () => {
+            setShowPayment(false);
             if (vowId) {
-              await supabase.from('vows').update({
+              const { error: updateErr } = await supabase.from('vows').update({
                 stripe_payment_intent_id: null,
                 stake_amount: 0,
+                consequence: 'none',
+                destination: 'none',
               }).eq('id', vowId);
+              if (updateErr) {
+                setError('Could not skip payment. Please try again.');
+                return;
+              }
+              // Seal directly — DB is confirmed updated
+              try {
+                const { data: { session: s } } = await supabase.auth.getSession();
+                if (!s) throw new Error('Session expired');
+                const sealRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${s.access_token}`,
+                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                  },
+                  body: JSON.stringify({ vow_id: vowId }),
+                });
+                if (!sealRes.ok) throw new Error('Seal failed');
+              } catch (err) {
+                console.error('Skip-payment seal error:', err);
+                setError('Could not activate your vow. Please try again.');
+                return;
+              }
             }
-            handlePaymentSuccess();
+            resetVow();
+            setShowSealAnimation(true);
+            setStep('sealed');
           } : undefined}
         />
       )}

@@ -53,7 +53,11 @@ export default function SealPage() {
   const sealLabel = hasWitnessPhone ? `Seal & text ${vow.witnessName}` : 'Seal this vow';
 
   useEffect(() => {
-    setIsDevBypass(true); // Always allow skip for testing
+    const isLocal = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+    setIsDevBypass(isLocal);
   }, []);
 
   // Clean up seal animation timers on unmount
@@ -236,11 +240,12 @@ export default function SealPage() {
       const draft = await ensureDraftVow();
       if (!draft) throw new Error('Could not create vow. Please try again.');
 
-      // Ensure stake is $0 on the draft
+      // Ensure stake is $0 on the draft and clear any stale Stripe PI
       await supabase.from('vows').update({
         stake_amount: 0,
         consequence: 'none',
         destination: 'none',
+        stripe_payment_intent_id: null,
       }).eq('id', draft.id).eq('status', 'draft');
 
       const sealed = await callSealVow(draft.id);
@@ -535,15 +540,46 @@ export default function SealPage() {
           onSuccess={handlePaymentSuccess}
           onCancel={() => { setStep('review'); setSealing(false); }}
           onSkip={async () => {
-            // Skip payment: seal the vow without capturing payment.
-            // Clear the Stripe PI so verdict logic won't try to refund it.
-            if (vow.vowId) {
-              await supabase.from('vows').update({
-                stripe_payment_intent_id: null,
-                stake_amount: 0,
-              }).eq('id', vow.vowId);
+            // Skip payment: seal as a $0 vow.
+            // Clear the Stripe PI so verdict logic won't try to capture/refund it.
+            if (!vow.vowId) {
+              setError('Could not skip payment. Please try again.');
+              sealingRef.current = false;
+              setSealing(false);
+              return;
             }
-            handlePaymentSuccess();
+            setStep('sealing');
+            const { error: updateErr } = await supabase.from('vows').update({
+              stripe_payment_intent_id: null,
+              stake_amount: 0,
+              consequence: 'none',
+              destination: 'none',
+            }).eq('id', vow.vowId);
+            if (updateErr) {
+              setError('Could not skip payment. Please try again.');
+              setStep('review');
+              sealingRef.current = false;
+              setSealing(false);
+              return;
+            }
+            // Now seal — DB is confirmed updated, no race condition
+            const sealed = await callSealVow(vow.vowId);
+            if (!sealed) {
+              setError('Could not activate your vow. Please try again.');
+              setStep('review');
+              sealingRef.current = false;
+              setSealing(false);
+              return;
+            }
+            // Success — run seal animation and redirect
+            setSealAnimPhase(1);
+            const t1 = setTimeout(() => setSealAnimPhase(2), 400);
+            const t2 = setTimeout(() => setSealAnimPhase(3), 800);
+            const t3 = setTimeout(() => {
+              setStep('done');
+              router.push('/live');
+            }, 1400);
+            timersRef.current.push(t1, t2, t3);
           }}
         />
       )}

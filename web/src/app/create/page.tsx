@@ -85,8 +85,7 @@ function CreatePageContent() {
 
   useEffect(() => {
     const isLocal = window.location.hostname === 'localhost';
-    const hasTestParam = new URLSearchParams(window.location.search).has('test');
-    setIsDevBypass(isLocal || hasTestParam);
+    setIsDevBypass(isLocal);
   }, []);
 
   // Compute suggestion as user types
@@ -882,13 +881,41 @@ function CreatePageContent() {
           }}
           onSkip={isDevBypass ? async () => {
             // Testing bypass: seal without capturing payment
+            setShowPayment(false);
             if (vowId) {
-              await supabase.from('vows').update({
+              const { error: updateErr } = await supabase.from('vows').update({
                 stripe_payment_intent_id: null,
                 stake_amount: 0,
+                consequence: 'none',
+                destination: 'none',
               }).eq('id', vowId);
+              if (updateErr) {
+                setError('Could not skip payment. Please try again.');
+                return;
+              }
+              try {
+                const { data: { session: s } } = await supabase.auth.getSession();
+                if (!s) throw new Error('Session expired');
+                const sealRes = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${s.access_token}`,
+                    'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                  },
+                  body: JSON.stringify({ vow_id: vowId }),
+                });
+                if (!sealRes.ok) throw new Error('Seal failed');
+              } catch (err) {
+                console.error('Skip-payment seal error:', err);
+                setError('Could not activate your vow. Please try again.');
+                return;
+              }
             }
-            handlePaymentSuccess();
+            try { localStorage.setItem('quickvow-defaults', JSON.stringify({ stakeAmount, consequence, deadlineLabel })); } catch {}
+            resetVow();
+            setShowSealAnimation(true);
+            setSealed(true);
           } : undefined}
         />
       )}
