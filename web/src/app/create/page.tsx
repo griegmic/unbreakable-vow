@@ -78,8 +78,15 @@ function CreatePageContent() {
   const [sealed, setSealed] = useState(false);
   const [showSealAnimation, setShowSealAnimation] = useState(false);
   const [sealAnimationSkippable, setSealAnimationSkippable] = useState(false);
+  const [isDevBypass, setIsDevBypass] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const isLocal = window.location.hostname === 'localhost';
+    const hasTestParam = new URLSearchParams(window.location.search).has('test');
+    setIsDevBypass(isLocal || hasTestParam);
+  }, []);
 
   // Compute suggestion as user types
   useEffect(() => {
@@ -880,6 +887,16 @@ function CreatePageContent() {
               setVowId(null);
             }
           }}
+          onSkip={isDevBypass ? async () => {
+            // Testing bypass: seal without capturing payment
+            if (vowId) {
+              await supabase.from('vows').update({
+                stripe_payment_intent_id: null,
+                stake_amount: 0,
+              }).eq('id', vowId);
+            }
+            handlePaymentSuccess();
+          } : undefined}
         />
       )}
     </>

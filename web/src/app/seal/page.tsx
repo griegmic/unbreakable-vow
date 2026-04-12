@@ -53,7 +53,9 @@ export default function SealPage() {
   const sealLabel = hasWitnessPhone ? `Seal & text ${vow.witnessName}` : 'Seal this vow';
 
   useEffect(() => {
-    setIsDevBypass(window.location.hostname === 'localhost');
+    const isLocal = window.location.hostname === 'localhost';
+    const hasTestParam = new URLSearchParams(window.location.search).has('test');
+    setIsDevBypass(isLocal || hasTestParam);
   }, []);
 
   // Clean up seal animation timers on unmount
