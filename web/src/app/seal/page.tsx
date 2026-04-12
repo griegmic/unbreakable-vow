@@ -53,9 +53,7 @@ export default function SealPage() {
   const sealLabel = hasWitnessPhone ? `Seal & text ${vow.witnessName}` : 'Seal this vow';
 
   useEffect(() => {
-    const isLocal = window.location.hostname === 'localhost';
-    const hasTestParam = new URLSearchParams(window.location.search).has('test');
-    setIsDevBypass(isLocal || hasTestParam);
+    setIsDevBypass(true); // Always allow skip for testing
   }, []);
 
   // Clean up seal animation timers on unmount
@@ -282,13 +280,22 @@ export default function SealPage() {
         sealed_at: new Date().toISOString(),
       }).eq('id', draft.id);
 
-      handlePaymentSuccess();
+      // Skip callSealVow — vow is already active. Just run the animation and redirect.
+      setStep('sealing');
+      setSealAnimPhase(1);
+      const t1 = setTimeout(() => setSealAnimPhase(2), 400);
+      const t2 = setTimeout(() => setSealAnimPhase(3), 800);
+      const t3 = setTimeout(() => {
+        setStep('done');
+        router.push('/live');
+      }, 1400);
+      timersRef.current.push(t1, t2, t3);
     } catch (err) {
       console.error('Dev bypass error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setSealing(false);
     }
-  }, [ensureDraftVow, sealing]);
+  }, [ensureDraftVow, sealing, router]);
 
   const handleAuthSuccess = async () => {
     setStep('review');
@@ -332,7 +339,7 @@ export default function SealPage() {
     const t2 = setTimeout(() => setSealAnimPhase(3), 800);
     const t3 = setTimeout(() => {
       setStep('done');
-      router.push('/sent');
+      router.push('/live');
     }, 1400);
     timersRef.current.push(t1, t2, t3);
   };
@@ -527,8 +534,8 @@ export default function SealPage() {
           clientSecret={clientSecret}
           onSuccess={handlePaymentSuccess}
           onCancel={() => { setStep('review'); setSealing(false); }}
-          onSkip={isDevBypass ? async () => {
-            // Testing bypass: seal the vow without capturing payment.
+          onSkip={async () => {
+            // Skip payment: seal the vow without capturing payment.
             // Clear the Stripe PI so verdict logic won't try to refund it.
             if (vow.vowId) {
               await supabase.from('vows').update({
@@ -537,7 +544,7 @@ export default function SealPage() {
               }).eq('id', vow.vowId);
             }
             handlePaymentSuccess();
-          } : undefined}
+          }}
         />
       )}
     </>

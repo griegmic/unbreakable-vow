@@ -68,7 +68,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
           className="w-full min-h-[48px] rounded-2xl flex items-center justify-center transition-transform active:scale-[0.975]"
           style={{ border: '1px dashed rgba(212,162,79,0.3)', background: 'rgba(212,162,79,0.06)' }}
         >
-          <span className="text-[14px] font-semibold" style={{ color: 'var(--gold)' }}>Skip payment (testing)</span>
+          <span className="text-[14px] font-semibold" style={{ color: 'var(--gold)' }}>Skip payment</span>
         </button>
       )}
       <button

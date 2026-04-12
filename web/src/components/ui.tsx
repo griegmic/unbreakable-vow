@@ -19,7 +19,7 @@ export function RitualScreen({ children, footer }: { children: ReactNode; footer
 
       {/* Footer */}
       {footer && (
-        <div className="relative px-5 pb-4 pt-3 safe-bottom" style={{ backdropFilter: 'blur(12px)', background: 'rgba(5,7,11,0.8)' }}>
+        <div className="relative z-10 px-5 pb-4 pt-3 safe-bottom" style={{ backdropFilter: 'blur(12px)', background: 'rgba(5,7,11,0.8)' }}>
           <div className="mx-auto max-w-[440px] flex flex-col gap-3">
             {footer}
           </div>

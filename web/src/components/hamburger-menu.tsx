@@ -6,15 +6,16 @@ import { Menu, X, Home, PlusCircle, LayoutDashboard, Settings, History } from 'l
 export function HamburgerMenu() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
-  // Close on outside click
+  // Close on outside click (ignore clicks on button or panel)
   useEffect(() => {
     if (!open) return;
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const target = e.target as Node;
+      if (btnRef.current?.contains(target) || panelRef.current?.contains(target)) return;
+      setOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -42,8 +43,9 @@ export function HamburgerMenu() {
   ];
 
   return (
-    <div ref={menuRef} className="relative z-50">
+    <>
       <button
+        ref={btnRef}
         onClick={() => setOpen(!open)}
         aria-label={open ? 'Close menu' : 'Open menu'}
         className="w-10 h-10 rounded-full flex items-center justify-center transition-opacity active:opacity-80"
@@ -58,11 +60,16 @@ export function HamburgerMenu() {
       {open && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-40" style={{ backgroundColor: 'rgba(0,0,0,0.4)' }} />
+          <div
+            className="fixed inset-0 z-[9998]"
+            style={{ backgroundColor: 'rgba(0,0,0,0.4)' }}
+            onClick={() => setOpen(false)}
+          />
 
           {/* Menu panel */}
           <div
-            className="absolute right-0 top-12 w-52 rounded-2xl py-2 z-50 shadow-lg"
+            ref={panelRef}
+            className="fixed right-4 top-14 w-52 rounded-2xl py-2 z-[9999] safe-top"
             style={{
               backgroundColor: 'var(--surface)',
               border: '1px solid var(--border)',
@@ -84,6 +91,6 @@ export function HamburgerMenu() {
           </div>
         </>
       )}
-    </div>
+    </>
   );
 }

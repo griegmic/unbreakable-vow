@@ -47,7 +47,7 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
       />
       {/* Drawer */}
       <div
-        className="fixed top-0 left-0 bottom-0 z-50 w-[280px] flex flex-col transition-transform duration-200 safe-top safe-bottom"
+        className="fixed top-0 left-0 bottom-0 z-[51] w-[280px] flex flex-col transition-transform duration-200 safe-top safe-bottom"
         style={{
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
           backgroundColor: 'var(--surface-elevated)',
