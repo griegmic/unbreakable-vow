@@ -91,6 +91,12 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip }: { cl
     return () => window.removeEventListener('keydown', handler);
   }, [onCancel]);
 
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in" onClick={onCancel}>
       <div className="absolute inset-0 bg-black/60" />

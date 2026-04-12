@@ -54,6 +54,13 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
     return () => window.removeEventListener('keydown', handler);
   }, [visible, onDismiss]);
 
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    if (!visible) return;
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, [visible]);
+
   useEffect(() => {
     return () => {
       if (cooldownRef.current) clearInterval(cooldownRef.current);
