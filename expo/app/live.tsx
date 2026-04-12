@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { AlertCircle, ChevronLeft, ChevronRight, Clock, ExternalLink, FastForward, Flame, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, ThumbsUp, Trophy, User, UserMinus, X } from 'lucide-react-native';
+import { AlertCircle, ChevronLeft, ChevronRight, Clock, Eye, ExternalLink, FastForward, Flame, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, ThumbsUp, Trophy, User, UserMinus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
@@ -760,6 +760,21 @@ export default function LiveScreen() {
           </View>
         </View>
 
+        {isSelfWitness && (
+          <Pressable
+            style={({ pressed }) => [styles.inviteWitnessCard, pressed && { opacity: 0.85 }]}
+            onPress={() => { router.push('/witness?midVow=1'); }}
+            testID="live-invite-witness"
+          >
+            <Eye color={palette.textMuted} size={18} style={{ marginTop: 1 }} />
+            <View style={styles.inviteWitnessContent}>
+              <Text style={styles.inviteWitnessTitle}>Invite a witness</Text>
+              <Text style={styles.inviteWitnessSubtext}>People keep vows 3× more with someone watching.</Text>
+            </View>
+            <ChevronRight color={palette.textMuted} size={16} />
+          </Pressable>
+        )}
+
         <View style={styles.checkInSection}>
           <Text style={styles.checkInTitle}>How's it going?</Text>
           {checkInFeedback ? (
@@ -856,12 +871,12 @@ export default function LiveScreen() {
           </View>
         ) : (
           <Pressable
-            style={({ pressed }) => [styles.shareProgressBtn, pressed && styles.shareProgressBtnPressed]}
+            style={({ pressed }) => [styles.shareProgressLink, pressed && { opacity: 0.6 }]}
             onPress={() => { void handleShareProgress(); }}
             testID="live-share-progress"
           >
-            <Share2 color={palette.goldBright} size={16} />
-            <Text style={styles.shareProgressBtnText}>Share your progress</Text>
+            <Share2 color={palette.textMuted} size={14} />
+            <Text style={styles.shareProgressLinkText}>Share your progress</Text>
           </Pressable>
         )}
       </Animated.View>
@@ -1465,6 +1480,43 @@ const styles = StyleSheet.create({
     color: palette.goldBright,
     fontSize: 14,
     fontWeight: '600' as const,
+  },
+  shareProgressLink: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 6,
+    paddingVertical: 12,
+  },
+  shareProgressLinkText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    fontWeight: '500' as const,
+  },
+  inviteWitnessCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 12,
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: palette.border,
+    backgroundColor: palette.surface,
+    marginTop: 4,
+  },
+  inviteWitnessContent: {
+    flex: 1,
+  },
+  inviteWitnessTitle: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '600' as const,
+  },
+  inviteWitnessSubtext: {
+    color: palette.textMuted,
+    fontSize: 12,
+    marginTop: 2,
+    lineHeight: 16,
   },
   verdictCard: {
     backgroundColor: 'rgba(212,162,79,0.08)',
