@@ -183,19 +183,19 @@ export default function HomePage() {
       </FadeUp>
 
       <FadeUp delay={0.3}>
-        <div className="flex flex-wrap">
+        <div className="flex flex-wrap gap-[7px]">
           {vowExamples.map((example) => (
             <button
               key={example}
               onClick={() => handleChip(example)}
-              className="px-3.5 py-[11px] rounded-full mr-2 mb-2 transition-colors"
+              className="px-3 py-2 rounded-full transition-colors"
               style={{
-                backgroundColor: input === example ? 'rgba(212,162,79,0.12)' : 'var(--surface)',
-                border: `1px solid ${input === example ? 'var(--border-strong)' : 'var(--border)'}`,
+                backgroundColor: input === example ? 'rgba(212,162,79,0.1)' : 'rgba(255,255,255,0.03)',
+                border: `1px solid ${input === example ? 'rgba(212,162,79,0.3)' : 'var(--border)'}`,
               }}
             >
               <span
-                className="text-[13px] font-medium"
+                className="text-[12px] font-medium"
                 style={{ color: input === example ? 'var(--gold-bright)' : 'var(--text-secondary)' }}
               >
                 {example}
