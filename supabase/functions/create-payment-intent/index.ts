@@ -128,6 +128,7 @@ Deno.serve(async (req) => {
       currency: 'usd',
       customer: customerId,
       capture_method: 'manual',
+      'automatic_payment_methods[enabled]': 'true',
       'metadata[vow_id]': vow_id,
       'metadata[user_id]': user.id,
     });
