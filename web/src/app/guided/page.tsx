@@ -91,7 +91,7 @@ function GuidedContent() {
   const [witnessToken, setWitnessToken] = useState<string | null>(null);
   const [showSealAnimation, setShowSealAnimation] = useState(false);
   const [sealAnimationSkippable, setSealAnimationSkippable] = useState(false);
-  const [isDevBypass, setIsDevBypass] = useState(false);
+  const [isDevBypass, setIsDevBypass] = useState(true);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
