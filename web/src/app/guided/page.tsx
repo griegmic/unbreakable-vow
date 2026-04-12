@@ -27,7 +27,7 @@ async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, 
   );
 }
 
-const STAKE_OPTIONS = [0, 10, 25, 50, 100];
+const STAKE_OPTIONS = [10, 25, 50, 100];
 
 const DEADLINE_PRESETS = [
   { label: 'Tomorrow', days: () => 1 },
@@ -603,12 +603,6 @@ function GuidedContent() {
                 ))}
               </div>
 
-              {stakeAmount === 0 && (
-                <p className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>
-                  Free. Just your word.
-                </p>
-              )}
-
               {stakeAmount > 0 && (
                 <>
                   <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
@@ -754,7 +748,7 @@ function GuidedContent() {
                   <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Stake</span>
                 </div>
                 <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>
-                  {stakeAmount === 0 ? 'Your word' : `$${stakeAmount}`}
+                  ${stakeAmount}
                 </span>
               </div>
               {stakeAmount > 0 && (
