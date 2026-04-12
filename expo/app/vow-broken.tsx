@@ -129,11 +129,6 @@ export default function VowBrokenScreen() {
             onPress={() => router.push('/cast')}
             testID="broken-challenge"
           />
-          <SecondaryButton
-            label="View your record"
-            onPress={() => router.push('/history')}
-            testID="broken-history"
-          />
         </>
       }
     >

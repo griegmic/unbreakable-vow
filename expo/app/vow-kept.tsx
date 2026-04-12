@@ -96,6 +96,14 @@ export default function VowKeptScreen() {
     setTimeout(() => {
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }, 600);
+
+    // Auto-trigger share sheet after celebration animation
+    const shareTimer = setTimeout(() => {
+      if (Platform.OS !== 'web') {
+        Share.share({ message: getShareText() }).catch(() => {});
+      }
+    }, 1500);
+    return () => clearTimeout(shareTimer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -156,15 +164,16 @@ export default function VowKeptScreen() {
             onPress={() => router.push('/cast')}
             testID="kept-challenge"
           />
-          <SecondaryButton
-            label="Make a new vow"
+          <Pressable
             onPress={() => {
               resetVow();
               router.replace('/');
             }}
+            style={styles.textLink}
             testID="kept-new-vow"
-          />
-          <SecondaryButton label="View your record" onPress={() => router.push('/history')} testID="kept-history" />
+          >
+            <Text style={styles.textLinkLabel}>Make another vow</Text>
+          </Pressable>
         </>
       }
     >
@@ -349,5 +358,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: palette.textMuted,
     opacity: 0.5,
+  },
+  textLink: {
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  textLinkLabel: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontWeight: '500',
   },
 });
