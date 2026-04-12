@@ -2,7 +2,7 @@
 import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
-  Sparkles, User, DollarSign, Calendar, Scale, CheckCircle,
+  Sparkles, User, UserPlus, ChevronRight, DollarSign, Calendar, Scale, CheckCircle,
 } from 'lucide-react';
 import {
   RitualScreen, RitualCard, PrimaryButton, ChoiceChip,
@@ -733,19 +733,65 @@ function GuidedContent() {
           </p>
         </FadeUp>
 
-        {/* Witness name (optional) */}
+        {/* Witness — hero CTA or entered state */}
         <FadeUp delay={0.13}>
-          <RitualCard>
-            <SectionLabel>Send to (optional)</SectionLabel>
-            <input
-              type="text"
-              value={witnessName}
-              onChange={(e) => setWitnessName(e.target.value)}
-              placeholder="Friend's name"
-              className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-              style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-            />
-          </RitualCard>
+          {witnessName ? (
+            <div
+              className="rounded-[18px] p-4 flex items-center justify-between"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                >
+                  <User className="w-5 h-5" style={{ color: 'var(--gold)' }} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[15px] font-semibold" style={{ color: 'var(--gold)' }}>{witnessName}</span>
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Your witness</span>
+                </div>
+              </div>
+              <button
+                onClick={() => { setWitnessName(''); setWitnessPhone(''); }}
+                className="text-[13px] font-medium px-3 py-1.5 rounded-lg transition-opacity hover:opacity-70"
+                style={{ color: 'var(--text-muted)' }}
+              >
+                Change
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  const name = prompt('Who should hold you to it?');
+                  if (name?.trim()) setWitnessName(name.trim());
+                }}
+                className="rounded-[18px] p-4 flex items-center gap-4 transition-opacity active:opacity-80"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid rgba(212,162,79,0.25)' }}
+              >
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                >
+                  <UserPlus className="w-6 h-6" style={{ color: 'var(--gold)' }} />
+                </div>
+                <div className="flex flex-col items-start flex-1">
+                  <span className="text-[17px] font-bold" style={{ color: 'var(--gold)' }}>Text a friend</span>
+                  <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>They&apos;ll decide if you kept your word</span>
+                </div>
+                <ChevronRight className="w-5 h-5 shrink-0" style={{ color: 'var(--gold)' }} />
+              </button>
+              <button
+                onClick={() => setWitnessName('Just me')}
+                className="py-2 transition-opacity hover:opacity-70"
+              >
+                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                  I&apos;ll hold myself accountable
+                </span>
+              </button>
+            </div>
+          )}
         </FadeUp>
 
         {/* Details card */}
