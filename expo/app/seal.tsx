@@ -165,37 +165,47 @@ export default function SealScreen() {
     }
   };
 
+  // Dev bypass: create vow + mark active, skip Stripe entirely
+  const handleDevBypass = useCallback(async () => {
+    if (loading) return;
+    setLoading(true);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    console.log('[SealScreen] Dev bypass — creating real vow, skipping payment');
+    try {
+      const vowRecord = await createVow({
+        rawInput: vow.rawInput,
+        refinedText: activeVowText,
+        witnessName: vow.witnessName,
+        witnessPhone: vow.phoneNumber ? formatE164(vow.phoneNumber) : null,
+        stakeAmount: vow.stake.amount,
+        consequence: vow.stake.consequence,
+        destination: vow.stake.destination,
+        deadlineIso: vow.deadlineIso,
+      });
+      // Mark as active directly (skip payment — no fake Stripe IDs)
+      await supabase.from('vows').update({
+        status: 'active',
+        sealed_at: new Date().toISOString(),
+      }).eq('id', vowRecord.id);
+      setVowId(vowRecord.id, vowRecord.witness_invite_token);
+    } catch (err) {
+      console.error('[SealScreen] Dev bypass vow creation failed:', err);
+      setVowId('dev-' + Date.now(), 'dev-token-' + Date.now());
+    }
+    setLoading(false);
+    playSealAnimation();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, vow, activeVowText]);
+
   const handleSealFlow = useCallback(async () => {
     if (loading) return;
     setLoading(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    if (IS_EXPO_GO) {
-      console.log('[SealScreen] Expo Go dev mode — creating real vow, skipping payment');
-      try {
-        const vowRecord = await createVow({
-          rawInput: vow.rawInput,
-          refinedText: activeVowText,
-          witnessName: vow.witnessName,
-          witnessPhone: vow.phoneNumber ? formatE164(vow.phoneNumber) : null,
-          stakeAmount: vow.stake.amount,
-          consequence: vow.stake.consequence,
-          destination: vow.stake.destination,
-          deadlineIso: vow.deadlineIso,
-        });
-        // Mark as active directly (skip payment — no fake Stripe IDs)
-        await supabase.from('vows').update({
-          status: 'active',
-          sealed_at: new Date().toISOString(),
-        }).eq('id', vowRecord.id);
-        setVowId(vowRecord.id, vowRecord.witness_invite_token);
-      } catch (err) {
-        console.error('[SealScreen] Expo Go dev mode vow creation failed:', err);
-        // Fallback to fake IDs if DB fails (e.g. no auth)
-        setVowId('dev-' + Date.now(), 'dev-token-' + Date.now());
-      }
+    // $0 vows in Expo Go — no Stripe needed, use dev bypass path
+    if (IS_EXPO_GO && vow.stake.amount === 0) {
       setLoading(false);
-      playSealAnimation();
+      await handleDevBypass();
       return;
     }
 
@@ -325,6 +335,28 @@ export default function SealScreen() {
         sealed ? null : (
           <>
             <PrimaryButton label={sealLabel} onPress={handleSeal} disabled={loading} testID="seal-primary" />
+            {IS_EXPO_GO && vow.stake.amount > 0 && (
+              <Pressable
+                onPress={async () => {
+                  if (!isAuthenticated) { setAuthSheetVisible(true); return; }
+                  await handleDevBypass();
+                }}
+                disabled={loading}
+                style={({ pressed }) => ({
+                  minHeight: 44,
+                  borderRadius: 14,
+                  alignItems: 'center' as const,
+                  justifyContent: 'center' as const,
+                  borderWidth: 1,
+                  borderStyle: 'dashed' as const,
+                  borderColor: 'rgba(212,162,79,0.3)',
+                  backgroundColor: 'rgba(212,162,79,0.06)',
+                  opacity: pressed ? 0.7 : loading ? 0.4 : 1,
+                })}
+              >
+                <Text style={{ color: palette.gold, fontSize: 14, fontWeight: '600' }}>Skip payment (test mode)</Text>
+              </Pressable>
+            )}
             <SecondaryButton label="Back" onPress={() => router.back()} testID="seal-back" />
           </>
         )
