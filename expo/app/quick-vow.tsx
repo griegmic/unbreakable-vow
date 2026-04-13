@@ -40,6 +40,26 @@ import { useVowFlow } from '@/providers/vow-flow';
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 const STAKE_OPTIONS = [0, ...defaultStakeAmounts]; // [0, 10, 25, 50, 100]
 
+/**
+ * Strip time-window phrases that generateSuggestion appends (e.g. ", this week.",
+ * " all week.") — the deadline is shown separately via the date picker, so the
+ * formatted vow text shouldn't duplicate or contradict it.
+ *
+ * Keeps frequency qualifiers like "3 times", "every night", "every morning" intact
+ * and only removes the trailing time-window reference.
+ */
+function stripTimeSuffix(text: string): string {
+  return text
+    // ", this week." / " this week." / " this month." / " this year."
+    .replace(/[,.]?\s+this\s+(?:week|month|year)\s*\.?$/i, '')
+    // ", all week." / " all month."
+    .replace(/[,.]?\s+all\s+(?:week|month)\s*\.?$/i, '')
+    // "by Friday at 5pm."
+    .replace(/[,.]?\s+by\s+Friday\s+at\s+5pm\s*\.?$/i, '')
+    .replace(/\s*\.$/, '')
+    .trim();
+}
+
 type DeadlinePreset = 'tomorrow' | 'end_of_week' | 'in_7_days' | 'in_30_days' | 'custom';
 type ConsequenceType = 'charity' | 'anti';
 
@@ -120,12 +140,14 @@ export default function QuickVowScreen() {
 
   const destinations = consequence === 'charity' ? charities : antiCauses;
 
-  // Generate suggestion as user types
+  // Generate suggestion as user types.
+  // Strip time-window suffixes from the generated suggestion since the deadline
+  // is always selected separately via the date picker shown below the input.
   useEffect(() => {
     if (vowText.trim().length < 3) { setSuggestion(''); return; }
     const analysis = analyzeVow(vowText);
     if (analysis.type === 'vague') {
-      setSuggestion(generateSuggestion(vowText));
+      setSuggestion(stripTimeSuffix(generateSuggestion(vowText)));
     } else {
       setSuggestion('');
     }

@@ -79,16 +79,17 @@ export default function StakeScreen() {
     return charities;
   }, [consequence]);
 
-  const canContinue = useMemo(() => destination.trim().length > 0, [destination]);
+  const canContinue = useMemo(() => amount === 0 || destination.trim().length > 0, [amount, destination]);
 
   const handleContinue = () => {
     if (!canContinue) return;
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setStake({ amount, consequence, destination });
+    setStake({ amount, consequence, destination: amount > 0 ? destination : 'None' });
     router.push('/witness');
   };
 
   const amountHint = useMemo(() => {
+    if (amount === 0) return 'Accountability only';
     if (amount === 10) return 'A nudge. Better than nothing.';
     if (amount === 25) return 'Enough to sting.';
     if (amount === 50) return 'Now we\'re talking.';
@@ -111,7 +112,7 @@ export default function StakeScreen() {
     <RitualScreen
       footer={
         <PrimaryButton
-          label={`Confirm $${amount} stake`}
+          label={amount > 0 ? `Confirm $${amount} stake` : 'Continue without stake'}
           onPress={handleContinue}
           disabled={!canContinue}
           testID="stake-continue"
@@ -144,9 +145,20 @@ export default function StakeScreen() {
             );
           })}
         </View>
+        <Pressable
+          onPress={() => {
+            void Haptics.selectionAsync();
+            setAmount(0);
+          }}
+          style={styles.accountabilityOnly}
+        >
+          <Text style={[styles.accountabilityOnlyText, amount === 0 && styles.accountabilityOnlyTextActive]}>
+            {amount === 0 ? 'Accountability only (no stake)' : 'or go accountability only'}
+          </Text>
+        </Pressable>
       </RitualCard>
 
-      <RitualCard>
+      {amount > 0 && (<><RitualCard>
         <Text style={styles.sectionTitle}>When you break the vow, where does the money go?</Text>
         {[
           { id: 'charity' as const, label: 'A cause you believe in', description: 'Your money does some good.', Icon: HeartHandshake },
@@ -193,7 +205,7 @@ export default function StakeScreen() {
             <ChoiceChip key={option} label={option} active={destination === option} onPress={() => setDestination(option)} />
           ))}
         </View>
-      </RitualCard>
+      </RitualCard></>)}
 
       {/* Deadline picker */}
       {showDeadlinePicker && (
@@ -252,15 +264,17 @@ export default function StakeScreen() {
         </RitualCard>
       )}
 
-      <View style={styles.paymentHint}>
-        <View style={styles.paymentIconRow}>
-          <CreditCard color={palette.textMuted} size={16} />
-          <ShieldCheck color={palette.textMuted} size={16} />
+      {amount > 0 && (
+        <View style={styles.paymentHint}>
+          <View style={styles.paymentIconRow}>
+            <CreditCard color={palette.textMuted} size={16} />
+            <ShieldCheck color={palette.textMuted} size={16} />
+          </View>
+          <Text style={styles.paymentText}>
+            You get it all back when you keep your vow.
+          </Text>
         </View>
-        <Text style={styles.paymentText}>
-          You get it all back when you keep your vow.
-        </Text>
-      </View>
+      )}
     </RitualScreen>
   );
 }
@@ -414,5 +428,17 @@ const styles = StyleSheet.create({
     textAlign: 'center' as const,
     lineHeight: 18,
     paddingHorizontal: 20,
+  },
+  accountabilityOnly: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  accountabilityOnlyText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    opacity: 0.6,
+  },
+  accountabilityOnlyTextActive: {
+    opacity: 1,
   },
 });

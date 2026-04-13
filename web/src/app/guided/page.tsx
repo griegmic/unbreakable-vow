@@ -30,6 +30,26 @@ async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, 
 
 const STAKE_OPTIONS = [10, 25, 50, 100];
 
+/**
+ * Strip time-window phrases that generateSuggestion appends (e.g. ", this week.",
+ * " all week.") — the deadline is shown separately via the date picker, so the
+ * formatted vow text shouldn't duplicate or contradict it.
+ *
+ * Keeps frequency qualifiers like "3 times", "every night", "every morning" intact
+ * and only removes the trailing time-window reference.
+ */
+function stripTimeSuffix(text: string): string {
+  return text
+    // ", this week." / " this week." / " this month." / " this year."
+    .replace(/[,.]?\s+this\s+(?:week|month|year)\s*\.?$/i, '')
+    // ", all week." / " all month."
+    .replace(/[,.]?\s+all\s+(?:week|month)\s*\.?$/i, '')
+    // "by Friday at 5pm."
+    .replace(/[,.]?\s+by\s+Friday\s+at\s+5pm\s*\.?$/i, '')
+    .replace(/\s*\.$/, '')
+    .trim();
+}
+
 const DEADLINE_PRESETS = [
   { label: 'Tomorrow', days: () => 1 },
   { label: 'End of week', days: () => { const d = new Date(); const diff = 7 - d.getDay(); return diff === 0 ? 7 : diff; } },
@@ -124,11 +144,13 @@ function GuidedContent() {
     setIsDevBypass(isLocal || hasTestParam);
   }, []);
 
-  // Compute suggestion as user types
+  // Compute suggestion as user types.
+  // Strip time-window suffixes from the generated suggestion since the deadline
+  // is always selected separately via the date picker shown below the input.
   useEffect(() => {
     if (vowText.trim().length < 3) { setSuggestion(''); return; }
     const analysis = analyzeVow(vowText);
-    setSuggestion(analysis.type === 'vague' ? generateSuggestion(vowText) : '');
+    setSuggestion(analysis.type === 'vague' ? stripTimeSuffix(generateSuggestion(vowText)) : '');
   }, [vowText]);
 
   // End date computation
@@ -611,12 +633,23 @@ function GuidedContent() {
                 {STAKE_OPTIONS.map((amt) => (
                   <ChoiceChip
                     key={amt}
-                    label={amt === 0 ? '$0' : `$${amt}`}
+                    label={`$${amt}`}
                     active={stakeAmount === amt}
                     onPress={() => setStakeAmount(amt)}
                   />
                 ))}
               </div>
+              <button
+                onClick={() => setStakeAmount(0)}
+                className="py-1 transition-opacity hover:opacity-70"
+              >
+                <span
+                  className="text-[13px]"
+                  style={{ color: 'var(--text-muted)', opacity: stakeAmount === 0 ? 1 : 0.6 }}
+                >
+                  {stakeAmount === 0 ? 'Accountability only (no stake)' : 'or go accountability only'}
+                </span>
+              </button>
 
               {stakeAmount > 0 && (
                 <>
