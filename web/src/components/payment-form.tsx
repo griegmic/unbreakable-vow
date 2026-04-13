@@ -109,11 +109,6 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
           wallets: { applePay: 'never', googlePay: 'never' },
         }}
       />
-      {applePayDebug && (
-        <p className="text-[11px] px-2 py-1 rounded" style={{ color: 'var(--text-muted)', backgroundColor: 'rgba(255,255,255,0.05)' }}>
-          Apple Pay: {applePayDebug}
-        </p>
-      )}
       {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
       <button
         type="submit"
@@ -178,8 +173,8 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip }: { cl
     <div className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in" onClick={onCancel}>
       <div className="absolute inset-0 bg-black/60" />
       <div
-        className="relative w-full max-w-[440px] rounded-t-[28px] p-6 pb-8 safe-bottom animate-slide-up"
-        style={{ backgroundColor: 'var(--surface-elevated)' }}
+        className="relative w-full max-w-[440px] rounded-t-[28px] p-6 pb-8 safe-bottom animate-slide-up overflow-y-auto"
+        style={{ backgroundColor: 'var(--surface-elevated)', maxHeight: '90vh' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center mb-4">
