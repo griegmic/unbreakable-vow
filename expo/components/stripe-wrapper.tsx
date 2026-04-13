@@ -1,15 +1,9 @@
 import Constants from 'expo-constants';
 import React from 'react';
 
-const IS_EXPO_GO = Constants.appOwnership === 'expo';
-
-// Stripe native module isn't available in Expo Go — use a no-op wrapper there
-function NoOpWrapper({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
-}
-
-function NativeStripeWrapper({ children }: { children: React.ReactNode }) {
-  // Dynamic require to avoid crash in Expo Go where native module is missing
+// Always attempt to load StripeProvider — the try/catch handles Expo Go
+// gracefully if the native module isn't available.
+function StripeWrapperInner({ children }: { children: React.ReactNode }) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { StripeProvider } = require('@stripe/stripe-react-native');
@@ -33,9 +27,9 @@ function NativeStripeWrapper({ children }: { children: React.ReactNode }) {
       </StripeProvider>
     );
   } catch {
-    console.warn('[StripeWrapper] Stripe native module not available');
+    console.warn('[StripeWrapper] Stripe native module not available — falling back to no-op');
     return <>{children}</>;
   }
 }
 
-export const StripeWrapper = IS_EXPO_GO ? NoOpWrapper : NativeStripeWrapper;
+export const StripeWrapper = StripeWrapperInner;
