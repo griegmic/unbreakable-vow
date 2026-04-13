@@ -104,8 +104,8 @@ export default function SealPage() {
 
     const doCreate = async (): Promise<{ id: string; error?: string } | null> => {
       try {
-        const { data: { session: s } } = await supabase.auth.getSession();
-        if (!s) return { id: '', error: 'Not signed in. Please sign in and try again.' };
+        const { data: { session: s }, error: sessErr } = await supabase.auth.refreshSession();
+        if (sessErr || !s) return { id: '', error: 'Not signed in. Please sign in and try again.' };
 
         await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
 
@@ -188,8 +188,11 @@ export default function SealPage() {
     setSealing(true);
     try {
       setError('');
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) {
+
+      // Always try to refresh the session first for a fresh access token
+      const { data: { session: freshSession }, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError || !freshSession) {
+        console.warn('Session refresh failed, redirecting to auth:', refreshError?.message);
         setStep('auth');
         sealingRef.current = false;
         setSealing(false);
@@ -198,15 +201,6 @@ export default function SealPage() {
 
       const draft = await ensureDraftVow();
       if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
-
-      // Refresh session for fresh access token
-      const { data: { session: freshSession } } = await supabase.auth.refreshSession();
-      if (!freshSession) {
-        setStep('auth');
-        sealingRef.current = false;
-        setSealing(false);
-        return;
-      }
 
       const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`;
       const piRes = await fetch(fnUrl, {
@@ -220,6 +214,16 @@ export default function SealPage() {
       });
 
       const piData = await piRes.json().catch(() => null);
+
+      // If 401, session is truly dead — force re-auth
+      if (piRes.status === 401) {
+        console.warn('Edge function returned 401 — forcing re-auth');
+        await supabase.auth.signOut();
+        setStep('auth');
+        sealingRef.current = false;
+        setSealing(false);
+        return;
+      }
 
       if (!piRes.ok) {
         const detail = piData?.error || `HTTP ${piRes.status}`;
@@ -247,8 +251,9 @@ export default function SealPage() {
     setSealing(true);
     try {
       setError('');
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) {
+      const { data: { session: currentSession }, error: refreshErr } = await supabase.auth.refreshSession();
+      if (refreshErr || !currentSession) {
+        console.warn('Session refresh failed in zero-stake seal:', refreshErr?.message);
         setStep('auth');
         sealingRef.current = false;
         setSealing(false);
