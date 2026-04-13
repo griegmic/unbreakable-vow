@@ -202,10 +202,23 @@ export default function SealScreen() {
     setLoading(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
-    // $0 vows in Expo Go — no Stripe needed, use dev bypass path
-    if (IS_EXPO_GO && vow.stake.amount === 0) {
+    // Expo Go — no native Stripe module, show skip prompt for staked vows
+    if (IS_EXPO_GO) {
+      if (vow.stake.amount === 0) {
+        setLoading(false);
+        await handleDevBypass();
+        return;
+      }
+      // Staked vow in Expo Go: prompt with skip option
       setLoading(false);
-      await handleDevBypass();
+      Alert.alert(
+        `Payment: $${vow.stake.amount}`,
+        'Stripe is not available in Expo Go. Skip payment for testing?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Skip payment (test)', onPress: () => handleDevBypass() },
+        ],
+      );
       return;
     }
 
@@ -335,28 +348,6 @@ export default function SealScreen() {
         sealed ? null : (
           <>
             <PrimaryButton label={sealLabel} onPress={handleSeal} disabled={loading} testID="seal-primary" />
-            {IS_EXPO_GO && vow.stake.amount > 0 && (
-              <Pressable
-                onPress={async () => {
-                  if (!isAuthenticated) { setAuthSheetVisible(true); return; }
-                  await handleDevBypass();
-                }}
-                disabled={loading}
-                style={({ pressed }) => ({
-                  minHeight: 44,
-                  borderRadius: 14,
-                  alignItems: 'center' as const,
-                  justifyContent: 'center' as const,
-                  borderWidth: 1,
-                  borderStyle: 'dashed' as const,
-                  borderColor: 'rgba(212,162,79,0.3)',
-                  backgroundColor: 'rgba(212,162,79,0.06)',
-                  opacity: pressed ? 0.7 : loading ? 0.4 : 1,
-                })}
-              >
-                <Text style={{ color: palette.gold, fontSize: 14, fontWeight: '600' }}>Skip payment (test mode)</Text>
-              </Pressable>
-            )}
             <SecondaryButton label="Back" onPress={() => router.back()} testID="seal-back" />
           </>
         )

@@ -38,7 +38,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
-const STAKE_OPTIONS = [0, ...defaultStakeAmounts]; // [0, 10, 25, 50, 100]
+const STAKE_OPTIONS = [...defaultStakeAmounts]; // [10, 25, 50, 100]
 
 /**
  * Strip time-window phrases that generateSuggestion appends (e.g. ", this week.",
@@ -299,9 +299,22 @@ export default function QuickVowScreen() {
     const resolvedWitnessName = (!witnessName || witnessName === 'Just me') ? 'Just me' : witnessName;
     const resolvedWitnessPhone = witnessPhone ? formatE164(witnessPhone) : null;
 
-    // $0 vows in Expo Go — no Stripe needed, use dev bypass
-    if (IS_EXPO_GO && stakeAmount === 0) {
-      await devBypassSeal(resolvedWitnessName, resolvedWitnessPhone);
+    // Expo Go — no native Stripe module
+    if (IS_EXPO_GO) {
+      if (stakeAmount === 0) {
+        await devBypassSeal(resolvedWitnessName, resolvedWitnessPhone);
+        return;
+      }
+      // Staked vow in Expo Go: prompt with skip option
+      setSealing(false);
+      Alert.alert(
+        `Payment: $${stakeAmount}`,
+        'Stripe is not available in Expo Go. Skip payment for testing?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Skip payment (test)', onPress: () => devBypassSeal(resolvedWitnessName, resolvedWitnessPhone) },
+        ],
+      );
       return;
     }
 
@@ -464,32 +477,6 @@ export default function QuickVowScreen() {
             {stakeAmount > 0 && (
               <Text style={styles.ctaSubtext}>${stakeAmount} held until verdict</Text>
             )}
-            {IS_EXPO_GO && stakeAmount > 0 && (
-              <Pressable
-                onPress={async () => {
-                  if (!oathChecked || !vowText.trim() || sealing) return;
-                  if (!isAuthenticated) { setAuthSheetVisible(true); return; }
-                  const resolvedName = (!witnessName || witnessName === 'Just me') ? 'Just me' : witnessName;
-                  const resolvedPhone = witnessPhone ? formatE164(witnessPhone) : null;
-                  await devBypassSeal(resolvedName, resolvedPhone);
-                }}
-                disabled={!oathChecked || !vowText.trim() || sealing}
-                style={({ pressed }) => ({
-                  minHeight: 44,
-                  borderRadius: 14,
-                  alignItems: 'center' as const,
-                  justifyContent: 'center' as const,
-                  borderWidth: 1,
-                  borderStyle: 'dashed' as const,
-                  borderColor: 'rgba(212,162,79,0.3)',
-                  backgroundColor: 'rgba(212,162,79,0.06)',
-                  marginTop: 8,
-                  opacity: pressed ? 0.7 : sealing ? 0.4 : 1,
-                })}
-              >
-                <Text style={{ color: palette.gold, fontSize: 14, fontWeight: '600' }}>Skip payment (test mode)</Text>
-              </Pressable>
-            )}
           </View>
         }
       >
@@ -633,12 +620,17 @@ export default function QuickVowScreen() {
             {STAKE_OPTIONS.map((amt) => (
               <ChoiceChip
                 key={amt}
-                label={amt === 0 ? '$0' : `$${amt}`}
+                label={`$${amt}`}
                 active={stakeAmount === amt}
                 onPress={() => setStakeAmount(amt)}
               />
             ))}
           </View>
+          <Pressable onPress={() => setStakeAmount(0)} style={styles.accountabilityLink}>
+            <Text style={[styles.accountabilityLinkText, stakeAmount === 0 && styles.accountabilityLinkTextActive]}>
+              {stakeAmount === 0 ? 'Accountability only (no stake)' : 'or go accountability only'}
+            </Text>
+          </Pressable>
 
           {stakeAmount > 0 ? (
             <>
@@ -982,5 +974,17 @@ const styles = StyleSheet.create({
   dareLinkBold: {
     color: palette.goldBright,
     fontWeight: '700',
+  },
+  accountabilityLink: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  accountabilityLinkText: {
+    color: palette.textMuted,
+    fontSize: 13,
+    opacity: 0.6,
+  },
+  accountabilityLinkTextActive: {
+    opacity: 1,
   },
 });
