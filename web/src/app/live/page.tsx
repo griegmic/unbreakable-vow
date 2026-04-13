@@ -139,16 +139,6 @@ export default function LivePage() {
     }
   };
 
-  if (loading || authLoading) {
-    return (
-      <RitualScreen>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
-        </div>
-      </RitualScreen>
-    );
-  }
-
   // No active vow — redirect to create flow
   // Experienced users (have any past vows) → /create (quick vow)
   // New users (no vows ever) → /guided
@@ -168,7 +158,7 @@ export default function LivePage() {
     })();
   }, [loading, authLoading, vow, router]);
 
-  if (!vow) {
+  if (loading || authLoading || !vow) {
     return (
       <RitualScreen>
         <div className="flex items-center justify-center min-h-[60vh]">
