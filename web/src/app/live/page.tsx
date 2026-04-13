@@ -149,24 +149,31 @@ export default function LivePage() {
     );
   }
 
+  // No active vow — redirect to create flow
+  // Experienced users (have any past vows) → /create (quick vow)
+  // New users (no vows ever) → /guided
+  useEffect(() => {
+    if (loading || authLoading || vow) return;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { count } = await supabase.from('vows')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', session.user.id);
+      if ((count ?? 0) > 0) {
+        router.replace('/create');
+      } else {
+        router.replace('/guided');
+      }
+    })();
+  }, [loading, authLoading, vow, router]);
+
   if (!vow) {
     return (
-      <RitualScreen
-        footer={<PrimaryButton label="Make a vow" onPress={() => router.push('/create')} />}
-      >
-        <FadeUp>
-          <div className="flex items-center justify-between">
-            <HeaderBadge />
-            <HamburgerMenu />
-          </div>
-        </FadeUp>
-        <FadeUp delay={0.1}>
-          <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
-            <p className="text-[17px] font-serif text-center" style={{ color: 'var(--text-secondary)' }}>
-              No active vow right now.
-            </p>
-          </div>
-        </FadeUp>
+      <RitualScreen>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
+        </div>
       </RitualScreen>
     );
   }
