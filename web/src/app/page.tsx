@@ -156,7 +156,7 @@ export default function HomePage() {
       <FadeUp>
         <div className="flex items-center justify-between">
           <HeaderBadge />
-          {isAuthenticated && <HamburgerMenu />}
+          <HamburgerMenu />
         </div>
       </FadeUp>
 
