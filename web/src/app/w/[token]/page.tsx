@@ -18,32 +18,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const { data: vow } = await supabase
     .from('vows')
-    .select('refined_text, witness_name, stake_amount')
+    .select('refined_text, witness_name, stake_amount, user_id')
     .eq('witness_invite_token', token)
     .single();
 
   if (!vow) return { title: 'Unbreakable Vow' };
 
+  // Fetch maker's first name for the preview
+  let makerFirst = 'Someone';
+  if (vow.user_id) {
+    const { data: user } = await supabase
+      .from('users')
+      .select('display_name')
+      .eq('id', vow.user_id)
+      .single();
+    if (user?.display_name) makerFirst = user.display_name.split(' ')[0];
+  }
+
+  const title = vow.stake_amount > 0
+    ? `${makerFirst} put $${Math.round(vow.stake_amount / 100)} on the line. Will you hold them to it?`
+    : `${makerFirst} made a vow. Will you hold them to it?`;
+  const description = `"${vow.refined_text}"`;
+
   return {
-    title: `${vow.witness_name}, you've been named as a witness`,
-    description: vow.stake_amount > 0
-      ? `"${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} is on the line. Accept your role as witness.`
-      : `"${vow.refined_text}" — Accept your role as witness.`,
+    title,
+    description,
     openGraph: {
-      title: `${vow.witness_name}, you've been named as a witness`,
-      description: vow.stake_amount > 0
-        ? `"${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} is on the line.`
-        : `"${vow.refined_text}" — Their word is on the line.`,
+      title,
+      description,
       images: [{ url: `/w/${token}/og`, width: 1200, height: 630 }],
       type: 'website',
       siteName: 'Unbreakable Vow',
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${vow.witness_name}, you've been named as a witness`,
-      description: vow.stake_amount > 0
-        ? `"${vow.refined_text}" — $${Math.round(vow.stake_amount / 100)} is on the line.`
-        : `"${vow.refined_text}" — Their word is on the line.`,
+      title,
+      description,
       images: [`/w/${token}/og`],
     },
   };

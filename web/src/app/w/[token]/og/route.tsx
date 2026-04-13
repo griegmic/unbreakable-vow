@@ -9,14 +9,14 @@ function truncate(text: string, maxLength: number): string {
 }
 
 function renderImage(
-  witnessName: string | null,
   makerName: string | null,
   vowText: string | null,
   stakeAmount: number,
 ) {
-  const stakeLabel = stakeAmount > 0
-    ? `$${Math.round(stakeAmount / 100)} is on the line.`
-    : 'Their word is on the line.';
+  const headline = stakeAmount > 0
+    ? `${makerName || 'Someone'} put $${Math.round(stakeAmount / 100)} on the line.`
+    : `${makerName || 'Someone'} made a vow.`;
+  const subline = 'Will you hold them to it?';
 
   return new ImageResponse(
     (
@@ -36,7 +36,7 @@ function renderImage(
         <div
           style={{
             color: '#C8A84E',
-            fontSize: 40,
+            fontSize: 36,
             fontWeight: 700,
             letterSpacing: '0.15em',
             textAlign: 'center',
@@ -58,49 +58,48 @@ function renderImage(
           }}
         />
 
-        {/* Witness callout */}
+        {/* Headline */}
         <div
           style={{
             color: '#FFFFFF',
-            fontSize: 24,
+            fontSize: 32,
+            fontWeight: 700,
             textAlign: 'center',
-            marginBottom: 16,
+            marginBottom: 8,
             display: 'flex',
           }}
         >
-          {witnessName
-            ? `${witnessName}, you've been named as a witness`
-            : 'You\'ve been named as a witness'}
+          {headline}
+        </div>
+
+        {/* Subline */}
+        <div
+          style={{
+            color: '#C8A84E',
+            fontSize: 26,
+            textAlign: 'center',
+            marginBottom: 24,
+            display: 'flex',
+          }}
+        >
+          {subline}
         </div>
 
         {/* Vow text */}
         {vowText && (
           <div
             style={{
-              color: '#FFFFFF',
-              fontSize: 28,
+              color: '#AAAAAA',
+              fontSize: 22,
               textAlign: 'center',
               maxWidth: 900,
               lineHeight: 1.4,
-              marginBottom: 16,
               display: 'flex',
             }}
           >
             {`\u201C${vowText}\u201D`}
           </div>
         )}
-
-        {/* Maker + stakes */}
-        <div
-          style={{
-            color: '#888888',
-            fontSize: 18,
-            textAlign: 'center',
-            display: 'flex',
-          }}
-        >
-          {makerName ? `${makerName} needs you. ${stakeLabel}` : stakeLabel}
-        </div>
 
         {/* Domain */}
         <div
@@ -137,19 +136,19 @@ export async function GET(
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      return renderImage(null, null, null, 0);
+      return renderImage(null, null, 0);
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: vow } = await supabase
       .from('vows')
-      .select('refined_text, witness_name, stake_amount, user_id')
+      .select('refined_text, stake_amount, user_id')
       .eq('witness_invite_token', token)
       .single();
 
     if (!vow) {
-      return renderImage(null, null, null, 0);
+      return renderImage(null, null, 0);
     }
 
     // Fetch maker name
@@ -168,12 +167,11 @@ export async function GET(
     const vowText = truncate(vow.refined_text || '', 80);
 
     return renderImage(
-      vow.witness_name || null,
       makerName,
       vowText,
       vow.stake_amount || 0,
     );
   } catch {
-    return renderImage(null, null, null, 0);
+    return renderImage(null, null, 0);
   }
 }
