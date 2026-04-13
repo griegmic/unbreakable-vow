@@ -285,46 +285,8 @@ export default function DashboardPage() {
   const isEmpty = myVows.length === 0 && witnessingVows.length === 0 && challenges.length === 0;
 
   if (isEmpty) {
-    return (
-      <RitualScreen
-        footer={<PrimaryButton label="+ Make a Vow" onPress={() => router.push('/create')} />}
-      >
-        <FadeUp>
-          <div className="flex items-center justify-between">
-            <HeaderBadge />
-            <button
-              onClick={() => router.push('/settings')}
-              aria-label="Settings"
-              className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--text-secondary)' }} />
-            </button>
-          </div>
-        </FadeUp>
-        <FadeUp delay={0.1}>
-          <div className="flex flex-col items-center justify-center min-h-[50vh] gap-5">
-            <p className="text-[20px] font-serif font-bold text-center" style={{ color: 'var(--text)' }}>
-              No vows yet.
-            </p>
-            <p className="text-[15px] text-center" style={{ color: 'var(--text-secondary)' }}>
-              Make your first commitment.
-            </p>
-            <div className="flex flex-wrap justify-center gap-2 mt-2">
-              {['No phone in bed', 'Exercise 3x/week', 'Read 20 pages/day'].map(ex => (
-                <div
-                  key={ex}
-                  className="px-3.5 py-2.5 rounded-full"
-                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-                >
-                  <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>{ex}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </FadeUp>
-      </RitualScreen>
-    );
+    router.replace('/?new=1');
+    return null;
   }
 
   return (

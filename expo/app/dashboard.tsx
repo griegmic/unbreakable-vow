@@ -1,7 +1,7 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { ChevronLeft, ChevronRight, History, Settings } from 'lucide-react-native';
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -382,6 +382,13 @@ export default function VowDashboard() {
   }, [myVows, witnessingVows, challenges, recentVows]);
 
   const isEmpty = listData.length === 0;
+
+  // No vows at all — redirect to the guided creation flow
+  useEffect(() => {
+    if (!loading && !fetchError && isEmpty) {
+      router.replace('/');
+    }
+  }, [loading, fetchError, isEmpty, router]);
 
   // ---------------------------------------------------------------------------
   // Stats
