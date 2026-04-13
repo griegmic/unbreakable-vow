@@ -1,9 +1,15 @@
 import Constants from 'expo-constants';
 import React from 'react';
+import { Platform } from 'react-native';
 
-// Always attempt to load StripeProvider — the try/catch handles Expo Go
-// gracefully if the native module isn't available.
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
+
 function StripeWrapperInner({ children }: { children: React.ReactNode }) {
+  // Expo Go doesn't bundle native Stripe modules — skip entirely
+  if (IS_EXPO_GO || Platform.OS === 'web') {
+    return <>{children}</>;
+  }
+
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { StripeProvider } = require('@stripe/stripe-react-native');
