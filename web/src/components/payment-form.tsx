@@ -13,6 +13,27 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
   const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState('');
   const [expressReady, setExpressReady] = useState(false);
+  const [applePayDebug, setApplePayDebug] = useState<string | null>(null);
+
+  // Diagnostic: check Apple Pay availability via Payment Request API
+  useEffect(() => {
+    if (!stripe) return;
+    const pr = stripe.paymentRequest({
+      country: 'US',
+      currency: 'usd',
+      total: { label: 'Test', amount: 1000 },
+    });
+    pr.canMakePayment().then((result) => {
+      const info = result
+        ? `Available: applePay=${result.applePay}, googlePay=${result.googlePay}`
+        : 'NOT available (canMakePayment returned null)';
+      console.log('[Apple Pay diagnostic]', info);
+      setApplePayDebug(info);
+    }).catch((err) => {
+      console.error('[Apple Pay diagnostic] error:', err);
+      setApplePayDebug(`Error: ${err.message}`);
+    });
+  }, [stripe]);
 
   const handleExpressConfirm = async (event: StripeExpressCheckoutElementConfirmEvent) => {
     if (!stripe || !elements) return;
@@ -88,6 +109,11 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
           wallets: { applePay: 'never', googlePay: 'never' },
         }}
       />
+      {applePayDebug && (
+        <p className="text-[11px] px-2 py-1 rounded" style={{ color: 'var(--text-muted)', backgroundColor: 'rgba(255,255,255,0.05)' }}>
+          Apple Pay: {applePayDebug}
+        </p>
+      )}
       {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
       <button
         type="submit"

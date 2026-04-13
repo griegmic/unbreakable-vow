@@ -28,7 +28,18 @@ async function verifyUser(jwt: string) {
       'apikey': SERVICE_ROLE_KEY,
     },
   });
-  if (!res.ok) return null;
+  if (!res.ok) {
+    const body = await res.text().catch(() => '');
+    console.error(`[create-payment-intent] auth check failed: ${res.status} ${res.statusText}`, body);
+    // Decode JWT to check expiry without verifying signature
+    try {
+      const payload = JSON.parse(atob(jwt.split('.')[1]));
+      const exp = payload.exp ? new Date(payload.exp * 1000).toISOString() : 'unknown';
+      const now = new Date().toISOString();
+      console.error(`[create-payment-intent] JWT exp: ${exp}, now: ${now}, sub: ${payload.sub}`);
+    } catch { /* ignore decode errors */ }
+    return null;
+  }
   return res.json();
 }
 
@@ -60,10 +71,10 @@ Deno.serve(async (req) => {
     }
 
     const jwt = authHeader.replace('Bearer ', '');
-    console.log('[create-payment-intent] verifying user');
+    console.log('[create-payment-intent] verifying user, jwt length:', jwt.length);
     const user = await verifyUser(jwt);
     if (!user || !user.id) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      return new Response(JSON.stringify({ error: 'Unauthorized', detail: 'JWT verification failed — try signing out and back in' }), {
         status: 401, headers: corsHeaders,
       });
     }

@@ -217,8 +217,9 @@ export default function SealPage() {
 
       // If 401, session is truly dead — force re-auth
       if (piRes.status === 401) {
-        console.warn('Edge function returned 401 — forcing re-auth');
+        console.warn('Edge function returned 401 — forcing re-auth. Detail:', piData);
         await supabase.auth.signOut();
+        setError('Session expired — please sign in again.');
         setStep('auth');
         sealingRef.current = false;
         setSealing(false);
