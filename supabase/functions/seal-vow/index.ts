@@ -91,9 +91,17 @@ Deno.serve(async (req) => {
       });
     }
 
-    // If skip_payment flag is set, clear Stripe PI but preserve stake_amount for display
+    // skip_payment is only allowed for $0 (accountability-only) vows.
+    // Staked vows MUST go through Stripe — never skip payment on real money.
     if (skip_payment) {
-      console.log('[seal-vow] skip_payment flag — clearing Stripe PI, preserving stake for display');
+      if (vow.stake_amount > 0) {
+        console.error('[seal-vow] REJECTED: skip_payment on staked vow', { vow_id, stake_amount: vow.stake_amount });
+        return new Response(JSON.stringify({ error: 'Cannot skip payment on a staked vow' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      console.log('[seal-vow] skip_payment flag — $0 vow, clearing Stripe PI');
       const { error: skipErr } = await supabase.from('vows').update({
         stripe_payment_intent_id: null,
       }).eq('id', vow_id);
@@ -104,7 +112,6 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      // Clear PI in local copy so Stripe block is skipped, but keep stake_amount intact
       vow.stripe_payment_intent_id = null;
     }
 

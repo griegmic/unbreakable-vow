@@ -549,7 +549,7 @@ export default function SealPage() {
           clientSecret={clientSecret}
           onSuccess={handlePaymentSuccess}
           onCancel={() => { setStep('review'); setSealing(false); }}
-          onSkip={async () => {
+          onSkip={isDevBypass ? async () => {
             // Skip payment: seal as a $0 vow atomically via edge function
             if (!vow.vowId) {
               setError('Could not skip payment. Please try again.');
@@ -575,7 +575,7 @@ export default function SealPage() {
               router.push('/live');
             }, 1400);
             timersRef.current.push(t1, t2, t3);
-          }}
+          } : undefined}
         />
       )}
     </>
