@@ -135,7 +135,9 @@ function VowCard({
   const countdown = getCountdownText(vow.ends_at);
   const stakeLabel = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} stake` : 'no stake';
   const isChallenge = sectionId === 'attention' && vow.challenge_status === 'pending';
-  const isActiveOwn = sectionId === 'yours' && (vow.status === 'draft' || vow.status === 'active' || vow.status === 'sealed' || vow.status === 'awaiting_verdict');
+  const isActive = vow.status === 'active' || vow.status === 'sealed' || vow.status === 'awaiting_verdict';
+  const isTerminal = ['kept', 'broken', 'voided'].includes(vow.status);
+  const isActiveOwn = sectionId === 'yours' && (vow.status === 'draft' || isActive);
   const personLabel = sectionId === 'witnessing'
     ? "You're witnessing"
     : vow.vow_type === 'challenge' && sectionId === 'yours'
@@ -171,7 +173,13 @@ function VowCard({
         onPress={handlePress}
         onPressIn={handlePressIn}
         onPressOut={handlePressOut}
-        style={styles.card}
+        style={[
+          styles.card,
+          isActive && styles.cardActive,
+          isTerminal && styles.cardTerminal,
+          vow.status === 'voided' && styles.cardVoided,
+          vow.status === 'broken' && styles.cardBroken,
+        ]}
       >
         {/* Vow text + tap affordance */}
         <View style={styles.cardTextRow}>
@@ -745,6 +753,20 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     gap: 10,
+  },
+  cardActive: {
+    backgroundColor: 'rgba(212,162,79,0.06)',
+    borderColor: 'rgba(212,162,79,0.35)',
+    borderWidth: 1.5,
+  },
+  cardTerminal: {
+    opacity: 0.85,
+  },
+  cardBroken: {
+    opacity: 0.7,
+  },
+  cardVoided: {
+    opacity: 0.6,
   },
   cardTextRow: {
     flexDirection: 'row',

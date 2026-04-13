@@ -87,7 +87,7 @@ export function TitleBlock({ eyebrow, title, subtitle }: { eyebrow?: string; tit
   );
 }
 
-export function RitualCard({ children, className }: { children: ReactNode; className?: string }) {
+export function RitualCard({ children, className, style }: { children: ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
     <div
       className={`rounded-[22px] p-[18px] flex flex-col gap-3 ${className || ''}`}
@@ -95,6 +95,7 @@ export function RitualCard({ children, className }: { children: ReactNode; class
         backgroundColor: 'var(--surface)',
         border: '1px solid var(--border)',
         boxShadow: '0 16px 28px rgba(0,0,0,0.26)',
+        ...style,
       }}
     >
       {children}

@@ -88,6 +88,7 @@ export default function VowCard({ vow, role, onTap, onAcceptChallenge, onDecline
   const countdown = getCountdownText(vow.ends_at);
   const progress = getProgressInfo(vow.starts_at, vow.ends_at);
   const isTerminal = ['kept', 'broken', 'voided'].includes(vow.status);
+  const isActive = vow.status === 'active' || vow.status === 'sealed' || vow.status === 'awaiting_verdict';
   const showProgress = !isTerminal && vow.starts_at && vow.ends_at;
   const showChallenge = role === 'target' && vow.challenge_status === 'pending';
 
@@ -98,9 +99,25 @@ export default function VowCard({ vow, role, onTap, onAcceptChallenge, onDecline
     ? 'You\'re witnessing'
     : `By ${vow.witness_name || 'someone'}`;
 
+  // State-driven visual weight
+  const cardStyle: React.CSSProperties = isActive
+    ? {
+        backgroundColor: 'rgba(212,162,79,0.06)',
+        border: '1.5px solid rgba(212,162,79,0.35)',
+        boxShadow: '0 8px 24px rgba(212,162,79,0.12), 0 16px 28px rgba(0,0,0,0.26)',
+      }
+    : isTerminal
+    ? {
+        backgroundColor: 'var(--surface)',
+        border: '1px solid var(--border)',
+        boxShadow: '0 8px 16px rgba(0,0,0,0.15)',
+        opacity: vow.status === 'voided' ? 0.6 : vow.status === 'broken' ? 0.7 : 0.85,
+      }
+    : {};
+
   return (
     <div onClick={onTap} className={onTap ? 'cursor-pointer transition-transform active:scale-[0.98]' : ''}>
-      <RitualCard>
+      <RitualCard style={cardStyle}>
         {/* Status row */}
         <div className="flex items-center gap-2">
           <div
