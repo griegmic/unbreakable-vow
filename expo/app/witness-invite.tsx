@@ -532,7 +532,7 @@ export default function WitnessInviteScreen() {
       </Pressable>
 
       {!sworn && (
-        <Text style={styles.badFriendText}>or don't, if you're a bad friend</Text>
+        <Text style={styles.badFriendText}>they picked you for a reason</Text>
       )}
     </RitualScreen>
   );
@@ -814,7 +814,7 @@ const styles = StyleSheet.create({
     color: palette.textMuted,
     fontSize: 11,
     textAlign: 'center' as const,
-    opacity: 0.35,
+    opacity: 0.5,
     marginTop: 4,
   },
   pendingTitle: {

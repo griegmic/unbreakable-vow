@@ -596,19 +596,19 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
       <FadeUp delay={0.18}>
         <div className="flex flex-col items-center gap-1">
-          <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-[15px] leading-[22px] text-center" style={{ color: 'var(--text-secondary)' }}>
             {stakeDisplay
               ? `If ${makerFirstName} breaks it, ${stakeDisplay} goes to ${vow.destination}.`
               : `No money at stake — just their word.`}
           </p>
-          <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
+          <p className="text-[15px] leading-[22px] text-center" style={{ color: 'var(--text-secondary)' }}>
             You decide on {endDate}.
           </p>
         </div>
       </FadeUp>
 
       <FadeUp delay={0.24}>
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 -mt-1">
           <button
             type="button"
             onClick={() => setSworn(!sworn)}
@@ -639,8 +639,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </div>
           </button>
           {!sworn && (
-            <p className="text-[11px] text-center mt-1" style={{ color: 'var(--text-muted)', opacity: 0.35 }}>
-              or don&apos;t, if you&apos;re a bad friend
+            <p className="text-[11px] text-center mt-1" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+              they picked you for a reason
             </p>
           )}
         </div>
