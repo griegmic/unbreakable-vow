@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { DollarSign, Sparkles, Calendar, Eye, MessageCircle, Check, Phone } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
+import { Sparkles, Eye, MessageCircle, Check, Phone } from 'lucide-react';
+import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
 
 interface Vow {
   id: string;
@@ -566,109 +566,83 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   }
 
   // ─── PENDING STATE (accept/decline) ───
+  const stakeDisplay = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : null;
+  const [sworn, setSworn] = useState(false);
+
   return (
     <RitualScreen
       footer={
-        <>
-          <PrimaryButton
-            label={`I'm in — I'll judge ${makerLabel} honestly`}
-            onPress={handleAccept}
-            loading={busy}
-          />
-          <button
-            type="button"
-            onClick={handleDecline}
-            disabled={busy}
-            className="min-h-[44px] flex items-center justify-center transition-opacity hover:opacity-70 disabled:opacity-40"
-          >
-            <span className="text-[12px]" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>I&apos;ll pass</span>
-          </button>
-        </>
+        <PrimaryButton
+          label={busy ? 'Accepting...' : "I'll hold them to it"}
+          onPress={handleAccept}
+          loading={busy}
+          disabled={!sworn}
+        />
       }
     >
       <FadeUp><HeaderBadge /></FadeUp>
 
-      {/* Chosen badge */}
-      <FadeUp delay={0.04}>
-        <div className="flex justify-center">
-          <div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
-            style={{ backgroundColor: 'rgba(212,162,79,0.10)', border: '1px solid rgba(212,162,79,0.25)' }}
-          >
-            <Eye className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-            <span className="text-[11px] font-bold tracking-[1.5px] uppercase" style={{ color: 'var(--gold)' }}>
-              YOU&apos;RE THE WITNESS
-            </span>
-          </div>
+      <FadeUp delay={0.06}>
+        <h1 className="text-[28px] font-bold font-serif leading-[34px] tracking-[-0.5px] text-center" style={{ color: 'var(--text)' }}>
+          {makerFirstName} made a vow.
+        </h1>
+      </FadeUp>
+
+      <FadeUp delay={0.12}>
+        <p className="text-[22px] font-serif font-medium leading-[30px] text-center" style={{ color: 'var(--text)' }}>
+          &ldquo;{vow.refined_text}&rdquo;
+        </p>
+      </FadeUp>
+
+      <FadeUp delay={0.18}>
+        <div className="flex flex-col items-center gap-1">
+          <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
+            {stakeDisplay
+              ? `If ${makerFirstName} breaks it, ${stakeDisplay} goes to ${vow.destination}.`
+              : `No money at stake — just their word.`}
+          </p>
+          <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
+            You decide on {endDate}.
+          </p>
         </div>
       </FadeUp>
 
-      <FadeUp delay={0.08}>
-        <TitleBlock
-          title={`${makerFirstName} made a vow.`}
-          subtitle={vow.stake_amount > 0 ? `${makerFirstName} put $${Math.round(vow.stake_amount / 100)} on the line — and named you the judge.` : `${makerFirstName} made a vow — and named you the judge.`}
-        />
-      </FadeUp>
-
-      <FadeUp delay={0.14}>
-        <RitualCard>
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-            <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
-          </div>
-          <p className="text-[20px] font-serif font-medium leading-[28px]" style={{ color: 'var(--text)' }}>&ldquo;{vow.refined_text}&rdquo;</p>
-          <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4" style={{ color: 'var(--gold)' }} />
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
+      <FadeUp delay={0.24}>
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setSworn(!sworn)}
+            className="flex items-start gap-3 w-full text-left py-3 px-4 rounded-[16px] transition-all"
+            style={{
+              backgroundColor: sworn ? 'rgba(212,162,79,0.08)' : 'transparent',
+              border: `1px solid ${sworn ? 'rgba(212,162,79,0.25)' : 'var(--border)'}`,
+            }}
+          >
+            <div
+              className="w-6 h-6 rounded-[7px] flex items-center justify-center shrink-0 mt-0.5 transition-all"
+              style={{
+                backgroundColor: sworn ? 'var(--gold-bright)' : 'transparent',
+                border: sworn ? '2px solid var(--gold-bright)' : '2px solid var(--text-muted)',
+              }}
+            >
+              {sworn && (
+                <Check className="w-3.5 h-3.5" style={{ color: '#0B0D11' }} strokeWidth={3} />
+              )}
             </div>
-            <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>{vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : 'Accountability only'}</span>
-          </div>
-          {vow.stake_amount > 0 && vow.destination && (
-            <div className="flex items-center justify-between">
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
-              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
+            <div className="flex flex-col gap-0.5">
+              <span className="text-[15px] font-bold font-serif" style={{ color: 'var(--gold-bright)' }}>
+                I solemnly swear
+              </span>
+              <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+                to keep {makerLabel} accountable
+              </span>
             </div>
+          </button>
+          {!sworn && (
+            <p className="text-[11px] text-center mt-1" style={{ color: 'var(--text-muted)', opacity: 0.35 }}>
+              or don&apos;t, if you&apos;re a bad friend
+            </p>
           )}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar className="w-4 h-4" style={{ color: 'var(--gold)' }} />
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Your verdict by</span>
-            </div>
-            <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{endDate}</span>
-          </div>
-        </RitualCard>
-      </FadeUp>
-
-      {/* What happens next */}
-      <FadeUp delay={0.2}>
-        <div
-          className="rounded-[20px] p-[18px]"
-          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-        >
-          <p className="text-[11px] font-bold tracking-[1.3px] uppercase mb-3" style={{ color: 'var(--gold)' }}>
-            WHAT HAPPENS NEXT
-          </p>
-          <div className="flex flex-col gap-2.5">
-            {[
-              { num: '1', text: `${makerFirstName} works on their vow` },
-              { num: '2', text: `We'll remind you when it's time to judge` },
-              { num: '3', text: 'You deliver your verdict.' },
-            ].map((step) => (
-              <div key={step.num} className="flex items-start gap-2.5">
-                <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                  style={{ backgroundColor: 'rgba(212,162,79,0.12)' }}
-                >
-                  <span className="text-[10px] font-bold" style={{ color: 'var(--gold)' }}>{step.num}</span>
-                </div>
-                <span className="text-[14px] leading-[20px]" style={{ color: 'var(--text-secondary)' }}>
-                  {step.text}
-                </span>
-              </div>
-            ))}
-          </div>
         </div>
       </FadeUp>
 

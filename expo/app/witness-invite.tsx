@@ -1,10 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { AlertCircle, Check, CheckCircle2, MessageCircle, Phone, Shield } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Animated, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { AlertCircle, Check, CheckCircle2, MessageCircle, Phone } from 'lucide-react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Linking, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
+import { PrimaryButton, RitualCard, RitualScreen } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
 import { acceptWitnessInvite, declineWitnessInvite, getVowByWitnessToken, saveWitnessReminder, type WitnessVowData } from '@/lib/vow-api';
 import { useAuth } from '@/providers/auth-provider';
@@ -20,7 +20,6 @@ export default function WitnessInviteScreen() {
 
   const [screenState, setScreenState] = useState<ScreenState>(token ? 'loading' : 'invite');
   const [remoteVow, setRemoteVow] = useState<WitnessVowData | null>(null);
-  const [sworn, setSworn] = useState<boolean>(false);
   const [accepting, setAccepting] = useState<boolean>(false);
   const [declining, setDeclining] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string>('');
@@ -86,26 +85,6 @@ export default function WitnessInviteScreen() {
     void loadVow();
   }, [token]);
 
-  const checkboxScale = useRef(new Animated.Value(1)).current;
-  const swearGlow = useRef(new Animated.Value(0)).current;
-
-  const handleSwear = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setSworn(true);
-    Animated.parallel([
-      Animated.timing(swearGlow, { toValue: 1, duration: 600, useNativeDriver: false }),
-      Animated.sequence([
-        Animated.timing(checkboxScale, { toValue: 1.2, duration: 150, useNativeDriver: true }),
-        Animated.spring(checkboxScale, { toValue: 1, useNativeDriver: true, speed: 14, bounciness: 10 }),
-      ]),
-    ]).start();
-  };
-
-  const handleUnswear = () => {
-    void Haptics.selectionAsync();
-    setSworn(false);
-    Animated.timing(swearGlow, { toValue: 0, duration: 300, useNativeDriver: false }).start();
-  };
 
   const handleAccept = useCallback(async () => {
     if (accepting) return;
@@ -167,15 +146,6 @@ export default function WitnessInviteScreen() {
     );
   }, [isRemote, remoteVow, makerName]);
 
-  const swearBorderColor = swearGlow.interpolate({
-    inputRange: [0, 1],
-    outputRange: [palette.border, palette.borderStrong],
-  });
-
-  const swearBgOpacity = swearGlow.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 0.06],
-  });
 
   if (screenState === 'loading') {
     return (
@@ -507,86 +477,63 @@ export default function WitnessInviteScreen() {
     );
   }
 
+  const stakeDisplay = stakeAmount > 0 ? `$${stakeAmount}` : null;
+  const [sworn, setSworn] = useState(false);
+
+  const handleSwear = () => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSworn(true);
+  };
+
   return (
     <RitualScreen
       footer={
-        <>
-          <PrimaryButton
-            label={accepting ? 'Accepting...' : `I accept \u2014 to hold ${makerName} to it and judge honestly`}
-            onPress={handleAccept}
-            disabled={!sworn || accepting}
-            testID="witness-invite-accept"
-          />
-          <SecondaryButton
-            label={declining ? 'Declining...' : 'Decline'}
-            onPress={handleDecline}
-            testID="witness-invite-decline"
-          />
-        </>
+        <PrimaryButton
+          label={accepting ? 'Accepting...' : "I'll hold them to it"}
+          onPress={handleAccept}
+          disabled={!sworn || accepting}
+          testID="witness-invite-accept"
+        />
       }
     >
       <Stack.Screen options={{ headerShown: false }} />
 
-      <View style={styles.badgeWrap}>
-        <View style={styles.badge}>
-          <Shield color={palette.goldBright} size={16} />
-          <Text style={styles.badgeText}>YOU'VE BEEN CHOSEN AS A WITNESS</Text>
-        </View>
+      <Text style={styles.pendingTitle}>
+        {makerName} made a vow.
+      </Text>
+
+      <Text style={styles.vowQuotePending}>
+        &ldquo;{vowText}&rdquo;
+      </Text>
+
+      <View style={styles.pendingInfoWrap}>
+        <Text style={styles.pendingInfoText}>
+          {stakeDisplay
+            ? `If ${makerName} breaks it, ${stakeDisplay} goes to ${brokenTarget}.`
+            : `No money at stake \u2014 just their word.`}
+        </Text>
+        <Text style={styles.pendingInfoText}>
+          You decide{verdictDate ? ` on ${verdictDate}` : ' when time\u2019s up'}.
+        </Text>
       </View>
 
-      <TitleBlock
-        title={`${makerName} made a vow and named you as their witness.`}
-        subtitle="Real money is on the line. Your job: decide if they kept their word."
-      />
+      <Pressable
+        onPress={() => { if (sworn) { setSworn(false); } else { handleSwear(); } }}
+        style={[styles.oathRow, sworn && styles.oathRowActive]}
+        testID="witness-invite-swear"
+      >
+        <View style={[styles.oathCheckbox, sworn && styles.oathCheckboxChecked]}>
+          {sworn && <Check color="#0B0D11" size={14} strokeWidth={3} />}
+        </View>
+        <View style={styles.oathCopy}>
+          <Text style={styles.oathTitle}>I solemnly swear</Text>
+          <Text style={styles.oathSubtitle}>to keep {makerName} accountable</Text>
+        </View>
+      </Pressable>
 
-      <RitualCard>
-        <Text style={styles.sectionLabel}>THE VOW</Text>
-        <Text style={styles.vowTextStyle}>{vowText}</Text>
-        <View style={styles.rule} />
-        <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>At stake</Text>
-          <Text style={styles.metaValueGold}>${stakeAmount}</Text>
-        </View>
-        <View style={styles.metaRow}>
-          <Text style={styles.metaLabel}>If broken</Text>
-          <Text style={styles.metaValue}>${stakeAmount} goes to {brokenTarget}</Text>
-        </View>
-      </RitualCard>
-
-      <RitualCard>
-        <Text style={styles.whatTitle}>What happens when you accept</Text>
-        <View style={styles.stepRow}>
-          <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-          <Text style={styles.stepText}>You'll get an SMS when it's verdict time.</Text>
-        </View>
-        <View style={styles.stepRow}>
-          <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
-          <Text style={styles.stepText}>No daily check-ins — just be aware of the vow.</Text>
-        </View>
-        <View style={styles.stepRow}>
-          <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-          <Text style={styles.stepText}>{verdictDate ? `On ${verdictDate}` : 'When time\'s up'}: kept or broken. One tap.</Text>
-        </View>
-      </RitualCard>
-
-      <Animated.View style={[styles.swearCard, { borderColor: swearBorderColor }]}>
-        <Animated.View style={[styles.swearGlowBg, { opacity: swearBgOpacity }]} />
-        <Pressable
-          onPress={sworn ? handleUnswear : handleSwear}
-          style={styles.swearRow}
-          testID="witness-invite-swear"
-        >
-          <Animated.View style={[styles.checkbox, sworn && styles.checkboxChecked, { transform: [{ scale: checkboxScale }] }]}>
-            {sworn ? <Check color="#0B0D11" size={14} strokeWidth={3} /> : null}
-          </Animated.View>
-          <View style={styles.swearCopy}>
-            <Text style={styles.swearTitle}>I solemnly swear</Text>
-            <Text style={styles.swearText}>
-              to judge honestly and deliver a fair verdict.
-            </Text>
-          </View>
-        </Pressable>
-      </Animated.View>
+      {!sworn && (
+        <Text style={styles.badFriendText}>or don't, if you're a bad friend</Text>
+      )}
     </RitualScreen>
   );
 }
@@ -661,26 +608,6 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: 'center' as const,
   },
-  badgeWrap: {
-    alignItems: 'center',
-  },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: 'rgba(212,162,79,0.08)',
-    borderWidth: 1,
-    borderColor: palette.borderStrong,
-  },
-  badgeText: {
-    color: palette.goldBright,
-    fontSize: 11,
-    fontWeight: '700' as const,
-    letterSpacing: 0.8,
-  },
   sectionLabel: {
     color: palette.gold,
     fontSize: 11,
@@ -715,86 +642,6 @@ const styles = StyleSheet.create({
     color: palette.goldBright,
     fontSize: 14,
     fontWeight: '700' as const,
-  },
-  whatTitle: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '700' as const,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    gap: 12,
-    alignItems: 'center',
-  },
-  stepDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: 'rgba(212,162,79,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  stepNum: {
-    color: palette.goldBright,
-    fontSize: 12,
-    fontWeight: '700' as const,
-  },
-  stepText: {
-    flex: 1,
-    color: palette.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  swearCard: {
-    borderRadius: 22,
-    borderWidth: 1,
-    padding: 20,
-    backgroundColor: palette.surface,
-    overflow: 'hidden',
-    shadowColor: palette.gold,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  swearGlowBg: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: palette.goldBright,
-  },
-  swearRow: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'flex-start',
-  },
-  checkbox: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    borderWidth: 2,
-    borderColor: palette.textMuted,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  checkboxChecked: {
-    backgroundColor: palette.goldBright,
-    borderColor: palette.goldBright,
-  },
-  swearCopy: {
-    flex: 1,
-    gap: 6,
-  },
-  swearTitle: {
-    color: palette.goldBright,
-    fontSize: 18,
-    fontWeight: '700' as const,
-    fontFamily: serifFont,
-    letterSpacing: -0.3,
-  },
-  swearText: {
-    color: palette.textSecondary,
-    fontSize: 14,
-    lineHeight: 21,
   },
   goldButton: {
     flexDirection: 'row',
@@ -920,5 +767,80 @@ const styles = StyleSheet.create({
     color: palette.success,
     fontSize: 14,
     fontWeight: '600',
+  },
+  oathRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: palette.border,
+  },
+  oathRowActive: {
+    backgroundColor: 'rgba(212,162,79,0.08)',
+    borderColor: 'rgba(212,162,79,0.25)',
+  },
+  oathCheckbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: palette.textMuted,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  oathCheckboxChecked: {
+    backgroundColor: palette.goldBright,
+    borderColor: palette.goldBright,
+  },
+  oathCopy: {
+    flex: 1,
+    gap: 2,
+  },
+  oathTitle: {
+    color: palette.goldBright,
+    fontSize: 15,
+    fontWeight: '700' as const,
+    fontFamily: serifFont,
+  },
+  oathSubtitle: {
+    color: palette.textSecondary,
+    fontSize: 13,
+  },
+  badFriendText: {
+    color: palette.textMuted,
+    fontSize: 11,
+    textAlign: 'center' as const,
+    opacity: 0.35,
+    marginTop: 4,
+  },
+  pendingTitle: {
+    color: palette.text,
+    fontSize: 28,
+    fontWeight: '700' as const,
+    fontFamily: serifFont,
+    textAlign: 'center' as const,
+    letterSpacing: -0.5,
+  },
+  vowQuotePending: {
+    color: palette.text,
+    fontSize: 22,
+    lineHeight: 30,
+    fontWeight: '600' as const,
+    fontFamily: serifFont,
+    textAlign: 'center' as const,
+  },
+  pendingInfoWrap: {
+    alignItems: 'center',
+    gap: 4,
+  },
+  pendingInfoText: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    lineHeight: 22,
+    textAlign: 'center' as const,
   },
 });
