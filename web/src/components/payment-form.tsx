@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, PaymentElement, ExpressCheckoutElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
+import type { StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -11,6 +12,26 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
   const [loading, setLoading] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState('');
+  const [expressReady, setExpressReady] = useState(false);
+
+  const handleExpressConfirm = async (event: StripeExpressCheckoutElementConfirmEvent) => {
+    if (!stripe || !elements) return;
+    setLoading(true);
+    setError('');
+
+    const { error: confirmError } = await stripe.confirmPayment({
+      elements,
+      confirmParams: { return_url: window.location.origin + '/sent' },
+      redirect: 'if_required',
+    });
+
+    if (confirmError) {
+      setError(confirmError.message || 'Payment failed.');
+      setLoading(false);
+    } else {
+      onSuccess();
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -41,10 +62,30 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {/* Express Checkout: Apple Pay / Google Pay buttons (renders nothing if unavailable) */}
+      <ExpressCheckoutElement
+        onConfirm={handleExpressConfirm}
+        onReady={({ availablePaymentMethods }) => {
+          console.log('[Stripe] Express checkout available methods:', availablePaymentMethods);
+          if (availablePaymentMethods) setExpressReady(true);
+        }}
+        options={{
+          buttonType: { applePay: 'plain', googlePay: 'plain' },
+          buttonTheme: { applePay: 'white-outline', googlePay: 'white' },
+          layout: { maxColumns: 1, maxRows: 2 },
+        }}
+      />
+      {expressReady && (
+        <div className="flex items-center gap-3 my-1">
+          <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>or pay with card</span>
+          <div className="flex-1 h-px" style={{ backgroundColor: 'rgba(255,255,255,0.1)' }} />
+        </div>
+      )}
       <PaymentElement
         options={{
           layout: 'tabs',
-          wallets: { applePay: 'auto', googlePay: 'auto' },
+          wallets: { applePay: 'never', googlePay: 'never' },
         }}
       />
       {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
