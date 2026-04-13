@@ -254,6 +254,42 @@ export default function QuickVowScreen() {
     if (error) throw new Error(`seal-vow failed: ${error.message || 'Unknown error'}`);
   };
 
+  // Dev bypass: create vow + mark active, skip Stripe
+  const devBypassSeal = useCallback(async (resolvedWitnessName: string, resolvedWitnessPhone: string | null) => {
+    setSealing(true);
+    setError('');
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    let devVowId = 'dev-' + Date.now();
+    let devToken: string | null = 'dev-token-' + Date.now();
+    try {
+      const vowRecord = await createVow({
+        rawInput: vowText,
+        refinedText: finalText,
+        witnessName: resolvedWitnessName,
+        witnessPhone: resolvedWitnessPhone,
+        stakeAmount,
+        consequence,
+        destination: stakeAmount > 0 ? destination : 'None',
+        deadlineIso: deadlineDate.toISOString(),
+      });
+      await supabase.from('vows').update({
+        status: 'active',
+        sealed_at: new Date().toISOString(),
+      }).eq('id', vowRecord.id);
+      devVowId = vowRecord.id;
+      devToken = vowRecord.witness_invite_token;
+    } catch (err) {
+      console.error('[QuickVow] Dev bypass creation failed:', err);
+    }
+    setSealedVowId(devVowId);
+    setWitnessToken(devToken);
+    setSealing(false);
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setTimeout(() => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 150);
+    await handleSealSuccess(devVowId, devToken);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vowText, finalText, stakeAmount, consequence, destination, deadlineDate]);
+
   const handleSealFlow = useCallback(async () => {
     if (sealing) return;
     setSealing(true);
@@ -263,35 +299,9 @@ export default function QuickVowScreen() {
     const resolvedWitnessName = (!witnessName || witnessName === 'Just me') ? 'Just me' : witnessName;
     const resolvedWitnessPhone = witnessPhone ? formatE164(witnessPhone) : null;
 
-    if (IS_EXPO_GO) {
-      let devVowId = 'dev-' + Date.now();
-      let devToken: string | null = 'dev-token-' + Date.now();
-      try {
-        const vowRecord = await createVow({
-          rawInput: vowText,
-          refinedText: finalText,
-          witnessName: resolvedWitnessName,
-          witnessPhone: resolvedWitnessPhone,
-          stakeAmount,
-          consequence,
-          destination: stakeAmount > 0 ? destination : 'None',
-          deadlineIso: deadlineDate.toISOString(),
-        });
-        await supabase.from('vows').update({
-          status: 'active',
-          sealed_at: new Date().toISOString(),
-        }).eq('id', vowRecord.id);
-        devVowId = vowRecord.id;
-        devToken = vowRecord.witness_invite_token;
-      } catch (err) {
-        console.error('[QuickVow] Expo Go creation failed:', err);
-      }
-      setSealedVowId(devVowId);
-      setWitnessToken(devToken);
-      setSealing(false);
-      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-      setTimeout(() => void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success), 150);
-      await handleSealSuccess(devVowId, devToken);
+    // $0 vows in Expo Go — no Stripe needed, use dev bypass
+    if (IS_EXPO_GO && stakeAmount === 0) {
+      await devBypassSeal(resolvedWitnessName, resolvedWitnessPhone);
       return;
     }
 
@@ -453,6 +463,32 @@ export default function QuickVowScreen() {
             />
             {stakeAmount > 0 && (
               <Text style={styles.ctaSubtext}>${stakeAmount} held until verdict</Text>
+            )}
+            {IS_EXPO_GO && stakeAmount > 0 && (
+              <Pressable
+                onPress={async () => {
+                  if (!oathChecked || !vowText.trim() || sealing) return;
+                  if (!isAuthenticated) { setAuthSheetVisible(true); return; }
+                  const resolvedName = (!witnessName || witnessName === 'Just me') ? 'Just me' : witnessName;
+                  const resolvedPhone = witnessPhone ? formatE164(witnessPhone) : null;
+                  await devBypassSeal(resolvedName, resolvedPhone);
+                }}
+                disabled={!oathChecked || !vowText.trim() || sealing}
+                style={({ pressed }) => ({
+                  minHeight: 44,
+                  borderRadius: 14,
+                  alignItems: 'center' as const,
+                  justifyContent: 'center' as const,
+                  borderWidth: 1,
+                  borderStyle: 'dashed' as const,
+                  borderColor: 'rgba(212,162,79,0.3)',
+                  backgroundColor: 'rgba(212,162,79,0.06)',
+                  marginTop: 8,
+                  opacity: pressed ? 0.7 : sealing ? 0.4 : 1,
+                })}
+              >
+                <Text style={{ color: palette.gold, fontSize: 14, fontWeight: '600' }}>Skip payment (test mode)</Text>
+              </Pressable>
             )}
           </View>
         }
