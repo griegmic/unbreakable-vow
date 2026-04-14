@@ -818,13 +818,20 @@ function CreatePageContent() {
 
             {/* Dare a friend link — always visible for returning users */}
             <FadeUp delay={0.14}>
-              <div className="flex justify-center pt-3">
+              <div className="flex flex-col items-center pt-3 gap-1">
                 <button
                   onClick={() => router.push('/cast')}
                   className="text-[13px] font-semibold py-2"
                   style={{ color: 'var(--text-muted)' }}
                 >
                   or <span className="underline" style={{ color: 'var(--gold)' }}>dare a friend →</span>
+                </button>
+                <button
+                  onClick={() => router.push('/?guided=1')}
+                  className="text-[12px] py-1"
+                  style={{ color: 'var(--text-muted)', opacity: 0.5 }}
+                >
+                  Use guided flow instead
                 </button>
               </div>
             </FadeUp>
