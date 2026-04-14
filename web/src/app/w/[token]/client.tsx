@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { Sparkles, Eye, MessageCircle, Check, Phone } from 'lucide-react';
 import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
+import { useAuth } from '@/providers/auth-provider';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 
 interface Vow {
   id: string;
@@ -18,6 +20,7 @@ interface Vow {
 }
 
 export default function WitnessInviteClient({ vow, token, makerName, makerPhone }: { vow: Vow; token: string; makerName: string; makerPhone: string | null }) {
+  const { isAuthenticated } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<'pending' | 'accepted' | 'declined'>(
@@ -190,13 +193,13 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     const msg = resolvedMessages[vow.status] || resolvedMessages.voided;
     return (
       <RitualScreen>
-        <FadeUp><HeaderBadge /></FadeUp>
+        <FadeUp><div className="flex items-center justify-between"><HeaderBadge />{isAuthenticated && <HamburgerMenu />}</div></FadeUp>
         <FadeUp delay={0.1}>
           <TitleBlock title={msg.title} subtitle={msg.subtitle} />
         </FadeUp>
         <FadeUp delay={0.2}>
           <a
-            href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
+            href="/create"
             className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
             style={{
               backgroundColor: 'var(--surface)',
@@ -239,7 +242,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
           ) : undefined
         }
       >
-        <FadeUp><HeaderBadge /></FadeUp>
+        <FadeUp><div className="flex items-center justify-between"><HeaderBadge />{isAuthenticated && <HamburgerMenu />}</div></FadeUp>
 
         {acceptPhase === 'capturing' ? (
           /* ── POST-ACCEPT: Confirmation line + phone capture ── */
@@ -545,7 +548,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             <FadeUp delay={0.3}>
               <div className="flex justify-center pt-2">
                 <a
-                  href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
+                  href="/create"
                   className="text-[13px] font-medium transition-opacity active:opacity-70"
                   style={{ color: 'var(--text-muted)' }}
                 >
@@ -563,7 +566,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   if (status === 'declined') {
     return (
       <RitualScreen>
-        <FadeUp><HeaderBadge /></FadeUp>
+        <FadeUp><div className="flex items-center justify-between"><HeaderBadge />{isAuthenticated && <HamburgerMenu />}</div></FadeUp>
         <FadeUp delay={0.1}>
           <TitleBlock
             title="Declined."
@@ -572,7 +575,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         </FadeUp>
         <FadeUp delay={0.2}>
           <a
-            href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
+            href="/create"
             className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
             style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
           >
@@ -601,7 +604,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         />
       }
     >
-      <FadeUp><HeaderBadge /></FadeUp>
+      <FadeUp><div className="flex items-center justify-between"><HeaderBadge />{isAuthenticated && <HamburgerMenu />}</div></FadeUp>
 
       <FadeUp delay={0.06}>
         <h1 className="text-[28px] font-bold font-serif leading-[34px] tracking-[-0.5px] text-center" style={{ color: 'var(--text)' }}>
