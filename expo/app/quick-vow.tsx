@@ -564,10 +564,10 @@ export default function QuickVowScreen() {
           <Text style={styles.witnessSubline}>A vow without a witness is just a promise to yourself.</Text>
 
           {/* Selected witness display */}
-          {witnessName && witnessName !== 'Just me' ? (
+          {witnessName ? (
             <View style={styles.selectedWitness}>
               <View style={styles.selectedWitnessInfo}>
-                <Text style={styles.selectedWitnessName}>{witnessName} ✓</Text>
+                <Text style={styles.selectedWitnessName}>{witnessName === 'Just me' ? 'Just me' : witnessName} ✓</Text>
                 {witnessPhone ? <Text style={styles.selectedWitnessPhone}>{witnessPhone}</Text> : null}
               </View>
               <Pressable onPress={() => { setWitnessName(''); setWitnessPhone(''); }}>
@@ -586,28 +586,33 @@ export default function QuickVowScreen() {
                     <Text style={styles.contactPickerHeroText}>Pick from contacts</Text>
                   </Pressable>
                   <Pressable onPress={() => { setWitnessName('Just me'); setWitnessPhone(''); }}>
-                    <Text style={styles.manualEntryLink}>Skip witness</Text>
+                    <Text style={styles.manualEntryLink}>No witness — just my word</Text>
                   </Pressable>
                 </View>
               ) : null}
 
               {/* Returning user: recent chips + contacts */}
               {recentWitnesses.length > 0 ? (
-                <View style={styles.chipRow}>
-                  {recentWitnesses.map((w) => (
+                <>
+                  <View style={styles.chipRow}>
+                    {recentWitnesses.map((w) => (
+                      <ChoiceChip
+                        key={w.name + w.phone}
+                        label={w.name}
+                        active={witnessName === w.name && witnessPhone === w.phone}
+                        onPress={() => { setWitnessName(w.name); setWitnessPhone(w.phone); }}
+                      />
+                    ))}
                     <ChoiceChip
-                      key={w.name + w.phone}
-                      label={w.name}
-                      active={witnessName === w.name && witnessPhone === w.phone}
-                      onPress={() => { setWitnessName(w.name); setWitnessPhone(w.phone); }}
+                      label="From contacts"
+                      active={false}
+                      onPress={() => setContactPickerVisible(true)}
                     />
-                  ))}
-                  <ChoiceChip
-                    label="From contacts"
-                    active={false}
-                    onPress={() => setContactPickerVisible(true)}
-                  />
-                </View>
+                  </View>
+                  <Pressable onPress={() => { setWitnessName('Just me'); setWitnessPhone(''); }}>
+                    <Text style={styles.manualEntryLink}>No witness — just my word</Text>
+                  </Pressable>
+                </>
               ) : null}
             </>
           )}
