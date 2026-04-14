@@ -683,7 +683,16 @@ function CreatePageContent() {
           </FadeUp>
 
           {/* Centered content */}
-          <div className="flex-1 flex flex-col justify-center min-h-[55vh]">
+          <div className="flex-1 flex flex-col justify-center min-h-[45vh]">
+            <FadeUp delay={0.06}>
+              <p
+                className="text-[22px] font-serif font-medium tracking-[-0.3px] mb-3"
+                style={{ color: 'var(--text-secondary)' }}
+              >
+                What&apos;s next?
+              </p>
+            </FadeUp>
+
             {/* Card: prompt + input + smart defaults */}
             <FadeUp delay={0.08}>
               <div
@@ -708,7 +717,7 @@ function CreatePageContent() {
                   onBlur={() => setInputFocused(false)}
                   autoFocus
                   placeholder={placeholder}
-                  rows={3}
+                  rows={2}
                   className="w-full bg-transparent text-[24px] font-serif font-normal leading-[1.35] tracking-[-0.3px] outline-none resize-none mt-1"
                   style={{ color: 'var(--text)' }}
                 />
