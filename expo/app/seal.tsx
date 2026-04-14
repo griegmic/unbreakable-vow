@@ -329,6 +329,7 @@ export default function SealScreen() {
   }, [registerPush, handleSealFlow, isAuthenticated]);
 
   const handleAuthDismiss = useCallback(() => {
+    pendingSealRef.current = false;
     setAuthSheetVisible(false);
   }, []);
 
