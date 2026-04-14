@@ -276,9 +276,60 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               </div>
             </FadeUp>
 
-            {/* Phone capture — inline, not expandable */}
+            {/* Viral CTA + SMS — highest leverage, goes first */}
+            <FadeUp delay={0.4}>
+              <div className="flex flex-col gap-2.5">
+                <a
+                  href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
+                  onClick={() => {
+                    // Track reciprocal CTA tap
+                    fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/audit_events`, {
+                      method: 'POST',
+                      headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+                        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+                        'Prefer': 'return=minimal',
+                      },
+                      body: JSON.stringify({ vow_id: vow.id, event_type: 'reciprocal_cta_tapped', actor_type: 'witness', metadata: {} }),
+                    }).catch(() => {});
+                  }}
+                  className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
+                  style={{
+                    background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                    boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                  }}
+                >
+                  <div className="min-h-[56px] flex items-center justify-center px-5">
+                    <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
+                      Your move &mdash; make a vow and pick {makerLabel} to judge you
+                    </span>
+                  </div>
+                </a>
+                {makerPhone && (
+                  <button
+                    type="button"
+                    onClick={handleTextMaker}
+                    className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
+                    style={{
+                      backgroundColor: 'var(--surface)',
+                      border: '1px solid var(--border-strong)',
+                    }}
+                  >
+                    <div className="min-h-[50px] flex items-center justify-center gap-2 px-5">
+                      <MessageCircle className="w-[16px] h-[16px]" style={{ color: 'var(--gold-bright)' }} />
+                      <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                        Tell {makerLabel} you&apos;re watching
+                      </span>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </FadeUp>
+
+            {/* Phone capture — below CTAs, "before you go" catch */}
             {!reminderSaved && !reminderSkipped && (
-              <FadeUp delay={0.4}>
+              <FadeUp delay={0.5}>
                 <div
                   className="rounded-[18px] p-4 flex flex-col gap-3"
                   style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
@@ -286,7 +337,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                   <div className="flex items-center gap-2">
                     <Phone className="w-4 h-4" style={{ color: 'var(--gold-bright)' }} />
                     <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
-                      Get a text on verdict day
+                      {!needsWitnessName && vow.witness_name ? `${vow.witness_name}, get` : 'Get'} a text on verdict day
                     </span>
                   </div>
                   <p className="text-[12px] leading-[17px]" style={{ color: 'var(--text-muted)' }}>
@@ -337,7 +388,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               </FadeUp>
             )}
             {reminderSaved && (
-              <FadeUp delay={0.4}>
+              <FadeUp delay={0.5}>
                 <div
                   className="flex items-center justify-center gap-2 py-3.5 rounded-[18px]"
                   style={{ backgroundColor: 'rgba(82,214,154,0.08)', border: '1px solid rgba(82,214,154,0.2)' }}
@@ -349,56 +400,6 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 </div>
               </FadeUp>
             )}
-
-            <FadeUp delay={0.55}>
-              <div className="flex flex-col gap-2.5">
-                <a
-                  href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
-                  onClick={() => {
-                    // Track reciprocal CTA tap
-                    fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/audit_events`, {
-                      method: 'POST',
-                      headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-                        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-                        'Prefer': 'return=minimal',
-                      },
-                      body: JSON.stringify({ vow_id: vow.id, event_type: 'reciprocal_cta_tapped', actor_type: 'witness', metadata: {} }),
-                    }).catch(() => {});
-                  }}
-                  className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
-                  style={{
-                    background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                    boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                  }}
-                >
-                  <div className="min-h-[56px] flex items-center justify-center px-5">
-                    <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                      Your move &mdash; make a vow and pick {makerLabel} to judge you
-                    </span>
-                  </div>
-                </a>
-                {makerPhone && (
-                  <button
-                    type="button"
-                    onClick={handleTextMaker}
-                    className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-                    style={{
-                      backgroundColor: 'var(--surface)',
-                      border: '1px solid var(--border-strong)',
-                    }}
-                  >
-                    <div className="min-h-[50px] flex items-center justify-center gap-2 px-5">
-                      <MessageCircle className="w-[16px] h-[16px]" style={{ color: 'var(--gold-bright)' }} />
-                      <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                        Tell {makerLabel} you&apos;re watching
-                      </span>
-                    </div>
-                  </button>
-                )}
-              </div>
-            </FadeUp>
           </>
         ) : (
           <>
