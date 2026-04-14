@@ -23,7 +23,7 @@ async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, 
 export default function SealPage() {
   const router = useRouter();
   const { vow, activeVowText, isSelfWitness, setVowId } = useVowFlow();
-  const { isAuthenticated, session } = useAuth();
+  const { isAuthenticated, session, loading: authLoading } = useAuth();
   const [smsExpanded, setSmsExpanded] = useState(false);
   const [step, setStep] = useState<SealStep>('review');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -68,6 +68,8 @@ export default function SealPage() {
   }, []);
 
   useEffect(() => {
+    // Don't redirect while auth is still loading — session may not have propagated yet
+    if (authLoading) return;
     if (!vow.rawInput) {
       // Double-check localStorage directly — context might not have hydrated yet
       try {
@@ -79,7 +81,7 @@ export default function SealPage() {
       } catch {}
       router.replace('/');
     }
-  }, [vow.rawInput, router]);
+  }, [vow.rawInput, router, authLoading]);
 
   // ── Shared: ensure a draft vow row exists ──
   const draftCreatingRef = useRef(false);
@@ -310,7 +312,9 @@ export default function SealPage() {
     }
   }, [vow, ensureDraftVow, callSealVow, router]);
 
-  const handleSealTap = () => {
+  const handleSealTap = async () => {
+    // If auth is still loading, wait briefly for it to resolve
+    if (authLoading) return;
     if (!isAuthenticated) {
       setStep('auth');
     } else if (vow.stake.amount === 0) {

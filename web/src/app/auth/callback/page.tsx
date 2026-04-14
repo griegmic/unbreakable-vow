@@ -58,11 +58,15 @@ export default function AuthCallbackPage() {
           localStorage.removeItem('auth-return-path');
           if (returnPath && returnPath !== '/') return returnPath;
 
-          // 4. Check for in-progress vow flow
+          // 4. Check for in-progress vow flow — route to furthest step reached
           const stored = localStorage.getItem('unbreakable-vow-flow');
           if (stored) {
             const parsed = JSON.parse(stored);
-            if (parsed.rawInput) return parsed.refinedText ? '/stake' : '/refine';
+            if (parsed.rawInput) {
+              if (parsed.witnessName && parsed.stake) return '/seal';
+              if (parsed.refinedText) return '/stake';
+              return '/refine';
+            }
           }
         } catch {}
         return '/dashboard';
