@@ -686,7 +686,7 @@ function CreatePageContent() {
             <div className="pt-8">
               <p
                 className="text-[30px] font-serif font-medium leading-[1.2] tracking-[-0.5px]"
-                style={{ color: 'rgba(212,162,79,0.45)' }}
+                style={{ color: 'rgba(212,162,79,0.7)' }}
               >
                 I vow to...
               </p>
@@ -722,34 +722,34 @@ function CreatePageContent() {
               className="h-px mt-5 mb-4"
               style={{ background: 'linear-gradient(90deg, rgba(212,162,79,0.2) 0%, rgba(212,162,79,0.05) 100%)' }}
             />
-            <p className="text-[11px] font-medium tracking-[0.5px] mb-2.5" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+            <p className="text-[11px] font-medium tracking-[0.5px] mb-2.5" style={{ color: 'var(--text-muted)' }}>
               YOUR LAST SETTINGS
             </p>
             <div className="flex flex-wrap gap-1.5">
               {deadlinePreviewLabel && (
                 <div
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
-                  style={{ backgroundColor: 'rgba(212,162,79,0.05)', border: '1px solid rgba(212,162,79,0.12)' }}
+                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
                 >
-                  <Calendar className="w-3 h-3" style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-                  <span className="text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>{deadlinePreviewLabel}</span>
+                  <Calendar className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+                  <span className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>{deadlinePreviewLabel}</span>
                 </div>
               )}
               {witnessPreviewName && (
                 <div
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
-                  style={{ backgroundColor: 'rgba(212,162,79,0.05)', border: '1px solid rgba(212,162,79,0.12)' }}
+                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
                 >
-                  <User className="w-3 h-3" style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-                  <span className="text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>{witnessPreviewName}</span>
+                  <User className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+                  <span className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>{witnessPreviewName}</span>
                 </div>
               )}
               <div
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
-                style={{ backgroundColor: 'rgba(212,162,79,0.05)', border: '1px solid rgba(212,162,79,0.12)' }}
+                style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
               >
-                <DollarSign className="w-3 h-3" style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
-                <span className="text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>${stakeAmount}</span>
+                <DollarSign className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+                <span className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>${stakeAmount}</span>
               </div>
             </div>
           </FadeUp>

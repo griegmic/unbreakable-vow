@@ -494,7 +494,7 @@ export default function QuickVowScreen() {
           value={vowText}
           onChangeText={setVowText}
           placeholder="run every morning this week"
-          placeholderTextColor="rgba(246,247,251,0.18)"
+          placeholderTextColor="rgba(246,247,251,0.3)"
           multiline
           style={styles.heroTextInput}
         />
@@ -734,7 +734,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   vowPrompt: {
-    color: 'rgba(212,162,79,0.45)',
+    color: 'rgba(212,162,79,0.7)',
     fontSize: 30,
     fontWeight: '500',
     fontFamily: serifFont,
