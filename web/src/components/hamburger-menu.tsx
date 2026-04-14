@@ -2,13 +2,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Home, PlusCircle, History, Settings, Send } from 'lucide-react';
+import { Menu, X, Home, PlusCircle, Settings, Send } from 'lucide-react';
 
 const links = [
   { label: 'New Vow', icon: PlusCircle, path: '/create' },
-  { label: 'Dare a Friend', icon: Send, path: '/cast' },
   { label: 'My Vows', icon: Home, path: '/dashboard' },
-  { label: 'History', icon: History, path: '/history' },
+  { label: 'Dare a Friend', icon: Send, path: '/cast' },
   { label: 'Settings', icon: Settings, path: '/settings' },
 ];
 
