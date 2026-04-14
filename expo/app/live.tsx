@@ -80,7 +80,7 @@ export default function LiveScreen() {
   const [hydrating, setHydrating] = useState(false);
   useEffect(() => {
     const paramVowId = searchParams.vowId;
-    if (!paramVowId || vow.rawInput) return; // already hydrated or no param
+    if (!paramVowId || (vow.rawInput && vow.vowId === paramVowId)) return; // already hydrated for this vow, or no param
 
     setHydrating(true);
     (async () => {
