@@ -661,7 +661,7 @@ function CreatePageContent() {
                   border: vowText.trim() ? 'none' : '1px solid var(--border)',
                 }}
               >
-                Set the terms →
+                Seal it →
               </button>
             </div>
           }
@@ -681,99 +681,100 @@ function CreatePageContent() {
             </div>
           </FadeUp>
 
-          {/* Hero prompt + input */}
-          <FadeUp delay={0.08}>
-            <div
-              className="rounded-[20px] p-[18px] pb-[14px] mt-6"
-              style={{
-                backgroundColor: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(212,162,79,0.15)',
-              }}
-            >
-              <p
-                className="text-[30px] font-serif font-medium leading-[1.2] tracking-[-0.5px]"
-                style={{ color: 'rgba(212,162,79,0.7)' }}
-              >
-                I vow to...
-              </p>
-              <textarea
-                ref={textareaRef}
-                value={vowText}
-                onChange={(e) => setVowText(e.target.value)}
-                placeholder={placeholder}
-                rows={3}
-                className="w-full bg-transparent text-[24px] font-serif font-normal leading-[1.35] tracking-[-0.3px] outline-none resize-none mt-1"
-                style={{ color: 'var(--text)' }}
-              />
-
-              {/* AI suggestion chip */}
-              {suggestion && suggestion !== vowText && (
-                <button
-                  onClick={acceptSuggestion}
-                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
-                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
-                >
-                  <Sparkles className="w-3 h-3" style={{ color: 'var(--gold)' }} />
-                  <span className="text-[13px]" style={{ color: 'var(--gold)' }}>
-                    {suggestion}
-                  </span>
-                </button>
-              )}
-            </div>
-          </FadeUp>
-
-          {/* Divider + smart defaults */}
-          <FadeUp delay={0.14}>
-            <div
-              className="h-px mt-5 mb-4"
-              style={{ background: 'linear-gradient(90deg, rgba(212,162,79,0.2) 0%, rgba(212,162,79,0.05) 100%)' }}
-            />
-            <p className="text-[11px] font-medium tracking-[0.5px] mb-2.5" style={{ color: 'var(--text-muted)' }}>
-              YOUR LAST SETTINGS
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {deadlinePreviewLabel && (
-                <div
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
-                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
-                >
-                  <Calendar className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
-                  <span className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>{deadlinePreviewLabel}</span>
-                </div>
-              )}
-              {witnessPreviewName && (
-                <div
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
-                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
-                >
-                  <User className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
-                  <span className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>{witnessPreviewName}</span>
-                </div>
-              )}
+          {/* Centered content */}
+          <div className="flex-1 flex flex-col justify-center min-h-[55vh]">
+            {/* Card: prompt + input + smart defaults */}
+            <FadeUp delay={0.08}>
               <div
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
-                style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                className="rounded-[20px] p-[18px] pb-[16px]"
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.03)',
+                  border: '1px solid rgba(212,162,79,0.15)',
+                }}
               >
-                <DollarSign className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
-                <span className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>${stakeAmount}</span>
-              </div>
-            </div>
-          </FadeUp>
-
-          {/* Dare a friend link — only for returning users */}
-          {recentWitnesses.length > 0 && (
-            <FadeUp delay={0.18}>
-              <div className="flex justify-center pt-4">
-                <button
-                  onClick={() => router.push('/cast')}
-                  className="text-[13px] font-semibold py-2"
-                  style={{ color: 'var(--text-muted)' }}
+                <p
+                  className="text-[30px] font-serif font-medium leading-[1.2] tracking-[-0.5px]"
+                  style={{ color: 'rgba(212,162,79,0.7)' }}
                 >
-                  or <span className="underline" style={{ color: 'var(--gold)' }}>dare a friend →</span>
-                </button>
+                  I vow to...
+                </p>
+                <textarea
+                  ref={textareaRef}
+                  value={vowText}
+                  onChange={(e) => setVowText(e.target.value)}
+                  placeholder={placeholder}
+                  rows={3}
+                  className="w-full bg-transparent text-[24px] font-serif font-normal leading-[1.35] tracking-[-0.3px] outline-none resize-none mt-1"
+                  style={{ color: 'var(--text)' }}
+                />
+
+                {/* AI suggestion chip */}
+                {suggestion && suggestion !== vowText && (
+                  <button
+                    onClick={acceptSuggestion}
+                    className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
+                    style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                  >
+                    <Sparkles className="w-3 h-3" style={{ color: 'var(--gold)' }} />
+                    <span className="text-[13px]" style={{ color: 'var(--gold)' }}>
+                      {suggestion}
+                    </span>
+                  </button>
+                )}
+
+                {/* Smart defaults — inside the card */}
+                <div
+                  className="h-px mt-4 mb-3"
+                  style={{ background: 'linear-gradient(90deg, rgba(212,162,79,0.2) 0%, rgba(212,162,79,0.05) 100%)' }}
+                />
+                <p className="text-[11px] font-medium tracking-[0.3px] mb-2" style={{ color: 'var(--text-muted)' }}>
+                  Same as last time
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {deadlinePreviewLabel && (
+                    <div
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
+                      style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                    >
+                      <Calendar className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+                      <span className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>{deadlinePreviewLabel}</span>
+                    </div>
+                  )}
+                  {witnessPreviewName && (
+                    <div
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
+                      style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                    >
+                      <User className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+                      <span className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>{witnessPreviewName}</span>
+                    </div>
+                  )}
+                  <div
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
+                    style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                  >
+                    <DollarSign className="w-3 h-3" style={{ color: 'var(--text-secondary)' }} />
+                    <span className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>${stakeAmount}</span>
+                  </div>
+                </div>
               </div>
             </FadeUp>
-          )}
+
+            {/* Dare a friend link */}
+            {recentWitnesses.length > 0 && (
+              <FadeUp delay={0.14}>
+                <div className="flex justify-center pt-3">
+                  <button
+                    onClick={() => router.push('/cast')}
+                    className="text-[13px] font-semibold py-2"
+                    style={{ color: 'var(--text-muted)' }}
+                  >
+                    or <span className="underline" style={{ color: 'var(--gold)' }}>dare a friend →</span>
+                  </button>
+                </div>
+              </FadeUp>
+            )}
+          </div>
         </RitualScreen>
 
         <AuthModal
