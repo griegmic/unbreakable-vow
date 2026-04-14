@@ -63,8 +63,9 @@ Deno.serve(async (req) => {
     }
 
     // Check vow is in a state where acceptance makes sense
+    // Include 'draft' so witnesses can accept before maker finishes sealing (creates social pressure to complete)
     // Include 'sealed' for race conditions where witness clicks before seal-vow completes
-    if (!['active', 'awaiting_verdict', 'sealed'].includes(vow.status)) {
+    if (!['draft', 'active', 'awaiting_verdict', 'sealed'].includes(vow.status)) {
       return new Response(JSON.stringify({ error: 'vow_not_active', status: vow.status }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

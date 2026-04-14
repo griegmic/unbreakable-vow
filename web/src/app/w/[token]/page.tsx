@@ -77,10 +77,9 @@ export default async function WitnessInvitePage({ params }: Props) {
     return <WitnessNotFound token={token} />;
   }
 
-  // Draft vow: show "sealing in progress" state that polls for activation
-  if (vow.status === 'draft') {
-    return <WitnessNotFound token={token} />;
-  }
+  // Draft vows now show full witness page — witnesses can accept even before
+  // the maker finishes sealing. This converts witnesses while warm and creates
+  // social pressure for the maker to complete.
 
   // Try to get the vow maker's display name and phone
   let makerName = 'Your friend';

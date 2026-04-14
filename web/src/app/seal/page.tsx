@@ -123,14 +123,16 @@ export default function SealPage() {
         await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
 
         const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
-        // Always generate a fresh token to avoid UNIQUE constraint conflicts with old drafts
+        // Use the token from VowFlow (shared on /witness page) if available,
+        // otherwise generate a fresh one. This ensures the link the witness
+        // already received stays valid.
         const { data: newVow, error: vowError } = await supabase.from('vows').insert({
           user_id: s.user.id,
           raw_input: vow.rawInput,
           refined_text: activeVowText,
           witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
           witness_phone: vow.witnessPhone || null,
-          witness_invite_token: crypto.randomUUID(),
+          witness_invite_token: vow.witnessInviteToken || crypto.randomUUID(),
           stake_amount: vow.stake.amount * 100,
           consequence: vow.stake.consequence,
           destination: vow.stake.destination,
