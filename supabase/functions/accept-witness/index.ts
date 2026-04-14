@@ -43,8 +43,8 @@ Deno.serve(async (req) => {
 
     // Handle save-reminder (witness provides their phone for verdict-day SMS)
     if (action === 'save-reminder') {
-      // Only allow if vow is active/sealed and witness has accepted
-      if (!['active', 'awaiting_verdict', 'sealed'].includes(vow.status) || !vow.witness_accepted_at) {
+      // Allow for draft (witness accepted before maker sealed) + active states
+      if (!['draft', 'active', 'awaiting_verdict', 'sealed'].includes(vow.status) || !vow.witness_accepted_at) {
         return new Response(JSON.stringify({ error: 'cannot_save_reminder' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },

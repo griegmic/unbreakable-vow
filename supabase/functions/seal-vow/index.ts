@@ -218,8 +218,8 @@ Deno.serve(async (req) => {
       }
 
       await createAuditEvent(supabase, vow.id, 'challenge_sent', 'maker', user.id);
-    } else if (vow.witness_phone) {
-      // Standard vow: send witness SMS
+    } else if (vow.witness_phone && !vow.witness_accepted_at) {
+      // Standard vow: send witness SMS (skip if witness already accepted during draft)
       const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
       const messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDateStr, witnessUrl);
       let smsSent = false;
