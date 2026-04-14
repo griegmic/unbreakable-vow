@@ -163,7 +163,7 @@ export default function HomeScreen() {
               { opacity: inputFade, transform: [{ translateY: inputSlide }] },
             ]}
           >
-            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>I WILL...</Text>
+            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>I vow to...</Text>
             <TextInput
               ref={inputRef}
               style={styles.input}
@@ -324,15 +324,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.14,
   },
   inputLabel: {
-    color: palette.textMuted,
-    fontSize: 11,
-    fontWeight: '700' as const,
-    letterSpacing: 1.3,
-    textTransform: 'uppercase',
+    color: 'rgba(212,162,79,0.5)',
+    fontSize: 14,
+    fontWeight: '500' as const,
+    fontFamily: serifFont,
+    fontStyle: 'italic',
     marginBottom: 10,
   },
   inputLabelFocused: {
-    color: palette.gold,
+    color: 'rgba(212,162,79,0.65)',
   },
   input: {
     color: palette.text,

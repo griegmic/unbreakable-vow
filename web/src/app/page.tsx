@@ -184,8 +184,8 @@ export default function HomePage() {
           className="rounded-[22px] p-4 flex flex-col gap-3"
           style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 16px 28px rgba(0,0,0,0.26)' }}
         >
-          <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--text-muted)' }}>
-            I WILL...
+          <span className="text-[13px] font-serif font-medium italic" style={{ color: 'rgba(212,162,79,0.5)' }}>
+            I vow to...
           </span>
           <textarea
             value={input}
