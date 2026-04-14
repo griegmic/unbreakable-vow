@@ -743,6 +743,7 @@ export default function ChallengeInviteClient({
                   mode: 'setup',
                   currency: 'usd',
                   appearance: stripeAppearance,
+                  paymentMethodTypes: ['card'],
                 }}
               >
                 <CardForm
