@@ -264,25 +264,22 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </FadeUp>
 
             <FadeUp delay={0.2}>
-              <div className="flex flex-col gap-3">
-                {needsWitnessName && (
-                  <input
-                    type="text"
-                    value={reminderName}
-                    onChange={(e) => setReminderName(e.target.value)}
-                    placeholder="Your first name"
-                    className="w-full bg-transparent text-[15px] outline-none py-3 px-4 rounded-[14px]"
-                    style={{ color: 'var(--text)', border: '1px solid var(--border-strong)' }}
-                  />
-                )}
+              <div
+                className="flex items-center gap-3 py-3.5 px-4 rounded-[14px]"
+                style={{
+                  backgroundColor: 'rgba(255,255,255,0.06)',
+                  border: '1px solid var(--border-strong)',
+                }}
+              >
+                <Phone className="w-[18px] h-[18px] shrink-0" style={{ color: 'var(--text-muted)' }} />
                 <input
                   type="tel"
                   value={reminderPhone}
                   onChange={(e) => setReminderPhone(e.target.value)}
                   placeholder="Phone number"
                   autoFocus
-                  className="w-full bg-transparent text-[15px] outline-none py-3 px-4 rounded-[14px]"
-                  style={{ color: 'var(--text)', border: '1px solid var(--border-strong)' }}
+                  className="w-full bg-transparent text-[15px] outline-none"
+                  style={{ color: 'var(--text)' }}
                 />
               </div>
             </FadeUp>
@@ -306,20 +303,20 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                     setAcceptPhase(null);
                   }}
                   disabled={!reminderPhone.trim() || reminderSaving}
-                  className="w-full rounded-[18px] overflow-hidden transition-all active:scale-[0.975]"
+                  className="w-full rounded-[18px] overflow-hidden transition-all duration-300 active:scale-[0.975]"
                   style={{
                     background: !reminderPhone.trim()
-                      ? 'var(--surface)'
+                      ? 'rgba(255,255,255,0.04)'
                       : 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                    border: !reminderPhone.trim() ? '1px solid var(--border-strong)' : 'none',
+                    border: !reminderPhone.trim() ? '1px solid var(--border)' : 'none',
                     boxShadow: reminderPhone.trim() ? '0 12px 24px rgba(212,162,79,0.28)' : 'none',
                     opacity: reminderSaving ? 0.7 : 1,
                   }}
                 >
                   <div className="min-h-[56px] flex items-center justify-center px-5">
                     <span
-                      className="text-[15px] font-extrabold tracking-[0.2px]"
-                      style={{ color: reminderPhone.trim() ? '#0B0D11' : 'var(--text-muted)' }}
+                      className="text-[15px] font-extrabold tracking-[0.2px] transition-colors duration-300"
+                      style={{ color: reminderPhone.trim() ? '#0B0D11' : 'var(--text-muted)', opacity: reminderPhone.trim() ? 1 : 0.4 }}
                     >
                       {reminderSaving ? 'Saving...' : 'Done'}
                     </span>
