@@ -256,29 +256,42 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               </div>
             </FadeUp>
 
+            <FadeUp delay={0.08}>
+              <div className="flex items-baseline gap-2">
+                <span className="text-[10px] font-semibold tracking-[0.5px] uppercase shrink-0" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+                  The vow
+                </span>
+                <span className="text-[13px] font-serif italic" style={{ color: 'var(--text-muted)' }}>
+                  &ldquo;{vow.refined_text}&rdquo;
+                </span>
+              </div>
+            </FadeUp>
+
             <FadeUp delay={0.12}>
               <TitleBlock
-                title="Where should we reach you on verdict day?"
-                subtitle={`One text on ${endDate}. That's it.`}
+                title="You're the judge."
+                subtitle={`We'll text you on ${endDate} when it's time to deliver your verdict.`}
               />
             </FadeUp>
 
             <FadeUp delay={0.2}>
               <div
-                className="flex items-center gap-3 py-3.5 px-4 rounded-[14px]"
+                className="flex items-center gap-3 py-4 px-[18px] rounded-[18px]"
                 style={{
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  border: '1px solid var(--border-strong)',
+                  backgroundColor: 'rgba(255,255,255,0.04)',
+                  border: '1.5px solid rgba(212,162,79,0.2)',
+                  boxShadow: '0 0 20px rgba(212,162,79,0.04)',
                 }}
               >
                 <Phone className="w-[18px] h-[18px] shrink-0" style={{ color: 'var(--text-muted)' }} />
                 <input
                   type="tel"
+                  inputMode="tel"
                   value={reminderPhone}
                   onChange={(e) => setReminderPhone(e.target.value)}
                   placeholder="Phone number"
                   autoFocus
-                  className="w-full bg-transparent text-[15px] outline-none"
+                  className="w-full bg-transparent text-[16px] outline-none"
                   style={{ color: 'var(--text)' }}
                 />
               </div>
@@ -327,8 +340,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                   onClick={() => { setReminderSkipped(true); setAcceptPhase(null); }}
                   className="py-1"
                 >
-                  <span className="text-[12px] lowercase" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>
-                    skip
+                  <span className="text-[13px]" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+                    Not now
                   </span>
                 </button>
               </div>
