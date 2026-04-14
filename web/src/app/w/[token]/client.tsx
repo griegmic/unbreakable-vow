@@ -324,6 +324,15 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                     </span>
                   </div>
                 </button>
+                <button
+                  type="button"
+                  onClick={() => { setReminderSkipped(true); setAcceptPhase(null); }}
+                  className="py-1"
+                >
+                  <span className="text-[12px] lowercase" style={{ color: 'var(--text-muted)', opacity: 0.4 }}>
+                    skip
+                  </span>
+                </button>
               </div>
             </FadeUp>
           </>
