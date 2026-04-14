@@ -96,7 +96,7 @@ function CreatePageContent() {
   );
   const [consequence, setConsequence] = useState<ConsequenceType>('charity');
   const [destination, setDestination] = useState('ALS Association');
-  const [deadlineLabel, setDeadlineLabel] = useState('In 7 days');
+  const [deadlineLabel, setDeadlineLabel] = useState('7 days');
   const [customDate, setCustomDate] = useState('');
   const [showCustomDate, setShowCustomDate] = useState(false);
   const [oathChecked, setOathChecked] = useState(false);
@@ -180,7 +180,11 @@ function CreatePageContent() {
           const defaults = JSON.parse(saved);
           if (defaults.stakeAmount !== undefined) setStakeAmount(defaults.stakeAmount);
           if (defaults.consequence) setConsequence(defaults.consequence);
-          if (defaults.deadlineLabel) setDeadlineLabel(defaults.deadlineLabel);
+          if (defaults.deadlineLabel) {
+            // Normalize legacy label format
+            const label = defaults.deadlineLabel === 'In 7 days' ? '7 days' : defaults.deadlineLabel;
+            setDeadlineLabel(label);
+          }
         }
       } catch {}
     })();
@@ -631,73 +635,135 @@ function CreatePageContent() {
   }
 
   // ─── STEP 1: Compose ───────────────────────────────────────────────────────
+
+  // Readable deadline label for defaults preview
+  const deadlinePreviewLabel = deadlineLabel === 'Pick date' && customDate
+    ? new Date(customDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : deadlineLabel;
+  const witnessPreviewName = witnessName || (recentWitnesses.length > 0 ? recentWitnesses[0].name : '');
+
   if (step === 1) {
     return (
       <>
         <RitualScreen
           footer={
             <div>
-              <PrimaryButton
-                label="Next"
-                onPress={handleNext}
+              <button
+                onClick={handleNext}
                 disabled={!vowText.trim()}
-              />
+                className="w-full min-h-[56px] rounded-[16px] flex items-center justify-center font-extrabold text-[15px] tracking-[0.2px] transition-all disabled:opacity-30"
+                style={{
+                  background: vowText.trim()
+                    ? 'linear-gradient(135deg, var(--gold-bright) 0%, var(--gold) 50%, var(--gold-deep) 100%)'
+                    : 'var(--surface)',
+                  color: vowText.trim() ? '#0B0D11' : 'var(--text-muted)',
+                  boxShadow: vowText.trim() ? '0 12px 32px rgba(212,162,79,0.25)' : 'none',
+                  border: vowText.trim() ? 'none' : '1px solid var(--border)',
+                }}
+              >
+                Set the terms →
+              </button>
             </div>
           }
         >
-          {/* Header */}
+          {/* Nav row */}
           <FadeUp>
             <div className="flex items-center justify-between">
-              <h1
-                className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
-                style={{ color: 'var(--text)' }}
+              <button
+                onClick={() => { if (window.history.length > 1) router.back(); else router.push('/dashboard'); }}
+                className="flex items-center gap-1 py-1"
+                style={{ color: 'var(--text-secondary)' }}
               >
-                New Vow
-              </h1>
+                <ChevronLeft className="w-[18px] h-[18px]" />
+                <span className="text-[15px] font-medium">Dashboard</span>
+              </button>
               <HamburgerMenu />
             </div>
           </FadeUp>
 
-          {/* Vow text input */}
-          <FadeUp delay={0.1}>
-            <RitualCard>
-              <SectionLabel>I WILL...</SectionLabel>
-              <div className="relative">
-                <textarea
-                  ref={textareaRef}
-                  value={vowText}
-                  onChange={(e) => setVowText(e.target.value)}
-                  placeholder={placeholder}
-                  rows={3}
-                  className="w-full bg-transparent text-[16px] leading-[24px] outline-none resize-none"
-                  style={{ color: 'var(--text)' }}
-                />
-                {suggestion && suggestion !== vowText && (
-                  <button
-                    onClick={acceptSuggestion}
-                    className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
-                    style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
-                  >
-                    <Sparkles className="w-3 h-3" style={{ color: 'var(--gold)' }} />
-                    <span className="text-[13px]" style={{ color: 'var(--gold)' }}>
-                      {suggestion}
-                    </span>
-                  </button>
-                )}
+          {/* Hero prompt + input */}
+          <FadeUp delay={0.08}>
+            <div className="pt-8">
+              <p
+                className="text-[30px] font-serif font-medium leading-[1.2] tracking-[-0.5px]"
+                style={{ color: 'rgba(212,162,79,0.45)' }}
+              >
+                I vow to...
+              </p>
+              <textarea
+                ref={textareaRef}
+                value={vowText}
+                onChange={(e) => setVowText(e.target.value)}
+                placeholder={placeholder}
+                rows={3}
+                className="w-full bg-transparent text-[24px] font-serif font-normal leading-[1.35] tracking-[-0.3px] outline-none resize-none mt-1"
+                style={{ color: 'var(--text)' }}
+              />
+
+              {/* AI suggestion chip */}
+              {suggestion && suggestion !== vowText && (
+                <button
+                  onClick={acceptSuggestion}
+                  className="mt-2 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
+                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                >
+                  <Sparkles className="w-3 h-3" style={{ color: 'var(--gold)' }} />
+                  <span className="text-[13px]" style={{ color: 'var(--gold)' }}>
+                    {suggestion}
+                  </span>
+                </button>
+              )}
+            </div>
+          </FadeUp>
+
+          {/* Divider + smart defaults */}
+          <FadeUp delay={0.14}>
+            <div
+              className="h-px mt-5 mb-4"
+              style={{ background: 'linear-gradient(90deg, rgba(212,162,79,0.2) 0%, rgba(212,162,79,0.05) 100%)' }}
+            />
+            <p className="text-[11px] font-medium tracking-[0.5px] mb-2.5" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+              YOUR LAST SETTINGS
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {deadlinePreviewLabel && (
+                <div
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
+                  style={{ backgroundColor: 'rgba(212,162,79,0.05)', border: '1px solid rgba(212,162,79,0.12)' }}
+                >
+                  <Calendar className="w-3 h-3" style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+                  <span className="text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>{deadlinePreviewLabel}</span>
+                </div>
+              )}
+              {witnessPreviewName && (
+                <div
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
+                  style={{ backgroundColor: 'rgba(212,162,79,0.05)', border: '1px solid rgba(212,162,79,0.12)' }}
+                >
+                  <User className="w-3 h-3" style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+                  <span className="text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>{witnessPreviewName}</span>
+                </div>
+              )}
+              <div
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-[10px]"
+                style={{ backgroundColor: 'rgba(212,162,79,0.05)', border: '1px solid rgba(212,162,79,0.12)' }}
+              >
+                <DollarSign className="w-3 h-3" style={{ color: 'var(--text-muted)', opacity: 0.5 }} />
+                <span className="text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>${stakeAmount}</span>
               </div>
-            </RitualCard>
+            </div>
           </FadeUp>
 
           {/* Dare a friend link — only for returning users */}
           {recentWitnesses.length > 0 && (
-            <FadeUp delay={0.15}>
-              <div className="flex justify-center">
+            <FadeUp delay={0.18}>
+              <div className="flex justify-center pt-4">
                 <button
                   onClick={() => router.push('/cast')}
                   className="text-[13px] font-semibold py-2"
-                  style={{ color: 'var(--gold)' }}
+                  style={{ color: 'var(--text-muted)' }}
                 >
-                  or <span className="underline">dare a friend →</span>
+                  or <span className="underline" style={{ color: 'var(--gold)' }}>dare a friend →</span>
                 </button>
               </div>
             </FadeUp>

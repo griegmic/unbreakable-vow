@@ -192,11 +192,11 @@ export function generateSuggestion(input: string): string {
 }
 
 function hasRelativeTime(input: string): boolean {
-  return /(tomorrow|tonight|today|this\s+(morning|afternoon|evening|weekend|friday|saturday|sunday|monday|tuesday|wednesday|thursday)|next\s+(week|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|in\s+the\s+(morning|afternoon|evening)|before\s+(bed|work|lunch|dinner|noon|midnight|class|school)|after\s+(work|lunch|dinner|class|school)|(?:by\s+)?end\s+of\s+(?:the\s+)?week)/i.test(input);
+  return /(tomorrow|tonight|today|by\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday|tomorrow|tonight)|this\s+(morning|afternoon|evening|weekend|friday|saturday|sunday|monday|tuesday|wednesday|thursday)|next\s+(week|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|in\s+the\s+(morning|afternoon|evening)|before\s+(bed|work|lunch|dinner|noon|midnight|class|school)|after\s+(work|lunch|dinner|class|school)|(?:by\s+)?end\s+of\s+(?:the\s+)?week)/i.test(input);
 }
 
 function hasActionVerb(input: string): boolean {
-  return /(go\s+to|wake|run|walk|read|write|code|cook|call|send|finish|complete|submit|clean|study|practice|meditate|exercise|work\s+out|lift|swim|bike|jog|stretch|do\s+a|make\s+a|no\s+|don't|stop|avoid|quit|book|buy|pay|sign\s+up|register|schedule|apply|cancel|start|launch|ship|publish|post|upload|delete|move|file|hire|fire|close|open|set\s+up|plan|organize|confirm|order|deliver|pick\s+up|drop\s+off)/i.test(input);
+  return /(go\s+to|get|grab|take|return|bring|find|ask|talk|meet|attend|check|fix|replace|install|remove|eat|drink|try|wake|run|walk|read|write|code|cook|call|send|finish|complete|submit|clean|study|practice|meditate|exercise|work\s+out|lift|swim|bike|jog|stretch|do\s+a|make\s+a|no\s+|don't|stop|avoid|quit|book|buy|pay|sign\s+up|register|schedule|apply|cancel|start|launch|ship|publish|post|upload|delete|move|file|hire|fire|close|open|set\s+up|plan|organize|confirm|order|deliver|pick\s+up|drop\s+off)/i.test(input);
 }
 
 export function analyzeVow(input: string): AnalysisResult {

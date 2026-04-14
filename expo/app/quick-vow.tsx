@@ -488,34 +488,25 @@ export default function QuickVowScreen() {
           <Text style={styles.backLabel}>Dashboard</Text>
         </Pressable>
 
-        <Text style={styles.pageTitle}>New Vow</Text>
-
-        {recentWitnesses.length > 0 && (
-          <Pressable onPress={() => router.push('/cast')} style={styles.dareLink}>
-            <Text style={styles.dareLinkText}>or <Text style={styles.dareLinkBold}>dare a friend →</Text></Text>
+        {/* Hero prompt + input */}
+        <Text style={styles.vowPrompt}>I vow to...</Text>
+        <TextInput
+          value={vowText}
+          onChangeText={setVowText}
+          placeholder="run every morning this week"
+          placeholderTextColor="rgba(246,247,251,0.18)"
+          multiline
+          style={styles.heroTextInput}
+        />
+        {suggestion && suggestion !== vowText ? (
+          <Pressable onPress={acceptSuggestion} style={styles.suggestionRow}>
+            <Sparkles color={palette.gold} size={12} />
+            <Text style={styles.suggestionText}>{suggestion}</Text>
           </Pressable>
-        )}
+        ) : null}
 
-        {/* Vow text + inline deadline */}
+        {/* Inline deadline */}
         <RitualCard>
-          <Text style={styles.sectionLabel}>YOUR VOW</Text>
-          <TextInput
-            value={vowText}
-            onChangeText={setVowText}
-            placeholder="I will..."
-            placeholderTextColor={palette.textMuted}
-            multiline
-            style={styles.textInput}
-          />
-          {suggestion && suggestion !== vowText ? (
-            <Pressable onPress={acceptSuggestion} style={styles.suggestionRow}>
-              <Sparkles color={palette.gold} size={12} />
-              <Text style={styles.suggestionText}>{suggestion}</Text>
-            </Pressable>
-          ) : null}
-
-          {/* Inline deadline */}
-          <View style={styles.inlineDeadlineDivider} />
           <View style={styles.inlineDeadlineRow}>
             <Text style={styles.inlineDeadlineLabel}>Ends</Text>
             <View style={styles.chipRow}>
@@ -557,6 +548,12 @@ export default function QuickVowScreen() {
           ) : null}
           <Text style={styles.deadlineHint}>{formatDateShort(deadlineDate)}</Text>
         </RitualCard>
+
+        {recentWitnesses.length > 0 && (
+          <Pressable onPress={() => router.push('/cast')} style={styles.dareLink}>
+            <Text style={styles.dareLinkText}>or <Text style={styles.dareLinkBold}>dare a friend →</Text></Text>
+          </Pressable>
+        )}
 
         {/* Witness */}
         <RitualCard>
@@ -736,13 +733,24 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
-  pageTitle: {
-    color: palette.text,
-    fontSize: 28,
-    fontWeight: '700',
+  vowPrompt: {
+    color: 'rgba(212,162,79,0.45)',
+    fontSize: 30,
+    fontWeight: '500',
     fontFamily: serifFont,
     letterSpacing: -0.5,
-    marginBottom: 4,
+    marginTop: 24,
+    marginBottom: 2,
+  },
+  heroTextInput: {
+    color: palette.text,
+    fontSize: 24,
+    fontWeight: '400',
+    fontFamily: serifFont,
+    lineHeight: 33,
+    letterSpacing: -0.3,
+    minHeight: 80,
+    textAlignVertical: 'top',
   },
   sectionLabel: {
     color: palette.goldBright,
@@ -750,13 +758,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1.3,
     marginBottom: 4,
-  },
-  textInput: {
-    color: palette.text,
-    fontSize: 16,
-    lineHeight: 24,
-    minHeight: 80,
-    textAlignVertical: 'top',
   },
   suggestionRow: {
     flexDirection: 'row',

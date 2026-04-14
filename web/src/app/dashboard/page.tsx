@@ -36,7 +36,7 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const nav = (path: string) => { onClose(); router.push(path); };
 
   const items = [
-    { icon: Zap, label: 'QuickVow', description: 'Create a vow in seconds', path: '/create' },
+    { icon: Zap, label: 'New Vow', description: 'Create a vow in seconds', path: '/create' },
     { icon: Send, label: 'Dare a friend', description: 'Cast a vow on someone', path: '/cast' },
     { icon: LayoutGrid, label: 'My Vows', description: 'All your active vows', path: '/dashboard' },
     { icon: Clock, label: 'History', description: 'Past vows and outcomes', path: '/history' },

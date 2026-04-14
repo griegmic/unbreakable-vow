@@ -4,15 +4,13 @@ import { useRouter } from 'next/navigation';
 import { Sparkles, Lightbulb } from 'lucide-react';
 import { RitualScreen, BackButton, PrimaryButton, FadeUp } from '@/components/ui';
 import { useVowFlow } from '@/providers/vow-flow';
-import { generateSuggestion, getContextualSuggestions, analyzeVow } from '@/lib/vow-logic';
+import { generateSuggestion, getContextualSuggestions } from '@/lib/vow-logic';
 
 export default function RefinePage() {
   const router = useRouter();
   const { vow, setRefinedText } = useVowFlow();
   const [input, setInput] = useState('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [error, setError] = useState('');
-  const [shake, setShake] = useState(false);
 
   useEffect(() => {
     if (!vow.rawInput) {
@@ -25,14 +23,6 @@ export default function RefinePage() {
 
   const handleSubmit = () => {
     if (!input.trim()) return;
-    const analysis = analyzeVow(input.trim());
-    if (analysis.type === 'vague') {
-      setError('Try adding a number and a time window.');
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
-      return;
-    }
-    setError('');
     setRefinedText(input.trim());
     router.push('/stake');
   };
@@ -78,11 +68,11 @@ export default function RefinePage() {
       {/* Hero: the editable sharpened vow */}
       <FadeUp delay={0.14}>
         <div
-          className={`rounded-[22px] p-5 flex flex-col gap-2.5 ${shake ? 'animate-[shake_0.3s_ease-in-out]' : ''}`}
+          className="rounded-[22px] p-5 flex flex-col gap-2.5"
           style={{
             backgroundColor: 'var(--surface)',
-            border: `1.5px solid ${error ? 'var(--danger)' : 'rgba(212,162,79,0.35)'}`,
-            boxShadow: error ? 'none' : '0 0 24px rgba(212,162,79,0.06)',
+            border: '1.5px solid rgba(212,162,79,0.35)',
+            boxShadow: '0 0 24px rgba(212,162,79,0.06)',
           }}
         >
           <div className="flex items-center gap-1.5">
@@ -93,13 +83,12 @@ export default function RefinePage() {
           </div>
           <textarea
             value={input}
-            onChange={(e) => { setInput(e.target.value); setError(''); }}
+            onChange={(e) => setInput(e.target.value)}
             rows={3}
             autoFocus
             className="bg-transparent text-[18px] font-serif outline-none resize-none leading-[26px]"
             style={{ color: 'var(--text)' }}
           />
-          {error && <p className="text-[13px]" style={{ color: 'var(--danger)' }}>{error}</p>}
         </div>
       </FadeUp>
 
@@ -115,7 +104,7 @@ export default function RefinePage() {
               {suggestions.map((s) => (
                 <button
                   key={s}
-                  onClick={() => { setInput(s); setError(''); }}
+                  onClick={() => setInput(s)}
                   className="text-left px-3.5 py-2.5 rounded-full transition-colors"
                   style={{
                     backgroundColor: input === s ? 'rgba(212,162,79,0.10)' : 'var(--surface)',
@@ -142,7 +131,7 @@ export default function RefinePage() {
           className="text-center w-full py-2"
         >
           <span className="text-[13px] underline decoration-dotted underline-offset-4" style={{ color: 'var(--text-muted)' }}>
-            Nah, I&apos;ll keep mine
+            Keep my original
           </span>
         </button>
       </FadeUp>
