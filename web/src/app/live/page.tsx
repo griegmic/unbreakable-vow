@@ -1,13 +1,12 @@
 'use client';
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle, LayoutGrid, ChevronRight, Trash2 } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp, HeaderBadge } from '@/components/ui';
+import { Shield, Clock, Eye, MessageCircle, LayoutGrid, ChevronRight, Trash2 } from 'lucide-react';
+import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, StatPill, FadeUp, HeaderBadge } from '@/components/ui';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
-import { getDailyNudge } from '@/lib/vow-logic';
 import type { Database } from '@/lib/types';
 
 type VowRow = Database['public']['Tables']['vows']['Row'];
@@ -39,10 +38,7 @@ export default function LivePage() {
   const [actionBusy, setActionBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState('');
   const [origin, setOrigin] = useState('');
-  const [lastCheckIn, setLastCheckIn] = useState<number | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  const dailyNudge = useMemo(() => getDailyNudge(), []);
 
   const fetchVow = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -82,40 +78,6 @@ export default function LivePage() {
   }, [isAuthenticated, authLoading, router, fetchVow]);
 
   useEffect(() => { setOrigin(window.location.origin); }, []);
-
-  useEffect(() => {
-    if (!vow) return;
-    const stored = localStorage.getItem(`lastCheckIn-${vow.id}`);
-    if (stored) setLastCheckIn(Number(stored));
-  }, [vow]);
-
-  const checkInCooldown = lastCheckIn ? (Date.now() - lastCheckIn) < 4 * 60 * 60 * 1000 : false;
-
-  const handleCheckIn = async (mood: 'on_track' | 'struggling' | 'done_early') => {
-    if (!vow || actionBusy || checkInCooldown) return;
-    setActionBusy(true);
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      await supabase.from('audit_events').insert({
-        vow_id: vow.id,
-        event_type: 'check_in',
-        actor_type: 'maker',
-        actor_id: session.user.id,
-        metadata: { mood },
-      });
-      const now = Date.now();
-      setLastCheckIn(now);
-      localStorage.setItem(`lastCheckIn-${vow.id}`, String(now));
-      const labels = { on_track: 'On track', struggling: 'Struggling', done_early: 'Crushing it' };
-      setActionMsg(`Checked in: ${labels[mood]}`);
-      setTimeout(() => setActionMsg(''), 3000);
-    } catch {
-      setActionMsg('Check-in failed. Try again.');
-    } finally {
-      setActionBusy(false);
-    }
-  };
 
   const handleGoSolo = async () => {
     if (!vow || actionBusy) return;
@@ -493,10 +455,9 @@ export default function LivePage() {
           </button>
           <button
             onClick={() => router.push('/?new=1')}
-            className="w-full rounded-[14px] min-h-[42px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-            style={{ color: 'var(--gold-bright)' }}
+            className="w-full py-2 flex items-center justify-center"
           >
-            <span className="text-[13px] font-semibold">+ Make another vow</span>
+            <span className="text-[13px] font-semibold" style={{ color: 'var(--gold-bright)' }}>+ Make another vow</span>
           </button>
           {isAdmin && (
             <button
@@ -519,16 +480,8 @@ export default function LivePage() {
           </div>
         </FadeUp>
 
-      {/* Status badge */}
-      <FadeUp delay={0.05}>
-        <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--success)' }} />
-          <span className="text-[13px] font-semibold uppercase tracking-[0.5px]" style={{ color: 'var(--success)' }}>VOW ACTIVE</span>
-        </div>
-      </FadeUp>
-
       {/* Vow text */}
-      <FadeUp delay={0.08}>
+      <FadeUp delay={0.05}>
         <TitleBlock
           title={vow.refined_text}
           subtitle={vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} at stake · ${vow.destination} if broken` : 'Accountability only'}
@@ -553,36 +506,7 @@ export default function LivePage() {
               {witnessLabel}
             </span>
           </div>
-          <p className="text-[12px] italic mt-2" style={{ color: 'var(--text-muted)' }}>
-            {dailyNudge}
-          </p>
         </div>
-      </FadeUp>
-
-      {/* Check-in buttons */}
-      <FadeUp delay={0.14}>
-        <div className="flex gap-2">
-          {([
-            { mood: 'on_track' as const, label: 'On track' },
-            { mood: 'struggling' as const, label: 'Struggling' },
-            { mood: 'done_early' as const, label: 'Crushing it' },
-          ]).map(({ mood, label }) => (
-            <button
-              key={mood}
-              onClick={() => handleCheckIn(mood)}
-              disabled={actionBusy || checkInCooldown}
-              className="flex-1 rounded-[14px] py-3 flex items-center justify-center transition-all active:scale-[0.97] disabled:opacity-40"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-[12px] font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</span>
-            </button>
-          ))}
-        </div>
-        {checkInCooldown && (
-          <p className="text-[11px] text-center mt-1.5" style={{ color: 'var(--text-muted)' }}>
-            Next check-in available in a few hours
-          </p>
-        )}
       </FadeUp>
 
       {/* Invite a witness — solo vows only */}
@@ -631,28 +555,6 @@ export default function LivePage() {
           </button>
         </FadeUp>
       )}
-
-      {/* Details card */}
-      <FadeUp delay={0.2}>
-        <RitualCard>
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Scale className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
-              </div>
-              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Ends</span>
-              </div>
-              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{endDateFormatted}</span>
-            </div>
-          </div>
-        </RitualCard>
-      </FadeUp>
 
       {actionMsg && (
         <FadeUp>

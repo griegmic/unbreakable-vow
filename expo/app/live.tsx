@@ -775,57 +775,6 @@ export default function LiveScreen() {
           </Pressable>
         )}
 
-        <View style={styles.checkInSection}>
-          <Text style={styles.checkInTitle}>How's it going?</Text>
-          {checkInFeedback ? (
-            <View style={styles.checkInFeedbackWrap}>
-              <Sparkles color={palette.goldBright} size={14} />
-              <Text style={styles.checkInFeedbackText}>{checkInFeedback}</Text>
-            </View>
-          ) : !canCheckIn ? (
-            <Text style={styles.checkInCooldownText}>{checkInCooldownLabel}</Text>
-          ) : (
-            <View style={styles.checkInButtons}>
-              <Animated.View style={[styles.checkInBtnWrap, { transform: [{ scale: checkInScaleOn }] }]}>
-                <Pressable
-                  style={[styles.checkInBtn, styles.checkInBtnOnTrack]}
-                  onPress={() => { void handleCheckIn('on_track'); }}
-                  disabled={checkingIn || !canCheckIn}
-                  testID="live-checkin-ontrack"
-                >
-                  <Text style={[styles.checkInBtnLabel, { color: palette.success }]}>On track</Text>
-                </Pressable>
-              </Animated.View>
-
-              <Animated.View style={[styles.checkInBtnWrap, { transform: [{ scale: checkInScaleStruggle }] }]}>
-                <Pressable
-                  style={[styles.checkInBtn, styles.checkInBtnStruggling]}
-                  onPress={() => { void handleCheckIn('struggling'); }}
-                  disabled={checkingIn || !canCheckIn}
-                  testID="live-checkin-struggling"
-                >
-                  <Text style={[styles.checkInBtnLabel, { color: palette.warmAmber }]}>Struggling</Text>
-                </Pressable>
-              </Animated.View>
-
-              <Animated.View style={[styles.checkInBtnWrap, { transform: [{ scale: checkInScaleDone }] }]}>
-                <Pressable
-                  style={[styles.checkInBtn, styles.checkInBtnDone]}
-                  onPress={() => { void handleCheckIn('done_early'); }}
-                  disabled={checkingIn || !canCheckIn}
-                  testID="live-checkin-done"
-                >
-                  <Text style={[styles.checkInBtnLabel, { color: palette.goldBright }]}>Crushing it</Text>
-                </Pressable>
-              </Animated.View>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.nudgeWrap}>
-          <Text style={styles.nudgeText}>{dailyNudge}</Text>
-        </View>
-
         {!isSelfWitness ? (
           <View style={styles.witnessConnectionCard}>
             <View style={styles.witnessConnectionHeader}>
