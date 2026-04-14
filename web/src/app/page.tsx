@@ -41,6 +41,34 @@ export default function HomePage() {
       }
 
       // If we just came from auth, use the stored return path (don't race with handleAuthSuccess)
+      // Priority 1: Cookie (most reliable — survives Safari cross-origin OAuth wipes)
+      try {
+        const cookieMatch = document.cookie.match(/(?:^|;\s*)auth_return_path=([^;]*)/);
+        if (cookieMatch) {
+          const cookiePath = decodeURIComponent(cookieMatch[1]);
+          document.cookie = 'auth_return_path=; path=/; max-age=0';
+          if (cookiePath && cookiePath !== '/') {
+            router.replace(cookiePath);
+            return;
+          }
+        }
+      } catch {}
+      // Priority 2: Challenge backup cookie — carries the dare token even if auth_return_path was lost
+      try {
+        const challengeMatch = document.cookie.match(/(?:^|;\s*)challenge_pending_backup=([^;]*)/);
+        if (challengeMatch) {
+          const challengeData = decodeURIComponent(challengeMatch[1]);
+          const parsed = JSON.parse(challengeData);
+          if (parsed.token) {
+            // Restore challenge state to localStorage for the /c/[token] page to consume
+            localStorage.setItem('challenge-pending-state', challengeData);
+            document.cookie = 'challenge_pending_backup=; path=/; max-age=0';
+            router.replace(`/c/${parsed.token}`);
+            return;
+          }
+        }
+      } catch {}
+      // Priority 3: localStorage (works on desktop, may be cleared on mobile Safari OAuth)
       try {
         const returnPath = localStorage.getItem('auth-return-path');
         if (returnPath) {
