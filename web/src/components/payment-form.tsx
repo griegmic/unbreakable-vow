@@ -43,8 +43,9 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, amount }: { onSuccess: () =
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <PaymentElement
         options={{
-          layout: 'tabs',
+          layout: 'accordion',
           wallets: { applePay: 'auto', googlePay: 'auto' },
+          defaultValues: { billingDetails: { address: { country: 'US' } } },
         }}
       />
       {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}

@@ -45,6 +45,9 @@ export async function setupPaymentSheet(clientSecret: string): Promise<void> {
     paymentIntentClientSecret: clientSecret,
     merchantDisplayName: 'Unbreakable Vow',
     style: 'alwaysDark',
+    applePay: { merchantCountryCode: 'US' },
+    googlePay: { merchantCountryCode: 'US', testEnv: false },
+    defaultBillingDetails: { address: { country: 'US' } },
   });
 
   if (error) throw new Error(error.message);

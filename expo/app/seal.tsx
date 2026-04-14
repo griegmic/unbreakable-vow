@@ -417,7 +417,7 @@ export default function SealScreen() {
 
       {!sealed && vow.stake.amount > 0 ? (
         <View style={styles.oathPassive}>
-          <Text style={styles.paymentNote}>You'll confirm payment after tapping seal.</Text>
+          <Text style={styles.paymentNote}>You'll authorize a hold — released if you keep your vow.</Text>
         </View>
       ) : null}
 

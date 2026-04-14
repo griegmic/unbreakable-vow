@@ -139,7 +139,8 @@ Deno.serve(async (req) => {
       currency: 'usd',
       customer: customerId,
       capture_method: 'manual',
-      'automatic_payment_methods[enabled]': 'true',
+      'payment_method_types[0]': 'card',
+      'payment_method_types[1]': 'link',
       'metadata[vow_id]': vow_id,
       'metadata[user_id]': user.id,
     });
