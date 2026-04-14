@@ -914,7 +914,7 @@ function CreatePageContent() {
                     ) : witnessName === 'Your witness' ? (
                       <>
                         <span className="text-[14px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-                          I&apos;ll share after
+                          Someone else
                         </span>
                         <span className="text-[12px] font-semibold" style={{ color: 'var(--gold)' }}>Change</span>
                       </>
@@ -947,7 +947,7 @@ function CreatePageContent() {
                       />
                     ))}
                     <ChoiceChip
-                      label="I'll share after"
+                      label="Someone else"
                       active={witnessName === 'Your witness'}
                       onPress={() => {
                         setWitnessName('Your witness');
@@ -966,6 +966,11 @@ function CreatePageContent() {
                     />
                   </div>
                 </div>
+                {witnessName && expandedTerm !== 'witness' && (
+                  <p className="text-[12px] pb-2 pl-[26px]" style={{ color: 'var(--text-muted)' }}>
+                    You&apos;ll get a link to send them after sealing.
+                  </p>
+                )}
               </div>
 
               <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
