@@ -5,7 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; onCancel: () => void; onSkip?: () => void }) {
+function CheckoutForm({ onSuccess, onCancel, onSkip, amount }: { onSuccess: () => void; onCancel: () => void; onSkip?: () => void; amount?: number }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -60,7 +60,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
         {loading ? (
           <div className="w-5 h-5 border-2 border-[#0B0D11] border-t-transparent rounded-full animate-spin" />
         ) : (
-          <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>Pay & Seal</span>
+          <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>Lock it in</span>
         )}
       </button>
       {onSkip && (
@@ -92,7 +92,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip }: { onSuccess: () => void; 
   );
 }
 
-export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip }: { clientSecret: string; onSuccess: () => void; onCancel: () => void; onSkip?: () => void }) {
+export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip, amount }: { clientSecret: string; onSuccess: () => void; onCancel: () => void; onSkip?: () => void; amount?: number }) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
@@ -118,7 +118,12 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip }: { cl
         <div className="flex justify-center mb-3">
           <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'var(--text-muted)', opacity: 0.4 }} />
         </div>
-        <h2 className="text-lg font-bold font-serif mb-3" style={{ color: 'var(--text)' }}>Complete payment</h2>
+        <h2 className="text-lg font-bold font-serif" style={{ color: 'var(--text)' }}>
+          {amount ? `Hold $${amount} on your card` : 'Authorize hold'}
+        </h2>
+        <p className="text-[13px] mb-3" style={{ color: 'var(--text-muted)' }}>
+          Released if you keep your vow.
+        </p>
         <Elements
           stripe={stripePromise}
           options={{
@@ -145,7 +150,7 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip }: { cl
             },
           }}
         >
-          <CheckoutForm onSuccess={onSuccess} onCancel={onCancel} onSkip={onSkip} />
+          <CheckoutForm onSuccess={onSuccess} onCancel={onCancel} onSkip={onSkip} amount={amount} />
         </Elements>
       </div>
     </div>

@@ -530,7 +530,7 @@ export default function SealPage() {
         {vow.stake.amount > 0 && (
           <FadeUp delay={0.2}>
             <p className="text-[12px] text-center" style={{ color: 'var(--text-muted)' }}>
-              You'll confirm payment after tapping seal.
+              You'll authorize a hold — released if you keep your vow.
             </p>
           </FadeUp>
         )}
@@ -545,6 +545,7 @@ export default function SealPage() {
       {clientSecret && step === 'payment' && (
         <PaymentModal
           clientSecret={clientSecret}
+          amount={vow.stake.amount}
           onSuccess={handlePaymentSuccess}
           onCancel={() => { setStep('review'); setSealing(false); }}
           onSkip={isDevBypass ? async () => {
