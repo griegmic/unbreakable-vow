@@ -76,7 +76,7 @@ export function getContextualSuggestions(input: string): string[] {
   if (/(run|jog)/i.test(lower)) {
     return applyTimeFrame(['Run for 20 minutes, 4 days this week', 'Run 2 miles, 3 times this week', 'Run every morning this week'], tf);
   }
-  if (/(read|book)/i.test(lower)) {
+  if (/\bread\b/i.test(lower) && !/\bbook\b/i.test(lower)) {
     return applyTimeFrame(['Read for 30 minutes every night this week', 'Read 50 pages every day this week', 'Read one chapter every night before bed'], tf);
   }
   if (/(eat|food|cook|takeout|diet|health|healthier)/i.test(lower)) {
@@ -126,15 +126,16 @@ export function generateSuggestion(input: string): string {
 
   const hasTimeWindow = /(this\s+(week|month|year)|all\s+(week|month)|every|daily)/i.test(lower);
   const hasFrequency = /\d+\s*(?:x|times?)/i.test(normalizeWordNumbers(lower));
-  const hasDeadline = /by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/i.test(lower);
+  const hasDeadline = /by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|(?:by\s+)?end\s+of\s+(?:the\s+)?(?:this\s+)?(?:week|month|year|quarter)/i.test(lower);
 
   // If vow already has a relative time reference, don't try to enhance it
   if (hasRelativeTime(lower)) return `${clean}.`;
 
   if (hasTimeWindow && hasFrequency) return `${clean}.`;
   if (hasTimeWindow && hasDeadline) return `${clean}.`;
+  if (hasDeadline) return `${clean}.`;
 
-  if (/(send|submit|finish|complete|ship|launch)/i.test(lower) && !hasDeadline) return `${clean} by Friday at 5pm.`;
+  if (/(send|submit|finish|complete|ship|launch|book|buy|pay|sign\s+up|register|schedule|apply|cancel|hire|file|confirm|order|plan|organize)/i.test(lower) && !hasDeadline && !hasTimeWindow) return `${clean} by Friday at 5pm.`;
 
   if (/(walk|steps|hike)/i.test(lower)) {
     if (!hasFrequency && !hasTimeWindow) return `${clean} 10,000 steps every day this week.`;
@@ -151,7 +152,7 @@ export function generateSuggestion(input: string): string {
     if (!hasTimeWindow) return `${clean}, this week.`;
     return `${clean}.`;
   }
-  if (/(read|book)/i.test(lower)) {
+  if (/\bread\b/i.test(lower) && !/\bbook\b/i.test(lower)) {
     if (!hasTimeWindow) return `${clean} every night this week.`;
     return `${clean}.`;
   }
@@ -191,11 +192,11 @@ export function generateSuggestion(input: string): string {
 }
 
 function hasRelativeTime(input: string): boolean {
-  return /(tomorrow|tonight|today|this\s+(morning|afternoon|evening|weekend|friday|saturday|sunday|monday|tuesday|wednesday|thursday)|next\s+(week|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|in\s+the\s+(morning|afternoon|evening)|before\s+(bed|work|lunch|dinner|noon|midnight|class|school)|after\s+(work|lunch|dinner|class|school))/i.test(input);
+  return /(tomorrow|tonight|today|this\s+(morning|afternoon|evening|weekend|friday|saturday|sunday|monday|tuesday|wednesday|thursday)|next\s+(week|month|monday|tuesday|wednesday|thursday|friday|saturday|sunday)|in\s+the\s+(morning|afternoon|evening)|before\s+(bed|work|lunch|dinner|noon|midnight|class|school)|after\s+(work|lunch|dinner|class|school)|(?:by\s+)?end\s+of\s+(?:the\s+)?week)/i.test(input);
 }
 
 function hasActionVerb(input: string): boolean {
-  return /(go\s+to|wake|run|walk|read|write|code|cook|call|send|finish|complete|submit|clean|study|practice|meditate|exercise|work\s+out|lift|swim|bike|jog|stretch|do\s+a|make\s+a|no\s+|don't|stop|avoid|quit)/i.test(input);
+  return /(go\s+to|wake|run|walk|read|write|code|cook|call|send|finish|complete|submit|clean|study|practice|meditate|exercise|work\s+out|lift|swim|bike|jog|stretch|do\s+a|make\s+a|no\s+|don't|stop|avoid|quit|book|buy|pay|sign\s+up|register|schedule|apply|cancel|start|launch|ship|publish|post|upload|delete|move|file|hire|fire|close|open|set\s+up|plan|organize|confirm|order|deliver|pick\s+up|drop\s+off)/i.test(input);
 }
 
 export function analyzeVow(input: string): AnalysisResult {
@@ -209,7 +210,7 @@ export function analyzeVow(input: string): AnalysisResult {
   const hasVagueAction = /(more|less|better|some|a bit|a little|a few)\s+(\w+)/i.test(lowered)
     && !/\d+/.test(lowered)
     && !/(no\s+|don't\s+|stop\s+|avoid\s+|quit\s+)/i.test(lowered);
-  const hasNoMeasurable = !/(\d+|every|all\s+week|all\s+month|daily|no\s+|don't|stop|avoid|quit|before\s+\d|by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|by\s+end)/i.test(lowered);
+  const hasNoMeasurable = !/(\d+|every|all\s+week|all\s+month|daily|no\s+|don't|stop|avoid|quit|before\s+\d|by\s+\w+day|by\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)|(?:by\s+)?end\s+of)/i.test(lowered);
 
   // Reject explicitly vague or too-short vows first
   if (hasVagueTerm || tooShort) {
@@ -243,7 +244,7 @@ export function hasExplicitDate(input: string): boolean {
   const MONTH_NAMES = 'jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?';
   const monthWithDay = new RegExp(`(${MONTH_NAMES})\\s+\\d{1,2}`, 'i');
   const byMonth = new RegExp(`by\\s+(?:end\\s+of\\s+)?(?:the\\s+)?(?:${MONTH_NAMES})(?:\\s+\\d{1,2})?`, 'i');
-  const endOfPattern = /(?:by\s+)?end\s+of\s+(?:the\s+)?(?:this\s+)?(?:month|year|quarter|semester)/i;
+  const endOfPattern = /(?:by\s+)?end\s+of\s+(?:the\s+)?(?:this\s+)?(?:week|month|year|quarter|semester)/i;
   const endOfMonthName = new RegExp(`(?:by\\s+)?end\\s+of\\s+(?:${MONTH_NAMES})`, 'i');
   const slashDate = /by\s+\d{1,2}\/\d{1,2}/i;
   return monthWithDay.test(lower) || byMonth.test(lower) || endOfPattern.test(lower) || endOfMonthName.test(lower) || slashDate.test(lower);
