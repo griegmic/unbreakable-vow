@@ -120,6 +120,7 @@ function CreatePageContent() {
   const [placeholder] = useState(() => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [inputFocused, setInputFocused] = useState(false);
 
   useEffect(() => {
     const isLocal = window.location.hostname === 'localhost';
@@ -661,7 +662,7 @@ function CreatePageContent() {
                   border: vowText.trim() ? 'none' : '1px solid var(--border)',
                 }}
               >
-                Seal it →
+                Set the stakes →
               </button>
             </div>
           }
@@ -686,15 +687,16 @@ function CreatePageContent() {
             {/* Card: prompt + input + smart defaults */}
             <FadeUp delay={0.08}>
               <div
-                className="rounded-[20px] p-[18px] pb-[16px]"
+                className="rounded-[20px] p-[18px] pb-[16px] transition-all duration-200"
                 style={{
                   backgroundColor: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(212,162,79,0.15)',
+                  border: `1px solid rgba(212,162,79,${inputFocused ? '0.35' : '0.15'})`,
+                  boxShadow: inputFocused ? '0 0 24px rgba(212,162,79,0.08)' : 'none',
                 }}
               >
                 <p
                   className="text-[30px] font-serif font-medium leading-[1.2] tracking-[-0.5px]"
-                  style={{ color: 'rgba(212,162,79,0.7)' }}
+                  style={{ color: `rgba(212,162,79,${inputFocused ? '0.85' : '0.7'})` }}
                 >
                   I vow to...
                 </p>
@@ -702,6 +704,9 @@ function CreatePageContent() {
                   ref={textareaRef}
                   value={vowText}
                   onChange={(e) => setVowText(e.target.value)}
+                  onFocus={() => setInputFocused(true)}
+                  onBlur={() => setInputFocused(false)}
+                  autoFocus
                   placeholder={placeholder}
                   rows={3}
                   className="w-full bg-transparent text-[24px] font-serif font-normal leading-[1.35] tracking-[-0.3px] outline-none resize-none mt-1"
