@@ -84,7 +84,7 @@ export function AppMenuButton({ style }: AppMenuProps) {
   const menuItems: MenuItemConfig[] = [
     {
       icon: <Zap color={palette.goldBright} size={18} />,
-      label: 'QuickVow',
+      label: 'New Vow',
       description: 'Create a vow in seconds',
       route: '/quick-vow',
     },
