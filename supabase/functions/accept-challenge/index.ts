@@ -87,6 +87,87 @@ Deno.serve(async (req) => {
       return jsonResponse({ success: true, action: 'phone_saved' });
     }
 
+    // === PREPARE PAYMENT (step 1 of deferred-intent Apple Pay flow) ===
+    if (action === 'prepare_payment') {
+      if (vow.challenge_status !== 'pending') {
+        return jsonResponse({ error: 'already_responded', challenge_status: vow.challenge_status }, 409);
+      }
+      if (vow.status !== 'draft') {
+        return jsonResponse({ error: 'vow_not_draft', status: vow.status }, 400);
+      }
+
+      const { stake_amount, email, display_name } = body;
+      if (!email) return jsonResponse({ error: 'email required' }, 400);
+
+      const stakeAmountCents = typeof stake_amount === 'number' ? stake_amount : 0;
+      if (stakeAmountCents < 1000 || stakeAmountCents > 10000) {
+        return jsonResponse({ error: 'stake_amount must be between $10 and $100' }, 400);
+      }
+
+      // Find or create user
+      let targetUserId: string;
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email, email_confirm: true, user_metadata: { full_name: display_name || '' },
+      });
+      if (newUser?.user) {
+        targetUserId = newUser.user.id;
+        await supabase.from('users').upsert({ id: targetUserId, display_name: display_name || email.split('@')[0] });
+      } else if (createError?.message?.toLowerCase().includes('already')) {
+        let foundId: string | null = null;
+        let page = 1;
+        const perPage = 100;
+        while (!foundId) {
+          const { data: listed } = await supabase.auth.admin.listUsers({ page, perPage });
+          const users = listed?.users;
+          if (!users || users.length === 0) break;
+          const match = users.find((u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase());
+          if (match) { foundId = match.id; break; }
+          if (users.length < perPage) break;
+          page++;
+        }
+        if (!foundId) return jsonResponse({ error: 'failed_to_find_account' }, 500);
+        targetUserId = foundId;
+      } else {
+        return jsonResponse({ error: 'failed_to_create_account' }, 500);
+      }
+
+      if (display_name) {
+        await supabase.from('users').update({ display_name }).eq('id', targetUserId);
+      }
+
+      // Get or create Stripe customer
+      const { data: userProfile } = await supabase
+        .from('users').select('stripe_customer_id').eq('id', targetUserId).single();
+      let customerId = userProfile?.stripe_customer_id;
+      if (!customerId) {
+        const customer = await stripePost('customers', {
+          email, 'metadata[supabase_user_id]': targetUserId,
+        });
+        customerId = customer.id;
+        await supabase.from('users').update({ stripe_customer_id: customerId }).eq('id', targetUserId);
+      }
+
+      // Create PaymentIntent (no PM, no confirm — client will confirm with Apple Pay or card)
+      const pi = await stripePost('payment_intents', {
+        amount: String(stakeAmountCents),
+        currency: 'usd',
+        customer: customerId,
+        capture_method: 'manual',
+        'automatic_payment_methods[enabled]': 'true',
+        'metadata[vow_id]': vow.id,
+        'metadata[user_id]': targetUserId,
+        'metadata[type]': 'challenge_acceptance',
+      }, `challenge-prepare-${vow.id}-${targetUserId}`);
+
+      return jsonResponse({
+        success: true,
+        action: 'payment_prepared',
+        client_secret: pi.client_secret,
+        payment_intent_id: pi.id,
+        target_user_id: targetUserId,
+      });
+    }
+
     if (vow.challenge_status !== 'pending') {
       return jsonResponse({ error: 'already_responded', challenge_status: vow.challenge_status }, 409);
     }
@@ -131,7 +212,8 @@ Deno.serve(async (req) => {
       stake_amount,   // cents — recipient's choice (0 = no stake)
       destination,    // charity name
       email,          // required — creates/finds account
-      payment_method_id, // Stripe PM (required if stake > 0)
+      payment_method_id, // Stripe PM (legacy card-only flow)
+      payment_intent_id, // Stripe PI (new deferred-intent flow — Apple Pay + card)
       display_name,   // optional
     } = body;
 
@@ -141,8 +223,8 @@ Deno.serve(async (req) => {
 
     const stakeAmountCents = typeof stake_amount === 'number' ? stake_amount : 0;
 
-    if (stakeAmountCents > 0 && !payment_method_id) {
-      return jsonResponse({ error: 'payment_method_id required for staked vows' }, 400);
+    if (stakeAmountCents > 0 && !payment_method_id && !payment_intent_id) {
+      return jsonResponse({ error: 'payment required for staked vows' }, 400);
     }
 
     if (stakeAmountCents > 0 && (stakeAmountCents < 1000 || stakeAmountCents > 10000)) {
@@ -150,64 +232,87 @@ Deno.serve(async (req) => {
     }
 
     // 1. Find or create user account by email
-    //    Strategy: try create first. If email is already registered, look up via
-    //    raw SQL on auth.users (service role has access). This avoids the
-    //    listUsers() pagination problem where users beyond page 1 are missed.
     let targetUserId: string;
 
-    const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
-      email,
-      email_confirm: true,
-      user_metadata: { full_name: display_name || '' },
-    });
-
-    if (newUser?.user) {
-      targetUserId = newUser.user.id;
-      console.log(`[accept-challenge] Created new user: ${targetUserId}`);
-
-      // Create public.users row
-      await supabase.from('users').upsert({
-        id: targetUserId,
-        display_name: display_name || email.split('@')[0],
-      });
-    } else if (createError?.message?.toLowerCase().includes('already')) {
-      // User exists — scan listUsers page by page to find by email
-      let foundId: string | null = null;
-      let page = 1;
-      const perPage = 100;
-      while (!foundId) {
-        const { data: listed } = await supabase.auth.admin.listUsers({ page, perPage });
-        const users = listed?.users;
-        if (!users || users.length === 0) break;
-        const match = users.find(
-          (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
-        );
-        if (match) { foundId = match.id; break; }
-        if (users.length < perPage) break; // last page
-        page++;
+    // If using the new deferred-intent flow, the user was already created in prepare_payment
+    if (payment_intent_id) {
+      // Retrieve PI to get the user ID from metadata
+      const pi = await stripeGet(`payment_intents/${payment_intent_id}`);
+      targetUserId = pi.metadata?.user_id;
+      if (!targetUserId) {
+        return jsonResponse({ error: 'invalid_payment_intent' }, 400);
       }
-
-      if (!foundId) {
-        console.error('[accept-challenge] User registered but cannot find:', email);
-        return jsonResponse({ error: 'failed_to_find_account' }, 500);
+      // Update display_name if provided
+      if (display_name) {
+        await supabase.from('users').update({ display_name }).eq('id', targetUserId);
       }
-      targetUserId = foundId;
-      console.log(`[accept-challenge] Found existing user: ${targetUserId}`);
     } else {
-      console.error('[accept-challenge] Failed to create user:', createError);
-      return jsonResponse({ error: 'failed_to_create_account' }, 500);
-    }
+      // Legacy flow — find or create user
+      const { data: newUser, error: createError } = await supabase.auth.admin.createUser({
+        email,
+        email_confirm: true,
+        user_metadata: { full_name: display_name || '' },
+      });
 
-    // Update display_name if provided and user exists
-    if (display_name) {
-      await supabase.from('users').update({ display_name }).eq('id', targetUserId);
+      if (newUser?.user) {
+        targetUserId = newUser.user.id;
+        console.log(`[accept-challenge] Created new user: ${targetUserId}`);
+        await supabase.from('users').upsert({
+          id: targetUserId,
+          display_name: display_name || email.split('@')[0],
+        });
+      } else if (createError?.message?.toLowerCase().includes('already')) {
+        let foundId: string | null = null;
+        let page = 1;
+        const perPage = 100;
+        while (!foundId) {
+          const { data: listed } = await supabase.auth.admin.listUsers({ page, perPage });
+          const users = listed?.users;
+          if (!users || users.length === 0) break;
+          const match = users.find(
+            (u: { email?: string }) => u.email?.toLowerCase() === email.toLowerCase()
+          );
+          if (match) { foundId = match.id; break; }
+          if (users.length < perPage) break;
+          page++;
+        }
+
+        if (!foundId) {
+          console.error('[accept-challenge] User registered but cannot find:', email);
+          return jsonResponse({ error: 'failed_to_find_account' }, 500);
+        }
+        targetUserId = foundId;
+        console.log(`[accept-challenge] Found existing user: ${targetUserId}`);
+      } else {
+        console.error('[accept-challenge] Failed to create user:', createError);
+        return jsonResponse({ error: 'failed_to_create_account' }, 500);
+      }
+
+      if (display_name) {
+        await supabase.from('users').update({ display_name }).eq('id', targetUserId);
+      }
     }
 
     // 2. Handle Stripe payment if staked
     let stripePaymentIntentId: string | null = null;
 
-    if (stakeAmountCents > 0) {
-      // Get or create Stripe customer for recipient
+    if (stakeAmountCents > 0 && payment_intent_id) {
+      // New deferred-intent flow: PI was created in prepare_payment, confirmed by client (Apple Pay / card)
+      // Just verify status and capture
+      const pi = await stripeGet(`payment_intents/${payment_intent_id}`);
+      console.log(`[accept-challenge] Deferred PI status: ${pi.status}`);
+
+      if (pi.status === 'requires_capture') {
+        const captured = await stripePost(`payment_intents/${pi.id}/capture`, {});
+        console.log(`[accept-challenge] PI captured: ${captured.id} status: ${captured.status}`);
+        stripePaymentIntentId = pi.id;
+      } else if (pi.status === 'succeeded') {
+        stripePaymentIntentId = pi.id;
+      } else {
+        return jsonResponse({ error: 'payment_failed', stripe_status: pi.status }, 402);
+      }
+    } else if (stakeAmountCents > 0 && payment_method_id) {
+      // Legacy flow: create PI with PM and confirm in one shot
       const { data: userProfile } = await supabase
         .from('users')
         .select('stripe_customer_id')
@@ -226,7 +331,6 @@ Deno.serve(async (req) => {
         await supabase.from('users').update({ stripe_customer_id: customerId }).eq('id', targetUserId);
       }
 
-      // Create payment intent with manual capture
       console.log(`[accept-challenge] Creating PI: ${stakeAmountCents} cents`);
       const pi = await stripePost('payment_intents', {
         amount: String(stakeAmountCents),
@@ -240,17 +344,13 @@ Deno.serve(async (req) => {
         'metadata[type]': 'challenge_acceptance',
       }, `challenge-accept-${vow.id}`);
 
-      // Check PI status — should be requires_capture after confirm with manual capture
       if (pi.status === 'requires_capture') {
-        // Capture immediately
         const captured = await stripePost(`payment_intents/${pi.id}/capture`, {});
         console.log(`[accept-challenge] PI captured: ${captured.id} status: ${captured.status}`);
         stripePaymentIntentId = pi.id;
       } else if (pi.status === 'succeeded') {
-        // Already captured (shouldn't happen with manual capture, but handle it)
         stripePaymentIntentId = pi.id;
       } else {
-        // Payment failed
         console.error(`[accept-challenge] PI in unexpected state: ${pi.status}`);
         return jsonResponse({ error: 'payment_failed', stripe_status: pi.status }, 402);
       }

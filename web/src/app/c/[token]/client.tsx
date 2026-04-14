@@ -59,36 +59,44 @@ const stripeAppearance = {
   },
 };
 
-// ─── STRIPE CARD FORM (inside Elements) ───
-function CardForm({
-  onPaymentMethod,
+// ─── STRIPE PAYMENT FORM (inside Elements — supports Apple Pay + card) ───
+function PaymentForm({
+  onSubmit,
   loading,
 }: {
-  onPaymentMethod: (pmId: string) => void;
+  onSubmit: (stripe: ReturnType<typeof useStripe>, elements: ReturnType<typeof useElements>) => Promise<void>;
   loading: boolean;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [cardError, setCardError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
+    if (!stripe || !elements || submitting) return;
     setCardError('');
+    setSubmitting(true);
 
-    const { error, paymentMethod } = await stripe.createPaymentMethod({
-      elements,
-    });
+    try {
+      // Step 1: Validate payment details (triggers Apple Pay sheet if applicable)
+      const { error: submitError } = await elements.submit();
+      if (submitError) {
+        setCardError(submitError.message || 'Payment error. Please try again.');
+        setSubmitting(false);
+        return;
+      }
 
-    if (error) {
-      setCardError(error.message || 'Card error. Please try again.');
-      return;
-    }
-
-    if (paymentMethod) {
-      onPaymentMethod(paymentMethod.id);
+      // Step 2: Delegate to parent for server calls + confirmPayment
+      await onSubmit(stripe, elements);
+    } catch (err) {
+      setCardError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
+
+  const isLoading = loading || submitting;
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -100,21 +108,21 @@ function CardForm({
       )}
       <button
         type="submit"
-        disabled={!stripe || loading}
+        disabled={!stripe || isLoading}
         className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] disabled:active:scale-100"
         style={{
-          boxShadow: loading ? 'none' : '0 12px 24px rgba(212,162,79,0.28)',
+          boxShadow: isLoading ? 'none' : '0 12px 24px rgba(212,162,79,0.28)',
         }}
       >
         <div
           className="min-h-[56px] flex items-center justify-center px-5"
           style={{
-            background: loading
+            background: isLoading
               ? '#29303C'
               : 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
           }}
         >
-          {loading ? (
+          {isLoading ? (
             <div className="w-5 h-5 border-2 border-[#0B0D11] border-t-transparent rounded-full animate-spin" />
           ) : (
             <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
@@ -301,8 +309,8 @@ export default function ChallengeInviteClient({
     }
   }, [busy, token, displayName]);
 
-  // ─── ACCEPT / SEAL HANDLER ───
-  const handleSeal = useCallback(async (paymentMethodId?: string) => {
+  // ─── ACCEPT / SEAL HANDLER (no-stake or legacy) ───
+  const handleSeal = useCallback(async () => {
     if (busy) return;
     setBusy(true);
     setError(null);
@@ -310,14 +318,11 @@ export default function ChallengeInviteClient({
       const payload: Record<string, unknown> = {
         token,
         action: 'accept',
-        stake_amount: stakeAmount,
-        destination: stakeAmount > 0 ? charity : '',
+        stake_amount: 0,
+        destination: '',
         email,
         display_name: displayName || undefined,
       };
-      if (paymentMethodId) {
-        payload.payment_method_id = paymentMethodId;
-      }
 
       const { errorCode } = await callAcceptChallenge(payload);
       if (errorCode) {
@@ -325,7 +330,73 @@ export default function ChallengeInviteClient({
         setBusy(false);
         return;
       }
-      setSealedVow({ stake: stakeAmount, charity: stakeAmount > 0 ? charity : '', email });
+      setSealedVow({ stake: 0, charity: '', email });
+      setStep('sealed');
+    } catch {
+      setError('Network error. Please check your connection.');
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, token, email, displayName]);
+
+  // ─── STAKED PAYMENT HANDLER (deferred-intent — supports Apple Pay + card) ───
+  const handlePaymentConfirm = useCallback(async (
+    stripe: import('@stripe/stripe-js').Stripe | null,
+    elements: import('@stripe/stripe-js').StripeElements | null,
+  ) => {
+    if (!stripe || !elements || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      // Step 1: Call prepare_payment to create PI on server
+      const { data: prepData, errorCode: prepError } = await callAcceptChallenge({
+        token,
+        action: 'prepare_payment',
+        stake_amount: stakeAmount,
+        email,
+        display_name: displayName || undefined,
+      });
+      if (prepError || !prepData) {
+        setError(mapErrorMessage(prepError || 'payment_failed'));
+        setBusy(false);
+        return;
+      }
+
+      const clientSecret = prepData.client_secret as string;
+      const paymentIntentId = prepData.payment_intent_id as string;
+
+      // Step 2: Confirm payment (triggers Apple Pay / card confirmation)
+      const { error: confirmError } = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirmParams: {
+          return_url: window.location.href, // fallback — shouldn't redirect for Apple Pay / card
+        },
+        redirect: 'if_required',
+      });
+      if (confirmError) {
+        setError(confirmError.message || 'Payment failed. Please try again.');
+        setBusy(false);
+        return;
+      }
+
+      // Step 3: Finalize — call accept with the confirmed PI
+      const { errorCode: acceptError } = await callAcceptChallenge({
+        token,
+        action: 'accept',
+        stake_amount: stakeAmount,
+        destination: charity,
+        email,
+        display_name: displayName || undefined,
+        payment_intent_id: paymentIntentId,
+      });
+      if (acceptError) {
+        setError(mapErrorMessage(acceptError));
+        setBusy(false);
+        return;
+      }
+
+      setSealedVow({ stake: stakeAmount, charity, email });
       setStep('sealed');
     } catch {
       setError('Network error. Please check your connection.');
@@ -735,19 +806,19 @@ export default function ChallengeInviteClient({
               </div>
             )}
 
-            {/* Stripe card if staked + signed in */}
+            {/* Stripe payment if staked + signed in */}
             {isStaked && email ? (
               <Elements
                 stripe={stripePromise}
                 options={{
-                  mode: 'setup',
+                  mode: 'payment',
+                  amount: stakeAmount,
                   currency: 'usd',
                   appearance: stripeAppearance,
-                  paymentMethodTypes: ['card'],
                 }}
               >
-                <CardForm
-                  onPaymentMethod={(pmId) => handleSeal(pmId)}
+                <PaymentForm
+                  onSubmit={handlePaymentConfirm}
                   loading={busy}
                 />
               </Elements>
