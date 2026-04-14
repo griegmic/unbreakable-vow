@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle, LayoutGrid, ChevronRight, Flame, Zap, PartyPopper } from 'lucide-react';
+import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle, LayoutGrid, ChevronRight, Flame, Zap, PartyPopper, Trash2 } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp, HeaderBadge } from '@/components/ui';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
@@ -33,7 +33,7 @@ const cheekyLabelTemplates = [
 
 export default function LivePage() {
   const router = useRouter();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, session } = useAuth();
   const [vow, setVow] = useState<Vow | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionBusy, setActionBusy] = useState(false);
@@ -135,6 +135,28 @@ export default function LivePage() {
     } catch {
       setActionMsg('Failed to switch. Try again.');
     } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const ADMIN_EMAILS = ['rosenfield.joseph@gmail.com', 'joero93@gmail.com', 'joe@turnkey.io'];
+  const userEmail = (session as any)?.user?.email || '';
+  const isAdmin = ADMIN_EMAILS.includes(userEmail);
+
+  const handleDeleteVow = async () => {
+    if (!vow || actionBusy) return;
+    if (!confirm(`Delete "${vow.refined_text}"? This will permanently remove this vow and cannot be undone.`)) return;
+    setActionBusy(true);
+    try {
+      // Delete audit events first (FK constraint)
+      await supabase.from('audit_events').delete().eq('vow_id', vow.id);
+      await supabase.from('sms_log').delete().eq('vow_id', vow.id);
+      const { error } = await supabase.from('vows').delete().eq('id', vow.id);
+      if (error) throw error;
+      setVow(null);
+      // Will trigger redirect to create flow via the useEffect below
+    } catch {
+      setActionMsg('Failed to delete vow.');
       setActionBusy(false);
     }
   };
@@ -258,6 +280,17 @@ export default function LivePage() {
               </div>
               <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
             </button>
+            {isAdmin && (
+              <button
+                onClick={handleDeleteVow}
+                disabled={actionBusy}
+                className="w-full rounded-[14px] min-h-[40px] flex items-center justify-center gap-2 px-4 transition-transform active:scale-[0.98] disabled:opacity-40"
+                style={{ color: 'var(--danger)', opacity: 0.6 }}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="text-[12px] font-medium">Delete this vow</span>
+              </button>
+            )}
           </div>
         }
       >
@@ -327,6 +360,17 @@ export default function LivePage() {
               </div>
               <ChevronRight className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
             </button>
+            {isAdmin && (
+              <button
+                onClick={handleDeleteVow}
+                disabled={actionBusy}
+                className="w-full rounded-[14px] min-h-[40px] flex items-center justify-center gap-2 px-4 transition-transform active:scale-[0.98] disabled:opacity-40"
+                style={{ color: 'var(--danger)', opacity: 0.6 }}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span className="text-[12px] font-medium">Delete this vow</span>
+              </button>
+            )}
           </div>
         }
       >
@@ -454,6 +498,17 @@ export default function LivePage() {
           >
             <span className="text-[13px] font-semibold">+ Make another vow</span>
           </button>
+          {isAdmin && (
+            <button
+              onClick={handleDeleteVow}
+              disabled={actionBusy}
+              className="w-full rounded-[14px] min-h-[40px] flex items-center justify-center gap-2 px-4 transition-transform active:scale-[0.98] disabled:opacity-40"
+              style={{ color: 'var(--danger)', opacity: 0.6 }}
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              <span className="text-[12px] font-medium">Delete this vow</span>
+            </button>
+          )}
         </div>
       }
     >
