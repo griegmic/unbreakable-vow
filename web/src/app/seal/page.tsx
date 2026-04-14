@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Sparkles, Check, User, DollarSign } from 'lucide-react';
+import { Star, Sparkles, Check, DollarSign } from 'lucide-react';
 import { RitualScreen, BackButton, TitleBlock, RitualCard, VowPreview, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
 import { AuthModal } from '@/components/auth-modal';
 import { PaymentModal } from '@/components/payment-form';
@@ -468,24 +468,11 @@ export default function SealPage() {
 
             <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 shrink-0" style={{ color: 'var(--text-muted)' }} />
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>
-                    {isSelfWitness ? 'Accountability' : 'Witness'}
-                  </span>
-                  <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                    {isSelfWitness ? 'Just me' : vow.witnessName}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <DollarSign className="w-4 h-4 shrink-0" style={{ color: 'var(--gold)' }} />
-                <div>
-                  <span className="text-[11px] uppercase tracking-wider block" style={{ color: 'var(--text-muted)' }}>At Stake</span>
-                  <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>${vow.stake.amount}</span>
-                </div>
+            <div className="flex items-center gap-2">
+              <DollarSign className="w-4 h-4 shrink-0" style={{ color: 'var(--gold)' }} />
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>At Stake</span>
+                <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>{vow.stake.amount > 0 ? `$${vow.stake.amount}` : 'My word'}</span>
               </div>
             </div>
 
@@ -529,19 +516,13 @@ export default function SealPage() {
           </div>
         )}
 
-        <FadeUp delay={0.2}>
-          <p className="text-[13px] text-center italic font-serif" style={{ color: 'var(--text-muted)' }}>
-            By sealing, you put your word — and your wallet — on the line.
-          </p>
-          <p className="text-[12px] text-center mt-1" style={{ color: 'var(--text-muted)' }}>
-            Anyone can make a promise. You're about to back yours.
-          </p>
-          {vow.stake.amount > 0 && (
-            <p className="text-[12px] text-center mt-1" style={{ color: 'var(--text-muted)' }}>
+        {vow.stake.amount > 0 && (
+          <FadeUp delay={0.2}>
+            <p className="text-[12px] text-center" style={{ color: 'var(--text-muted)' }}>
               You'll confirm payment after tapping seal.
             </p>
-          )}
-        </FadeUp>
+          </FadeUp>
+        )}
       </RitualScreen>
 
       <AuthModal

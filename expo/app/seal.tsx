@@ -415,15 +415,9 @@ export default function SealScreen() {
         </Animated.View>
       ) : null}
 
-      {!sealed ? (
+      {!sealed && vow.stake.amount > 0 ? (
         <View style={styles.oathPassive}>
-          <Text style={styles.oathPassiveText}>
-            By sealing, you put your word — and your wallet — on the line.
-          </Text>
-          <Text style={styles.paymentNote}>Anyone can make a promise. You're about to back yours.</Text>
-          {vow.stake.amount > 0 ? (
-            <Text style={styles.paymentNote}>You'll confirm payment after tapping seal.</Text>
-          ) : null}
+          <Text style={styles.paymentNote}>You'll confirm payment after tapping seal.</Text>
         </View>
       ) : null}
 

@@ -51,7 +51,7 @@ export default function WitnessPage() {
       <FadeUp delay={0.05}>
         <TitleBlock
           title="Who's holding you to it?"
-          subtitle="Pick one. You can always change later."
+          subtitle="Pick someone who won't let you off the hook."
         />
       </FadeUp>
 
@@ -90,7 +90,7 @@ export default function WitnessPage() {
             className="py-2 px-4"
           >
             <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-              I&apos;ll hold myself accountable
+              No witness — just my word
             </span>
           </button>
         </div>

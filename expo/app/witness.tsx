@@ -105,7 +105,7 @@ export default function WitnessScreen() {
         <BackButton />
         <TitleBlock
           title={`$${stakeAmount} is on the line.`}
-          subtitle="Who's going to hold you to it?"
+          subtitle="Pick someone who won't let you off the hook."
         />
 
         <Pressable
@@ -138,7 +138,7 @@ export default function WitnessScreen() {
             style={styles.soloTextLink}
             testID="witness-solo"
           >
-            <Text style={styles.soloTextLinkLabel}>I'll hold myself accountable</Text>
+            <Text style={styles.soloTextLinkLabel}>No witness — just my word</Text>
           </Pressable>
         </View>
       </RitualScreen>
