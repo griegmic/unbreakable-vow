@@ -191,7 +191,7 @@ function CreatePageContent() {
           if (unique.length >= 5) break;
         }
         setRecentWitnesses(unique);
-        // Pre-select last witness for returning users, or default to "I'll invite someone"
+        // Pre-select last witness for returning users, or default to "I'll share after"
         // Skip if draft was restored (ref avoids stale closure race condition)
         if (!witnessName && !draftRestoredRef.current) {
           if (unique.length > 0) {
@@ -573,7 +573,7 @@ function CreatePageContent() {
             <p className="text-[15px] mt-2" style={{ color: 'var(--text-secondary)' }}>
               {isSolo
                 ? "Your vow is locked. You'll judge yourself when the time comes."
-                : 'First person to accept holds you to it.'}
+                : 'They decide if you kept your word.'}
             </p>
           </div>
         </FadeUp>
@@ -907,7 +907,7 @@ function CreatePageContent() {
                     ) : witnessName === 'Your witness' ? (
                       <>
                         <span className="text-[14px] font-medium" style={{ color: 'var(--text-secondary)' }}>
-                          I&apos;ll invite someone
+                          I&apos;ll share after
                         </span>
                         <span className="text-[12px] font-semibold" style={{ color: 'var(--gold)' }}>Change</span>
                       </>
@@ -940,7 +940,7 @@ function CreatePageContent() {
                       />
                     ))}
                     <ChoiceChip
-                      label="I'll invite someone"
+                      label="I'll share after"
                       active={witnessName === 'Your witness'}
                       onPress={() => {
                         setWitnessName('Your witness');

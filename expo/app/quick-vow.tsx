@@ -203,7 +203,7 @@ export default function QuickVowScreen() {
         const unique: RecentWitness[] = [];
         for (const row of data) {
           const key = `${row.witness_name}|${row.witness_phone || ''}`;
-          if (!seen.has(key) && row.witness_name) {
+          if (!seen.has(key) && row.witness_name && row.witness_name !== 'Your witness') {
             seen.add(key);
             unique.push({ name: row.witness_name, phone: row.witness_phone || '' });
           }
@@ -551,11 +551,9 @@ export default function QuickVowScreen() {
           <Text style={styles.deadlineHint}>{formatDateShort(deadlineDate)}</Text>
         </RitualCard>
 
-        {recentWitnesses.length > 0 && (
-          <Pressable onPress={() => router.push('/cast')} style={styles.dareLink}>
-            <Text style={styles.dareLinkText}>or <Text style={styles.dareLinkBold}>dare a friend →</Text></Text>
-          </Pressable>
-        )}
+        <Pressable onPress={() => router.push('/cast')} style={styles.dareLink}>
+          <Text style={styles.dareLinkText}>or <Text style={styles.dareLinkBold}>dare a friend →</Text></Text>
+        </Pressable>
 
         {/* Witness */}
         <RitualCard>
