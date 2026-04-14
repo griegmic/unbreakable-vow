@@ -101,7 +101,6 @@ function CreatePageContent() {
   const [showCustomDate, setShowCustomDate] = useState(false);
   const [oathChecked, setOathChecked] = useState(false);
   const [recentWitnesses, setRecentWitnesses] = useState<RecentWitness[]>([]);
-  const [showNewWitness, setShowNewWitness] = useState(false);
 
   // Seal state
   const [sealing, setSealing] = useState(false);
@@ -121,6 +120,31 @@ function CreatePageContent() {
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [inputFocused, setInputFocused] = useState(false);
+  const draftRestoredRef = useRef(false);
+
+  // Restore draft from localStorage (survives OAuth round-trip, 30min expiry)
+  useEffect(() => {
+    try {
+      const draft = localStorage.getItem('quickvow-draft');
+      if (draft) {
+        const d = JSON.parse(draft);
+        const age = Date.now() - (d.savedAt || 0);
+        if (age < 30 * 60 * 1000) {
+          draftRestoredRef.current = true;
+          if (d.vowText) setVowText(d.vowText);
+          if (d.witnessName) setWitnessName(d.witnessName);
+          if (d.witnessPhone) setWitnessPhone(d.witnessPhone);
+          if (d.stakeAmount !== undefined) setStakeAmount(d.stakeAmount);
+          if (d.consequence) setConsequence(d.consequence);
+          if (d.destination) setDestination(d.destination);
+          if (d.deadlineLabel) setDeadlineLabel(d.deadlineLabel);
+          if (d.customDate) { setCustomDate(d.customDate); setShowCustomDate(true); }
+          if (d.step === 2) setStep(2);
+        }
+        localStorage.removeItem('quickvow-draft');
+      }
+    } catch {}
+  }, []);
 
   useEffect(() => {
     const isLocal = window.location.hostname === 'localhost';
@@ -160,17 +184,22 @@ function CreatePageContent() {
         const unique: RecentWitness[] = [];
         for (const row of data) {
           const key = `${row.witness_name}|${row.witness_phone || ''}`;
-          if (!seen.has(key) && row.witness_name) {
+          if (!seen.has(key) && row.witness_name && row.witness_name !== 'Your witness') {
             seen.add(key);
             unique.push({ name: row.witness_name, phone: row.witness_phone || '' });
           }
           if (unique.length >= 5) break;
         }
         setRecentWitnesses(unique);
-        // Pre-select last witness for returning users
-        if (unique.length > 0 && !witnessName) {
-          setWitnessName(unique[0].name);
-          setWitnessPhone(unique[0].phone);
+        // Pre-select last witness for returning users, or default to "I'll invite someone"
+        // Skip if draft was restored (ref avoids stale closure race condition)
+        if (!witnessName && !draftRestoredRef.current) {
+          if (unique.length > 0) {
+            setWitnessName(unique[0].name);
+            setWitnessPhone(unique[0].phone);
+          } else {
+            setWitnessName('Your witness');
+          }
         }
       }
 
@@ -236,6 +265,16 @@ function CreatePageContent() {
     }
   };
 
+  // Save draft to localStorage so it survives OAuth redirect (30min expiry)
+  const saveDraft = useCallback(() => {
+    try {
+      localStorage.setItem('quickvow-draft', JSON.stringify({
+        vowText, witnessName, witnessPhone, stakeAmount, consequence,
+        destination, deadlineLabel, customDate, step, savedAt: Date.now(),
+      }));
+    } catch {}
+  }, [vowText, witnessName, witnessPhone, stakeAmount, consequence, destination, deadlineLabel, customDate, step]);
+
   // Handle "Next" from step 1 to step 2
   const handleNext = () => {
     if (!vowText.trim()) return;
@@ -268,6 +307,7 @@ function CreatePageContent() {
     // tokens that may have expired during the multi-step vow creation flow.
     const { data: { session: currentSession } } = await supabase.auth.refreshSession();
     if (!currentSession) {
+      saveDraft();
       setShowAuth(true);
       return;
     }
@@ -320,6 +360,7 @@ function CreatePageContent() {
           throw new Error(sealData?.error || sealData?.msg || `Seal failed: ${sealRes.status}`);
         }
         try { localStorage.setItem('quickvow-defaults', JSON.stringify({ stakeAmount, consequence, deadlineLabel })); } catch {}
+        try { localStorage.removeItem('quickvow-draft'); } catch {}
         resetVow();
         setShowSealAnimation(true);
         setSealed(true);
@@ -356,7 +397,7 @@ function CreatePageContent() {
     } finally {
       setSealing(false);
     }
-  }, [oathChecked, sealing, vowText, formattedText, witnessName, witnessPhone, stakeAmount, consequence, destination, endDate, resetVow, router]);
+  }, [oathChecked, sealing, vowText, formattedText, witnessName, witnessPhone, stakeAmount, consequence, destination, endDate, resetVow, router, saveDraft]);
 
   const handlePaymentSuccess = useCallback(async () => {
     setShowPayment(false);
@@ -483,7 +524,6 @@ function CreatePageContent() {
       setSuggestion('');
       setWitnessName('');
       setWitnessPhone('');
-      setShowNewWitness(false);
       setOathChecked(false);
       setError('');
       setStep(1);
@@ -550,7 +590,7 @@ function CreatePageContent() {
                 <ShareButton
                   url={witnessUrl}
                   text={shareText}
-                  buttonText={`Send to ${witnessName}`}
+                  buttonText={witnessName && witnessName !== 'Your witness' ? `Send to ${witnessName}` : 'Send to your witness'}
                 />
               </div>
               <div
@@ -576,7 +616,7 @@ function CreatePageContent() {
                   <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Witness</span>
                 </div>
                 <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                  {witnessName || 'Just me'}
+                  {!witnessName ? 'Just me' : witnessName === 'Your witness' ? 'Pending invite' : witnessName}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -641,7 +681,9 @@ function CreatePageContent() {
   const deadlinePreviewLabel = deadlineLabel === 'Pick date' && customDate
     ? new Date(customDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : deadlineLabel;
-  const witnessPreviewName = witnessName || (recentWitnesses.length > 0 ? recentWitnesses[0].name : '');
+  const witnessPreviewName = witnessName && witnessName !== 'Your witness'
+    ? witnessName
+    : (recentWitnesses.length > 0 ? recentWitnesses[0].name : '');
 
   if (step === 1) {
     return (
@@ -844,7 +886,7 @@ function CreatePageContent() {
         <FadeUp delay={0.1}>
           <RitualCard>
             <div className="flex flex-col">
-              {/* Row 1: Witness */}
+              {/* Row 1: Witness — simple toggle, no text input */}
               <div>
                 <button
                   onClick={() => toggleTerm('witness')}
@@ -855,10 +897,25 @@ function CreatePageContent() {
                     <span className="text-[14px]" style={{ color: 'var(--text-muted)' }}>Witness</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>
-                      {witnessName || 'Your witness'}
-                    </span>
-                    <span className="text-[12px] font-semibold" style={{ color: 'var(--gold)' }}>Change</span>
+                    {witnessName && witnessName !== 'Your witness' ? (
+                      <>
+                        <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>
+                          {witnessName}
+                        </span>
+                        <span className="text-[12px] font-semibold" style={{ color: 'var(--gold)' }}>Change</span>
+                      </>
+                    ) : witnessName === 'Your witness' ? (
+                      <>
+                        <span className="text-[14px] font-medium" style={{ color: 'var(--text-secondary)' }}>
+                          I&apos;ll invite someone
+                        </span>
+                        <span className="text-[12px] font-semibold" style={{ color: 'var(--gold)' }}>Change</span>
+                      </>
+                    ) : (
+                      <span className="text-[14px] font-medium" style={{ color: 'var(--text-muted)' }}>
+                        Just me
+                      </span>
+                    )}
                   </div>
                 </button>
                 {/* Accordion content */}
@@ -869,56 +926,37 @@ function CreatePageContent() {
                     opacity: expandedTerm === 'witness' ? 1 : 0,
                   }}
                 >
-                  <div className="pb-3">
-                    {recentWitnesses.length > 0 && !showNewWitness && (
-                      <div className="flex flex-wrap">
-                        {recentWitnesses.map((w) => (
-                          <ChoiceChip
-                            key={w.name + w.phone}
-                            label={w.name}
-                            active={witnessName === w.name && witnessPhone === w.phone}
-                            onPress={() => {
-                              setWitnessName(w.name);
-                              setWitnessPhone(w.phone);
-                              setShowNewWitness(false);
-                              setExpandedTerm(null);
-                            }}
-                          />
-                        ))}
-                        <ChoiceChip
-                          label="+ New"
-                          active={showNewWitness}
-                          onPress={() => { setShowNewWitness(true); setWitnessName(''); setWitnessPhone(''); }}
-                        />
-                      </div>
-                    )}
-                    {(showNewWitness || recentWitnesses.length === 0) && (
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={witnessName}
-                          onChange={(e) => setWitnessName(e.target.value)}
-                          placeholder="Name your witness"
-                          className="flex-1 bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                          style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-                        />
-                        <button
-                          onClick={() => {
-                            if (witnessName.trim()) {
-                              setShowNewWitness(false);
-                              setExpandedTerm(null);
-                            }
-                          }}
-                          className="px-3 py-2 rounded-xl text-[13px] font-semibold"
-                          style={{
-                            backgroundColor: witnessName.trim() ? 'var(--gold)' : 'var(--surface)',
-                            color: witnessName.trim() ? '#000' : 'var(--text-muted)',
-                          }}
-                        >
-                          Add
-                        </button>
-                      </div>
-                    )}
+                  <div className="pb-3 flex flex-wrap">
+                    {recentWitnesses.map((w) => (
+                      <ChoiceChip
+                        key={w.name + w.phone}
+                        label={w.name}
+                        active={witnessName === w.name && witnessPhone === w.phone}
+                        onPress={() => {
+                          setWitnessName(w.name);
+                          setWitnessPhone(w.phone);
+                          setExpandedTerm(null);
+                        }}
+                      />
+                    ))}
+                    <ChoiceChip
+                      label="I'll invite someone"
+                      active={witnessName === 'Your witness'}
+                      onPress={() => {
+                        setWitnessName('Your witness');
+                        setWitnessPhone('');
+                        setExpandedTerm(null);
+                      }}
+                    />
+                    <ChoiceChip
+                      label="Just me"
+                      active={!witnessName}
+                      onPress={() => {
+                        setWitnessName('');
+                        setWitnessPhone('');
+                        setExpandedTerm(null);
+                      }}
+                    />
                   </div>
                 </div>
               </div>
@@ -1111,18 +1149,6 @@ function CreatePageContent() {
           </RitualCard>
         </FadeUp>
 
-        {/* No witness — just my word */}
-        <FadeUp delay={0.15}>
-          <div className="flex justify-center">
-            <button
-              onClick={() => { setWitnessName(''); setWitnessPhone(''); }}
-              className="text-[13px] py-2"
-              style={{ color: 'var(--text-muted)' }}
-            >
-              No witness — just my word
-            </button>
-          </div>
-        </FadeUp>
 
         {/* Error */}
         {error && (
