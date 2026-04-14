@@ -683,7 +683,13 @@ function CreatePageContent() {
 
           {/* Hero prompt + input */}
           <FadeUp delay={0.08}>
-            <div className="pt-8">
+            <div
+              className="rounded-[20px] p-[18px] pb-[14px] mt-6"
+              style={{
+                backgroundColor: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(212,162,79,0.15)',
+              }}
+            >
               <p
                 className="text-[30px] font-serif font-medium leading-[1.2] tracking-[-0.5px]"
                 style={{ color: 'rgba(212,162,79,0.7)' }}

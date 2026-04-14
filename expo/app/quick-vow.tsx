@@ -489,21 +489,23 @@ export default function QuickVowScreen() {
         </Pressable>
 
         {/* Hero prompt + input */}
-        <Text style={styles.vowPrompt}>I vow to...</Text>
-        <TextInput
-          value={vowText}
-          onChangeText={setVowText}
-          placeholder="run every morning this week"
-          placeholderTextColor="rgba(246,247,251,0.3)"
-          multiline
-          style={styles.heroTextInput}
-        />
-        {suggestion && suggestion !== vowText ? (
-          <Pressable onPress={acceptSuggestion} style={styles.suggestionRow}>
-            <Sparkles color={palette.gold} size={12} />
-            <Text style={styles.suggestionText}>{suggestion}</Text>
-          </Pressable>
-        ) : null}
+        <View style={styles.vowInputCard}>
+          <Text style={styles.vowPrompt}>I vow to...</Text>
+          <TextInput
+            value={vowText}
+            onChangeText={setVowText}
+            placeholder="run every morning this week"
+            placeholderTextColor="rgba(246,247,251,0.3)"
+            multiline
+            style={styles.heroTextInput}
+          />
+          {suggestion && suggestion !== vowText ? (
+            <Pressable onPress={acceptSuggestion} style={styles.suggestionRow}>
+              <Sparkles color={palette.gold} size={12} />
+              <Text style={styles.suggestionText}>{suggestion}</Text>
+            </Pressable>
+          ) : null}
+        </View>
 
         {/* Inline deadline */}
         <RitualCard>
@@ -733,13 +735,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  vowInputCard: {
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.15)',
+    padding: 18,
+    paddingBottom: 14,
+    marginTop: 16,
+  },
   vowPrompt: {
     color: 'rgba(212,162,79,0.7)',
     fontSize: 30,
     fontWeight: '500',
     fontFamily: serifFont,
     letterSpacing: -0.5,
-    marginTop: 24,
     marginBottom: 2,
   },
   heroTextInput: {
