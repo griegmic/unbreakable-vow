@@ -229,7 +229,12 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      get_display_name: {
+        Args: { user_uuid: string };
+        Returns: string | null;
+      };
+    };
     Enums: Record<string, never>;
   };
 }

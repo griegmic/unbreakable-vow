@@ -34,21 +34,36 @@ export default function SelfResolvePage() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const { data } = await supabase.from('vows')
+      const params = new URLSearchParams(window.location.search);
+      const vowId = params.get('id');
+
+      let query = supabase.from('vows')
         .select('*')
         .eq('user_id', session.user.id)
-        .in('status', ['active', 'awaiting_verdict'])
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .in('status', ['active', 'awaiting_verdict']);
+
+      if (vowId) {
+        query = query.eq('id', vowId);
+      } else {
+        query = query.order('created_at', { ascending: false }).limit(1);
+      }
+
+      const { data } = await query.maybeSingle();
 
       if (!data) {
-        router.replace('/live');
+        router.replace('/dashboard');
         return;
       }
 
       setVow(data);
       setLoading(false);
+
+      // Pre-select choice if passed via query param (from dashboard buttons)
+      const choiceParam = params.get('choice');
+      if (choiceParam === 'kept' || choiceParam === 'broken') {
+        setChoice(choiceParam);
+        setView('confirm');
+      }
     };
 
     fetchVow();

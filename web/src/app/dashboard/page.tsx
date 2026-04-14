@@ -1,14 +1,21 @@
 'use client';
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Settings, Plus, ArrowLeft, Menu, X, Zap, Clock, LayoutGrid, Send } from 'lucide-react';
-import { RitualScreen, HeaderBadge, SectionLabel, StatPill, PrimaryButton, FadeUp } from '@/components/ui';
-import VowCard from '@/components/vow-card';
+import { Settings, ArrowLeft, Menu, X, Zap, Clock, LayoutGrid, Send } from 'lucide-react';
+import { RitualScreen, HeaderBadge, FadeUp } from '@/components/ui';
+import DashboardCard from '@/components/dashboard-card';
+import DashboardHero from '@/components/dashboard-hero';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
-import type { Database } from '@/lib/types';
+import {
+  buildDashboardList,
+  computeStats,
+  getTapTarget,
+  type DashboardVow,
+  type SortedVow,
+} from '@/lib/dashboard-sort';
 
-type VowRow = Database['public']['Tables']['vows']['Row'];
+// --- SlideMenu (preserved exactly) ---
 
 function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -20,7 +27,6 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
     return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
-  // Prevent body scroll when open
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden';
     else document.body.style.overflow = '';
@@ -39,13 +45,11 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
 
   return (
     <>
-      {/* Overlay */}
       <div
         className="fixed inset-0 z-50 transition-opacity duration-200"
         style={{ opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', backgroundColor: 'rgba(0,0,0,0.6)' }}
         onClick={onClose}
       />
-      {/* Drawer */}
       <div
         className="fixed top-0 left-0 bottom-0 z-[51] w-[280px] flex flex-col transition-transform duration-200 safe-top safe-bottom"
         style={{
@@ -87,6 +91,8 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
     </>
   );
 }
+
+// --- InProgressBanner (preserved exactly) ---
 
 function InProgressBanner() {
   const router = useRouter();
@@ -134,12 +140,14 @@ function InProgressBanner() {
   );
 }
 
+// --- Dashboard Page ---
+
 export default function DashboardPage() {
   const router = useRouter();
-  const { isAuthenticated, loading: authLoading, displayName } = useAuth();
-  const [myVows, setMyVows] = useState<VowRow[]>([]);
-  const [witnessingVows, setWitnessingVows] = useState<VowRow[]>([]);
-  const [challenges, setChallenges] = useState<VowRow[]>([]);
+  const { isAuthenticated, loading: authLoading } = useAuth();
+  const [myVows, setMyVows] = useState<DashboardVow[]>([]);
+  const [witnessingVows, setWitnessingVows] = useState<DashboardVow[]>([]);
+  const [challenges, setChallenges] = useState<DashboardVow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
   const [acceptedChallengeIds, setAcceptedChallengeIds] = useState<Set<string>>(new Set());
@@ -169,7 +177,6 @@ export default function DashboardPage() {
         .eq('target_user_id', session.user.id)
         .eq('challenge_status', 'pending')
         .order('created_at', { ascending: false }),
-      // Accepted challenges where I'm the vow keeper (target)
       supabase
         .from('vows')
         .select('*')
@@ -180,16 +187,46 @@ export default function DashboardPage() {
     ]);
 
     // Merge accepted challenges into myVows so they appear in active/stats
-    const myVowsData = myRes.data ?? [];
-    const acceptedChallenges = acceptedChallengeRes.data ?? [];
+    const myVowsData = (myRes.data ?? []) as DashboardVow[];
+    const acceptedChallenges = (acceptedChallengeRes.data ?? []) as DashboardVow[];
     const newAcceptedIds = new Set(acceptedChallenges.map(v => v.id));
     setAcceptedChallengeIds(newAcceptedIds);
-    // Avoid duplicates (in case user is both maker and target somehow)
-    const merged = [...myVowsData, ...acceptedChallenges.filter(v => !myVowsData.some(m => m.id === v.id))];
+    const merged: DashboardVow[] = [
+      ...myVowsData,
+      ...acceptedChallenges.filter(v => !myVowsData.some(m => m.id === v.id)),
+    ];
 
-    setMyVows(merged);
-    setWitnessingVows(witnessRes.data ?? []);
-    setChallenges(challengeRes.data ?? []);
+    // Resolve maker display names for witnessing vows
+    const witnessingData = (witnessRes.data ?? []) as DashboardVow[];
+    const witnessingWithNames: DashboardVow[] = await Promise.all(
+      witnessingData.map(async (vow) => {
+        try {
+          const { data: name } = await supabase.rpc('get_display_name', { user_uuid: vow.user_id });
+          return { ...vow, maker_display_name: (name as string) ?? null };
+        } catch {
+          return { ...vow, maker_display_name: null };
+        }
+      })
+    );
+
+    // Resolve target display names for challenge vows where I'm the maker
+    const mergedWithTargetNames: DashboardVow[] = await Promise.all(
+      merged.map(async (vow) => {
+        if (vow.vow_type === 'challenge' && vow.target_user_id) {
+          try {
+            const { data: name } = await supabase.rpc('get_display_name', { user_uuid: vow.target_user_id });
+            return { ...vow, target_display_name: (name as string) ?? null };
+          } catch {
+            return vow;
+          }
+        }
+        return vow;
+      })
+    );
+
+    setMyVows(mergedWithTargetNames);
+    setWitnessingVows(witnessingWithNames);
+    setChallenges((challengeRes.data ?? []) as DashboardVow[]);
     setLoading(false);
   }, []);
 
@@ -201,40 +238,28 @@ export default function DashboardPage() {
     }
     fetchData();
     intervalRef.current = setInterval(fetchData, 30000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+
+    // Refresh data when page becomes visible (prevents stale state after back-nav)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') fetchData();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [isAuthenticated, authLoading, router, fetchData]);
 
-  // Section derivations
-  const needsAttention = [
-    ...myVows.filter(v => v.status === 'awaiting_verdict'),
-    ...witnessingVows.filter(v => v.status === 'awaiting_verdict'),
-    ...challenges,
-  ];
-  const active = myVows
-    .filter(v => ['active', 'sealed'].includes(v.status) ||
-      // Include pending challenge dares (draft, waiting for target to accept)
-      (v.vow_type === 'challenge' && v.challenge_status === 'pending' && v.status === 'draft'))
-    .sort((a, b) => (a.ends_at ?? '').localeCompare(b.ends_at ?? ''));
-  const witnessing = witnessingVows.filter(v => v.status === 'active');
-  const recent = myVows.filter(v => ['kept', 'broken', 'voided'].includes(v.status)).slice(0, 5);
+  // --- Computed state ---
+  const { keptCount, streak } = computeStats(myVows);
+  const dashboardVows = buildDashboardList(myVows, witnessingVows, challenges, acceptedChallengeIds);
+  const completedCount = myVows.filter(v => ['kept', 'broken', 'voided'].includes(v.status)).length;
 
-  // Stats
-  const activeCount = myVows.filter(v => ['active', 'sealed', 'awaiting_verdict'].includes(v.status)).length;
-  const keptCount = myVows.filter(v => v.status === 'kept').length;
-  const streak = (() => {
-    const completed = myVows.filter(v => ['kept', 'broken'].includes(v.status));
-    let count = 0;
-    for (const v of completed) {
-      if (v.status === 'kept') count++;
-      else break;
-    }
-    return count;
-  })();
-
+  // --- Challenge handlers (preserved) ---
   const handleAcceptChallenge = async (vowId: string) => {
     const vow = challenges.find(v => v.id === vowId);
     if (!vow?.challenge_invite_token) return;
-    // Redirect to the full challenge accept page with stake selection UX
     router.push(`/c/${vow.challenge_invite_token}`);
   };
 
@@ -255,23 +280,7 @@ export default function DashboardPage() {
     }
   };
 
-  const getRoleForVow = (vow: VowRow, section: 'mine' | 'witnessing' | 'challenge'): 'maker' | 'witness' | 'target' => {
-    if (section === 'witnessing') return 'witness';
-    if (section === 'challenge') return 'target';
-    // Accepted challenges where I'm the target show as 'target' not 'maker'
-    if (vow.vow_type === 'challenge' && acceptedChallengeIds.has(vow.id)) return 'target';
-    return 'maker';
-  };
-
-  // Route accepted challenges (where I'm the target) to /c/[token] for the full
-  // active dare experience (text-darer button, countdown, etc.)
-  const getVowDetailPath = (vow: VowRow): string => {
-    if (vow.vow_type === 'challenge' && acceptedChallengeIds.has(vow.id) && vow.challenge_invite_token) {
-      return `/c/${vow.challenge_invite_token}`;
-    }
-    return `/vow/${vow.id}`;
-  };
-
+  // --- Loading state ---
   if (loading || authLoading) {
     return (
       <RitualScreen>
@@ -282,6 +291,7 @@ export default function DashboardPage() {
     );
   }
 
+  // --- Empty / redirect logic ---
   const isEmpty = myVows.length === 0 && witnessingVows.length === 0 && challenges.length === 0;
 
   if (isEmpty) {
@@ -289,142 +299,129 @@ export default function DashboardPage() {
     return null;
   }
 
+  if (dashboardVows.length === 0) {
+    // All vows are terminal — redirect based on history
+    if (keptCount > 0) {
+      router.replace('/?new=1&returning=1');
+    } else {
+      router.replace('/?new=1');
+    }
+    return null;
+  }
+
+  const isHero = dashboardVows.length === 1;
+
   return (
     <>
-    <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-    <RitualScreen
-      footer={
-        <button
-          onClick={() => router.push('/create')}
-          className="w-full rounded-[18px] min-h-[56px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"
-          style={{
-            background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-            boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-          }}
-        >
-          <Plus className="w-5 h-5" color="#0B0D11" />
-          <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>Make a Vow</span>
-        </button>
-      }
-    >
-      {/* Header */}
-      <FadeUp>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+      <RitualScreen
+        footer={
+          !isHero ? (
             <button
-              onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
-              className="p-1 -ml-1"
+              onClick={() => router.push('/create')}
+              className="w-full rounded-[16px] min-h-[56px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"
+              style={{
+                background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
+                boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+              }}
             >
-              <Menu className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+              <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>Make a Vow</span>
             </button>
-            <HeaderBadge />
+          ) : undefined
+        }
+      >
+        {/* Header */}
+        <FadeUp>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setMenuOpen(true)}
+                aria-label="Open menu"
+                className="p-1 -ml-1"
+              >
+                <Menu className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
+              </button>
+              <HeaderBadge />
+            </div>
+            <div className="flex items-center gap-3">
+              {keptCount > 0 && (
+                <span className="text-[12px] font-semibold" style={{ color: '#5a5650' }}>
+                  <span style={{ color: '#52d69a' }}>{keptCount}</span> kept
+                  {streak >= 2 && <> · {streak} streak</>}
+                </span>
+              )}
+              <button
+                onClick={() => router.push('/settings')}
+                aria-label="Settings"
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              >
+                <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--text-secondary)' }} />
+              </button>
+            </div>
           </div>
-          <div className="flex items-center gap-3">
-            {displayName && (
-              <span className="text-[13px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
-                {displayName}
-              </span>
+        </FadeUp>
+
+        {isHero ? (
+          // --- HERO VIEW (1 vow) ---
+          <DashboardHero
+            item={dashboardVows[0]}
+            keptCount={keptCount}
+            streak={streak}
+            onAcceptChallenge={
+              dashboardVows[0].state === 'T1'
+                ? () => handleAcceptChallenge(dashboardVows[0].vow.id)
+                : undefined
+            }
+            onDeclineChallenge={
+              dashboardVows[0].state === 'T1'
+                ? () => handleDeclineChallenge(dashboardVows[0].vow.id)
+                : undefined
+            }
+          />
+        ) : (
+          // --- SMART STACK (2+ vows) ---
+          <>
+            <InProgressBanner />
+            <div className="flex flex-col gap-2">
+              {dashboardVows.map((item, i) => (
+                <FadeUp key={item.vow.id} delay={i * 0.03}>
+                  <DashboardCard
+                    item={item}
+                    onTap={() => router.push(getTapTarget(item))}
+                    onAcceptChallenge={
+                      item.state === 'T1'
+                        ? () => handleAcceptChallenge(item.vow.id)
+                        : undefined
+                    }
+                    onDeclineChallenge={
+                      item.state === 'T1'
+                        ? () => handleDeclineChallenge(item.vow.id)
+                        : undefined
+                    }
+                  />
+                </FadeUp>
+              ))}
+            </div>
+
+            {/* History link */}
+            {completedCount > 0 && (
+              <div className="flex flex-col items-center gap-1 pt-2 pb-4">
+                <span className="text-[11px]" style={{ color: '#3a3530' }}>
+                  {completedCount} vow{completedCount !== 1 ? 's' : ''} completed
+                </span>
+                <button
+                  onClick={() => router.push('/history')}
+                  className="text-[12px] transition-opacity active:opacity-70"
+                  style={{ color: '#5a5650' }}
+                >
+                  View history →
+                </button>
+              </div>
             )}
-            <button
-              onClick={() => router.push('/settings')}
-              aria-label="Settings"
-              className="w-10 h-10 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--text-secondary)' }} />
-            </button>
-          </div>
-        </div>
-      </FadeUp>
-
-      {/* Resume in-progress vow banner */}
-      <InProgressBanner />
-
-      {/* Stats */}
-      <FadeUp delay={0.05}>
-        <div className="flex gap-3">
-          <StatPill value={String(activeCount)} label="Active" />
-          <StatPill value={String(keptCount)} label="Kept" tone="success" />
-          <StatPill value={streak > 0 ? `${streak}` : '—'} label="Streak" />
-        </div>
-      </FadeUp>
-
-      {/* Needs Attention */}
-      {needsAttention.length > 0 && (
-        <FadeUp delay={0.1}>
-          <div className="flex flex-col gap-3">
-            <SectionLabel>Needs Attention</SectionLabel>
-            {needsAttention.map(v => {
-              const isChallenge = challenges.some(c => c.id === v.id);
-              const isWitnessing = witnessingVows.some(w => w.id === v.id);
-              const role = isChallenge ? 'target' : isWitnessing ? 'witness' : 'maker';
-              return (
-                <VowCard
-                  key={v.id}
-                  vow={v}
-                  role={role}
-                  onTap={() => router.push(getVowDetailPath(v))}
-                  onAcceptChallenge={() => handleAcceptChallenge(v.id)}
-                  onDeclineChallenge={() => handleDeclineChallenge(v.id)}
-                />
-              );
-            })}
-          </div>
-        </FadeUp>
-      )}
-
-      {/* Active */}
-      {active.length > 0 && (
-        <FadeUp delay={0.15}>
-          <div className="flex flex-col gap-3">
-            <SectionLabel>Active</SectionLabel>
-            {active.map(v => (
-              <VowCard
-                key={v.id}
-                vow={v}
-                role={getRoleForVow(v, 'mine')}
-                onTap={() => router.push(getVowDetailPath(v))}
-              />
-            ))}
-          </div>
-        </FadeUp>
-      )}
-
-      {/* Witnessing */}
-      {witnessing.length > 0 && (
-        <FadeUp delay={0.2}>
-          <div className="flex flex-col gap-3">
-            <SectionLabel>Witnessing</SectionLabel>
-            {witnessing.map(v => (
-              <VowCard
-                key={v.id}
-                vow={v}
-                role="witness"
-                onTap={() => router.push(`/vow/${v.id}`)}
-              />
-            ))}
-          </div>
-        </FadeUp>
-      )}
-
-      {/* Recent */}
-      {recent.length > 0 && (
-        <FadeUp delay={0.25}>
-          <div className="flex flex-col gap-3">
-            <SectionLabel>Recent</SectionLabel>
-            {recent.map(v => (
-              <VowCard
-                key={v.id}
-                vow={v}
-                role={getRoleForVow(v, 'mine')}
-                onTap={() => router.push(getVowDetailPath(v))}
-              />
-            ))}
-          </div>
-        </FadeUp>
-      )}
-    </RitualScreen>
+          </>
+        )}
+      </RitualScreen>
     </>
   );
 }
