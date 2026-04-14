@@ -631,7 +631,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-[15px] font-bold font-serif" style={{ color: 'var(--gold-bright)' }}>
-                I solemnly swear
+                I do solemnly swear
               </span>
               <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
                 to keep {makerLabel} accountable

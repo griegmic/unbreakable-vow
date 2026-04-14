@@ -859,7 +859,7 @@ function CreatePageContent() {
           <OathCheckbox
             checked={oathChecked}
             onChange={setOathChecked}
-            label="I solemnly swear to honor this vow and accept the consequences."
+            label="I do solemnly swear to honor this vow and accept the consequences."
           />
         </FadeUp>
 

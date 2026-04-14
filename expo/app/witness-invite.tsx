@@ -526,7 +526,7 @@ export default function WitnessInviteScreen() {
           {sworn && <Check color="#0B0D11" size={14} strokeWidth={3} />}
         </View>
         <View style={styles.oathCopy}>
-          <Text style={styles.oathTitle}>I solemnly swear</Text>
+          <Text style={styles.oathTitle}>I do solemnly swear</Text>
           <Text style={styles.oathSubtitle}>to keep {makerName} accountable</Text>
         </View>
       </Pressable>

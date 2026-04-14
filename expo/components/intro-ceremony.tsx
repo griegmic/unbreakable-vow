@@ -153,7 +153,7 @@ export function IntroCeremony({ showFullIntro, onComplete }: IntroCeremonyProps)
       {showOath && (
         <View style={styles.oathWrap}>
           <Animated.Text style={[styles.oathText, { opacity: oathFade, transform: [{ translateY: oathY }] }]}>
-            I solemnly swear{'\n'}to keep my word this week.
+            I do solemnly swear{'\n'}to keep my word this week.
           </Animated.Text>
 
           <Animated.View style={[styles.btnWrap, { opacity: btnFade, transform: [{ translateY: btnY }] }]}>

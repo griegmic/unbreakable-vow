@@ -56,8 +56,10 @@ export default function HomePage() {
         if (flow) {
           const parsed = JSON.parse(flow);
           if (parsed.rawInput) {
-            // Resume the vow flow where they left off
-            router.replace(parsed.vowId ? '/live' : parsed.refinedText ? '/stake' : '/refine');
+            // Resume the vow flow where they left off (furthest step reached)
+            if (parsed.witnessName && parsed.stake) { router.replace('/seal'); return; }
+            if (parsed.refinedText) { router.replace('/stake'); return; }
+            router.replace('/refine');
             return;
           }
         }

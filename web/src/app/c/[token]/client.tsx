@@ -433,7 +433,7 @@ export default function ChallengeInviteClient({
               >
                 <div className="min-h-[56px] flex items-center justify-center px-5">
                   <span className="text-[16px] font-bold font-serif tracking-[-0.2px]" style={{ color: '#0B0D11' }}>
-                    I solemnly swear
+                    I do solemnly swear
                   </span>
                 </div>
               </button>

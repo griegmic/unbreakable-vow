@@ -690,7 +690,7 @@ export default function QuickVowScreen() {
             {oathChecked ? <Text style={styles.checkmark}>✓</Text> : null}
           </View>
           <Text style={styles.oathText}>
-            I solemnly swear to honor this vow and accept the consequences.
+            I do solemnly swear to honor this vow and accept the consequences.
           </Text>
         </Pressable>
 
