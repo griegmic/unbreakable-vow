@@ -8,7 +8,15 @@ function truncate(text: string, maxLength: number): string {
   return text.slice(0, maxLength).trimEnd() + '\u2026';
 }
 
-function renderImage(makerName: string | null, vowText: string | null) {
+function renderImage(
+  makerName: string | null,
+  vowText: string | null,
+  stakeAmount: number,
+) {
+  const dareLine = makerName
+    ? `${makerName} doesn\u2019t think you can`
+    : 'You\u2019ve been challenged';
+
   return new ImageResponse(
     (
       <div
@@ -20,60 +28,48 @@ function renderImage(makerName: string | null, vowText: string | null) {
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: '#0A0A0F',
-          padding: '60px 80px',
+          padding: '50px 80px',
         }}
       >
-        {/* Title */}
+        {/* Brand mark — small, stays out of the way */}
         <div
           style={{
             color: '#C8A84E',
-            fontSize: 40,
+            fontSize: 18,
             fontWeight: 700,
             letterSpacing: '0.15em',
             textAlign: 'center',
-            display: 'flex',
-          }}
-        >
-          AN UNBREAKABLE VOW
-        </div>
-
-        {/* Gold separator line */}
-        <div
-          style={{
-            width: 120,
-            height: 2,
-            backgroundColor: '#C8A84E',
-            marginTop: 24,
             marginBottom: 32,
             display: 'flex',
           }}
-        />
+        >
+          UNBREAKABLE VOW
+        </div>
 
-        {/* Maker challenge line */}
-        {makerName && (
-          <div
-            style={{
-              color: '#FFFFFF',
-              fontSize: 22,
-              textAlign: 'center',
-              marginBottom: 16,
-              display: 'flex',
-            }}
-          >
-            {makerName} doesn&apos;t think you can
-          </div>
-        )}
+        {/* HERO: The dare line — biggest text on the image */}
+        <div
+          style={{
+            color: '#FFFFFF',
+            fontSize: 38,
+            fontWeight: 700,
+            textAlign: 'center',
+            marginBottom: 20,
+            display: 'flex',
+          }}
+        >
+          {dareLine}
+        </div>
 
-        {/* Vow text */}
+        {/* Vow text — prominent */}
         {vowText && (
           <div
             style={{
               color: '#FFFFFF',
-              fontSize: 28,
+              fontSize: 26,
               textAlign: 'center',
               maxWidth: 900,
               lineHeight: 1.4,
-              marginBottom: 32,
+              marginBottom: 24,
               display: 'flex',
             }}
           >
@@ -81,30 +77,32 @@ function renderImage(makerName: string | null, vowText: string | null) {
           </div>
         )}
 
-        {/* CTA */}
+        {/* Stake amount — gold, adds weight */}
+        {stakeAmount > 0 && (
+          <div
+            style={{
+              color: '#C8A84E',
+              fontSize: 22,
+              fontWeight: 600,
+              textAlign: 'center',
+              marginBottom: 16,
+              display: 'flex',
+            }}
+          >
+            {`$${Math.round(stakeAmount / 100)} on the line`}
+          </div>
+        )}
+
+        {/* CTA — readable */}
         <div
           style={{
             color: '#888888',
-            fontSize: 18,
+            fontSize: 22,
             textAlign: 'center',
-            marginTop: vowText ? 0 : 24,
             display: 'flex',
           }}
         >
           Accept or back down.
-        </div>
-
-        {/* Domain */}
-        <div
-          style={{
-            color: '#666666',
-            fontSize: 12,
-            position: 'absolute',
-            bottom: 24,
-            display: 'flex',
-          }}
-        >
-          unbreakablevow.app
         </div>
       </div>
     ),
@@ -129,20 +127,19 @@ export async function GET(
     const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
     if (!supabaseUrl || !supabaseServiceKey) {
-      return renderImage(null, null);
+      return renderImage(null, null, 0);
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const { data: vow } = await supabase
       .from('vows')
-      .select('refined_text, user_id')
+      .select('refined_text, stake_amount, user_id')
       .eq('challenge_invite_token', token)
       .single();
 
     if (!vow) {
-      // Invalid or expired token — return generic branded fallback
-      return renderImage(null, null);
+      return renderImage(null, null, 0);
     }
 
     // Fetch maker name
@@ -154,15 +151,16 @@ export async function GET(
         .eq('id', vow.user_id)
         .single();
       if (user?.display_name) {
-        makerName = user.display_name;
+        makerName = user.display_name.split(' ')[0];
       }
     }
 
-    const vowText = truncate(vow.refined_text || '', 80);
-
-    return renderImage(makerName, vowText);
+    return renderImage(
+      makerName,
+      truncate(vow.refined_text || '', 80),
+      vow.stake_amount || 0,
+    );
   } catch {
-    // On any error, return the generic fallback
-    return renderImage(null, null);
+    return renderImage(null, null, 0);
   }
 }

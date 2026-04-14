@@ -37,6 +37,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         ? (amount > 0 ? `"${vow.refined_text}" — $${amount} protected.` : `"${vow.refined_text}" — Vow honored.`)
         : (amount > 0 ? `"${vow.refined_text}" — $${amount} to ${vow.destination}.` : `"${vow.refined_text}" — Vow broken.`),
       siteName: 'Unbreakable Vow',
+      images: [{ url: `/outcome/${vowId}/og`, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: isKept ? 'Vow Kept' : 'Vow Broken',
+      images: [`/outcome/${vowId}/og`],
     },
   };
 }

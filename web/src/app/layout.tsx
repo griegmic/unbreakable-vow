@@ -11,9 +11,11 @@ export const metadata: Metadata = {
     title: 'Unbreakable Vow',
     description: 'Make a vow. Put money on it. Break it, it goes to charity.',
     type: 'website',
+    images: [{ url: '/og', width: 1200, height: 630 }],
   },
   twitter: {
     card: 'summary_large_image',
+    images: ['/og'],
   },
 };
 
