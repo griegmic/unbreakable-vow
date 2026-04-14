@@ -22,8 +22,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   const [status, setStatus] = useState<'pending' | 'accepted' | 'declined'>(
     vow.witness_accepted_at ? 'accepted' : vow.witness_declined ? 'declined' : 'pending'
   );
-  // Post-accept flow: confirming → capturing (phone) → null (dashboard)
-  const [acceptPhase, setAcceptPhase] = useState<'confirming' | 'capturing' | null>(null);
+  // Post-accept flow: capturing (phone) → null (dashboard)
+  const [acceptPhase, setAcceptPhase] = useState<'capturing' | null>(null);
   // Reminder capture
   const [reminderExpanded, setReminderExpanded] = useState(false);
   const [reminderPhone, setReminderPhone] = useState('');
@@ -97,7 +97,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         setBusy(false);
         return;
       }
-      setAcceptPhase('confirming');
+      setAcceptPhase('capturing');
       setStatus('accepted');
     } catch {
       setError('Network error. Please check your connection and try again.');
@@ -240,72 +240,29 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       >
         <FadeUp><HeaderBadge /></FadeUp>
 
-        {acceptPhase === 'confirming' ? (
-          /* ── SCREEN 1: Confirmation (unchanged) ── */
+        {acceptPhase === 'capturing' ? (
+          /* ── POST-ACCEPT: Confirmation line + phone capture ── */
           <>
             <FadeUp delay={0.05}>
-              <div className="flex justify-center pt-6 pb-2">
-                <div
-                  className="w-20 h-20 rounded-full flex items-center justify-center animate-scale-in"
-                  style={{
-                    background: 'linear-gradient(135deg, rgba(82,214,154,0.2), rgba(82,214,154,0.08))',
-                    border: '2px solid rgba(82,214,154,0.3)',
-                    boxShadow: '0 0 40px rgba(82,214,154,0.15)',
-                  }}
-                >
-                  <Eye className="w-9 h-9" style={{ color: 'var(--success)' }} />
-                </div>
-              </div>
-            </FadeUp>
-            <FadeUp delay={0.15}>
-              <TitleBlock
-                title="You're locked in."
-                subtitle={`${makerFirstName} has been notified. The vow is real now.`}
-              />
-            </FadeUp>
-            <FadeUp delay={0.3}>
               <div
-                className="rounded-[16px] px-5 py-4 flex items-start gap-3"
-                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+                className="flex items-center justify-center gap-2 py-2.5 rounded-full"
+                style={{ backgroundColor: 'rgba(82,214,154,0.08)', border: '1px solid rgba(82,214,154,0.15)' }}
               >
-                <Sparkles className="w-4 h-4 mt-0.5 shrink-0" style={{ color: 'var(--gold)' }} />
-                <p className="text-[14px] leading-[21px] font-serif" style={{ color: 'var(--text)' }}>
-                  &ldquo;{vow.refined_text}&rdquo;
-                </p>
+                <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+                <span className="text-[13px] font-semibold" style={{ color: 'var(--success)' }}>
+                  You&apos;re locked in.
+                </span>
               </div>
             </FadeUp>
 
-            <div className="flex-1" />
-
-            <FadeUp delay={0.45}>
-              <button
-                type="button"
-                onClick={() => setAcceptPhase('capturing')}
-                className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-                style={{
-                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                }}
-              >
-                <div className="min-h-[56px] flex items-center justify-center px-5">
-                  <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                    Got it
-                  </span>
-                </div>
-              </button>
-            </FadeUp>
-          </>
-        ) : acceptPhase === 'capturing' ? (
-          /* ── SCREEN 2: Phone capture (dedicated) ── */
-          <>
-            <FadeUp delay={0.05}>
+            <FadeUp delay={0.12}>
               <TitleBlock
                 title="We'll text you on verdict day."
                 subtitle={`One message on ${endDate}. That's it.`}
               />
             </FadeUp>
 
-            <FadeUp delay={0.15}>
+            <FadeUp delay={0.2}>
               <div className="flex flex-col gap-3">
                 {needsWitnessName && (
                   <input
@@ -337,7 +294,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
             <div className="flex-1" />
 
-            <FadeUp delay={0.25}>
+            <FadeUp delay={0.3}>
               <div className="flex flex-col items-center gap-3">
                 <button
                   type="button"
