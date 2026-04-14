@@ -257,8 +257,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
             <FadeUp delay={0.12}>
               <TitleBlock
-                title="We'll text you on verdict day."
-                subtitle={`One message on ${endDate}. That's it.`}
+                title="Where should we reach you on verdict day?"
+                subtitle={`One text on ${endDate}. That's it.`}
               />
             </FadeUp>
 
@@ -320,18 +320,9 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                       className="text-[15px] font-extrabold tracking-[0.2px]"
                       style={{ color: reminderPhone.trim() ? '#0B0D11' : 'var(--text-muted)' }}
                     >
-                      {reminderSaving ? 'Saving...' : 'Sounds good'}
+                      {reminderSaving ? 'Saving...' : 'Done'}
                     </span>
                   </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setReminderSkipped(true); setAcceptPhase(null); }}
-                  className="py-2 px-4"
-                >
-                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-                    Skip
-                  </span>
                 </button>
               </div>
             </FadeUp>
@@ -485,7 +476,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                           opacity: !reminderPhone.trim() || reminderSaving ? 0.5 : 1,
                         }}
                       >
-                        {reminderSaving ? 'Saving...' : 'Sounds good'}
+                        {reminderSaving ? 'Saving...' : 'Done'}
                       </button>
                       <button
                         type="button"
