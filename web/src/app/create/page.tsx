@@ -774,20 +774,18 @@ function CreatePageContent() {
               </div>
             </FadeUp>
 
-            {/* Dare a friend link */}
-            {recentWitnesses.length > 0 && (
-              <FadeUp delay={0.14}>
-                <div className="flex justify-center pt-3">
-                  <button
-                    onClick={() => router.push('/cast')}
-                    className="text-[13px] font-semibold py-2"
-                    style={{ color: 'var(--text-muted)' }}
-                  >
-                    or <span className="underline" style={{ color: 'var(--gold)' }}>dare a friend →</span>
-                  </button>
-                </div>
-              </FadeUp>
-            )}
+            {/* Dare a friend link — always visible for returning users */}
+            <FadeUp delay={0.14}>
+              <div className="flex justify-center pt-3">
+                <button
+                  onClick={() => router.push('/cast')}
+                  className="text-[13px] font-semibold py-2"
+                  style={{ color: 'var(--text-muted)' }}
+                >
+                  or <span className="underline" style={{ color: 'var(--gold)' }}>dare a friend →</span>
+                </button>
+              </div>
+            </FadeUp>
           </div>
         </RitualScreen>
 
