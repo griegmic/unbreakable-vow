@@ -29,6 +29,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   const [reminderName, setReminderName] = useState('');
   const [reminderSaved, setReminderSaved] = useState(false);
   const [reminderSaving, setReminderSaving] = useState(false);
+  const [sworn, setSworn] = useState(false);
 
   const needsWitnessName = !vow.witness_name || vow.witness_name === 'Just me';
 
@@ -567,7 +568,6 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
   // ─── PENDING STATE (accept/decline) ───
   const stakeDisplay = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : null;
-  const [sworn, setSworn] = useState(false);
 
   return (
     <RitualScreen
