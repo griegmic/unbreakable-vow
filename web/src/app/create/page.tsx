@@ -1034,7 +1034,7 @@ function CreatePageContent() {
               className="text-[13px] py-2"
               style={{ color: 'var(--text-muted)' }}
             >
-              {!witnessName ? 'Going solo — just my word' : 'No witness — just my word'}
+              No witness — just my word
             </button>
           </div>
         </FadeUp>
