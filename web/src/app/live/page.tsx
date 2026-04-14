@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle, LayoutGrid, ChevronRight, Flame, Zap, PartyPopper, Trash2 } from 'lucide-react';
+import { Scale, Calendar, Shield, Clock, Check, Eye, MessageCircle, LayoutGrid, ChevronRight, Trash2 } from 'lucide-react';
 import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, SecondaryButton, StatPill, FadeUp, HeaderBadge } from '@/components/ui';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
@@ -563,19 +563,18 @@ export default function LivePage() {
       <FadeUp delay={0.14}>
         <div className="flex gap-2">
           {([
-            { mood: 'on_track' as const, label: 'On track', Icon: Flame },
-            { mood: 'struggling' as const, label: 'Struggling', Icon: Zap },
-            { mood: 'done_early' as const, label: 'Crushing it', Icon: PartyPopper },
-          ]).map(({ mood, label, Icon }) => (
+            { mood: 'on_track' as const, label: 'On track' },
+            { mood: 'struggling' as const, label: 'Struggling' },
+            { mood: 'done_early' as const, label: 'Crushing it' },
+          ]).map(({ mood, label }) => (
             <button
               key={mood}
               onClick={() => handleCheckIn(mood)}
               disabled={actionBusy || checkInCooldown}
-              className="flex-1 rounded-[14px] py-3 flex flex-col items-center gap-1.5 transition-all active:scale-[0.97] disabled:opacity-40"
+              className="flex-1 rounded-[14px] py-3 flex items-center justify-center transition-all active:scale-[0.97] disabled:opacity-40"
               style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
             >
-              <Icon className="w-4 h-4" style={{ color: 'var(--gold)' }} />
-              <span className="text-[11px] font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</span>
+              <span className="text-[12px] font-semibold" style={{ color: 'var(--text-secondary)' }}>{label}</span>
             </button>
           ))}
         </div>

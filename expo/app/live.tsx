@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import * as Linking from 'expo-linking';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { AlertCircle, ChevronLeft, ChevronRight, Clock, Eye, ExternalLink, FastForward, Flame, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, ThumbsUp, Trophy, User, UserMinus, X } from 'lucide-react-native';
+import { AlertCircle, ChevronLeft, ChevronRight, Clock, Eye, ExternalLink, FastForward, Layout, MessageCircle, RefreshCw, Share2, ShieldCheck, Sparkles, User, UserMinus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
@@ -793,7 +793,6 @@ export default function LiveScreen() {
                   disabled={checkingIn || !canCheckIn}
                   testID="live-checkin-ontrack"
                 >
-                  <ThumbsUp color={palette.success} size={18} />
                   <Text style={[styles.checkInBtnLabel, { color: palette.success }]}>On track</Text>
                 </Pressable>
               </Animated.View>
@@ -805,7 +804,6 @@ export default function LiveScreen() {
                   disabled={checkingIn || !canCheckIn}
                   testID="live-checkin-struggling"
                 >
-                  <Flame color={palette.warmAmber} size={18} />
                   <Text style={[styles.checkInBtnLabel, { color: palette.warmAmber }]}>Struggling</Text>
                 </Pressable>
               </Animated.View>
@@ -817,7 +815,6 @@ export default function LiveScreen() {
                   disabled={checkingIn || !canCheckIn}
                   testID="live-checkin-done"
                 >
-                  <Trophy color={palette.goldBright} size={18} />
                   <Text style={[styles.checkInBtnLabel, { color: palette.goldBright }]}>Crushing it</Text>
                 </Pressable>
               </Animated.View>
