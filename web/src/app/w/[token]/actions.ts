@@ -20,7 +20,7 @@ export async function getVowByWitnessToken(token: string) {
 
   const { data: vow } = await supabase
     .from('vows')
-    .select('id, refined_text, stake_amount, destination, witness_name, witness_accepted_at, witness_declined, starts_at, ends_at, status, user_id')
+    .select('id, refined_text, stake_amount, destination, witness_name, witness_phone, witness_accepted_at, witness_declined, starts_at, ends_at, status, user_id')
     .eq('witness_invite_token', token)
     .single();
 

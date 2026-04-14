@@ -9,6 +9,7 @@ interface Vow {
   stake_amount: number;
   destination: string;
   witness_name: string;
+  witness_phone: string | null;
   witness_accepted_at: string | null;
   witness_declined: boolean;
   starts_at: string | null;
@@ -97,7 +98,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         setBusy(false);
         return;
       }
-      setAcceptPhase('capturing');
+      setAcceptPhase(vow.witness_phone ? null : 'capturing');
       setStatus('accepted');
     } catch {
       setError('Network error. Please check your connection and try again.');
@@ -654,6 +655,12 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </p>
           )}
         </div>
+      </FadeUp>
+
+      <FadeUp delay={0.3}>
+        <p className="text-[11px] text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+          By accepting, you agree to receive a text on verdict day. Msg &amp; data rates may apply.
+        </p>
       </FadeUp>
 
       {error && (
