@@ -85,12 +85,23 @@ export default function SealPage() {
   const draftCreatingRef = useRef(false);
   const draftPromiseRef = useRef<Promise<{ id: string } | null> | null>(null);
   const ensureDraftVow = useCallback(async (): Promise<{ id: string; error?: string } | null> => {
-    // Reuse existing draft
+    // Reuse existing draft — but sync current flow state to DB
+    // (user may have gone back and changed stake, witness, deadline, etc.)
     if (vow.vowId) {
+      const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
       const { data: existing } = await supabase.from('vows')
-        .select('id')
+        .update({
+          refined_text: activeVowText,
+          witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
+          witness_phone: vow.witnessPhone || null,
+          stake_amount: vow.stake.amount * 100,
+          consequence: vow.stake.consequence,
+          destination: vow.stake.destination,
+          ends_at: endDate.toISOString(),
+        })
         .eq('id', vow.vowId)
         .eq('status', 'draft')
+        .select('id')
         .maybeSingle();
       if (existing) return existing;
     }
@@ -261,7 +272,7 @@ export default function SealPage() {
         return;
       }
 
-      // For $0 vows, update the draft to have zero stake before sealing
+      // ensureDraftVow syncs current flow state (including $0 stake) to DB
       const draft = await ensureDraftVow();
       if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
 
