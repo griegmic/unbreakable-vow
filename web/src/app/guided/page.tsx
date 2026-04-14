@@ -805,8 +805,7 @@ function GuidedContent() {
             <div className="flex flex-col gap-3">
               <button
                 onClick={() => {
-                  const name = prompt('Who should hold you to it?');
-                  if (name?.trim()) setWitnessName(name.trim());
+                  setWitnessName('Your witness');
                 }}
                 className="rounded-[18px] p-4 flex items-center gap-4 transition-opacity active:opacity-80"
                 style={{ backgroundColor: 'var(--surface)', border: '1px solid rgba(212,162,79,0.25)' }}
@@ -828,7 +827,7 @@ function GuidedContent() {
                 className="py-2 transition-opacity hover:opacity-70"
               >
                 <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-                  I&apos;ll hold myself accountable
+                  No witness — just my word
                 </span>
               </button>
             </div>

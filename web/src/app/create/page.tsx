@@ -1,7 +1,7 @@
 'use client';
 import { Suspense, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Sparkles, User, DollarSign, Calendar, Scale, Plus, CheckCircle } from 'lucide-react';
+import { Sparkles, User, DollarSign, Calendar, Scale, Plus, CheckCircle, ChevronLeft } from 'lucide-react';
 import {
   RitualScreen, RitualCard, PrimaryButton, ChoiceChip,
   OathCheckbox, VowPreview, SectionLabel, FadeUp,
@@ -15,6 +15,7 @@ import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import {
   analyzeVow, generateSuggestion, charities, antiCauses,
+  inferDeadline,
   type ConsequenceType,
 } from '@/lib/vow-logic';
 
@@ -56,6 +57,16 @@ const DEADLINE_PRESETS = [
   { label: 'Pick date', days: () => -1 },
 ];
 
+const PLACEHOLDERS = [
+  'read for 30 minutes before bed',
+  'go to the gym 3 times this week',
+  'not look at my phone before 8am',
+  'cook every dinner at home this week',
+  'finish my project by Friday',
+  'drink 8 glasses of water every day',
+  'text mom every morning this week',
+];
+
 interface RecentWitness {
   name: string;
   phone: string;
@@ -70,6 +81,10 @@ function CreatePageContent() {
   // Pre-populate from URL params (e.g. "Double down" from vow-broken page)
   const initialText = searchParams.get('text') || '';
   const initialStake = parseInt(searchParams.get('stake') || '0', 10);
+
+  // Step state
+  const [step, setStep] = useState<1 | 2 | 'sealed'>(1);
+  const [expandedTerm, setExpandedTerm] = useState<'witness' | 'stake' | 'deadline' | 'destination' | null>(null);
 
   // Form state
   const [vowText, setVowText] = useState(initialText);
@@ -100,6 +115,9 @@ function CreatePageContent() {
   const [showSealAnimation, setShowSealAnimation] = useState(false);
   const [sealAnimationSkippable, setSealAnimationSkippable] = useState(false);
   const [isDevBypass, setIsDevBypass] = useState(false);
+
+  // Random placeholder — pick once on mount
+  const [placeholder] = useState(() => PLACEHOLDERS[Math.floor(Math.random() * PLACEHOLDERS.length)]);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -213,6 +231,29 @@ function CreatePageContent() {
     }
   };
 
+  // Handle "Next" from step 1 to step 2
+  const handleNext = () => {
+    if (!vowText.trim()) return;
+    // Infer deadline from vow text if possible
+    const inferred = inferDeadline(vowText);
+    if (inferred) {
+      // Check if it matches a preset
+      const now = new Date();
+      const diffDays = Math.ceil((inferred.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays <= 1) {
+        setDeadlineLabel('Tomorrow');
+        setShowCustomDate(false);
+        setCustomDate('');
+      } else {
+        // Use custom date for inferred deadlines
+        setCustomDate(inferred.toISOString().split('T')[0]);
+        setDeadlineLabel('Pick date');
+        setShowCustomDate(true);
+      }
+    }
+    setStep(2);
+  };
+
   // Seal logic
   const handleSeal = useCallback(async () => {
     if (!oathChecked || sealing) return;
@@ -277,6 +318,7 @@ function CreatePageContent() {
         resetVow();
         setShowSealAnimation(true);
         setSealed(true);
+        setStep('sealed');
         return;
       }
 
@@ -342,6 +384,7 @@ function CreatePageContent() {
     resetVow();
     setShowSealAnimation(true);
     setSealed(true);
+    setStep('sealed');
   }, [vowId, resetVow]);
 
   const handleAuthSuccess = async () => {
@@ -394,6 +437,11 @@ function CreatePageContent() {
     if (sealAnimationSkippable) setShowSealAnimation(false);
   };
 
+  // Toggle accordion — only one open at a time
+  const toggleTerm = (term: 'witness' | 'stake' | 'deadline' | 'destination') => {
+    setExpandedTerm((prev) => (prev === term ? null : term));
+  };
+
   // Seal animation overlay
   if (sealed && showSealAnimation) {
     return (
@@ -433,6 +481,7 @@ function CreatePageContent() {
       setShowNewWitness(false);
       setOathChecked(false);
       setError('');
+      setStep(1);
     };
 
     return (
@@ -581,6 +630,90 @@ function CreatePageContent() {
     );
   }
 
+  // ─── STEP 1: Compose ───────────────────────────────────────────────────────
+  if (step === 1) {
+    return (
+      <>
+        <RitualScreen
+          footer={
+            <div>
+              <PrimaryButton
+                label="Next"
+                onPress={handleNext}
+                disabled={!vowText.trim()}
+              />
+            </div>
+          }
+        >
+          {/* Header */}
+          <FadeUp>
+            <div className="flex items-center justify-between">
+              <h1
+                className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
+                style={{ color: 'var(--text)' }}
+              >
+                New Vow
+              </h1>
+              <HamburgerMenu />
+            </div>
+          </FadeUp>
+
+          {/* Vow text input */}
+          <FadeUp delay={0.1}>
+            <RitualCard>
+              <SectionLabel>I WILL...</SectionLabel>
+              <div className="relative">
+                <textarea
+                  ref={textareaRef}
+                  value={vowText}
+                  onChange={(e) => setVowText(e.target.value)}
+                  placeholder={placeholder}
+                  rows={3}
+                  className="w-full bg-transparent text-[16px] leading-[24px] outline-none resize-none"
+                  style={{ color: 'var(--text)' }}
+                />
+                {suggestion && suggestion !== vowText && (
+                  <button
+                    onClick={acceptSuggestion}
+                    className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
+                    style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                  >
+                    <Sparkles className="w-3 h-3" style={{ color: 'var(--gold)' }} />
+                    <span className="text-[13px]" style={{ color: 'var(--gold)' }}>
+                      {suggestion}
+                    </span>
+                  </button>
+                )}
+              </div>
+            </RitualCard>
+          </FadeUp>
+
+          {/* Dare a friend link — only for returning users */}
+          {recentWitnesses.length > 0 && (
+            <FadeUp delay={0.15}>
+              <div className="flex justify-center">
+                <button
+                  onClick={() => router.push('/cast')}
+                  className="text-[13px] font-semibold py-2"
+                  style={{ color: 'var(--gold)' }}
+                >
+                  or <span className="underline">dare a friend →</span>
+                </button>
+              </div>
+            </FadeUp>
+          )}
+        </RitualScreen>
+
+        <AuthModal
+          visible={showAuth}
+          onDismiss={() => setShowAuth(false)}
+          onSuccess={handleAuthSuccess}
+        />
+      </>
+    );
+  }
+
+  // ─── STEP 2: Seal (ceremony/contract screen) ──────────────────────────────
   return (
     <>
       <RitualScreen
@@ -589,7 +722,7 @@ function CreatePageContent() {
             <PrimaryButton
               label="Seal this vow"
               onPress={handleSeal}
-              disabled={!oathChecked || !vowText.trim()}
+              disabled={!oathChecked}
               loading={sealing}
             />
             {stakeAmount > 0 && (
@@ -603,249 +736,308 @@ function CreatePageContent() {
         {/* Header */}
         <FadeUp>
           <div className="flex items-center justify-between">
-            <h1
-              className="text-[28px] leading-[34px] font-bold font-serif tracking-[-0.5px]"
-              style={{ color: 'var(--text)' }}
-            >
-              New Vow
-            </h1>
+            <p className="text-[15px]" style={{ color: 'var(--text-muted)' }}>
+              Review &amp; seal
+            </p>
             <HamburgerMenu />
           </div>
         </FadeUp>
 
-        {/* Vow text input */}
+        {/* Vow display in gold serif */}
+        <FadeUp delay={0.05}>
+          <div className="text-center py-4">
+            <p
+              className="text-[22px] font-serif font-medium leading-[30px]"
+              style={{ color: 'var(--gold)' }}
+            >
+              &ldquo;{formattedText}&rdquo;
+            </p>
+          </div>
+        </FadeUp>
+
+        {/* Terms block */}
         <FadeUp delay={0.1}>
           <RitualCard>
-            <SectionLabel>Your vow</SectionLabel>
-            <div className="relative">
-              <textarea
-                ref={textareaRef}
-                value={vowText}
-                onChange={(e) => setVowText(e.target.value)}
-                placeholder="I will..."
-                rows={3}
-                className="w-full bg-transparent text-[16px] leading-[24px] outline-none resize-none"
-                style={{ color: 'var(--text)' }}
-              />
-              {suggestion && suggestion !== vowText && (
+            <div className="flex flex-col">
+              {/* Row 1: Witness */}
+              <div>
                 <button
-                  onClick={acceptSuggestion}
-                  className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
-                  style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px solid rgba(212,162,79,0.2)' }}
+                  onClick={() => toggleTerm('witness')}
+                  className="w-full flex items-center justify-between py-3"
                 >
-                  <Sparkles className="w-3 h-3" style={{ color: 'var(--gold)' }} />
-                  <span className="text-[13px]" style={{ color: 'var(--gold)' }}>
-                    {suggestion}
-                  </span>
+                  <div className="flex items-center gap-2.5">
+                    <User className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                    <span className="text-[14px]" style={{ color: 'var(--text-muted)' }}>Witness</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>
+                      {witnessName || 'Your witness'}
+                    </span>
+                    <span className="text-[12px] font-semibold" style={{ color: 'var(--gold)' }}>Change</span>
+                  </div>
                 </button>
+                {/* Accordion content */}
+                <div
+                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                  style={{
+                    maxHeight: expandedTerm === 'witness' ? '200px' : '0px',
+                    opacity: expandedTerm === 'witness' ? 1 : 0,
+                  }}
+                >
+                  <div className="pb-3">
+                    {recentWitnesses.length > 0 && !showNewWitness && (
+                      <div className="flex flex-wrap">
+                        {recentWitnesses.map((w) => (
+                          <ChoiceChip
+                            key={w.name + w.phone}
+                            label={w.name}
+                            active={witnessName === w.name && witnessPhone === w.phone}
+                            onPress={() => {
+                              setWitnessName(w.name);
+                              setWitnessPhone(w.phone);
+                              setShowNewWitness(false);
+                              setExpandedTerm(null);
+                            }}
+                          />
+                        ))}
+                        <ChoiceChip
+                          label="+ New"
+                          active={showNewWitness}
+                          onPress={() => { setShowNewWitness(true); setWitnessName(''); setWitnessPhone(''); }}
+                        />
+                      </div>
+                    )}
+                    {(showNewWitness || recentWitnesses.length === 0) && (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={witnessName}
+                          onChange={(e) => setWitnessName(e.target.value)}
+                          placeholder="Name your witness"
+                          className="flex-1 bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
+                          style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                        />
+                        <button
+                          onClick={() => {
+                            if (witnessName.trim()) {
+                              setShowNewWitness(false);
+                              setExpandedTerm(null);
+                            }
+                          }}
+                          className="px-3 py-2 rounded-xl text-[13px] font-semibold"
+                          style={{
+                            backgroundColor: witnessName.trim() ? 'var(--gold)' : 'var(--surface)',
+                            color: witnessName.trim() ? '#000' : 'var(--text-muted)',
+                          }}
+                        >
+                          Add
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+
+              {/* Row 2: Stake */}
+              <div>
+                <button
+                  onClick={() => toggleTerm('stake')}
+                  className="w-full flex items-center justify-between py-3"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <DollarSign className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                    <span className="text-[14px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="text-[14px] font-medium"
+                      style={{ color: stakeAmount > 0 ? 'var(--gold)' : 'var(--text)' }}
+                    >
+                      {stakeAmount > 0 ? `$${stakeAmount}` : 'Accountability only'}
+                    </span>
+                    <span className="text-[12px] font-semibold" style={{ color: 'var(--gold)' }}>Change</span>
+                  </div>
+                </button>
+                <div
+                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                  style={{
+                    maxHeight: expandedTerm === 'stake' ? '120px' : '0px',
+                    opacity: expandedTerm === 'stake' ? 1 : 0,
+                  }}
+                >
+                  <div className="pb-3">
+                    <div className="flex flex-wrap">
+                      {STAKE_OPTIONS.map((amt) => (
+                        <ChoiceChip
+                          key={amt}
+                          label={`$${amt}`}
+                          active={stakeAmount === amt}
+                          onPress={() => { setStakeAmount(amt); setExpandedTerm(null); }}
+                        />
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => { setStakeAmount(0); setExpandedTerm(null); }}
+                      className="py-1 transition-opacity hover:opacity-70"
+                    >
+                      <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                        or go accountability only
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+
+              {/* Row 3: Deadline */}
+              <div>
+                <button
+                  onClick={() => toggleTerm('deadline')}
+                  className="w-full flex items-center justify-between py-3"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Calendar className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                    <span className="text-[14px]" style={{ color: 'var(--text-muted)' }}>Verdict day</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>
+                      {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                    </span>
+                    <span className="text-[12px] font-semibold" style={{ color: 'var(--gold)' }}>Change</span>
+                  </div>
+                </button>
+                <div
+                  className="overflow-hidden transition-all duration-300 ease-in-out"
+                  style={{
+                    maxHeight: expandedTerm === 'deadline' ? '160px' : '0px',
+                    opacity: expandedTerm === 'deadline' ? 1 : 0,
+                  }}
+                >
+                  <div className="pb-3">
+                    <div className="flex flex-wrap">
+                      {DEADLINE_PRESETS.map((p) => (
+                        <ChoiceChip
+                          key={p.label}
+                          label={p.label === 'Pick date' ? 'Pick' : p.label}
+                          active={deadlineLabel === p.label}
+                          onPress={() => {
+                            handleDeadlineSelect(p.label);
+                            if (p.label !== 'Pick date') setExpandedTerm(null);
+                          }}
+                        />
+                      ))}
+                    </div>
+                    {showCustomDate && (
+                      <input
+                        type="date"
+                        value={customDate}
+                        onChange={(e) => { setCustomDate(e.target.value); if (e.target.value) setExpandedTerm(null); }}
+                        min={new Date().toISOString().split('T')[0]}
+                        className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl mt-2"
+                        style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                      />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Row 4: If broken — only if stakeAmount > 0 */}
+              {stakeAmount > 0 && (
+                <>
+                  <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
+                  <div>
+                    <button
+                      onClick={() => toggleTerm('destination')}
+                      className="w-full flex items-center justify-between py-3"
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <Scale className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+                        <span className="text-[14px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>
+                          ${stakeAmount} → {destination}
+                        </span>
+                        <span className="text-[12px] font-semibold" style={{ color: 'var(--gold)' }}>Change</span>
+                      </div>
+                    </button>
+                    <div
+                      className="overflow-hidden transition-all duration-300 ease-in-out"
+                      style={{
+                        maxHeight: expandedTerm === 'destination' ? '300px' : '0px',
+                        opacity: expandedTerm === 'destination' ? 1 : 0,
+                      }}
+                    >
+                      <div className="pb-3">
+                        {/* Toggle: A good cause / An anti-cause */}
+                        <div
+                          className="flex rounded-xl overflow-hidden mb-2"
+                          style={{ border: '1px solid var(--border)' }}
+                        >
+                          <button
+                            onClick={() => setConsequence('charity')}
+                            className="flex-1 py-2.5 text-center text-[13px] font-semibold transition-colors"
+                            style={{
+                              backgroundColor: consequence === 'charity' ? 'rgba(212,162,79,0.12)' : 'transparent',
+                              color: consequence === 'charity' ? 'var(--gold-bright)' : 'var(--text-muted)',
+                            }}
+                          >
+                            A good cause
+                          </button>
+                          <button
+                            onClick={() => setConsequence('anti')}
+                            className="flex-1 py-2.5 text-center text-[13px] font-semibold transition-colors"
+                            style={{
+                              backgroundColor: consequence === 'anti' ? 'rgba(212,162,79,0.12)' : 'transparent',
+                              color: consequence === 'anti' ? 'var(--gold-bright)' : 'var(--text-muted)',
+                            }}
+                          >
+                            An anti-cause
+                          </button>
+                        </div>
+
+                        {/* Destination chips */}
+                        <div className="flex flex-wrap">
+                          {destinations.map((d) => (
+                            <ChoiceChip
+                              key={d}
+                              label={d}
+                              active={destination === d}
+                              onPress={() => { setDestination(d); setExpandedTerm(null); }}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Flavor text — anti-cause only */}
+                        {consequence === 'anti' && (
+                          <p className="text-[12px] italic mt-1" style={{ color: 'var(--text-muted)' }}>
+                            Maximum pain. Maximum motivation.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
-
-            {/* Inline deadline */}
-            <div className="h-px my-2" style={{ backgroundColor: 'var(--border)' }} />
-            <div className="flex items-center gap-2.5">
-              <span className="text-[13px] font-semibold" style={{ color: 'var(--text-muted)' }}>Ends</span>
-              <div className="flex flex-wrap">
-                {DEADLINE_PRESETS.map((p) => (
-                  <ChoiceChip
-                    key={p.label}
-                    label={p.label === 'Pick date' ? 'Pick' : p.label}
-                    active={deadlineLabel === p.label}
-                    onPress={() => handleDeadlineSelect(p.label)}
-                  />
-                ))}
-              </div>
-            </div>
-            {showCustomDate && (
-              <input
-                type="date"
-                value={customDate}
-                onChange={(e) => setCustomDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-              />
-            )}
-            <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-              {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-            </p>
           </RitualCard>
         </FadeUp>
 
-        {/* Witness section */}
+        {/* No witness — just my word */}
         <FadeUp delay={0.15}>
-          <RitualCard>
-            <SectionLabel>Your witness</SectionLabel>
-            {recentWitnesses.length > 0 && !showNewWitness && (
-              <div className="flex flex-wrap">
-                {recentWitnesses.map((w) => (
-                  <ChoiceChip
-                    key={w.name + w.phone}
-                    label={w.name}
-                    active={witnessName === w.name && witnessPhone === w.phone}
-                    onPress={() => { setWitnessName(w.name); setWitnessPhone(w.phone); setShowNewWitness(false); }}
-                  />
-                ))}
-                <ChoiceChip
-                  label="+ New"
-                  active={showNewWitness}
-                  onPress={() => { setShowNewWitness(true); setWitnessName(''); setWitnessPhone(''); }}
-                />
-              </div>
-            )}
-            {(showNewWitness || recentWitnesses.length === 0) && (
-              <input
-                type="text"
-                value={witnessName}
-                onChange={(e) => setWitnessName(e.target.value)}
-                placeholder="Name your witness"
-                className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-              />
-            )}
-          </RitualCard>
-        </FadeUp>
-
-        {/* Dare a friend link — only for returning users */}
-        {recentWitnesses.length > 0 && (
-          <FadeUp delay={0.18}>
-            <div className="flex justify-center">
-              <button
-                onClick={() => router.push('/cast')}
-                className="text-[13px] font-semibold py-2"
-                style={{ color: 'var(--gold)' }}
-              >
-                or <span className="underline">dare a friend →</span>
-              </button>
-            </div>
-          </FadeUp>
-        )}
-
-        {/* Stake */}
-        <FadeUp delay={0.25}>
-          <RitualCard>
-            <SectionLabel>Stake</SectionLabel>
-            <div className="flex flex-wrap">
-              {STAKE_OPTIONS.map((amt) => (
-                <ChoiceChip
-                  key={amt}
-                  label={`$${amt}`}
-                  active={stakeAmount === amt}
-                  onPress={() => setStakeAmount(amt)}
-                />
-              ))}
-            </div>
+          <div className="flex justify-center">
             <button
-              onClick={() => setStakeAmount(0)}
-              className="py-1 transition-opacity hover:opacity-70"
+              onClick={() => { setWitnessName(''); setWitnessPhone(''); }}
+              className="text-[13px] py-2"
+              style={{ color: 'var(--text-muted)' }}
             >
-              <span
-                className="text-[13px]"
-                style={{ color: 'var(--text-muted)', opacity: stakeAmount === 0 ? 1 : 0.6 }}
-              >
-                {stakeAmount === 0 ? 'Accountability only (no stake)' : 'or go accountability only'}
-              </span>
+              {!witnessName ? 'Going solo — just my word' : 'No witness — just my word'}
             </button>
-
-            {stakeAmount > 0 && (
-              <>
-                <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-
-                <SectionLabel>If you break it</SectionLabel>
-                <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
-                  <span
-                    className="font-bold font-serif text-[17px]"
-                    style={{ color: 'var(--gold)' }}
-                  >
-                    ${stakeAmount} goes to {destination}.
-                  </span>
-                </p>
-
-                {/* Toggle: A good cause / An anti-cause */}
-                <div
-                  className="flex rounded-xl overflow-hidden"
-                  style={{ border: '1px solid var(--border)' }}
-                >
-                  <button
-                    onClick={() => setConsequence('charity')}
-                    className="flex-1 py-2.5 text-center text-[13px] font-semibold transition-colors"
-                    style={{
-                      backgroundColor: consequence === 'charity' ? 'rgba(212,162,79,0.12)' : 'transparent',
-                      color: consequence === 'charity' ? 'var(--gold-bright)' : 'var(--text-muted)',
-                    }}
-                  >
-                    A good cause
-                  </button>
-                  <button
-                    onClick={() => setConsequence('anti')}
-                    className="flex-1 py-2.5 text-center text-[13px] font-semibold transition-colors"
-                    style={{
-                      backgroundColor: consequence === 'anti' ? 'rgba(212,162,79,0.12)' : 'transparent',
-                      color: consequence === 'anti' ? 'var(--gold-bright)' : 'var(--text-muted)',
-                    }}
-                  >
-                    An anti-cause
-                  </button>
-                </div>
-
-                {/* Destination chips */}
-                <div className="flex flex-wrap">
-                  {destinations.map((d) => (
-                    <ChoiceChip
-                      key={d}
-                      label={d}
-                      active={destination === d}
-                      onPress={() => setDestination(d)}
-                    />
-                  ))}
-                </div>
-
-                {/* Flavor text — anti-cause only */}
-                {consequence === 'anti' && (
-                  <p className="text-[12px] italic" style={{ color: 'var(--text-muted)' }}>
-                    Maximum pain. Maximum motivation.
-                  </p>
-                )}
-              </>
-            )}
-          </RitualCard>
+          </div>
         </FadeUp>
-
-        {/* Deadline card removed — merged into vow text card above */}
-
-        {/* Preview */}
-        {vowText.trim() && (
-          <FadeUp delay={0.35}>
-            <RitualCard>
-              <SectionLabel>Preview</SectionLabel>
-              <VowPreview text={formattedText} />
-              <div className="grid grid-cols-2 gap-2 text-[13px]">
-                <div className="flex items-center gap-1.5">
-                  <User className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-                  <span style={{ color: 'var(--text-secondary)' }}>
-                    {witnessName || 'Just me'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <DollarSign className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-                  <span style={{ color: 'var(--gold)' }}>${stakeAmount}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <Calendar className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-                  <span style={{ color: 'var(--text-secondary)' }}>
-                    {endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                  </span>
-                </div>
-                {stakeAmount > 0 && (
-                  <div className="flex items-center gap-1.5">
-                    <Scale className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-                    <span style={{ color: 'var(--text-secondary)' }}>{destination}</span>
-                  </div>
-                )}
-              </div>
-            </RitualCard>
-          </FadeUp>
-        )}
 
         {/* Error */}
         {error && (
@@ -855,7 +1047,7 @@ function CreatePageContent() {
         )}
 
         {/* Oath */}
-        <FadeUp delay={0.4}>
+        <FadeUp delay={0.2}>
           <OathCheckbox
             checked={oathChecked}
             onChange={setOathChecked}
@@ -863,15 +1055,16 @@ function CreatePageContent() {
           />
         </FadeUp>
 
-        {/* Guided flow link */}
-        <FadeUp delay={0.45}>
+        {/* Back link */}
+        <FadeUp delay={0.25}>
           <div className="flex justify-center">
             <button
-              onClick={() => router.push('/?guided=1')}
-              className="text-[13px] font-medium underline py-2"
+              onClick={() => { setStep(1); setExpandedTerm(null); }}
+              className="text-[13px] font-medium py-2 flex items-center gap-1"
               style={{ color: 'var(--text-muted)' }}
             >
-              Use guided flow instead
+              <ChevronLeft className="w-3.5 h-3.5" />
+              Back
             </button>
           </div>
         </FadeUp>
@@ -946,6 +1139,7 @@ function CreatePageContent() {
             resetVow();
             setShowSealAnimation(true);
             setSealed(true);
+            setStep('sealed');
           } : undefined}
         />
       )}
