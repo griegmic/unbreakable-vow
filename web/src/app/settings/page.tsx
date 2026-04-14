@@ -1,12 +1,15 @@
 'use client';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut, User, History, ArrowLeft } from 'lucide-react';
 import { RitualScreen, HeaderBadge, TitleBlock, RitualCard, PrimaryButton, FadeUp } from '@/components/ui';
+import { AuthModal } from '@/components/auth-modal';
 import { useAuth } from '@/providers/auth-provider';
 
 export default function SettingsPage() {
   const router = useRouter();
   const { isAuthenticated, displayName, session, signOut } = useAuth();
+  const [showAuth, setShowAuth] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
@@ -72,10 +75,16 @@ export default function SettingsPage() {
         <FadeUp delay={0.1}>
           <div className="flex flex-col items-center justify-center py-16 gap-4">
             <p className="text-[15px]" style={{ color: 'var(--text-muted)' }}>Not signed in</p>
-            <PrimaryButton label="Make a vow" onPress={() => router.push('/')} />
+            <PrimaryButton label="Sign in" onPress={() => setShowAuth(true)} />
           </div>
         </FadeUp>
       )}
+
+      <AuthModal
+        visible={showAuth}
+        onDismiss={() => setShowAuth(false)}
+        onSuccess={() => setShowAuth(false)}
+      />
     </RitualScreen>
   );
 }
