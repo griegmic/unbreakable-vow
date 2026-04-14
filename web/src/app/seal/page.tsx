@@ -169,20 +169,20 @@ export default function SealPage() {
     let lastError = '';
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const { data: { session: s } } = await supabase.auth.refreshSession();
+        const { data: { session: s } } = await supabase.auth.getSession();
         if (!s) return { ok: false, error: 'Session expired. Please sign in again.' };
-        const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/seal-vow`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${s.access_token}`,
-            'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          },
-          body: JSON.stringify({ vow_id: vowId, ...(opts?.skip_payment ? { skip_payment: true } : {}) }),
+        const { error: sealError } = await supabase.functions.invoke('seal-vow', {
+          body: { vow_id: vowId, ...(opts?.skip_payment ? { skip_payment: true } : {}) },
         });
-        if (res.ok) return { ok: true };
-        const data = await res.json().catch(() => null);
-        lastError = data?.error || `HTTP ${res.status}`;
+        if (!sealError) return { ok: true };
+        let detail = sealError.message;
+        try {
+          if (typeof (sealError as any).context?.json === 'function') {
+            const body = await (sealError as any).context.json();
+            detail = body?.error || body?.message || detail;
+          }
+        } catch {}
+        lastError = detail;
         console.error(`Seal attempt ${attempt + 1} failed:`, lastError);
       } catch (err) {
         lastError = err instanceof Error ? err.message : String(err);
@@ -202,10 +202,9 @@ export default function SealPage() {
     try {
       setError('');
 
-      // Always try to refresh the session first for a fresh access token
-      const { data: { session: freshSession }, error: refreshError } = await supabase.auth.refreshSession();
-      if (refreshError || !freshSession) {
-        console.warn('Session refresh failed, redirecting to auth:', refreshError?.message);
+      // Verify we have a session before proceeding
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) {
         setStep('auth');
         sealingRef.current = false;
         setSealing(false);
@@ -215,54 +214,33 @@ export default function SealPage() {
       const draft = await ensureDraftVow();
       if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
 
-      const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`;
-      const piRes = await fetch(fnUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${freshSession.access_token}`,
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        },
-        body: JSON.stringify({ vow_id: draft.id, amount: vow.stake.amount * 100 }),
+      // Use supabase.functions.invoke() — handles auth token lifecycle automatically
+      // (same approach that works reliably in the expo app)
+      const { data: piData, error: piError } = await supabase.functions.invoke('create-payment-intent', {
+        body: { vow_id: draft.id, amount: vow.stake.amount * 100 },
       });
 
-      const piData = await piRes.json().catch(() => null);
-
-      // If 401, retry once with a freshly refreshed token before giving up
-      if (piRes.status === 401) {
-        console.warn('Edge function returned 401 — retrying with fresh token. Detail:', piData);
-        const { data: { session: retrySession } } = await supabase.auth.refreshSession();
-        if (retrySession) {
-          const retryRes = await fetch(fnUrl, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${retrySession.access_token}`,
-              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-            },
-            body: JSON.stringify({ vow_id: draft.id, amount: vow.stake.amount * 100 }),
-          });
-          if (retryRes.ok) {
-            const retryData = await retryRes.json().catch(() => null);
-            const retrySecret = retryData?.clientSecret || retryData?.client_secret;
-            if (retrySecret) {
-              setClientSecret(retrySecret);
-              setStep('payment');
-              return;
-            }
+      if (piError) {
+        // Check if the error response contains auth failure
+        let detail = piError.message;
+        try {
+          if (typeof (piError as any).context?.json === 'function') {
+            const body = await (piError as any).context.json();
+            detail = body?.error || body?.message || detail;
+          } else if (typeof (piError as any).context?.text === 'function') {
+            const text = await (piError as any).context.text();
+            detail = text || detail;
           }
-        }
-        // Both attempts failed — show auth modal without signing out
-        setError('Session expired — please sign in again.');
-        setStep('auth');
-        sealingRef.current = false;
-        setSealing(false);
-        return;
-      }
+        } catch {}
 
-      if (!piRes.ok) {
-        const detail = piData?.error || `HTTP ${piRes.status}`;
-        throw new Error(`Payment: ${typeof detail === 'string' ? detail : JSON.stringify(detail)}`);
+        if (detail?.includes('Unauthorized') || detail?.includes('JWT') || detail?.includes('401')) {
+          setError('Session expired — please sign in again.');
+          setStep('auth');
+          sealingRef.current = false;
+          setSealing(false);
+          return;
+        }
+        throw new Error(`Payment: ${detail}`);
       }
 
       const secret = piData?.clientSecret || piData?.client_secret;
@@ -286,9 +264,8 @@ export default function SealPage() {
     setSealing(true);
     try {
       setError('');
-      const { data: { session: currentSession }, error: refreshErr } = await supabase.auth.refreshSession();
-      if (refreshErr || !currentSession) {
-        console.warn('Session refresh failed in zero-stake seal:', refreshErr?.message);
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) {
         setStep('auth');
         sealingRef.current = false;
         setSealing(false);
