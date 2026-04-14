@@ -648,9 +648,9 @@ export default function ChallengeInviteClient({
       // Save state in both cookie (Safari) and localStorage
       try { document.cookie = `auth_return_path=${encodeURIComponent(returnPath)}; path=/; max-age=300; SameSite=Lax`; } catch {}
       try { localStorage.setItem('auth-return-path', returnPath); } catch {}
-      try { localStorage.setItem('challenge-pending-state', JSON.stringify({ stakeAmount, charity })); } catch {}
+      try { localStorage.setItem('challenge-pending-state', JSON.stringify({ stakeAmount, charity, token })); } catch {}
       // Cookie backup for challenge state — Safari wipes localStorage during cross-origin OAuth
-      try { document.cookie = `challenge_pending_backup=${encodeURIComponent(JSON.stringify({ stakeAmount, charity }))}; path=/; max-age=300; SameSite=Lax`; } catch {}
+      try { document.cookie = `challenge_pending_backup=${encodeURIComponent(JSON.stringify({ stakeAmount, charity, token }))}; path=/; max-age=300; SameSite=Lax`; } catch {}
       const callbackUrl = new URL('/auth/callback', window.location.origin);
       callbackUrl.searchParams.set('return_to', returnPath);
       await supabase.auth.signInWithOAuth({

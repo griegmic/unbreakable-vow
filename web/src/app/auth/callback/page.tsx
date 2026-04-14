@@ -28,12 +28,19 @@ export default function AuthCallbackPage() {
       } catch {}
 
       // Restore challenge pending state from cookie → localStorage (same Safari issue)
+      // Also extract the challenge token to use as a redirect fallback —
+      // if auth_return_path cookie AND return_to URL param both fail,
+      // this ensures we can still route back to /c/{token}
       try {
         const challengeMatch = document.cookie.match(/(?:^|;\s*)challenge_pending_backup=([^;]*)/);
         if (challengeMatch) {
           const challengeData = decodeURIComponent(challengeMatch[1]);
           // Don't clear the cookie here — let client.tsx consume it as fallback
           localStorage.setItem('challenge-pending-state', challengeData);
+          const parsed = JSON.parse(challengeData);
+          if (parsed.token && !localStorage.getItem('auth-return-path')) {
+            localStorage.setItem('auth-return-path', `/c/${parsed.token}`);
+          }
         }
       } catch {}
 
