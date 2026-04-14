@@ -28,6 +28,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   const [reminderPhone, setReminderPhone] = useState('');
   const [reminderName, setReminderName] = useState('');
   const [reminderSaved, setReminderSaved] = useState(false);
+  const [reminderSkipped, setReminderSkipped] = useState(false);
   const [reminderSaving, setReminderSaving] = useState(false);
   const [sworn, setSworn] = useState(false);
 
@@ -64,12 +65,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     setReminderSaving(false);
   };
 
-  useEffect(() => {
-    if (justAccepted) {
-      const timer = setTimeout(() => setJustAccepted(false), 2400);
-      return () => clearTimeout(timer);
-    }
-  }, [justAccepted]);
+  // justAccepted persists until the witness navigates away or taps SMS CTA
+  // No auto-dismiss — let the user drive the interaction
 
   const handleAccept = async () => {
     if (busy) return;
@@ -278,7 +275,82 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 </p>
               </div>
             </FadeUp>
-            <FadeUp delay={0.45}>
+
+            {/* Phone capture — inline, not expandable */}
+            {!reminderSaved && !reminderSkipped && (
+              <FadeUp delay={0.4}>
+                <div
+                  className="rounded-[18px] p-4 flex flex-col gap-3"
+                  style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
+                >
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4" style={{ color: 'var(--gold-bright)' }} />
+                    <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+                      Get a text on verdict day
+                    </span>
+                  </div>
+                  <p className="text-[12px] leading-[17px]" style={{ color: 'var(--text-muted)' }}>
+                    We&apos;ll text you when it&apos;s time to judge {makerLabel}&apos;s vow. One text. That&apos;s it.
+                  </p>
+                  {needsWitnessName && (
+                    <input
+                      type="text"
+                      value={reminderName}
+                      onChange={(e) => setReminderName(e.target.value)}
+                      placeholder="Your first name"
+                      className="w-full bg-transparent text-[15px] outline-none py-2.5 px-3.5 rounded-xl"
+                      style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                    />
+                  )}
+                  <input
+                    type="tel"
+                    value={reminderPhone}
+                    onChange={(e) => setReminderPhone(e.target.value)}
+                    placeholder="Phone number"
+                    className="w-full bg-transparent text-[15px] outline-none py-2.5 px-3.5 rounded-xl"
+                    style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                  />
+                  <div className="flex items-center gap-4">
+                    <button
+                      type="button"
+                      onClick={handleSaveReminder}
+                      disabled={!reminderPhone.trim() || reminderSaving}
+                      className="px-5 py-2.5 rounded-xl text-[14px] font-bold transition-opacity"
+                      style={{
+                        backgroundColor: 'var(--gold-bright)',
+                        color: '#0B0D11',
+                        opacity: !reminderPhone.trim() || reminderSaving ? 0.5 : 1,
+                      }}
+                    >
+                      {reminderSaving ? 'Saving...' : 'Notify me'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setReminderSkipped(true)}
+                      className="text-[13px] font-medium"
+                      style={{ color: 'var(--text-muted)' }}
+                    >
+                      Skip
+                    </button>
+                  </div>
+                </div>
+              </FadeUp>
+            )}
+            {reminderSaved && (
+              <FadeUp delay={0.4}>
+                <div
+                  className="flex items-center justify-center gap-2 py-3.5 rounded-[18px]"
+                  style={{ backgroundColor: 'rgba(82,214,154,0.08)', border: '1px solid rgba(82,214,154,0.2)' }}
+                >
+                  <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
+                  <span className="text-[14px] font-semibold" style={{ color: 'var(--success)' }}>
+                    We&apos;ll text you on {endDate}
+                  </span>
+                </div>
+              </FadeUp>
+            )}
+
+            <FadeUp delay={0.55}>
               <div className="flex flex-col gap-2.5">
                 <a
                   href={`/?ref=witness&from=${encodeURIComponent(makerFirstName)}`}
