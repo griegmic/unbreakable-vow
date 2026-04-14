@@ -226,10 +226,31 @@ export default function SealPage() {
 
       const piData = await piRes.json().catch(() => null);
 
-      // If 401, session is truly dead — force re-auth
+      // If 401, retry once with a freshly refreshed token before giving up
       if (piRes.status === 401) {
-        console.warn('Edge function returned 401 — forcing re-auth. Detail:', piData);
-        await supabase.auth.signOut();
+        console.warn('Edge function returned 401 — retrying with fresh token. Detail:', piData);
+        const { data: { session: retrySession } } = await supabase.auth.refreshSession();
+        if (retrySession) {
+          const retryRes = await fetch(fnUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${retrySession.access_token}`,
+              'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            },
+            body: JSON.stringify({ vow_id: draft.id, amount: vow.stake.amount * 100 }),
+          });
+          if (retryRes.ok) {
+            const retryData = await retryRes.json().catch(() => null);
+            const retrySecret = retryData?.clientSecret || retryData?.client_secret;
+            if (retrySecret) {
+              setClientSecret(retrySecret);
+              setStep('payment');
+              return;
+            }
+          }
+        }
+        // Both attempts failed — show auth modal without signing out
         setError('Session expired — please sign in again.');
         setStep('auth');
         sealingRef.current = false;
