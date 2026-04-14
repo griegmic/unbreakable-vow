@@ -27,6 +27,16 @@ export default function AuthCallbackPage() {
         }
       } catch {}
 
+      // Restore challenge pending state from cookie → localStorage (same Safari issue)
+      try {
+        const challengeMatch = document.cookie.match(/(?:^|;\s*)challenge_pending_backup=([^;]*)/);
+        if (challengeMatch) {
+          const challengeData = decodeURIComponent(challengeMatch[1]);
+          // Don't clear the cookie here — let client.tsx consume it as fallback
+          localStorage.setItem('challenge-pending-state', challengeData);
+        }
+      } catch {}
+
       // Determine where to send the user after auth.
       // Priority: cookie (survives cross-origin OAuth in Safari)
       //         → URL query param

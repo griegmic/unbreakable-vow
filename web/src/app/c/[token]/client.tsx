@@ -197,10 +197,18 @@ export default function ChallengeInviteClient({
     return () => subscription.unsubscribe();
   }, []);
 
-  // Restore challenge state from localStorage after OAuth return
+  // Restore challenge state from localStorage (or cookie fallback) after OAuth return
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('challenge-pending-state');
+      let saved = localStorage.getItem('challenge-pending-state');
+      // Fallback: check cookie — Safari wipes localStorage during cross-origin OAuth
+      if (!saved) {
+        const match = document.cookie.match(/(?:^|;\s*)challenge_pending_backup=([^;]*)/);
+        if (match) {
+          saved = decodeURIComponent(match[1]);
+          document.cookie = 'challenge_pending_backup=; path=/; max-age=0';
+        }
+      }
       if (saved) {
         const { stakeAmount: savedStake, charity: savedCharity } = JSON.parse(saved);
         if (typeof savedStake === 'number') setStakeAmount(savedStake);
@@ -641,6 +649,8 @@ export default function ChallengeInviteClient({
       try { document.cookie = `auth_return_path=${encodeURIComponent(returnPath)}; path=/; max-age=300; SameSite=Lax`; } catch {}
       try { localStorage.setItem('auth-return-path', returnPath); } catch {}
       try { localStorage.setItem('challenge-pending-state', JSON.stringify({ stakeAmount, charity })); } catch {}
+      // Cookie backup for challenge state — Safari wipes localStorage during cross-origin OAuth
+      try { document.cookie = `challenge_pending_backup=${encodeURIComponent(JSON.stringify({ stakeAmount, charity }))}; path=/; max-age=300; SameSite=Lax`; } catch {}
       const callbackUrl = new URL('/auth/callback', window.location.origin);
       callbackUrl.searchParams.set('return_to', returnPath);
       await supabase.auth.signInWithOAuth({
