@@ -549,7 +549,7 @@ export default function SealPage() {
           clientSecret={clientSecret}
           amount={vow.stake.amount}
           onSuccess={handlePaymentSuccess}
-          onCancel={() => { setStep('review'); setSealing(false); }}
+          onCancel={() => { setStep('review'); sealingRef.current = false; setSealing(false); }}
           onSkip={isDevBypass ? async () => {
             // Skip payment: seal as a $0 vow atomically via edge function
             if (!vow.vowId) {
