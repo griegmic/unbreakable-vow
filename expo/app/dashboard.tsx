@@ -714,6 +714,9 @@ export default function VowDashboard() {
     [allMyVows]
   );
 
+  const myDashboardVows = useMemo(() => dashboardVows.filter(v => v.role !== 'witness'), [dashboardVows]);
+  const theirDashboardVows = useMemo(() => dashboardVows.filter(v => v.role === 'witness'), [dashboardVows]);
+
   const isEmpty = myVows.length === 0 && witnessingVows.length === 0 && challenges.length === 0;
 
   // Redirect if empty
@@ -723,14 +726,14 @@ export default function VowDashboard() {
     }
   }, [loading, fetchError, isEmpty]);
 
-  // Redirect if all terminal
+  // Redirect if all terminal and no witness vows
   useEffect(() => {
-    if (!loading && !fetchError && !isEmpty && dashboardVows.length === 0) {
+    if (!loading && !fetchError && !isEmpty && myDashboardVows.length === 0 && theirDashboardVows.length === 0) {
       router.replace('/');
     }
-  }, [loading, fetchError, isEmpty, dashboardVows.length]);
+  }, [loading, fetchError, isEmpty, myDashboardVows.length, theirDashboardVows.length]);
 
-  const isHero = dashboardVows.length === 1;
+  const isHero = myDashboardVows.length === 1 && theirDashboardVows.length === 0;
 
   // --- Loading ---
   if (loading && dashboardVows.length === 0) {
@@ -806,7 +809,7 @@ export default function VowDashboard() {
           >
             <Header />
             <DashboardHero
-              item={dashboardVows[0]}
+              item={myDashboardVows[0]}
               onAcceptChallenge={handleAcceptChallenge}
               onDeclineChallenge={handleDeclineChallenge}
             />
@@ -817,20 +820,44 @@ export default function VowDashboard() {
   }
 
   // --- SMART STACK ---
-  const renderCard = ({ item, index }: { item: SortedVow; index: number }) => (
-    <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
-      <DashboardCard
-        item={item}
-        onTap={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          const target = getTapTarget(item);
-          router.push(target as any);
-        }}
-        onAcceptChallenge={handleAcceptChallenge}
-        onDeclineChallenge={handleDeclineChallenge}
-      />
-    </View>
-  );
+  type ListItem = { type: 'card'; data: SortedVow } | { type: 'section'; title: string; color: string };
+
+  const listData = useMemo(() => {
+    const items: ListItem[] = [];
+    if (myDashboardVows.length > 0 && theirDashboardVows.length > 0) {
+      items.push({ type: 'section', title: 'Your vows', color: '#5a5650' });
+    }
+    for (const v of myDashboardVows) items.push({ type: 'card', data: v });
+    if (theirDashboardVows.length > 0) {
+      items.push({ type: 'section', title: 'Their vows', color: '#60A5FA' });
+      for (const v of theirDashboardVows) items.push({ type: 'card', data: v });
+    }
+    return items;
+  }, [myDashboardVows, theirDashboardVows]);
+
+  const renderItem = ({ item }: { item: ListItem }) => {
+    if (item.type === 'section') {
+      return (
+        <View style={{ paddingHorizontal: 20, paddingTop: item.title === 'Your vows' ? 0 : 16, paddingBottom: 4 }}>
+          <Text style={[styles.cardLabel, { color: item.color, letterSpacing: 1.2 }]}>{item.title}</Text>
+        </View>
+      );
+    }
+    return (
+      <View style={{ paddingHorizontal: 20, paddingBottom: 8 }}>
+        <DashboardCard
+          item={item.data}
+          onTap={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            const target = getTapTarget(item.data);
+            router.push(target as any);
+          }}
+          onAcceptChallenge={item.data.role !== 'witness' ? handleAcceptChallenge : undefined}
+          onDeclineChallenge={item.data.role !== 'witness' ? handleDeclineChallenge : undefined}
+        />
+      </View>
+    );
+  };
 
   const StackHeader = () => (
     <>
@@ -872,9 +899,9 @@ export default function VowDashboard() {
       <View pointerEvents="none" style={styles.orbSmall} />
       <SafeAreaView style={{ flex: 1 }}>
         <FlatList
-          data={dashboardVows}
-          renderItem={renderCard}
-          keyExtractor={(item) => item.vow.id}
+          data={listData}
+          renderItem={renderItem}
+          keyExtractor={(item, index) => item.type === 'card' ? item.data.vow.id : `section-${index}`}
           ListHeaderComponent={StackHeader}
           ListFooterComponent={StackFooter}
           contentContainerStyle={styles.listContent}
