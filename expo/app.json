@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#05070B"
     },
     "ios": {
       "supportsTablet": false,
@@ -32,7 +32,11 @@
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "app.unbreakablevow.android"
+      "package": "app.unbreakablevow.android",
+      "permissions": [
+        "android.permission.READ_CONTACTS",
+        "android.permission.WRITE_CONTACTS"
+      ]
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -46,13 +50,19 @@
       ],
       "expo-font",
       "expo-web-browser",
-      ["@stripe/stripe-react-native", {
-        "merchantIdentifier": "merchant.app.unbreakablevow",
-        "enableGooglePay": false
-      }],
-      ["@react-native-google-signin/google-signin", {
-        "iosUrlScheme": "com.googleusercontent.apps.543817344565-b2tg6eonrbglhot5rccd87e8vot4b69p"
-      }],
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "merchant.app.unbreakablevow",
+          "enableGooglePay": false
+        }
+      ],
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.543817344565-b2tg6eonrbglhot5rccd87e8vot4b69p"
+        }
+      ],
       [
         "expo-contacts",
         {
@@ -65,10 +75,17 @@
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdWZjZnBwbmt3cnhhYmd2a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzQyNDYsImV4cCI6MjA5MDg1MDI0Nn0.s82fzQzwSo6XvIp1tLUsomeELkZcDOs16IupjkGA4OM",
       "googleWebClientId": "543817344565-tkr5h3jj2fb0bpk8belk3bjk2404bu9b.apps.googleusercontent.com",
       "googleIosClientId": "543817344565-b2tg6eonrbglhot5rccd87e8vot4b69p.apps.googleusercontent.com",
-      "stripePublishableKey": "pk_test_51QDThqDkZB0bi6KmBFr4xo7wmyYQRGEjlj3COIbHLymURm5uCzJJbQk90ISSJmGXbjqvRCXpGklMuhNK2c8uARI700OVcyPlrV"
+      "stripePublishableKey": "pk_live_51QDThqDkZB0bi6KmmcvqPYZTkmXkNKKihjsh3uvNNpwFr9OkoQinmjCEc3x89ENMw8FKJgs6lJXNdMlY9wiOz5hA00FZ8pvUUg",
+      "router": {
+        "origin": "https://unbreakablevow.app"
+      },
+      "eas": {
+        "projectId": "229acb21-4fb1-4d1b-be8a-2feb1c98a020"
+      }
     },
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "owner": "joey_r0"
   }
 }

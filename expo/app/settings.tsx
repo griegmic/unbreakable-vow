@@ -1,8 +1,8 @@
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { Bell, LogOut, Mail, Sparkles } from 'lucide-react-native';
+import { Bell, ExternalLink, LogOut, Mail, Shield, Sparkles } from 'lucide-react-native';
 import React from 'react';
-import { Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
 import { BackButton, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
@@ -86,6 +86,23 @@ export default function SettingsScreen() {
               testID="oath-toggle"
             />
           }
+        />
+      </View>
+
+      <View style={styles.section}>
+        <SettingsRow
+          icon={<Shield color={palette.textSecondary} size={18} />}
+          label="Privacy Policy"
+          description="How we handle your data"
+          onPress={() => Linking.openURL('https://unbreakablevow.app/privacy')}
+          trailing={<ExternalLink color={palette.textMuted} size={16} />}
+        />
+        <SettingsRow
+          icon={<ExternalLink color={palette.textSecondary} size={18} />}
+          label="Terms of Service"
+          description="Rules of the vow"
+          onPress={() => Linking.openURL('https://unbreakablevow.app/terms')}
+          trailing={<ExternalLink color={palette.textMuted} size={16} />}
         />
       </View>
 
