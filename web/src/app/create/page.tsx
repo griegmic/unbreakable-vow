@@ -197,9 +197,8 @@ function CreatePageContent() {
           if (unique.length > 0) {
             setWitnessName(unique[0].name);
             setWitnessPhone(unique[0].phone);
-          } else {
-            setWitnessName('Your witness');
           }
+          // No default — force conscious choice (aligned with Expo)
         }
       }
 
@@ -393,7 +392,7 @@ function CreatePageContent() {
       setShowPayment(true);
     } catch (err) {
       console.error('Create error:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Payment setup failed. Please try again.');
     } finally {
       setSealing(false);
     }

@@ -22,7 +22,7 @@ function VowBrokenContent() {
   const [copied, setCopied] = useState(false);
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  const firstName = selfWitness ? 'You' : (witness.split(' ')[0] || 'Your witness');
+  const firstName = selfWitness ? 'You' : (witness && witness !== 'Your witness' ? witness.split(' ')[0] : 'The witness');
 
   const title = selfWitness ? 'You took the L.' : `${firstName} called it.`;
 

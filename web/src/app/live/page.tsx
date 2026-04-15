@@ -176,12 +176,13 @@ export default function LivePage() {
 
   const tint = getCountdownTint(daysLeft);
   const hasRealName = vow.witness_name && vow.witness_name !== 'Your witness' && vow.witness_name !== 'Just me';
-  const witnessLabel = isSolo ? "You're the judge" : hasRealName ? `${vow.witness_name} is watching` : 'Your witness is watching';
+  const witnessLabel = isSolo ? "You're the judge" : hasRealName ? `${vow.witness_name} is watching` : 'Invite pending';
   const endDateFormatted = endsAt?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) || '—';
 
   const todaysLabel = (() => {
     const dayIndex = Math.floor(Date.now() / 86400000) % cheekyLabelTemplates.length;
-    return cheekyLabelTemplates[dayIndex].replace('{name}', vow.witness_name);
+    const displayName = hasRealName ? vow.witness_name : 'your witness';
+    return cheekyLabelTemplates[dayIndex].replace('{name}', displayName);
   })();
 
   const stakeNudge = vow.stake_amount > 0 ? ` I put $${Math.round(vow.stake_amount / 100)} on it.` : '';

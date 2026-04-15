@@ -42,7 +42,7 @@ export function challengeMessage(
   acceptUrl: string
 ): string {
   const stakeText = amount > 0
-    ? ` with $${amount / 100} on the line.`
+    ? ` with $${Math.round(amount / 100)} on the line.`
     : '.';
   const vowPreview = vowText.length > 80
     ? vowText.substring(0, 77) + '...'

@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       const updates: Record<string, string> = {};
       // Only set witness_phone if not already set (don't overwrite maker-provided phone)
       if (reminderPhone && !vow.witness_phone) updates.witness_phone = reminderPhone;
-      if (reminderName && (!vow.witness_name || vow.witness_name === 'Just me')) updates.witness_name = reminderName;
+      if (reminderName && (!vow.witness_name || vow.witness_name === 'Just me' || vow.witness_name === 'Your witness')) updates.witness_name = reminderName;
       if (Object.keys(updates).length > 0) {
         await supabase.from('vows').update(updates).eq('id', vow.id);
       }

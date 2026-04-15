@@ -380,7 +380,7 @@ Deno.serve(async (req) => {
         try {
           await stripePost('refunds', {
             payment_intent: stripePaymentIntentId,
-          }, `refund-race-${vow.id}`);
+          }, `refund-race-${vow.id}-${targetUserId}`);
         } catch (refundErr) {
           console.error('[accept-challenge] Race condition refund failed:', refundErr);
         }

@@ -195,7 +195,7 @@ export default function CastPage() {
       setDareSent(true);
     } catch (err) {
       console.error('Create dare error:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Failed to create dare. Please try again.');
     } finally {
       setSending(false);
     }

@@ -97,7 +97,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         return;
       }
       if (data?.error) {
-        setError(data.error === 'vow_not_active' ? 'This vow is no longer active.' : 'Something went wrong. Please try again.');
+        setError(data.error === 'vow_not_active' ? 'This vow is no longer active.' : 'Failed to accept. Please try again.');
         setBusy(false);
         return;
       }
@@ -132,7 +132,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         return;
       }
       if (data?.error) {
-        setError('Something went wrong. Please try again.');
+        setError('Failed to decline. Please try again.');
         setBusy(false);
         return;
       }

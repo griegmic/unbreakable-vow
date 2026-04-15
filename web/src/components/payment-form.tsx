@@ -28,7 +28,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, amount }: { onSuccess: () =
       if (result.error.type === 'card_error' || result.error.type === 'validation_error') {
         setError(result.error.message || 'Payment failed.');
       } else {
-        setError('An unexpected error occurred.');
+        setError('Payment could not be processed. Please try again.');
       }
       setLoading(false);
     } else if (result.paymentIntent && (result.paymentIntent.status === 'succeeded' || result.paymentIntent.status === 'requires_capture')) {

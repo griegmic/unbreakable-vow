@@ -254,7 +254,7 @@ export default function SealPage() {
       setStep('payment');
     } catch (err) {
       console.error('Seal error:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Payment setup failed. Please try again.');
       sealingRef.current = false;
       setSealing(false);
     }
@@ -285,7 +285,7 @@ export default function SealPage() {
       router.push('/live');
     } catch (err) {
       console.error('Zero-stake seal error:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Could not seal your vow. Please try again.');
       sealingRef.current = false;
       setSealing(false);
     }
@@ -329,7 +329,7 @@ export default function SealPage() {
       timersRef.current.push(t1, t2, t3);
     } catch (err) {
       console.error('Dev bypass error:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Dev bypass failed. Check console for details.');
       setSealing(false);
     }
   }, [ensureDraftVow, sealing, router]);

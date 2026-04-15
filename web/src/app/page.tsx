@@ -101,7 +101,7 @@ export default function HomePage() {
         .in('status', ['sealed', 'active', 'awaiting_verdict'])
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (activeVow) {
         router.replace('/live');

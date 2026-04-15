@@ -261,7 +261,7 @@ function GuidedContent() {
       setShowPayment(true);
     } catch (err) {
       console.error('Guided seal error:', err);
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Payment setup failed. Please try again.');
     } finally {
       setSealing(false);
     }
@@ -438,7 +438,7 @@ function GuidedContent() {
                   <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Witness</span>
                 </div>
                 <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>
-                  {witnessName || 'Just me'}
+                  {!witnessName ? 'Just me' : witnessName === 'Your witness' ? 'Invite pending' : witnessName}
                 </span>
               </div>
               <div className="flex items-center justify-between">
@@ -477,7 +477,7 @@ function GuidedContent() {
             <div className="flex flex-col gap-3">
               {(isSolo
                 ? [
-                    { n: '1', text: 'Live your vow for the next 7 days.' },
+                    { n: '1', text: `Live your vow until ${endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}.` },
                     { n: '2', text: "When time's up, you decide: kept or broken." },
                     { n: '3', text: 'If broken, your stake goes to the cause.' },
                   ]
