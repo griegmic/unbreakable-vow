@@ -132,8 +132,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Try to link witness account by phone
-    if (vow.witness_phone) {
+    // Try to link witness account
+    // Priority 1: JWT — if the witness is authenticated, extract user ID directly
+    let witnessLinked = false;
+    const authHeader = req.headers.get('authorization') || '';
+    const jwt = authHeader.replace('Bearer ', '');
+    if (jwt && jwt !== Deno.env.get('SUPABASE_ANON_KEY')) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser(jwt);
+        if (user) {
+          await supabase.from('vows')
+            .update({ witness_user_id: user.id })
+            .eq('id', vow.id);
+          witnessLinked = true;
+          console.log(`[accept-witness] Linked witness via JWT: ${user.id}`);
+        }
+      } catch (e) {
+        console.log('[accept-witness] JWT user lookup failed:', e);
+      }
+    }
+    // Priority 2: Phone matching (fallback for anonymous witnesses)
+    if (!witnessLinked && vow.witness_phone) {
       const { data: witnessUser } = await supabase
         .from('users')
         .select('id')

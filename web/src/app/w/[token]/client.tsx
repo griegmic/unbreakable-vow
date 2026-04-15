@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Sparkles, Eye, MessageCircle, Check, Phone } from 'lucide-react';
 import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
 import { useAuth } from '@/providers/auth-provider';
+import { supabase } from '@/lib/supabase';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 
 interface Vow {
@@ -75,12 +76,18 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     setBusy(true);
     setError(null);
     try {
+      // Use JWT if authenticated so edge function can link witness_user_id
+      let authToken = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) authToken = session.access_token;
+      } catch {}
       const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/accept-witness`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         body: JSON.stringify({ token, action: 'accept' }),
       });
