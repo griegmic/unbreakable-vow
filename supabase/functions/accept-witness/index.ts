@@ -162,7 +162,13 @@ Deno.serve(async (req) => {
         await supabase.from('vows')
           .update({ witness_user_id: witnessUser.id })
           .eq('id', vow.id);
+        witnessLinked = true;
+        console.log(`[accept-witness] Linked witness via phone: ${witnessUser.id}`);
       }
+    }
+
+    if (!witnessLinked) {
+      console.log('[accept-witness] Could not link witness account — no valid JWT or phone match');
     }
 
     await createAuditEvent(supabase, vow.id, 'witness_accepted', 'witness', null, { witness_name: vow.witness_name });

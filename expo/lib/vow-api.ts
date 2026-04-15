@@ -244,8 +244,15 @@ export async function getVowByWitnessToken(token: string): Promise<{ success: bo
 export async function acceptWitnessInvite(token: string): Promise<{ success: boolean; error?: string }> {
   console.log('[vow-api] acceptWitnessInvite with token:', token);
   try {
+    // Explicitly pass JWT so edge function can link witness_user_id
+    const { data: { session } } = await supabase.auth.getSession();
+    const headers: Record<string, string> = {};
+    if (session?.access_token) {
+      headers['Authorization'] = `Bearer ${session.access_token}`;
+    }
     const { data, error } = await supabase.functions.invoke('accept-witness', {
       body: { token, action: 'accept' },
+      headers,
     }) as { data: any; error: any };
     if (error) {
       // Parse the actual error from the edge function response
