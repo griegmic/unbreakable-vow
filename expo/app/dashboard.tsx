@@ -735,6 +735,21 @@ export default function VowDashboard() {
 
   const isHero = myDashboardVows.length === 1 && theirDashboardVows.length === 0;
 
+  // Build list data for smart stack (must be above early returns to preserve hook order)
+  const listData = useMemo(() => {
+    type ListItem = { type: 'card'; data: SortedVow } | { type: 'section'; title: string; color: string };
+    const items: ListItem[] = [];
+    if (myDashboardVows.length > 0 && theirDashboardVows.length > 0) {
+      items.push({ type: 'section', title: 'Your vows', color: '#5a5650' });
+    }
+    for (const v of myDashboardVows) items.push({ type: 'card', data: v });
+    if (theirDashboardVows.length > 0) {
+      items.push({ type: 'section', title: 'Their vows', color: '#60A5FA' });
+      for (const v of theirDashboardVows) items.push({ type: 'card', data: v });
+    }
+    return items;
+  }, [myDashboardVows, theirDashboardVows]);
+
   // --- Loading ---
   if (loading && dashboardVows.length === 0) {
     return (
@@ -821,19 +836,6 @@ export default function VowDashboard() {
 
   // --- SMART STACK ---
   type ListItem = { type: 'card'; data: SortedVow } | { type: 'section'; title: string; color: string };
-
-  const listData = useMemo(() => {
-    const items: ListItem[] = [];
-    if (myDashboardVows.length > 0 && theirDashboardVows.length > 0) {
-      items.push({ type: 'section', title: 'Your vows', color: '#5a5650' });
-    }
-    for (const v of myDashboardVows) items.push({ type: 'card', data: v });
-    if (theirDashboardVows.length > 0) {
-      items.push({ type: 'section', title: 'Their vows', color: '#60A5FA' });
-      for (const v of theirDashboardVows) items.push({ type: 'card', data: v });
-    }
-    return items;
-  }, [myDashboardVows, theirDashboardVows]);
 
   const renderItem = ({ item }: { item: ListItem }) => {
     if (item.type === 'section') {
