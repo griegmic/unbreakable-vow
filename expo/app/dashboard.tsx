@@ -170,7 +170,13 @@ function getMetaText(state: CardState, vow: DashboardVow): { text: string; color
       if (vow.witness_accepted_at) return { text: `${vow.witness_name} · watching`, color: '#5a5650' };
       return { text: `${vow.witness_name} · hasn't accepted`, color: '#FB923C' };
     }
-    case 'M8': return { text: 'Tap to seal →', color: palette.gold };
+    case 'M8': {
+      const isSolo = vow.witness_name === 'Just me';
+      if (isSolo || !vow.witness_name) return { text: 'Tap to seal →', color: palette.gold };
+      if (vow.witness_accepted_at) return { text: `${vow.witness_name} accepted · Seal it →`, color: '#52d69a' };
+      if (vow.witness_declined) return { text: `${vow.witness_name} declined · Tap to seal →`, color: '#FB923C' };
+      return { text: `${vow.witness_name} invited · Tap to seal →`, color: palette.gold };
+    }
     case 'M9': return { text: `Waiting on ${targetName}`, color: '#5a5650' };
     case 'M10': return { text: `Dared ${targetName} · watching`, color: '#5a5650' };
     case 'M11': return { text: `You're judging ${targetName}`, color: '#5a5650' };
@@ -407,9 +413,11 @@ function DashboardHero({
   })();
 
   // Witness block
-  const showWitness = state !== 'W1' && state !== 'W2' && state !== 'T1' && state !== 'T2' && state !== 'T3' && vow.witness_name !== 'Just me';
+  const showWitness = state !== 'W1' && state !== 'W2' && state !== 'T1' && state !== 'T2' && state !== 'T3' && vow.witness_name !== 'Just me' && !!vow.witness_name;
+  const isDraft = state === 'M8';
   const isWitnessDeciding = vow.status === 'awaiting_verdict' && !!vow.witness_accepted_at;
   const isWitnessPending = !vow.witness_accepted_at && vow.witness_name !== 'Just me';
+  const isWitnessDeclined = !!vow.witness_declined;
 
   return (
     <View style={{ flex: 1, gap: 16, paddingTop: 8 }}>
@@ -441,7 +449,23 @@ function DashboardHero({
       ) : null}
 
       {/* Witness block */}
-      {showWitness && (
+      {showWitness && isDraft && (
+        <View
+          style={[styles.witnessBlock, isWitnessDeclined && styles.witnessBlockUrgent]}
+        >
+          <View style={[styles.witnessBlockDot, {
+            backgroundColor: isWitnessDeclined ? '#FB923C' : vow.witness_accepted_at ? '#52d69a' : '#8a8578',
+          }]} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.witnessBlockName}>
+              {isWitnessDeclined ? `${vow.witness_name} declined`
+                : vow.witness_accepted_at ? `${vow.witness_name} accepted`
+                : `${vow.witness_name} invited`}
+            </Text>
+          </View>
+        </View>
+      )}
+      {showWitness && !isDraft && (
         <Pressable
           style={[styles.witnessBlock, isWitnessDeciding && styles.witnessBlockUrgent]}
           onPress={() => router.push({ pathname: '/vow-detail', params: { vowId: vow.id } })}

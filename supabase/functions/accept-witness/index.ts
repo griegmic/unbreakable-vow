@@ -135,6 +135,7 @@ Deno.serve(async (req) => {
     // Try to link witness account
     // Priority 1: JWT — if the witness is authenticated, extract user ID directly
     let witnessLinked = false;
+    let witnessUserId: string | null = null;
     const authHeader = req.headers.get('authorization') || '';
     const jwt = authHeader.replace('Bearer ', '');
     if (jwt && jwt !== Deno.env.get('SUPABASE_ANON_KEY')) {
@@ -145,6 +146,7 @@ Deno.serve(async (req) => {
             .update({ witness_user_id: user.id })
             .eq('id', vow.id);
           witnessLinked = true;
+          witnessUserId = user.id;
           console.log(`[accept-witness] Linked witness via JWT: ${user.id}`);
         }
       } catch (e) {
@@ -163,12 +165,28 @@ Deno.serve(async (req) => {
           .update({ witness_user_id: witnessUser.id })
           .eq('id', vow.id);
         witnessLinked = true;
+        witnessUserId = witnessUser.id;
         console.log(`[accept-witness] Linked witness via phone: ${witnessUser.id}`);
       }
     }
 
     if (!witnessLinked) {
       console.log('[accept-witness] Could not link witness account — no valid JWT or phone match');
+    }
+
+    // Update witness_name from authenticated user's profile if still placeholder
+    if (witnessLinked && witnessUserId) {
+      const { data: profile } = await supabase
+        .from('users')
+        .select('display_name')
+        .eq('id', witnessUserId)
+        .single();
+      if (profile?.display_name && (!vow.witness_name || vow.witness_name === 'Your witness')) {
+        await supabase.from('vows')
+          .update({ witness_name: profile.display_name })
+          .eq('id', vow.id);
+        console.log(`[accept-witness] Updated witness_name to: ${profile.display_name}`);
+      }
     }
 
     await createAuditEvent(supabase, vow.id, 'witness_accepted', 'witness', null, { witness_name: vow.witness_name });

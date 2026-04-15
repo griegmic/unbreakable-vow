@@ -38,7 +38,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   const [reminderSaving, setReminderSaving] = useState(false);
   const [sworn, setSworn] = useState(false);
 
-  const needsWitnessName = !vow.witness_name || vow.witness_name === 'Just me';
+  const needsWitnessName = !vow.witness_name || vow.witness_name === 'Just me' || vow.witness_name === 'Your witness';
 
   const handleSaveReminder = async () => {
     const digits = reminderPhone.replace(/\D/g, '');

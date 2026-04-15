@@ -72,9 +72,45 @@ function WitnessBlock({ vow, state }: { vow: DashboardVow; state: CardState }) {
   if (state === 'W1' || state === 'W2') return null;
   // Don't show for target role
   if (state === 'T1' || state === 'T2' || state === 'T3') return null;
+  // Don't show for drafts without a witness
+  if (state === 'M8' && !vow.witness_name) return null;
 
+  const isDraft = state === 'M8';
   const isAwaitingVerdict = vow.status === 'awaiting_verdict' && vow.witness_accepted_at;
   const isPending = !vow.witness_accepted_at && vow.witness_name !== 'Just me';
+  const isDeclined = vow.witness_declined;
+
+  // Draft-specific witness status
+  if (isDraft) {
+    const dotColor = isDeclined ? '#FB923C' : vow.witness_accepted_at ? '#52d69a' : '#8a8578';
+    const label = isDeclined
+      ? `${vow.witness_name} declined`
+      : vow.witness_accepted_at
+        ? `${vow.witness_name} accepted`
+        : `${vow.witness_name} invited`;
+
+    return (
+      <div
+        className="w-full rounded-[14px] p-4 flex items-center gap-3 text-left"
+        style={{
+          backgroundColor: isDeclined ? 'rgba(251,146,60,0.06)' : 'rgba(255,255,255,0.03)',
+          border: isDeclined
+            ? '1px solid rgba(251,146,60,0.25)'
+            : '1px solid rgba(255,255,255,0.08)',
+        }}
+      >
+        <div
+          className="w-2.5 h-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: dotColor }}
+        />
+        <div className="flex-1 min-w-0">
+          <span className="text-[14px] font-semibold block" style={{ color: 'var(--text)' }}>
+            {label}
+          </span>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <button

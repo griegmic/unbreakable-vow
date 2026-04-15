@@ -130,7 +130,13 @@ function getMetaLine(state: CardState, vow: DashboardVow): { text: string; color
       if (vow.witness_accepted_at) return { text: `${vow.witness_name} · watching`, color: '#5a5650' };
       return { text: `${vow.witness_name} · hasn't accepted`, color: '#FB923C' };
     }
-    case 'M8': return { text: 'Tap to seal →', color: '#d4a24f' };
+    case 'M8': {
+      const isSolo = vow.witness_name === 'Just me';
+      if (isSolo || !vow.witness_name) return { text: 'Tap to seal →', color: '#d4a24f' };
+      if (vow.witness_accepted_at) return { text: `${vow.witness_name} accepted · Seal it →`, color: '#52d69a' };
+      if (vow.witness_declined) return { text: `${vow.witness_name} declined · Tap to seal →`, color: '#FB923C' };
+      return { text: `${vow.witness_name} invited · Tap to seal →`, color: '#d4a24f' };
+    }
     case 'M9': return { text: `Waiting on ${targetName}`, color: '#5a5650' };
     case 'M10': return { text: `Dared ${targetName} · watching`, color: '#5a5650' };
     case 'M11': return { text: `You're judging ${targetName}`, color: '#5a5650' };

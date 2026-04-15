@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, XCircle, Clock, ArrowLeft } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, ArrowLeft, Ban, Circle } from 'lucide-react';
 import { RitualScreen, HeaderBadge, TitleBlock, RitualCard, StatPill, PrimaryButton, FadeUp } from '@/components/ui';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -78,6 +78,8 @@ export default function HistoryPage() {
           const isKept = v.verdict === 'kept';
           const isBroken = v.verdict === 'broken';
           const isActive = ['sealed', 'active', 'awaiting_verdict'].includes(v.status);
+          const isVoided = v.status === 'voided';
+          const isDraft = v.status === 'draft';
 
           return (
             <FadeUp key={v.id} delay={0.15 + i * 0.05}>
@@ -99,6 +101,8 @@ export default function HistoryPage() {
                       {isKept && <CheckCircle className="w-5 h-5" style={{ color: 'var(--success)' }} />}
                       {isBroken && <XCircle className="w-5 h-5" style={{ color: 'var(--danger)' }} />}
                       {isActive && <Clock className="w-5 h-5" style={{ color: 'var(--gold)' }} />}
+                      {isVoided && <Ban className="w-5 h-5" style={{ color: '#5a5650' }} />}
+                      {isDraft && <Circle className="w-5 h-5" strokeDasharray="4 3" style={{ color: '#5a5650' }} />}
                     </div>
                   </div>
                 </RitualCard>
