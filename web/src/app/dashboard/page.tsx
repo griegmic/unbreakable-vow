@@ -254,6 +254,8 @@ export default function DashboardPage() {
   // --- Computed state ---
   const { keptCount, streak } = computeStats(myVows);
   const dashboardVows = buildDashboardList(myVows, witnessingVows, challenges, acceptedChallengeIds);
+  const myDashboardVows = dashboardVows.filter(v => v.role !== 'witness');
+  const theirDashboardVows = dashboardVows.filter(v => v.role === 'witness');
   const completedCount = myVows.filter(v => ['kept', 'broken', 'voided'].includes(v.status)).length;
 
   // --- Challenge handlers (preserved) ---
@@ -299,8 +301,8 @@ export default function DashboardPage() {
     return null;
   }
 
-  if (dashboardVows.length === 0) {
-    // All vows are terminal — redirect based on history
+  // Only redirect if no active own vows AND no witness vows
+  if (myDashboardVows.length === 0 && theirDashboardVows.length === 0) {
     if (keptCount > 0) {
       router.replace('/?new=1&returning=1');
     } else {
@@ -309,7 +311,7 @@ export default function DashboardPage() {
     return null;
   }
 
-  const isHero = dashboardVows.length === 1;
+  const isHero = myDashboardVows.length === 1 && theirDashboardVows.length === 0;
 
   return (
     <>
@@ -363,46 +365,80 @@ export default function DashboardPage() {
         </FadeUp>
 
         {isHero ? (
-          // --- HERO VIEW (1 vow) ---
+          // --- HERO VIEW (1 own vow, no witness vows) ---
           <DashboardHero
-            item={dashboardVows[0]}
+            item={myDashboardVows[0]}
             keptCount={keptCount}
             streak={streak}
             onAcceptChallenge={
-              dashboardVows[0].state === 'T1'
-                ? () => handleAcceptChallenge(dashboardVows[0].vow.id)
+              myDashboardVows[0].state === 'T1'
+                ? () => handleAcceptChallenge(myDashboardVows[0].vow.id)
                 : undefined
             }
             onDeclineChallenge={
-              dashboardVows[0].state === 'T1'
-                ? () => handleDeclineChallenge(dashboardVows[0].vow.id)
+              myDashboardVows[0].state === 'T1'
+                ? () => handleDeclineChallenge(myDashboardVows[0].vow.id)
                 : undefined
             }
           />
         ) : (
-          // --- SMART STACK (2+ vows) ---
+          // --- SMART STACK ---
           <>
             <InProgressBanner />
-            <div className="flex flex-col gap-2">
-              {dashboardVows.map((item, i) => (
-                <FadeUp key={item.vow.id} delay={i * 0.03}>
-                  <DashboardCard
-                    item={item}
-                    onTap={() => router.push(getTapTarget(item))}
-                    onAcceptChallenge={
-                      item.state === 'T1'
-                        ? () => handleAcceptChallenge(item.vow.id)
-                        : undefined
-                    }
-                    onDeclineChallenge={
-                      item.state === 'T1'
-                        ? () => handleDeclineChallenge(item.vow.id)
-                        : undefined
-                    }
-                  />
+
+            {/* Your vows section */}
+            {myDashboardVows.length > 0 && (
+              <>
+                {theirDashboardVows.length > 0 && (
+                  <FadeUp>
+                    <h2 className="text-[11px] font-bold tracking-[1.2px] uppercase pb-1" style={{ color: '#5a5650' }}>
+                      Your vows
+                    </h2>
+                  </FadeUp>
+                )}
+                <div className="flex flex-col gap-2">
+                  {myDashboardVows.map((item, i) => (
+                    <FadeUp key={item.vow.id} delay={i * 0.03}>
+                      <DashboardCard
+                        item={item}
+                        onTap={() => router.push(getTapTarget(item))}
+                        onAcceptChallenge={
+                          item.state === 'T1'
+                            ? () => handleAcceptChallenge(item.vow.id)
+                            : undefined
+                        }
+                        onDeclineChallenge={
+                          item.state === 'T1'
+                            ? () => handleDeclineChallenge(item.vow.id)
+                            : undefined
+                        }
+                      />
+                    </FadeUp>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Their vows section */}
+            {theirDashboardVows.length > 0 && (
+              <>
+                <FadeUp delay={myDashboardVows.length * 0.03}>
+                  <h2 className="text-[11px] font-bold tracking-[1.2px] uppercase pt-4 pb-1" style={{ color: '#60A5FA' }}>
+                    Their vows
+                  </h2>
                 </FadeUp>
-              ))}
-            </div>
+                <div className="flex flex-col gap-2">
+                  {theirDashboardVows.map((item, i) => (
+                    <FadeUp key={item.vow.id} delay={(myDashboardVows.length + i) * 0.03}>
+                      <DashboardCard
+                        item={item}
+                        onTap={() => router.push(getTapTarget(item))}
+                      />
+                    </FadeUp>
+                  ))}
+                </div>
+              </>
+            )}
 
             {/* History link */}
             {completedCount > 0 && (
