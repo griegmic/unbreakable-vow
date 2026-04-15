@@ -524,26 +524,6 @@ export async function getVowTimeline(vowId: string): Promise<AuditEvent[]> {
   return (data ?? []) as AuditEvent[];
 }
 
-export async function submitCheckIn(vowId: string, type: string): Promise<{ success: boolean; error?: string }> {
-  console.log('[vow-api] submitCheckIn:', vowId, type);
-  const { data: { session } } = await supabase.auth.getSession();
-  if (!session) return { success: false, error: 'Not authenticated' };
-  try {
-    const { error } = await supabase.from('audit_events').insert({
-      vow_id: vowId,
-      event_type: 'check_in',
-      actor_type: 'maker',
-      actor_id: session.user.id,
-      metadata: { type },
-    });
-    if (error) { console.error('[vow-api] submitCheckIn error:', error); return { success: false, error: error.message }; }
-    return { success: true };
-  } catch (err) {
-    console.error('[vow-api] submitCheckIn exception:', err);
-    return { success: false, error: 'Failed to check in.' };
-  }
-}
-
 export async function voidVowV2(vowId: string): Promise<{ success: boolean; refunded?: boolean; error?: string }> {
   console.log('[vow-api] voidVowV2:', vowId);
   try {
