@@ -10,17 +10,13 @@ import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share,
 import { PrimaryButton, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { getDailyNudge, getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
-import { extendVowDeadline, resendWitnessInvite, submitCheckIn, switchToSoloWitness } from '@/lib/vow-api';
+import { extendVowDeadline, resendWitnessInvite, switchToSoloWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
 type WitnessStatus = 'pending' | 'accepted' | 'declined' | 'expired' | 'unknown';
 type VowPhase = 'witness_pending' | 'vow_active' | 'verdict_due';
-type CheckInType = 'on_track' | 'struggling' | 'done_early';
-
-const CHECK_IN_COOLDOWN_MS = 4 * 60 * 60 * 1000;
-
 export default function LiveScreen() {
   const vowFlow = useVowFlow();
   const { activeVowText, vow, isSelfWitness, switchToSolo, setVowId, setDeadline } = vowFlow;
@@ -48,9 +44,6 @@ export default function LiveScreen() {
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
-  const checkInScaleOn = useRef(new Animated.Value(1)).current;
-  const checkInScaleStruggle = useRef(new Animated.Value(1)).current;
-  const checkInScaleDone = useRef(new Animated.Value(1)).current;
   const fadeInAnim = useRef(new Animated.Value(0)).current;
 
   const [witnessStatus, setWitnessStatus] = useState<WitnessStatus>(IS_EXPO_GO ? 'pending' : 'unknown');
@@ -58,9 +51,6 @@ export default function LiveScreen() {
   const [resending, setResending] = useState<boolean>(false);
   const [goingSolo, setGoingSolo] = useState<boolean>(false);
   const [extending, setExtending] = useState<boolean>(false);
-  const [checkingIn, setCheckingIn] = useState<boolean>(false);
-  const [lastCheckIn, setLastCheckIn] = useState<string | null>(null);
-  const [checkInFeedback, setCheckInFeedback] = useState<string | null>(null);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const now = new Date();
@@ -174,29 +164,6 @@ export default function LiveScreen() {
   }, [vow.vowId, vow.witnessInviteToken, setVowId, setDeadline, isSelfWitness]);
 
   useEffect(() => {
-    if (!vow.vowId) return;
-    async function fetchLastCheckIn() {
-      try {
-        const { data } = await supabase
-          .from('audit_events')
-          .select('created_at')
-          .eq('vow_id', vow.vowId!)
-          .eq('event_type', 'check_in')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        if (data?.created_at) {
-          setLastCheckIn(data.created_at);
-          console.log('[LiveScreen] last check-in:', data.created_at);
-        }
-      } catch {
-        // no check-ins yet
-      }
-    }
-    void fetchLastCheckIn();
-  }, [vow.vowId]);
-
-  useEffect(() => {
     if (isSelfWitness || !vow.vowId) return;
 
     async function checkWitnessStatus() {
@@ -282,20 +249,6 @@ export default function LiveScreen() {
     if (progressPercent < 80) return palette.warmAmber;
     return palette.danger;
   }, [progressPercent]);
-
-  const canCheckIn = useMemo(() => {
-    if (!lastCheckIn) return true;
-    const lastTime = new Date(lastCheckIn).getTime();
-    return Date.now() - lastTime > CHECK_IN_COOLDOWN_MS;
-  }, [lastCheckIn]);
-
-  const checkInCooldownLabel = useMemo(() => {
-    if (!lastCheckIn || canCheckIn) return null;
-    const lastTime = new Date(lastCheckIn).getTime();
-    const remaining = CHECK_IN_COOLDOWN_MS - (Date.now() - lastTime);
-    const hours = Math.ceil(remaining / (60 * 60 * 1000));
-    return `Next check-in in ${hours}h`;
-  }, [lastCheckIn, canCheckIn]);
 
   const daysLeft = useMemo(() => {
     if (isNaN(endDate.getTime())) return null;
@@ -446,53 +399,6 @@ export default function LiveScreen() {
     }
     router.push('/witness-verdict');
   }, [vow.vowId]);
-
-  const handleCheckIn = useCallback(async (type: CheckInType) => {
-    if (checkingIn || !canCheckIn || !vow.vowId) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setCheckingIn(true);
-
-    const scaleRef = type === 'on_track' ? checkInScaleOn
-      : type === 'struggling' ? checkInScaleStruggle
-      : checkInScaleDone;
-
-    Animated.sequence([
-      Animated.timing(scaleRef, { toValue: 0.85, duration: 100, useNativeDriver: true }),
-      Animated.spring(scaleRef, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 12 }),
-    ]).start();
-
-    if (IS_EXPO_GO) {
-      setTimeout(() => {
-        setCheckingIn(false);
-        setLastCheckIn(new Date().toISOString());
-        const feedbackMap: Record<CheckInType, string> = {
-          on_track: "Keep it up. You're doing this.",
-          struggling: "Rough days count too. Stay in the fight.",
-          done_early: "Look at you. Ahead of schedule.",
-        };
-        setCheckInFeedback(feedbackMap[type]);
-        setTimeout(() => setCheckInFeedback(null), 4000);
-      }, 500);
-      return;
-    }
-
-    const result = await submitCheckIn(vow.vowId, type);
-    setCheckingIn(false);
-
-    if (result.success) {
-      setLastCheckIn(new Date().toISOString());
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const feedbackMap: Record<CheckInType, string> = {
-        on_track: "Keep it up. You're doing this.",
-        struggling: "Rough days count too. Stay in the fight.",
-        done_early: "Look at you. Ahead of schedule.",
-      };
-      setCheckInFeedback(feedbackMap[type]);
-      setTimeout(() => setCheckInFeedback(null), 4000);
-    } else {
-      Alert.alert('Check-in failed', 'Please try again.');
-    }
-  }, [checkingIn, canCheckIn, vow.vowId, checkInScaleOn, checkInScaleStruggle, checkInScaleDone]);
 
   const witnessWebUrl = vow.witnessInviteToken
     ? `https://unbreakablevow.app/w/${vow.witnessInviteToken}`
@@ -1226,71 +1132,6 @@ const styles = StyleSheet.create({
   witnessText: {
     fontSize: 13,
     fontWeight: '600' as const,
-  },
-  checkInSection: {
-    backgroundColor: palette.surface,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: palette.border,
-    padding: 18,
-    gap: 14,
-  },
-  checkInTitle: {
-    color: palette.textSecondary,
-    fontSize: 14,
-    fontWeight: '600' as const,
-    textAlign: 'center' as const,
-  },
-  checkInButtons: {
-    flexDirection: 'row' as const,
-    gap: 10,
-  },
-  checkInBtnWrap: {
-    flex: 1,
-  },
-  checkInBtn: {
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 6,
-    paddingVertical: 14,
-    borderRadius: 14,
-    borderWidth: 1,
-  },
-  checkInBtnOnTrack: {
-    backgroundColor: 'rgba(82,214,154,0.06)',
-    borderColor: 'rgba(82,214,154,0.18)',
-  },
-  checkInBtnStruggling: {
-    backgroundColor: 'rgba(212,162,79,0.06)',
-    borderColor: 'rgba(212,162,79,0.18)',
-  },
-  checkInBtnDone: {
-    backgroundColor: 'rgba(240,200,110,0.06)',
-    borderColor: 'rgba(240,200,110,0.18)',
-  },
-  checkInBtnLabel: {
-    fontSize: 11,
-    fontWeight: '700' as const,
-    letterSpacing: 0.2,
-  },
-  checkInFeedbackWrap: {
-    flexDirection: 'row' as const,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-    gap: 8,
-    paddingVertical: 8,
-  },
-  checkInFeedbackText: {
-    color: palette.goldBright,
-    fontSize: 14,
-    fontWeight: '600' as const,
-    fontStyle: 'italic' as const,
-  },
-  checkInCooldownText: {
-    color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '500' as const,
-    textAlign: 'center' as const,
   },
   nudgeWrap: {
     paddingVertical: 6,

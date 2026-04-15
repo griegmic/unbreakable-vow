@@ -300,7 +300,7 @@ function HeroCTA({
           className="w-full min-h-[52px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97]"
           style={{ background: 'linear-gradient(135deg, #e8c36a, #d4a24f, #b8882e)' }}
         >
-          <span className="text-[14px] font-extrabold" style={{ color: '#0B0D11' }}>Check in</span>
+          <span className="text-[14px] font-extrabold" style={{ color: '#0B0D11' }}>View vow</span>
         </button>
       );
 
@@ -407,7 +407,7 @@ function HeroCTA({
           className="w-full min-h-[52px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97]"
           style={{ background: 'linear-gradient(135deg, #e8c36a, #d4a24f, #b8882e)' }}
         >
-          <span className="text-[14px] font-extrabold" style={{ color: '#0B0D11' }}>Check in</span>
+          <span className="text-[14px] font-extrabold" style={{ color: '#0B0D11' }}>View vow</span>
         </button>
       );
 

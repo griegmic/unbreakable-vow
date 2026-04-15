@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 
 import { palette, serifFont } from '@/constants/unbreakable';
-import { getVowDetail, getVowTimeline, submitCheckIn, voidVowV2 } from '@/lib/vow-api';
+import { getVowDetail, getVowTimeline, voidVowV2 } from '@/lib/vow-api';
 import { useAuth } from '@/providers/auth-provider';
 import type { AuditEvent } from '@/types/database';
 
@@ -133,9 +133,6 @@ function getWitnessBadge(vow: VowRow): { label: string; color: string } {
   return { label: 'pending', color: palette.warmAmber };
 }
 
-// 4-hour cooldown in ms
-const CHECK_IN_COOLDOWN = 4 * 60 * 60 * 1000;
-
 export default function VowDetailScreen() {
   const { vowId } = useLocalSearchParams<{ vowId: string }>();
   const { session } = useAuth();
@@ -143,7 +140,6 @@ export default function VowDetailScreen() {
   const [vow, setVow] = useState<VowRow | null>(null);
   const [timeline, setTimeline] = useState<AuditEvent[]>([]);
   const [loadError, setLoadError] = useState(false);
-  const [checkingIn, setCheckingIn] = useState(false);
   const [withdrawing, setWithdrawing] = useState(false);
 
   // Pulse animation for awaiting_verdict
@@ -197,45 +193,6 @@ export default function VowDetailScreen() {
     const daysLeft = Math.ceil((end - now) / 86400000);
     return daysLeft === 1 ? '1 day left' : `${daysLeft} days left`;
   }, [vow?.ends_at, vow?.status]);
-
-  // Check-in cooldown
-  const canCheckIn = useMemo(() => {
-    if (!isMaker || vow?.status !== 'active') return false;
-    const lastCheckIn = [...timeline].reverse().find((e) => e.event_type === 'check_in');
-    if (!lastCheckIn) return true;
-    return Date.now() - new Date(lastCheckIn.created_at).getTime() > CHECK_IN_COOLDOWN;
-  }, [isMaker, vow?.status, timeline]);
-
-  const cooldownRemaining = useMemo(() => {
-    if (canCheckIn) return null;
-    const lastCheckIn = [...timeline].reverse().find((e) => e.event_type === 'check_in');
-    if (!lastCheckIn) return null;
-    const elapsed = Date.now() - new Date(lastCheckIn.created_at).getTime();
-    const remaining = CHECK_IN_COOLDOWN - elapsed;
-    if (remaining <= 0) return null;
-    const hours = Math.floor(remaining / 3600000);
-    const minutes = Math.floor((remaining % 3600000) / 60000);
-    return `${hours}h ${minutes}m`;
-  }, [canCheckIn, timeline]);
-
-  const handleCheckIn = async (type: string) => {
-    if (!vowId || checkingIn || !canCheckIn) return;
-    setCheckingIn(true);
-    try {
-      const result = await submitCheckIn(vowId, type);
-      setCheckingIn(false);
-      if (result.success) {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-        const updated = await getVowTimeline(vowId);
-        setTimeline(updated);
-      } else {
-        Alert.alert('Check-in failed', result.error || 'Please try again.');
-      }
-    } catch (err: any) {
-      setCheckingIn(false);
-      Alert.alert('Check-in failed', err?.message || 'An unexpected error occurred.');
-    }
-  };
 
   const handleWithdraw = () => {
     if (!vowId) return;
@@ -307,7 +264,6 @@ export default function VowDetailScreen() {
 
   const statusCfg = getStatusConfig(vow.status);
   const witnessBadge = getWitnessBadge(vow);
-  const showCheckIn = isMaker && vow.status === 'active';
   const showWithdraw = isMaker && (vow.status === 'active' || vow.status === 'awaiting_verdict');
 
   // Future verdict marker
@@ -410,47 +366,6 @@ export default function VowDetailScreen() {
             </>
           )}
         </View>
-
-        {/* Check-in block */}
-        {showCheckIn && (
-          <View style={styles.card}>
-            <Text style={styles.checkInLabel}>How's it going?</Text>
-            {cooldownRemaining && (
-              <Text style={styles.cooldownText}>
-                Next check-in available in {cooldownRemaining}
-              </Text>
-            )}
-            <View style={styles.checkInRow}>
-              <Pressable
-                style={[styles.checkInBtn, styles.checkInGreen, (!canCheckIn || checkingIn) && styles.checkInDisabled]}
-                onPress={() => void handleCheckIn('on_track')}
-                disabled={!canCheckIn || checkingIn}
-                testID="checkin-on-track"
-                accessibilityLabel="Check in as on track"
-              >
-                <Text style={styles.checkInBtnText}>On track</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.checkInBtn, styles.checkInAmber, (!canCheckIn || checkingIn) && styles.checkInDisabled]}
-                onPress={() => void handleCheckIn('struggling')}
-                disabled={!canCheckIn || checkingIn}
-                testID="checkin-struggling"
-                accessibilityLabel="Check in as struggling"
-              >
-                <Text style={styles.checkInBtnText}>Struggling</Text>
-              </Pressable>
-              <Pressable
-                style={[styles.checkInBtn, styles.checkInGold, (!canCheckIn || checkingIn) && styles.checkInDisabled]}
-                onPress={() => void handleCheckIn('done_early')}
-                disabled={!canCheckIn || checkingIn}
-                testID="checkin-done-early"
-                accessibilityLabel="Check in as done early"
-              >
-                <Text style={styles.checkInBtnText}>Crushing it</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
 
         {/* Timeline block */}
         <View style={styles.timelineSection}>
@@ -701,52 +616,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     letterSpacing: 1,
-  },
-
-  // Check-in
-  checkInLabel: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  cooldownText: {
-    color: palette.textMuted,
-    fontSize: 12,
-  },
-  checkInRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  checkInBtn: {
-    flex: 1,
-    minHeight: 44,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-  },
-  checkInGreen: {
-    backgroundColor: 'rgba(82,214,154,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(82,214,154,0.3)',
-  },
-  checkInAmber: {
-    backgroundColor: 'rgba(212,162,79,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.3)',
-  },
-  checkInGold: {
-    backgroundColor: 'rgba(240,200,110,0.15)',
-    borderWidth: 1,
-    borderColor: 'rgba(240,200,110,0.3)',
-  },
-  checkInDisabled: {
-    opacity: 0.4,
-  },
-  checkInBtnText: {
-    color: palette.text,
-    fontSize: 13,
-    fontWeight: '600',
   },
 
   // Timeline

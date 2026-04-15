@@ -82,8 +82,6 @@ export default function VowDetailPage() {
   const [origin, setOrigin] = useState('');
   const [actionBusy, setActionBusy] = useState(false);
   const [actionMsg, setActionMsg] = useState('');
-  const [checkInCooldown, setCheckInCooldown] = useState(false);
-  const [lastCheckInTime, setLastCheckInTime] = useState<Date | null>(null);
   const [timelineKey, setTimelineKey] = useState(0);
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [verdictBusy, setVerdictBusy] = useState(false);
@@ -286,21 +284,6 @@ export default function VowDetailPage() {
     }
   };
 
-  const handleCheckIn = async (type: 'on_track' | 'struggling' | 'done_early') => {
-    const { error } = await supabase.from('audit_events').insert({
-      vow_id: vowId,
-      event_type: 'check_in',
-      actor_type: 'maker' as const,
-      actor_id: userId!,
-      metadata: { type },
-    });
-    if (!error) {
-      setLastCheckInTime(new Date());
-      setCheckInCooldown(true);
-      setTimelineKey(k => k + 1);
-    }
-  };
-
   // --- Shared components ---
 
   const BackNav = () => (
@@ -342,40 +325,6 @@ export default function VowDetailPage() {
       </div>
     </FadeUp>
   );
-
-  const CheckInBlock = () => {
-    if (phase !== 'active' || !isMaker && !isTarget) return null;
-    return (
-      <FadeUp delay={0.18}>
-        <RitualCard>
-          <span className="text-[12px] font-bold tracking-[1.2px] uppercase" style={{ color: 'var(--text-muted)' }}>
-            Check In
-          </span>
-          <p className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>How&apos;s it going?</p>
-          <div className="flex gap-2">
-            {([['On track', 'on_track'], ['Struggling', 'struggling'], ['Done early', 'done_early']] as const).map(([label, type]) => {
-              const cooldownRemaining = lastCheckInTime
-                ? Math.max(0, 4 * 60 * 60 * 1000 - (Date.now() - lastCheckInTime.getTime()))
-                : 0;
-              const disabled = checkInCooldown && cooldownRemaining > 0;
-              const hoursRemaining = Math.ceil(cooldownRemaining / (1000 * 60 * 60));
-              return (
-                <button
-                  key={type}
-                  disabled={disabled}
-                  onClick={() => handleCheckIn(type)}
-                  className="flex-1 py-2.5 rounded-[12px] text-[13px] font-medium transition-colors disabled:opacity-40"
-                  style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)', color: 'var(--text-secondary)' }}
-                >
-                  {disabled ? `${hoursRemaining}h` : label}
-                </button>
-              );
-            })}
-          </div>
-        </RitualCard>
-      </FadeUp>
-    );
-  };
 
   const TimelineBlock = () => (
     <FadeUp delay={0.25}>
@@ -620,7 +569,6 @@ export default function VowDetailPage() {
         </FadeUp>
 
         <CountdownCard />
-        <CheckInBlock />
 
         {/* Invite a witness — solo vows only */}
         {isSolo && witnessUrl && (
