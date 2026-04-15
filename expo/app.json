@@ -65,7 +65,7 @@
       "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhdWZjZnBwbmt3cnhhYmd2a250Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUyNzQyNDYsImV4cCI6MjA5MDg1MDI0Nn0.s82fzQzwSo6XvIp1tLUsomeELkZcDOs16IupjkGA4OM",
       "googleWebClientId": "543817344565-tkr5h3jj2fb0bpk8belk3bjk2404bu9b.apps.googleusercontent.com",
       "googleIosClientId": "543817344565-b2tg6eonrbglhot5rccd87e8vot4b69p.apps.googleusercontent.com",
-      "stripePublishableKey": ""
+      "stripePublishableKey": "pk_test_51QDThqDkZB0bi6KmBFr4xo7wmyYQRGEjlj3COIbHLymURm5uCzJJbQk90ISSJmGXbjqvRCXpGklMuhNK2c8uARI700OVcyPlrV"
     },
     "experiments": {
       "typedRoutes": true
