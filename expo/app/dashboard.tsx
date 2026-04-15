@@ -736,8 +736,8 @@ export default function VowDashboard() {
   const isHero = myDashboardVows.length === 1 && theirDashboardVows.length === 0;
 
   // Build list data for smart stack (must be above early returns to preserve hook order)
-  const listData = useMemo(() => {
-    type ListItem = { type: 'card'; data: SortedVow } | { type: 'section'; title: string; color: string };
+  type ListItem = { type: 'card'; data: SortedVow } | { type: 'section'; title: string; color: string };
+  const listData: ListItem[] = useMemo(() => {
     const items: ListItem[] = [];
     if (myDashboardVows.length > 0 && theirDashboardVows.length > 0) {
       items.push({ type: 'section', title: 'Your vows', color: '#5a5650' });
@@ -835,8 +835,6 @@ export default function VowDashboard() {
   }
 
   // --- SMART STACK ---
-  type ListItem = { type: 'card'; data: SortedVow } | { type: 'section'; title: string; color: string };
-
   const renderItem = ({ item }: { item: ListItem }) => {
     if (item.type === 'section') {
       return (
