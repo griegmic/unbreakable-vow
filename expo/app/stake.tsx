@@ -5,6 +5,7 @@ import { CreditCard, Flame, HeartHandshake, ShieldCheck } from 'lucide-react-nat
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import {
   BackButton,
   ChoiceChip,
@@ -120,7 +121,10 @@ export default function StakeScreen() {
       }
     >
       <Stack.Screen options={{ headerShown: false }} />
-      <BackButton />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <BackButton />
+        <AppMenuButton />
+      </View>
       <TitleBlock
         title="Set the stakes."
         subtitle="How much skin are you putting in?"

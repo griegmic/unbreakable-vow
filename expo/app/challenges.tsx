@@ -4,6 +4,7 @@ import { Lock, TrendingUp, Users } from 'lucide-react-native';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { BackButton, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette, serifFont, upcomingChallenges } from '@/constants/unbreakable';
 
@@ -26,7 +27,10 @@ export default function ChallengesScreen() {
   return (
     <RitualScreen>
       <Stack.Screen options={{ headerShown: false }} />
-      <BackButton />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <BackButton />
+        <AppMenuButton />
+      </View>
 
       <View style={styles.headerSection}>
         <View style={styles.comingSoonBadge}>

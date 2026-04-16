@@ -4,6 +4,7 @@ import { ChevronRight, Settings } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { BackButton, PrimaryButton, RitualCard, RitualScreen, StatPill, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
 import { getVowHistory } from '@/lib/vow-api';
@@ -50,7 +51,10 @@ export default function HistoryScreen() {
       }
     >
       <Stack.Screen options={{ headerShown: false }} />
-      <BackButton />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <BackButton />
+        <AppMenuButton />
+      </View>
       <TitleBlock
         title="Your record"
         subtitle="Every vow you've made, kept, and broken."

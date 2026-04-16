@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { BackButton, RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
@@ -173,7 +174,10 @@ export default function SelfResolveScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.content}>
         <View style={styles.topSection}>
-          <BackButton />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+            <BackButton />
+            <AppMenuButton />
+          </View>
           <View style={styles.oathSymbol}>
             <Animated.View style={[styles.oathGlow, { opacity: oathPulse }]} />
             <View style={styles.oathCircle}>

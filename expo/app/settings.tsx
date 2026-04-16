@@ -4,6 +4,7 @@ import { Bell, ExternalLink, LogOut, Mail, Shield, Sparkles } from 'lucide-react
 import React from 'react';
 import { Alert, Linking, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { BackButton, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
 import { signOut } from '@/lib/auth';
@@ -49,7 +50,10 @@ export default function SettingsScreen() {
   return (
     <RitualScreen>
       <Stack.Screen options={{ headerShown: false }} />
-      <BackButton />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <BackButton />
+        <AppMenuButton />
+      </View>
       <TitleBlock
         title="Settings"
         subtitle="Manage your account and preferences."

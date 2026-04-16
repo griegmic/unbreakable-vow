@@ -7,6 +7,7 @@ import { Alert, Animated, Pressable, Share, StyleSheet, Text, View } from 'react
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
+import { AppMenuButton } from '@/components/app-menu';
 import AuthSheet from '@/components/auth-sheet';
 import { BackButton, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
@@ -355,7 +356,12 @@ export default function SealScreen() {
       }
     >
       <Stack.Screen options={{ headerShown: false }} />
-      {!sealed ? <BackButton /> : null}
+      {!sealed ? (
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <BackButton />
+          <AppMenuButton />
+        </View>
+      ) : null}
       <TitleBlock
         title={sealed ? 'Sealed.' : 'Your Unbreakable Vow'}
         subtitle={sealed ? 'The terms are locked.' : 'No takebacks. No excuses.'}

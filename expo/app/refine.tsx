@@ -4,6 +4,7 @@ import { ArrowRight, Sparkles } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import {
   BackButton,
   PrimaryButton,
@@ -83,7 +84,10 @@ export default function RefineScreen() {
       }
     >
       <Stack.Screen options={{ headerShown: false }} />
-      <BackButton />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <BackButton />
+        <AppMenuButton />
+      </View>
       <TitleBlock
         title="Make it stick"
         subtitle={"Your witness calls it \u2018kept\u2019 or \u2018broken\u2019 \u2014 make it clear."}

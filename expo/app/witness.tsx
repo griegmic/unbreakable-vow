@@ -4,6 +4,7 @@ import { ChevronRight, Search, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import ContactPickerModal from '@/components/contact-picker-modal';
 import {
   BackButton,
@@ -102,7 +103,10 @@ export default function WitnessScreen() {
     return (
       <RitualScreen>
         <Stack.Screen options={{ headerShown: false }} />
-        <BackButton />
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <BackButton />
+          <AppMenuButton />
+        </View>
         <TitleBlock
           title={`$${stakeAmount} is on the line.`}
           subtitle="Pick someone who won't let you off the hook."
