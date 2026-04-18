@@ -138,7 +138,7 @@ export default function HomeScreen() {
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
             <View style={styles.dareBlock}>
-              <Text style={styles.heroSub}>Go ahead — tell a friend what you'll actually do.</Text>
+              <Text style={styles.heroSub}>Tell a friend what you'll actually do.</Text>
               <Text style={styles.heroSub}>Put real money on it.</Text>
               <Text style={[styles.heroSub, styles.heroPunch]}>Let's see if you mean it.</Text>
             </View>
