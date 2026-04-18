@@ -137,10 +137,11 @@ export default function HomeScreen() {
           <Animated.View style={{ opacity: heroFade, transform: [{ translateY: heroSlide }] }}>
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
-            <Text style={styles.heroSub}>
-              Go ahead — tell a friend what you'll actually do.{'\n'}Put real money on it.{'\n'}
-              <Text style={styles.heroPunch}>Let's see if you mean it.</Text>
-            </Text>
+            <View style={styles.dareBlock}>
+              <Text style={styles.heroSub}>Go ahead — tell a friend what you'll actually do.</Text>
+              <Text style={styles.heroSub}>Put real money on it.</Text>
+              <Text style={[styles.heroSub, styles.heroPunch]}>Let's see if you mean it.</Text>
+            </View>
           </Animated.View>
 
           {/* Input — bare on canvas, no card -->  */}
@@ -253,10 +254,13 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 32,
   },
+  dareBlock: {
+    gap: 4,
+  },
   heroSub: {
     fontFamily: serifFont,
     fontSize: 17,
-    lineHeight: 28,
+    lineHeight: 26,
     color: 'rgba(222,210,192,0.4)',
   },
   heroPunch: {
