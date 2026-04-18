@@ -128,12 +128,8 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Nav */}
-          <Animated.View style={[styles.headerRow, { opacity: fadeIn, transform: [{ translateY: slideUp }] }]}>
-            <View style={styles.navDot} />
-            <Text style={styles.headerLabel}>Unbreakable Vow</Text>
-            <View style={styles.headerSpacer} />
-            <Text style={styles.navCount}>2,847 vows</Text>
+          {/* Menu — subtle top-right, just in case */}
+          <Animated.View style={[styles.menuCorner, { opacity: fadeIn }]}>
             <AppMenuButton />
           </Animated.View>
 
@@ -237,39 +233,11 @@ const styles = StyleSheet.create({
     borderRadius: 500,
     backgroundColor: 'rgba(212,162,79,0.025)',
   },
-  navDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(212,162,79,0.4)',
-    shadowColor: 'rgba(212,162,79,1)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginBottom: 36,
+  menuCorner: {
+    alignItems: 'flex-end',
+    marginBottom: 20,
     marginTop: 4,
-  },
-  headerLabel: {
-    color: 'rgba(212,162,79,0.35)',
-    fontSize: 13,
-    fontWeight: '500' as const,
-    fontFamily: serifFont,
-    letterSpacing: 0.8,
-    textTransform: 'uppercase',
-  },
-  headerSpacer: {
-    flex: 1,
-  },
-  navCount: {
-    color: 'rgba(212,162,79,0.22)',
-    fontSize: 12,
-    fontFamily: serifFont,
-    fontStyle: 'italic',
+    opacity: 0.4,
   },
   heroLine1: {
     color: 'rgba(242,234,220,0.94)',
