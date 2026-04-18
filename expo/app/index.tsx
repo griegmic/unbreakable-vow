@@ -1,7 +1,5 @@
-import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { ArrowRight, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
@@ -119,12 +117,9 @@ export default function HomeScreen() {
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ headerShown: false }} />
-      <LinearGradient
-        colors={['#05070B', '#080E18', '#0A0D12']}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={StyleSheet.absoluteFill}
-      />
+      <View style={StyleSheet.absoluteFill}>
+        <View style={{ flex: 1, backgroundColor: '#13100B' }} />
+      </View>
       <View pointerEvents="none" style={styles.ambientGlow} />
 
       <SafeAreaView style={styles.safe}>
@@ -133,42 +128,45 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Nav */}
           <Animated.View style={[styles.headerRow, { opacity: fadeIn, transform: [{ translateY: slideUp }] }]}>
-            <LinearGradient
-              colors={[palette.goldBright, palette.gold, palette.goldDeep]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.headerIcon}
-            >
-              <Sparkles color="#0B0D11" size={14} />
-            </LinearGradient>
+            <View style={styles.navDot} />
             <Text style={styles.headerLabel}>Unbreakable Vow</Text>
             <View style={styles.headerSpacer} />
+            <Text style={styles.navCount}>2,847 vows</Text>
             <AppMenuButton />
           </Animated.View>
 
+          {/* Hero + Definition */}
           <Animated.View style={{ opacity: heroFade, transform: [{ translateY: heroSlide }] }}>
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
-            <Text style={styles.heroSub}>
-              Make a vow to a friend. Put money on it.{'\n'}Break it, it goes to charity.
-            </Text>
+            <View style={styles.defBlock}>
+              <View style={styles.defHeader}>
+                <Text style={styles.defWord}>un·break·a·ble vow</Text>
+                <Text style={styles.defPron}>/ˌənˈbrākəbəl vaʊ/</Text>
+                <Text style={styles.defPos}>noun</Text>
+              </View>
+              <Text style={styles.defBody}>
+                A promise made to a friend. Backed by real money.{'\n'}
+                <Text style={styles.defPunch}>Break it, and you'll pay — to charity.</Text>
+              </Text>
+            </View>
           </Animated.View>
 
+          {/* Input — bare on canvas, no card -->  */}
           <Animated.View
             style={[
-              styles.inputCard,
-              focused && styles.inputCardFocused,
-              !focused && styles.inputCardRest,
+              styles.inputSection,
               { opacity: inputFade, transform: [{ translateY: inputSlide }] },
             ]}
           >
-            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>I vow to...</Text>
+            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>What commitment will you bet on?</Text>
             <TextInput
               ref={inputRef}
               style={styles.input}
-              placeholder="No phone in bed all week"
-              placeholderTextColor="rgba(166,176,192,0.6)"
+              placeholder="gym 3x this week"
+              placeholderTextColor="rgba(222,210,192,0.22)"
               value={input}
               onChangeText={setInput}
               onFocus={() => setFocused(true)}
@@ -177,6 +175,7 @@ export default function HomeScreen() {
               returnKeyType="go"
               testID="vow-input"
             />
+            <View style={styles.inputLine} />
             <View style={styles.chipsRow}>
               {vowExamples.map((example) => (
                 <Pressable
@@ -191,6 +190,7 @@ export default function HomeScreen() {
             </View>
           </Animated.View>
 
+          {/* CTA */}
           <Animated.View style={[styles.ctaSection, { opacity: ctaFade, transform: [{ translateY: ctaSlide }] }]}>
             <Animated.View style={{ transform: [{ scale: btnScale }] }}>
               <Pressable
@@ -198,18 +198,10 @@ export default function HomeScreen() {
                 onPress={handleContinue}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
-                style={styles.ctaWrap}
+                style={[styles.ctaWrap, canContinue && styles.ctaWrapActive]}
                 testID="home-continue"
               >
-                <LinearGradient
-                  colors={canContinue ? [palette.goldBright, palette.gold, palette.goldDeep] : ['#1E2430', '#1E2430']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 1 }}
-                  style={styles.ctaGradient}
-                >
-                  <Text style={[styles.ctaText, !canContinue && styles.ctaTextDisabled]}>I vow it</Text>
-                  {canContinue ? <ArrowRight color="#0B0D11" size={18} /> : null}
-                </LinearGradient>
+                <Text style={[styles.ctaText, canContinue && styles.ctaTextActive]}>I'm in</Text>
               </Pressable>
             </Animated.View>
           </Animated.View>
@@ -223,13 +215,13 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: palette.bg,
+    backgroundColor: '#13100B',
   },
   safe: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 22,
+    paddingHorizontal: 28,
     paddingTop: 8,
     paddingBottom: 40,
     flexGrow: 1,
@@ -239,160 +231,185 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: -40,
     left: '50%',
-    marginLeft: -180,
-    width: 360,
-    height: 360,
-    borderRadius: 360,
-    backgroundColor: 'rgba(212,162,79,0.14)',
-    opacity: 0.7,
+    marginLeft: -200,
+    width: 400,
+    height: 400,
+    borderRadius: 400,
+    backgroundColor: 'rgba(212,162,79,0.05)',
+  },
+  navDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(212,162,79,0.4)',
+    shadowColor: 'rgba(212,162,79,1)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 24,
+    marginBottom: 48,
     marginTop: 4,
   },
-  headerIcon: {
-    width: 30,
-    height: 30,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: palette.gold,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
-  },
   headerLabel: {
-    color: palette.textMuted,
+    color: 'rgba(212,162,79,0.35)',
     fontSize: 13,
-    fontWeight: '600' as const,
-    letterSpacing: 0.3,
+    fontWeight: '500' as const,
+    fontFamily: serifFont,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   headerSpacer: {
     flex: 1,
   },
-  heroLine1: {
-    color: palette.text,
-    fontSize: 40,
-    lineHeight: 44,
-    fontWeight: '700' as const,
+  navCount: {
+    color: 'rgba(212,162,79,0.22)',
+    fontSize: 12,
     fontFamily: serifFont,
-    letterSpacing: -1.5,
+    fontStyle: 'italic',
+  },
+  heroLine1: {
+    color: 'rgba(242,234,220,0.94)',
+    fontSize: 48,
+    lineHeight: 46,
+    fontWeight: '800' as const,
+    fontFamily: serifFont,
+    letterSpacing: -1.2,
   },
   heroLine2: {
-    color: palette.goldBright,
-    fontSize: 40,
-    lineHeight: 44,
-    fontWeight: '700' as const,
+    color: 'rgba(212,162,79,0.68)',
+    fontSize: 48,
+    lineHeight: 46,
+    fontWeight: '800' as const,
     fontFamily: serifFont,
-    letterSpacing: -1.5,
-    marginBottom: 12,
-    textShadowColor: 'rgba(212,162,79,0.25)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 18,
+    fontStyle: 'italic',
+    letterSpacing: -1.2,
+    marginBottom: 32,
+    textShadowColor: 'rgba(212,162,79,0.06)',
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 32,
   },
-  heroSub: {
-    color: palette.textSecondary,
-    fontSize: 15,
-    lineHeight: 23,
-    marginBottom: 28,
+  defBlock: {
+    marginBottom: 0,
   },
-  inputCard: {
-    backgroundColor: palette.surface,
-    borderRadius: 22,
-    borderWidth: 1,
-    borderColor: palette.border,
-    padding: 18,
+  defHeader: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 10,
+  },
+  defWord: {
+    fontFamily: serifFont,
+    fontSize: 19,
+    fontWeight: '700' as const,
+    color: 'rgba(242,234,220,0.75)',
+    letterSpacing: -0.5,
+  },
+  defPron: {
+    fontFamily: serifFont,
+    fontSize: 14,
+    color: 'rgba(212,162,79,0.28)',
+    fontStyle: 'italic',
+  },
+  defPos: {
+    fontFamily: serifFont,
+    fontSize: 13,
+    color: 'rgba(212,162,79,0.25)',
+    fontStyle: 'italic',
+  },
+  defBody: {
+    fontFamily: serifFont,
+    fontSize: 17,
+    lineHeight: 29,
+    color: 'rgba(222,210,192,0.4)',
+  },
+  defPunch: {
+    color: 'rgba(222,210,192,0.52)',
+  },
+  inputSection: {
+    marginTop: 32,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.22,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  inputCardRest: {
-    borderColor: 'rgba(212,162,79,0.12)',
-    shadowColor: palette.gold,
-    shadowOpacity: 0.06,
-  },
-  inputCardFocused: {
-    borderColor: 'rgba(212,162,79,0.35)',
-    shadowColor: palette.gold,
-    shadowOpacity: 0.14,
   },
   inputLabel: {
-    color: 'rgba(212,162,79,0.5)',
-    fontSize: 14,
+    color: 'rgba(212,162,79,0.48)',
+    fontSize: 15,
     fontWeight: '500' as const,
     fontFamily: serifFont,
     fontStyle: 'italic',
-    marginBottom: 10,
+    marginBottom: 14,
   },
   inputLabelFocused: {
     color: 'rgba(212,162,79,0.65)',
   },
   input: {
-    color: palette.text,
-    fontSize: 17,
+    color: 'rgba(242,234,220,0.85)',
+    fontSize: 20,
+    fontFamily: serifFont,
     minHeight: 30,
     paddingVertical: 0,
-    marginBottom: 14,
+    marginBottom: 0,
+  },
+  inputLine: {
+    height: 2,
+    backgroundColor: 'rgba(212,162,79,0.2)',
+    marginTop: 16,
+    marginBottom: 22,
   },
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 7,
+    gap: 8,
   },
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderColor: 'rgba(212,162,79,0.08)',
+    backgroundColor: 'rgba(212,162,79,0.04)',
+    minHeight: 44,
+    justifyContent: 'center',
   },
   chipActive: {
-    borderColor: 'rgba(212,162,79,0.3)',
-    backgroundColor: 'rgba(212,162,79,0.1)',
+    borderColor: 'rgba(212,162,79,0.14)',
+    backgroundColor: 'rgba(212,162,79,0.07)',
   },
   chipText: {
-    color: palette.textSecondary,
-    fontSize: 12,
-    fontWeight: '500' as const,
+    color: 'rgba(222,210,192,0.42)',
+    fontSize: 14,
+    fontFamily: serifFont,
   },
   chipTextActive: {
-    color: palette.goldBright,
+    color: 'rgba(212,162,79,0.65)',
   },
   ctaSection: {
     marginBottom: 24,
   },
   ctaWrap: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    shadowColor: palette.gold,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  ctaGradient: {
-    minHeight: 56,
-    flexDirection: 'row',
+    borderRadius: 20,
+    minHeight: 64,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingHorizontal: 20,
+    backgroundColor: 'rgba(212,162,79,0.08)',
+    borderWidth: 1.5,
+    borderColor: 'rgba(212,162,79,0.14)',
+  },
+  ctaWrapActive: {
+    backgroundColor: 'rgba(212,162,79,0.12)',
+    borderColor: 'rgba(212,162,79,0.2)',
   },
   ctaText: {
-    color: '#0B0D11',
-    fontSize: 16,
-    fontWeight: '800' as const,
-    letterSpacing: 0.2,
+    fontFamily: serifFont,
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: 'rgba(212,162,79,0.3)',
+    letterSpacing: -0.2,
   },
-  ctaTextDisabled: {
-    color: palette.textMuted,
+  ctaTextActive: {
+    color: 'rgba(212,162,79,0.55)',
   },
 });
