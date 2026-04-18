@@ -133,21 +133,14 @@ export default function HomeScreen() {
             <AppMenuButton />
           </Animated.View>
 
-          {/* Hero + Definition */}
+          {/* Hero + Dare */}
           <Animated.View style={{ opacity: heroFade, transform: [{ translateY: heroSlide }] }}>
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
-            <View style={styles.defBlock}>
-              <View style={styles.defHeader}>
-                <Text style={styles.defWord}>un·break·a·ble vow</Text>
-                <Text style={styles.defPron}>/ˌənˈbrākəbəl vaʊ/</Text>
-                <Text style={styles.defPos}>noun</Text>
-              </View>
-              <Text style={styles.defBody}>
-                A promise to a friend, backed by real money.{'\n'}
-                <Text style={styles.defPunch}>Break it, and you'll pay — to charity.</Text>
-              </Text>
-            </View>
+            <Text style={styles.heroSub}>
+              Go ahead — tell a friend what you'll actually do.{'\n'}Put real money on it.{'\n'}
+              <Text style={styles.heroPunch}>Let's see if you mean it.</Text>
+            </Text>
           </Animated.View>
 
           {/* Input — bare on canvas, no card -->  */}
@@ -260,42 +253,13 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 32,
   },
-  defBlock: {
-    marginBottom: 0,
-  },
-  defHeader: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 10,
-  },
-  defWord: {
+  heroSub: {
     fontFamily: serifFont,
-    fontSize: 19,
-    fontWeight: '700' as const,
-    color: 'rgba(242,234,220,0.75)',
-    letterSpacing: -0.5,
-  },
-  defPron: {
-    fontFamily: serifFont,
-    fontSize: 14,
-    color: 'rgba(212,162,79,0.28)',
-    fontStyle: 'italic',
-  },
-  defPos: {
-    fontFamily: serifFont,
-    fontSize: 13,
-    color: 'rgba(212,162,79,0.25)',
-    fontStyle: 'italic',
-  },
-  defBody: {
-    fontFamily: serifFont,
-    fontSize: 16,
-    lineHeight: 26,
+    fontSize: 17,
+    lineHeight: 28,
     color: 'rgba(222,210,192,0.4)',
   },
-  defPunch: {
+  heroPunch: {
     color: 'rgba(222,210,192,0.52)',
   },
   inputSection: {
