@@ -148,7 +148,7 @@ export default function HomeScreen() {
                 <Text style={styles.defPos}>noun</Text>
               </View>
               <Text style={styles.defBody}>
-                A promise made to a friend. Backed by real money.{'\n'}
+                A promise to a friend, backed by real money.{'\n'}
                 <Text style={styles.defPunch}>Break it, and you'll pay — to charity.</Text>
               </Text>
             </View>
@@ -229,13 +229,13 @@ const styles = StyleSheet.create({
   },
   ambientGlow: {
     position: 'absolute',
-    top: -40,
+    top: -80,
     left: '50%',
-    marginLeft: -200,
-    width: 400,
-    height: 400,
-    borderRadius: 400,
-    backgroundColor: 'rgba(212,162,79,0.05)',
+    marginLeft: -250,
+    width: 500,
+    height: 500,
+    borderRadius: 500,
+    backgroundColor: 'rgba(212,162,79,0.025)',
   },
   navDot: {
     width: 8,
@@ -251,7 +251,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    marginBottom: 48,
+    marginBottom: 36,
     marginTop: 4,
   },
   headerLabel: {
@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
     fontFamily: serifFont,
     fontStyle: 'italic',
     letterSpacing: -1.2,
-    marginBottom: 32,
+    marginBottom: 24,
     textShadowColor: 'rgba(212,162,79,0.06)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 32,
@@ -323,16 +323,16 @@ const styles = StyleSheet.create({
   },
   defBody: {
     fontFamily: serifFont,
-    fontSize: 17,
-    lineHeight: 29,
+    fontSize: 16,
+    lineHeight: 26,
     color: 'rgba(222,210,192,0.4)',
   },
   defPunch: {
     color: 'rgba(222,210,192,0.52)',
   },
   inputSection: {
-    marginTop: 32,
-    marginBottom: 20,
+    marginTop: 28,
+    marginBottom: 16,
   },
   inputLabel: {
     color: 'rgba(212,162,79,0.48)',
@@ -356,8 +356,8 @@ const styles = StyleSheet.create({
   inputLine: {
     height: 2,
     backgroundColor: 'rgba(212,162,79,0.2)',
-    marginTop: 16,
-    marginBottom: 22,
+    marginTop: 14,
+    marginBottom: 18,
   },
   chipsRow: {
     flexDirection: 'row',
