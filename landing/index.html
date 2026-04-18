@@ -2,701 +2,191 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unbreakable Vow — Master Page</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Unbreakable Vow</title>
+<meta name="description" content="A promise made to a friend. Backed by real money. Break it, and you'll pay — to charity.">
+<meta property="og:title" content="Unbreakable Vow">
+<meta property="og:description" content="A promise made to a friend. Backed by real money. Break it, and you'll pay — to charity.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://unbreakablevow.app">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0A0806;color:#E8DCC8;font-family:Inter,-apple-system,sans-serif;padding:48px 20px 80px}
-.flow{display:flex;flex-direction:column;align-items:center;gap:28px}
-.row{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:28px}
-.col{display:flex;flex-direction:column;align-items:center}
-
-/* Phone */
-.phone{width:390px;min-height:780px;border-radius:50px;overflow:hidden;position:relative;background:#13100B;box-shadow:0 0 0 1px rgba(212,162,79,0.03),0 48px 96px rgba(0,0,0,0.3)}
-.inner{padding:68px 28px 36px;display:flex;flex-direction:column;min-height:780px;position:relative}
-.glow{position:absolute;top:40px;left:50%;transform:translateX(-50%);width:400px;height:400px;border-radius:400px;background:radial-gradient(circle,rgba(212,162,79,0.05) 0%,rgba(180,130,60,0.018) 35%,transparent 60%);pointer-events:none}
-.notch{position:absolute;top:0;left:0;right:0;height:56px;z-index:10;background:linear-gradient(180deg,#13100B 80%,transparent)}
-
-/* Shared elements */
+body{
+  background:#13100B;
+  color:#E8DCC8;
+  font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;
+  min-height:100vh;
+  min-height:100dvh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow-x:hidden;
+}
+.screen{
+  width:100%;
+  max-width:420px;
+  padding:60px 28px 40px;
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+  min-height:100dvh;
+  position:relative;
+  margin:0 auto;
+}
+.screen::before{
+  content:'';
+  position:absolute;
+  top:40px;left:50%;transform:translateX(-50%);
+  width:400px;height:400px;border-radius:400px;
+  background:radial-gradient(circle,rgba(212,162,79,0.05) 0%,rgba(180,130,60,0.018) 35%,transparent 60%);
+  pointer-events:none;
+}
 .nav{display:flex;align-items:center;gap:10px;margin-bottom:48px;position:relative}
-.nd{width:8px;height:8px;border-radius:50%;background:rgba(212,162,79,0.4);box-shadow:0 0 12px rgba(212,162,79,0.1)}
-.nn{font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.35);letter-spacing:0.8px;text-transform:uppercase;font-weight:500}
-.nr{margin-left:auto;display:flex;align-items:center;gap:16px}
-.nc{font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.22);font-style:italic}
-.h1{font-family:'Playfair Display',serif;font-size:48px;font-weight:800;letter-spacing:-1.2px;line-height:0.96;color:rgba(242,234,220,0.94)}
-.h2{font-family:'Playfair Display',serif;font-size:48px;font-weight:800;letter-spacing:-1.2px;line-height:0.96;color:rgba(212,162,79,0.68);font-style:italic;text-shadow:0 0 32px rgba(212,162,79,0.06)}
-.ex{font-family:'Crimson Pro',serif;color:rgba(222,210,192,0.4);font-size:17px;line-height:1.65}
-.il{font-family:'Crimson Pro',serif;font-size:15px;color:rgba(212,162,79,0.48);font-style:italic}
-.if{font-family:'Crimson Pro',serif;font-size:20px;color:rgba(222,210,192,0.22);padding-bottom:16px;border-bottom:2px solid rgba(212,162,79,0.2)}
-.ch{padding:12px 18px;border-radius:999px;background:rgba(212,162,79,0.04);border:1px solid rgba(212,162,79,0.08);font-size:14px;color:rgba(222,210,192,0.42);font-family:'Crimson Pro',serif;min-height:44px;display:flex;align-items:center}
-.cs{padding:12px 18px;border-radius:999px;background:rgba(212,162,79,0.07);border:1.5px solid rgba(212,162,79,0.14);font-size:14px;color:rgba(212,162,79,0.65);font-family:'Crimson Pro',serif;min-height:44px;display:flex;align-items:center;box-shadow:0 0 16px rgba(212,162,79,0.04)}
-.ce{width:100%;height:64px;border-radius:20px;background:rgba(212,162,79,0.08);border:1.5px solid rgba(212,162,79,0.14);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:rgba(212,162,79,0.55);letter-spacing:-0.2px}
-.cg{width:100%;height:68px;border-radius:20px;background:linear-gradient(135deg,#D4A24F,#C4963C,#A87D2E);display:flex;align-items:center;justify-content:center;font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:#fff;letter-spacing:-0.3px;box-shadow:0 0 40px rgba(212,162,79,0.07),0 8px 28px rgba(212,162,79,0.1);position:relative}
-.bk{width:44px;height:44px;display:flex;align-items:center;justify-content:center;margin-bottom:28px;position:relative}
-.sn{width:20px;height:20px;border-radius:50%;background:rgba(212,162,79,0.08);border:1px solid rgba(212,162,79,0.12);display:flex;align-items:center;justify-content:center;font-family:'Crimson Pro',serif;font-size:11px;color:rgba(212,162,79,0.45);flex-shrink:0;margin-top:2px}
-.st{font-family:'Crimson Pro',serif;font-size:15px;color:rgba(222,210,192,0.4);line-height:1.5}
-
-/* Tags */
-.tg{text-align:center;margin-bottom:12px}
-.tl{display:inline-block;padding:5px 16px;border-radius:6px;font-size:10px;font-weight:700;letter-spacing:1.5px;background:rgba(212,162,79,0.08);color:rgba(212,162,79,0.5);margin-bottom:6px}
-.tt{font-family:'Playfair Display',serif;font-size:20px;font-weight:600}
-.td{font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.3);font-style:italic;max-width:390px;margin:6px auto 0;line-height:1.5}
-
-/* Panels */
-.pn{padding:20px;border-radius:14px;border:1px solid rgba(212,162,79,0.06);margin-bottom:14px}
-.pm{font-family:'Crimson Pro',serif;font-size:13px;font-weight:600;color:rgba(212,162,79,0.55);margin-bottom:8px;letter-spacing:0.5px}
-.pt{font-family:'Crimson Pro',serif;font-size:14px;color:rgba(222,210,192,0.55);line-height:1.65;font-style:italic}
-.ar{text-align:center;color:rgba(212,162,79,0.12);font-size:16px;margin:-4px 0}
-
-/* Shared nav SVG */
-.nsvg{display:block}
+.nav-dot{width:8px;height:8px;border-radius:50%;background:rgba(212,162,79,0.4);box-shadow:0 0 12px rgba(212,162,79,0.1)}
+.nav-name{font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.35);letter-spacing:0.8px;text-transform:uppercase;font-weight:500}
+.nav-right{margin-left:auto;display:flex;align-items:center;gap:16px}
+.nav-count{font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.22);font-style:italic}
+.hero-1{font-family:'Playfair Display',serif;font-size:clamp(40px,12vw,52px);font-weight:800;letter-spacing:-1.2px;line-height:0.96;color:rgba(242,234,220,0.94)}
+.hero-2{font-family:'Playfair Display',serif;font-size:clamp(40px,12vw,52px);font-weight:800;letter-spacing:-1.2px;line-height:0.96;color:rgba(212,162,79,0.68);font-style:italic;text-shadow:0 0 32px rgba(212,162,79,0.06)}
+.def-word{font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:rgba(242,234,220,0.75);letter-spacing:-0.5px}
+.def-pron{font-family:'Crimson Pro',serif;font-size:14px;color:rgba(212,162,79,0.28);font-style:italic;margin-left:8px}
+.def-pos{font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.25);font-style:italic;margin-left:8px}
+.def-body{font-family:'Crimson Pro',serif;color:rgba(222,210,192,0.4);font-size:17px;line-height:1.7;margin-top:10px}
+.def-punch{color:rgba(222,210,192,0.52)}
+.input-label{font-family:'Crimson Pro',serif;font-size:15px;color:rgba(212,162,79,0.48);font-style:italic}
+.input-field{font-family:'Crimson Pro',serif;font-size:20px;color:rgba(222,210,192,0.22);padding-bottom:16px;border:none;border-bottom:2px solid rgba(212,162,79,0.2);background:transparent;width:100%;outline:none;caret-color:rgba(212,162,79,0.5)}
+.input-field::placeholder{color:rgba(222,210,192,0.22)}
+.input-field:focus{border-bottom-color:rgba(212,162,79,0.35);color:rgba(222,210,192,0.6)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  padding:12px 18px;border-radius:999px;
+  background:rgba(212,162,79,0.04);border:1px solid rgba(212,162,79,0.08);
+  font-size:14px;color:rgba(222,210,192,0.42);font-family:'Crimson Pro',serif;
+  min-height:44px;display:flex;align-items:center;
+  cursor:pointer;transition:all 0.15s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.chip:active{background:rgba(212,162,79,0.08);border-color:rgba(212,162,79,0.14)}
+.cta{
+  width:100%;height:64px;border-radius:20px;
+  background:rgba(212,162,79,0.08);border:1.5px solid rgba(212,162,79,0.14);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Playfair Display',serif;font-size:18px;font-weight:700;
+  color:rgba(212,162,79,0.55);letter-spacing:-0.2px;
+  cursor:pointer;transition:all 0.2s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.cta:active{background:rgba(212,162,79,0.12);border-color:rgba(212,162,79,0.2)}
+.hiw{
+  font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.25);
+  font-style:italic;border-bottom:1px solid rgba(212,162,79,0.1);
+  padding-bottom:1px;cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.hiw:active{color:rgba(212,162,79,0.4)}
+.sheet-overlay{
+  display:none;position:fixed;top:0;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,0.5);z-index:100;
+  align-items:flex-end;justify-content:center;
+}
+.sheet-overlay.open{display:flex}
+.sheet{
+  width:100%;max-width:420px;
+  background:#1A1610;border-radius:24px 24px 0 0;
+  padding:28px 28px 40px;
+  animation:slideUp 0.3s ease;
+}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-handle{width:36px;height:4px;border-radius:4px;background:rgba(212,162,79,0.12);margin:0 auto 24px}
+.sheet-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:rgba(242,234,220,0.85);margin-bottom:20px}
+.sheet-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.sheet-arrow{font-family:'Crimson Pro',serif;font-size:16px;color:rgba(212,162,79,0.35);flex-shrink:0;margin-top:2px}
+.sheet-text{font-family:'Crimson Pro',serif;font-size:16px;color:rgba(222,210,192,0.45);line-height:1.5}
+.sheet-note{font-family:'Crimson Pro',serif;font-size:14px;color:rgba(212,162,79,0.25);font-style:italic;margin-top:20px}
+.sheet-btn{
+  width:100%;height:56px;border-radius:16px;margin-top:24px;
+  background:rgba(212,162,79,0.08);border:1px solid rgba(212,162,79,0.12);
+  font-family:'Playfair Display',serif;font-size:16px;font-weight:700;
+  color:rgba(212,162,79,0.5);cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
 </style>
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- SECTION 1: THE TOP 3 — PANEL CONSENSUS -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-
-<div style="text-align:center;margin-bottom:28px">
-<div style="font-family:'Playfair Display',serif;font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px">The Top 3</div>
-<p style="font-family:'Crimson Pro',serif;color:rgba(212,162,79,0.35);font-size:15px;font-style:italic;max-width:500px;margin:0 auto;line-height:1.6">Shreyas, Julie, and Nikita locked in a room. One question: "What is the best possible home screen for a first-time user who has 5 seconds of attention?"</p>
-</div>
-
-<!-- The discussion -->
-<div style="max-width:520px;margin:0 auto 48px">
-
-<div class="pn" style="background:rgba(212,162,79,0.02)">
-<div class="pm">THE ARGUMENT</div>
-<div class="pt" style="font-style:normal;color:rgba(222,210,192,0.5);line-height:1.75">
-<div style="margin-bottom:12px"><strong style="color:rgba(212,162,79,0.6)">Shreyas:</strong> <em>"Before we pick layouts, let's agree on what's LOCKED. 'Make a vow. Mean it.' — locked. 'What commitment will you bet on?' — locked. 'I'm in' as the CTA — locked. Golden Hour brand — locked. The only open question is the 40 pixels between the hero and the input label. That's what we're designing."</em></div>
-
-<div style="margin-bottom:12px"><strong style="color:rgba(212,162,79,0.6)">Nikita:</strong> <em>"Right. And that section needs to do ONE thing: stop the user from thinking 'I don't get it' long enough for them to type a vow. Once they type, they're in the funnel. The explainer's only job is to prevent the bounce."</em></div>
-
-<div style="margin-bottom:12px"><strong style="color:rgba(212,162,79,0.6)">Julie:</strong> <em>"Agreed. But it has a SECOND job too — it needs to make them WANT to type. Comprehension without desire is a Wikipedia article. The best version does both: 'I get it AND I want to do it.'"</em></div>
-
-<div style="margin-bottom:12px"><strong style="color:rgba(212,162,79,0.6)">Shreyas:</strong> <em>"So here's my framework. The user processes the screen top-down in 3 beats. Beat 1: 'Make a vow. Mean it.' — that's the IDENTITY. Beat 2: the explainer — that's the MECHANISM. Beat 3: 'What commitment will you bet on?' — that's the ACTION. Beat 2 bridges identity to action. It needs to be SHORT (≤3 lines) and it needs to answer: 'What happens?' Not 'why should I care' — the hero already did that."</em></div>
-
-<div><strong style="color:rgba(212,162,79,0.6)">Nikita:</strong> <em>"OK so what are our three best versions of Beat 2? I think they're: prose that dares you, steps that teach you, and a line that trusts you. Three different confidence levels in the user."</em></div>
-</div>
-</div>
-</div>
-
-<!-- ═══════════ TOP PICK #1 ═══════════ -->
-
-<div style="text-align:center;margin-bottom:16px;margin-top:16px">
-<div style="font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:rgba(212,162,79,0.45);letter-spacing:2px;margin-bottom:4px">#1 — SHIP THIS</div>
-<div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700">The Dare</div>
-<div style="font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.3);font-style:italic;max-width:420px;margin:8px auto 0;line-height:1.5">Three prose lines that build tension: social → financial → challenge. "Go ahead" makes the app dare you from word one. "Actually" names the aspiration gap. "Let's see if you mean it" echoes the hero. Plus a subtle "How does it work?" escape hatch for confused users.</div>
-</div>
-
-<div class="flow">
-<div class="phone">
-<div class="notch"></div>
-<div class="inner">
-<div class="glow"></div>
-<div class="nav">
-<div class="nd"></div>
-<span class="nn">Unbreakable Vow</span>
-<div class="nr">
-<span class="nc">2,847 vows</span>
-<svg width="17" height="12" fill="none" stroke="rgba(212,162,79,0.16)" stroke-width="1.3" stroke-linecap="round"><line x1="0" y1="1.5" x2="17" y2="1.5"/><line x1="4" y1="6" x2="17" y2="6"/><line x1="8" y1="10.5" x2="17" y2="10.5"/></svg>
-</div>
-</div>
-
-<div style="margin-bottom:40px;position:relative">
-<div class="h1">Make a<br>vow.</div>
-<div class="h2" style="margin-bottom:24px">Mean it.</div>
-<p class="ex">Go ahead — tell a friend what you'll actually do.<br>Put real money on it.<br><span style="color:rgba(222,210,192,0.52)">Let's see if you mean it.</span></p>
-</div>
-
-<div style="margin-bottom:24px;position:relative">
-<div class="il" style="margin-bottom:14px">What commitment will you bet on?</div>
-<div class="if" style="margin-bottom:22px">gym 3x this week</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px">
-<span class="ch">Workout 3x this week</span>
-<span class="ch">Delete TikTok</span>
-<span class="ch">No alcohol 2 weeks</span>
-<span class="ch">Read every night</span>
-</div>
-<!-- How does it work? escape hatch -->
-<div style="text-align:center;margin-top:16px">
-<span style="font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.25);font-style:italic;border-bottom:1px solid rgba(212,162,79,0.1);padding-bottom:1px;cursor:pointer">How does it work?</span>
-</div>
-</div>
-
-<div style="margin-top:auto;padding-top:16px">
-<div class="ce">I'm in</div>
-</div>
-</div></div>
-</div>
-
-<div style="max-width:480px;margin:20px auto 48px">
-<div class="pn">
-<div class="pm">WHY #1</div>
-<div class="pt" style="font-style:normal;color:rgba(222,210,192,0.5)">
-<div style="margin-bottom:8px"><strong style="color:rgba(212,162,79,0.6)">Nikita:</strong> <em>"The third line — 'Let's see if you mean it' — echoes the hero and dares the user. It's the line someone screenshots. It's the line that makes a 19-year-old think 'oh, it's ON.' And it's doing something subtle: it shifts the product from 'accountability tool' to 'dare.' Dares are viral. Accountability tools are not."</em></div>
-<div style="margin-bottom:8px"><strong style="color:rgba(212,162,79,0.6)">Shreyas:</strong> <em>"Three lines, three pillars: social (friend), financial (money), emotional (challenge). Each line is a complete sentence scannable on its own. A user who reads only the third line still gets the gist. And 'What commitment will you bet on?' catches anyone who's still confused — it reframes the entire screen as 'you're betting on yourself.'"</em></div>
-<div><strong style="color:rgba(212,162,79,0.6)">Julie:</strong> <em>"The third line being brighter (0.52 opacity vs 0.4) is key — it draws the eye to the landing punch. The emotional arc: curiosity (hero) → understanding (lines 1-2) → dare (line 3) → action (input). Four beats. Clean."</em></div>
-</div>
-</div>
-</div>
-
-<!-- ═══════════ TOP PICK #2 — THE DEFINITION ═══════════ -->
-
-<div style="text-align:center;margin-bottom:16px">
-<div style="font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:rgba(212,162,79,0.45);letter-spacing:2px;margin-bottom:4px">#2 — A/B TEST</div>
-<div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700">The Definition</div>
-<div style="font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.3);font-style:italic;max-width:420px;margin:8px auto 0;line-height:1.5">A dictionary definition of "Unbreakable Vow." The format bypasses marketing skepticism — the brain enters learning mode, not sales mode. Covers all four elements in 18 words. No escape hatch needed — the definition IS the explanation. 9.08/10 panel average — highest score of the entire session.</div>
-</div>
-
-<div class="flow">
-<div class="phone">
-<div class="notch"></div>
-<div class="inner">
-<div class="glow"></div>
-<div class="nav">
-<div class="nd"></div>
-<span class="nn">Unbreakable Vow</span>
-<div class="nr">
-<span class="nc">2,847 vows</span>
-<svg width="17" height="12" fill="none" stroke="rgba(212,162,79,0.16)" stroke-width="1.3" stroke-linecap="round"><line x1="0" y1="1.5" x2="17" y2="1.5"/><line x1="4" y1="6" x2="17" y2="6"/><line x1="8" y1="10.5" x2="17" y2="10.5"/></svg>
-</div>
-</div>
-
-<div style="margin-bottom:40px;position:relative">
-<div class="h1">Make a<br>vow.</div>
-<div class="h2" style="margin-bottom:32px">Mean it.</div>
-
-<!-- The Definition -->
-<div style="padding:0 0 0 2px">
-<div style="margin-bottom:10px">
-<span style="font-family:'Playfair Display',serif;font-size:19px;font-weight:700;color:rgba(242,234,220,0.75);letter-spacing:-0.5px">un·break·a·ble vow</span>
-<span style="font-family:'Crimson Pro',serif;font-size:14px;color:rgba(212,162,79,0.28);font-style:italic;margin-left:8px">/ˌənˈbrākəbəl vaʊ/</span>
-<span style="font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.25);font-style:italic;margin-left:8px">noun</span>
-</div>
-<p class="ex" style="font-size:16px;line-height:1.7">A promise made to a friend. Backed by real money.<br><span style="color:rgba(222,210,192,0.52)">Break it, and you'll pay — to charity.</span></p>
-</div>
-</div>
-
-<div style="margin-bottom:24px;position:relative">
-<div class="il" style="margin-bottom:14px">What commitment will you bet on?</div>
-<div class="if" style="margin-bottom:22px">gym 3x this week</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px">
-<span class="ch">Workout 3x this week</span>
-<span class="ch">Delete TikTok</span>
-<span class="ch">No alcohol 2 weeks</span>
-<span class="ch">Read every night</span>
-</div>
-</div>
-
-<div style="margin-top:auto;padding-top:16px">
-<div class="ce">I'm in</div>
-</div>
-</div></div>
-</div>
-
-<div style="max-width:480px;margin:20px auto 48px">
-<div class="pn">
-<div class="pm">WHY THIS IS THE A/B TEST</div>
-<div class="pt" style="font-style:normal;color:rgba(222,210,192,0.5)">
-<div style="margin-bottom:8px"><strong style="color:rgba(212,162,79,0.6)">Nikita:</strong> <em>"Dictionary definitions are a Gen Z meme format. It's native content. A beautifully typeset definition on a dark gold background — that's an Instagram story. And 'Break it, and you'll pay — to charity' is the best single line of copy in the entire project. Ominous → specific. Threat → nobility. 9.5/10."</em></div>
-<div style="margin-bottom:8px"><strong style="color:rgba(212,162,79,0.6)">Rory:</strong> <em>"The definition format activates the learning schema, not the sales schema. In learning mode, people are OPEN and CURIOUS. In marketing mode, they're SKEPTICAL and DEFENSIVE. The definition bypasses resistance entirely. The user doesn't feel sold to. They feel educated. That's a massive advantage."</em></div>
-<div><strong style="color:rgba(212,162,79,0.6)">The Copywriter:</strong> <em>"'Break it, and you'll pay — to charity' creates a genuine emotional arc in a single sentence. Ominous → specific. Threat → nobility. Fear → 'oh that's actually cool.' No other line in any version does this."</em></div>
-</div>
-</div>
-</div>
-
-<!-- ═══════════ TOP PICK #3 ═══════════ -->
-
-<div style="text-align:center;margin-bottom:16px">
-<div style="font-family:'Playfair Display',serif;font-size:13px;font-weight:700;color:rgba(212,162,79,0.45);letter-spacing:2px;margin-bottom:4px">#3 PICK</div>
-<div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700">The Two-Liner</div>
-<div style="font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.3);font-style:italic;max-width:420px;margin:8px auto 0;line-height:1.5">Just two sentences. Line 1 packs friend + money + commitment into five words. Line 2 is the consequence. Sixteen words total. The boldest, most confident version — trusts the user's intelligence and the input label to close the gap.</div>
-</div>
-
-<div class="flow">
-<div class="phone">
-<div class="notch"></div>
-<div class="inner">
-<div class="glow"></div>
-<div class="nav">
-<div class="nd"></div>
-<span class="nn">Unbreakable Vow</span>
-<div class="nr">
-<span class="nc">2,847 vows</span>
-<svg width="17" height="12" fill="none" stroke="rgba(212,162,79,0.16)" stroke-width="1.3" stroke-linecap="round"><line x1="0" y1="1.5" x2="17" y2="1.5"/><line x1="4" y1="6" x2="17" y2="6"/><line x1="8" y1="10.5" x2="17" y2="10.5"/></svg>
-</div>
-</div>
-
-<div style="margin-bottom:48px;position:relative">
-<div class="h1">Make a<br>vow.</div>
-<div class="h2" style="margin-bottom:28px">Mean it.</div>
-<p class="ex" style="font-size:18px;line-height:1.7">Bet a friend you'll actually do it.<br><span style="color:rgba(222,210,192,0.48)">Fail, and your money goes to charity.</span></p>
-</div>
-
-<div style="margin-bottom:24px;position:relative">
-<div class="il" style="margin-bottom:14px">What commitment will you bet on?</div>
-<div class="if" style="margin-bottom:22px">gym 3x this week</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px">
-<span class="ch">Workout 3x this week</span>
-<span class="ch">Delete TikTok</span>
-<span class="ch">No alcohol 2 weeks</span>
-<span class="ch">Read every night</span>
-</div>
-</div>
-
-<div style="margin-top:auto;padding-top:16px">
-<div class="ce">I'm in</div>
-</div>
-</div></div>
-</div>
-
-<div style="max-width:480px;margin:20px auto 48px">
-<div class="pn">
-<div class="pm">WHY #3</div>
-<div class="pt" style="font-style:normal;color:rgba(222,210,192,0.5)">
-<div style="margin-bottom:8px"><strong style="color:rgba(212,162,79,0.6)">Nikita:</strong> <em>"'Bet a friend you'll actually do it' is doing insane work. Five words that contain: a bet (money), a friend (social), a commitment (vow), and a dig ('actually' implies you usually don't follow through). It's the most efficient line across every variant. And the breathing room on this screen is gorgeous — the hero + two lines + input creates a clear vertical rhythm with lots of air. It doesn't feel crowded."</em></div>
-<div style="margin-bottom:8px"><strong style="color:rgba(212,162,79,0.6)">Julie:</strong> <em>"The risk: 'Bet a friend' might confuse some users. Are you betting WITH your friend? Are you betting AGAINST them? It's slightly ambiguous. But the second line ('Fail, and your money goes to charity') resolves the ambiguity. And the extra whitespace on this version makes the screen feel premium. Less content = higher perceived quality. This is the Porsche."</em></div>
-<div><strong style="color:rgba(212,162,79,0.6)">Shreyas:</strong> <em>"I'd call this the 'expert user' version. If your primary acquisition channel is friend referrals (which it should be), most new users arrive with context — their friend already told them what this is. Those users don't need three arrows explaining how it works. They need two lines that confirm what they heard and make them feel something. For THAT user, this is the best screen."</em></div>
-</div>
-</div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- SECTION 2: THE OTHER CONTENDERS -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-
-<div style="text-align:center;margin-bottom:28px;margin-top:32px">
-<div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px">The Other Contenders</div>
-<p style="font-family:'Crimson Pro',serif;color:rgba(212,162,79,0.25);font-size:13px;font-style:italic;max-width:420px;margin:0 auto;line-height:1.5">Five more approaches for reference and comparison. Including two new variants.</p>
-</div>
-
-<div class="row">
-
-<!-- Crystal Clear (numbered steps) -->
-<div class="col">
-<div class="tg">
-<div class="tl">CLEAR</div>
-<div class="tt" style="font-size:17px">Crystal Clear</div>
-<div class="td">Numbered steps. The original "nuclear option" for comprehension.</div>
-</div>
-<div class="phone" style="min-height:760px">
-<div class="notch"></div>
-<div class="inner" style="min-height:760px">
-<div class="glow"></div>
-<div class="nav"><div class="nd"></div><span class="nn">Unbreakable Vow</span><div class="nr"><span class="nc">2,847 vows</span><svg width="17" height="12" fill="none" stroke="rgba(212,162,79,0.16)" stroke-width="1.3" stroke-linecap="round"><line x1="0" y1="1.5" x2="17" y2="1.5"/><line x1="4" y1="6" x2="17" y2="6"/><line x1="8" y1="10.5" x2="17" y2="10.5"/></svg></div></div>
-<div style="margin-bottom:36px;position:relative">
-<div class="h1">Make a<br>vow.</div>
-<div class="h2" style="margin-bottom:28px">Mean it.</div>
-<div style="display:flex;flex-direction:column;gap:12px">
-<div style="display:flex;align-items:center;gap:12px"><div class="sn">1</div><div class="st">Commit to something</div></div>
-<div style="display:flex;align-items:center;gap:12px"><div class="sn">2</div><div class="st">Tell a friend</div></div>
-<div style="display:flex;align-items:center;gap:12px"><div class="sn">3</div><div class="st"><span style="color:rgba(222,210,192,0.5)">Fail, you lose money to charity</span></div></div>
-</div>
-</div>
-<div style="margin-bottom:24px;position:relative">
-<div class="il" style="margin-bottom:14px">What commitment will you bet on?</div>
-<div class="if" style="margin-bottom:22px">gym 3x this week</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px"><span class="ch">Workout 3x this week</span><span class="ch">Delete TikTok</span><span class="ch">No alcohol 2 weeks</span><span class="ch">Read every night</span></div>
-</div>
-<div style="margin-top:auto;padding-top:16px"><div class="ce">Make my vow</div></div>
-</div></div>
-</div>
-
-<!-- The Hybrid (numbered + dare) -->
-<div class="col">
-<div class="tg">
-<div class="tl">HYBRID</div>
-<div class="tt" style="font-size:17px">The Hybrid</div>
-<div class="td">Numbered steps written as a dare. Manifesto, not tutorial.</div>
-</div>
-<div class="phone" style="min-height:760px">
-<div class="notch"></div>
-<div class="inner" style="min-height:760px">
-<div class="glow"></div>
-<div class="nav"><div class="nd"></div><span class="nn">Unbreakable Vow</span><div class="nr"><span class="nc">2,847 vows</span><svg width="17" height="12" fill="none" stroke="rgba(212,162,79,0.16)" stroke-width="1.3" stroke-linecap="round"><line x1="0" y1="1.5" x2="17" y2="1.5"/><line x1="4" y1="6" x2="17" y2="6"/><line x1="8" y1="10.5" x2="17" y2="10.5"/></svg></div></div>
-<div style="margin-bottom:36px;position:relative">
-<div class="h1">Make a<br>vow.</div>
-<div class="h2" style="margin-bottom:28px">Mean it.</div>
-<div style="display:flex;flex-direction:column;gap:12px">
-<div style="display:flex;align-items:center;gap:12px"><div class="sn">1</div><div class="st">Pick a commitment</div></div>
-<div style="display:flex;align-items:center;gap:12px"><div class="sn">2</div><div class="st">Tell a friend — they're your witness</div></div>
-<div style="display:flex;align-items:center;gap:12px"><div class="sn">3</div><div class="st"><span style="color:rgba(222,210,192,0.5)">Break it, and you'll pay — to charity</span></div></div>
-</div>
-</div>
-<div style="margin-bottom:24px;position:relative">
-<div class="il" style="margin-bottom:14px">What commitment will you bet on?</div>
-<div class="if" style="margin-bottom:22px">gym 3x this week</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px"><span class="ch">Workout 3x this week</span><span class="ch">Delete TikTok</span><span class="ch">No alcohol 2 weeks</span><span class="ch">Read every night</span></div>
-</div>
-<div style="margin-top:auto;padding-top:16px"><div class="ce">I'm in</div></div>
-</div></div>
-</div>
-
-</div>
-
-<div class="row">
-
-<!-- NEW: The Question -->
-<div class="col">
-<div class="tg">
-<div class="tl" style="background:rgba(130,185,130,0.1);color:rgba(130,185,130,0.55)">NEW</div>
-<div class="tt" style="font-size:17px">The Question</div>
-<div class="td">One provocative question replaces all explanation. Questions force the brain to answer — instant engagement.</div>
-</div>
-<div class="phone" style="min-height:760px">
-<div class="notch"></div>
-<div class="inner" style="min-height:760px">
-<div class="glow"></div>
-<div class="nav"><div class="nd"></div><span class="nn">Unbreakable Vow</span><div class="nr"><span class="nc">2,847 vows</span><svg width="17" height="12" fill="none" stroke="rgba(212,162,79,0.16)" stroke-width="1.3" stroke-linecap="round"><line x1="0" y1="1.5" x2="17" y2="1.5"/><line x1="4" y1="6" x2="17" y2="6"/><line x1="8" y1="10.5" x2="17" y2="10.5"/></svg></div></div>
-<div style="margin-bottom:48px;position:relative">
-<div class="h1">Make a<br>vow.</div>
-<div class="h2" style="margin-bottom:28px">Mean it.</div>
-<p class="ex" style="font-size:18px;line-height:1.7">What would you actually do<br>if your money was on the line?</p>
-</div>
-<div style="margin-bottom:24px;position:relative">
-<div class="il" style="margin-bottom:14px">What commitment will you bet on?</div>
-<div class="if" style="margin-bottom:22px">gym 3x this week</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px"><span class="ch">Workout 3x this week</span><span class="ch">Delete TikTok</span><span class="ch">No alcohol 2 weeks</span><span class="ch">Read every night</span></div>
-</div>
-<div style="margin-top:auto;padding-top:16px"><div class="ce">I'm in</div></div>
-</div></div>
-</div>
-
-<!-- NEW: The Tease + Bet Label -->
-<div class="col">
-<div class="tg">
-<div class="tl" style="background:rgba(130,185,130,0.1);color:rgba(130,185,130,0.55)">NEW</div>
-<div class="tt" style="font-size:17px">The Tease (v2)</div>
-<div class="td">Two-line tease with the new bet label. Ominous without steps. For the user who already gets it.</div>
-</div>
-<div class="phone" style="min-height:760px">
-<div class="notch"></div>
-<div class="inner" style="min-height:760px">
-<div class="glow"></div>
-<div class="nav"><div class="nd"></div><span class="nn">Unbreakable Vow</span><div class="nr"><span class="nc">2,847 vows</span><svg width="17" height="12" fill="none" stroke="rgba(212,162,79,0.16)" stroke-width="1.3" stroke-linecap="round"><line x1="0" y1="1.5" x2="17" y2="1.5"/><line x1="4" y1="6" x2="17" y2="6"/><line x1="8" y1="10.5" x2="17" y2="10.5"/></svg></div></div>
-<div style="margin-bottom:48px;position:relative">
-<div class="h1">Make a<br>vow.</div>
-<div class="h2" style="margin-bottom:28px">Mean it.</div>
-<p class="ex" style="font-size:17px;line-height:1.7">Promise a friend you'll follow through.<br><span style="color:rgba(222,210,192,0.48)">Break it, and you'll pay.</span></p>
-</div>
-<div style="margin-bottom:24px;position:relative">
-<div class="il" style="margin-bottom:14px">What commitment will you bet on?</div>
-<div class="if" style="margin-bottom:22px">gym 3x this week</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px"><span class="ch">Workout 3x this week</span><span class="ch">Delete TikTok</span><span class="ch">No alcohol 2 weeks</span><span class="ch">Read every night</span></div>
-</div>
-<div style="margin-top:auto;padding-top:16px"><div class="ce">I'm in</div></div>
-</div></div>
-</div>
-
-</div>
-
-<!-- Baseline -->
-<div class="flow" style="margin-bottom:24px">
-<div class="tg">
-<div class="tl" style="background:rgba(255,255,255,0.04);color:rgba(255,255,255,0.25)">BASELINE</div>
-<div class="tt" style="font-size:17px">Current Golden Hour</div>
-<div class="td">For comparison. Three-concept paragraph. Original input label.</div>
-</div>
-<div class="phone" style="min-height:760px">
-<div class="notch"></div>
-<div class="inner" style="min-height:760px">
-<div class="glow"></div>
-<div class="nav"><div class="nd"></div><span class="nn">Unbreakable Vow</span><div class="nr"><span class="nc">2,847 vows</span><svg width="17" height="12" fill="none" stroke="rgba(212,162,79,0.16)" stroke-width="1.3" stroke-linecap="round"><line x1="0" y1="1.5" x2="17" y2="1.5"/><line x1="4" y1="6" x2="17" y2="6"/><line x1="8" y1="10.5" x2="17" y2="10.5"/></svg></div></div>
-<div style="margin-bottom:44px;position:relative">
-<div class="h1">Make a<br>vow.</div>
-<div class="h2" style="margin-bottom:24px">Mean it.</div>
-<p class="ex">Promise a friend you'll actually follow through.<br>Put money on it. Fail, it goes to charity.</p>
-</div>
-<div style="margin-bottom:24px;position:relative">
-<div class="il" style="margin-bottom:14px">What are you committing to?</div>
-<div class="if" style="margin-bottom:22px">gym 3x this week</div>
-<div style="display:flex;flex-wrap:wrap;gap:8px"><span class="ch">Workout 3x this week</span><span class="ch">Delete TikTok</span><span class="ch">No alcohol 2 weeks</span><span class="ch">Read every night</span></div>
-</div>
-<div style="margin-top:auto;padding-top:16px"><div class="ce">Make my vow</div></div>
-</div></div>
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- SECTION 3: THE FULL FLOW — SCREENS 2-4 -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-
-<div style="text-align:center;margin-bottom:28px;margin-top:56px">
-<div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px">The Full Flow</div>
-<p style="font-family:'Crimson Pro',serif;color:rgba(212,162,79,0.25);font-size:13px;font-style:italic;max-width:420px;margin:0 auto;line-height:1.5">After Screen 1, the flow is the same regardless of which variant you pick. Vow → Witness → Stakes → Seal.</p>
-</div>
-
-<div class="flow">
-
-<!-- SCREEN 2: WITNESS -->
-<div class="tg">
-<div class="tl">SCREEN 2</div>
-<div class="tt">The Witness</div>
-<div class="td">Who's keeping you honest? Social before financial — locks in accountability before asking for money.</div>
-</div>
-
-<div class="phone">
-<div class="notch"></div>
-<div class="inner">
-<div class="glow"></div>
-<div class="bk"><svg width="18" height="18" fill="none" stroke="rgba(212,162,79,0.25)" stroke-width="1.5" stroke-linecap="round"><path d="M12 3L5 9.5L12 16"/></svg></div>
-
-<div style="font-family:'Playfair Display',serif;font-size:40px;font-weight:800;letter-spacing:-1px;line-height:0.96;color:rgba(242,234,220,0.94);margin-bottom:12px">Who's<br>watching?</div>
-<div style="width:32px;height:2px;background:rgba(212,162,79,0.25);margin:0 0 24px"></div>
-<div style="font-family:'Crimson Pro',serif;font-size:14px;color:rgba(212,162,79,0.32);font-style:italic;margin-bottom:36px">"Gym 3x this week" · by Sunday</div>
-
-<div class="il" style="margin-bottom:18px">Pick a friend to hold you to it</div>
-
-<!-- Contact picker -->
-<div style="width:100%;height:64px;border-radius:20px;background:rgba(212,162,79,0.04);border:1px solid rgba(212,162,79,0.1);display:flex;align-items:center;padding:0 20px;gap:14px;margin-bottom:14px">
-<div style="width:36px;height:36px;border-radius:50%;background:rgba(212,162,79,0.08);display:flex;align-items:center;justify-content:center">
-<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(212,162,79,0.4)" stroke-width="1.5" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M5 20c0-3.5 3.1-6 7-6s7 2.5 7 6"/></svg>
-</div>
-<span style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(222,210,192,0.45)">Choose from contacts</span>
-<svg width="16" height="16" fill="none" stroke="rgba(212,162,79,0.2)" stroke-width="1.5" stroke-linecap="round" style="margin-left:auto"><path d="M6 9l6 6 6-6"/></svg>
-</div>
-
-<div style="text-align:center;font-family:'Crimson Pro',serif;font-size:13px;color:rgba(222,210,192,0.2);font-style:italic;margin-bottom:14px">or</div>
-
-<div style="width:100%;height:56px;border-radius:20px;border:1px solid rgba(212,162,79,0.06);display:flex;align-items:center;padding:0 20px;margin-bottom:32px">
-<span style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(222,210,192,0.2)">Enter their name...</span>
-</div>
-
-<!-- Selected state -->
-<div style="font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.25);font-style:italic;margin-bottom:12px;letter-spacing:0.5px;text-transform:uppercase">Selected</div>
-<div style="width:100%;padding:16px 20px;border-radius:20px;background:rgba(212,162,79,0.05);border:1.5px solid rgba(212,162,79,0.12);display:flex;align-items:center;gap:14px;margin-bottom:12px">
-<div style="width:40px;height:40px;border-radius:50%;background:rgba(212,162,79,0.1);display:flex;align-items:center;justify-content:center;font-family:'Crimson Pro',serif;font-size:16px;color:rgba(212,162,79,0.5);font-weight:600">S</div>
-<div>
-<div style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(242,234,220,0.7);font-weight:500">Sarah Chen</div>
-<div style="font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.3);font-style:italic">She'll get a text when it's time to judge</div>
-</div>
-<div style="margin-left:auto;width:24px;height:24px;border-radius:50%;background:rgba(130,185,130,0.15);display:flex;align-items:center;justify-content:center"><span style="color:rgba(130,185,130,0.6);font-size:13px">✓</span></div>
-</div>
-
-<div style="text-align:center;font-family:'Crimson Pro',serif;font-size:13px;color:rgba(222,210,192,0.2);font-style:italic">I'll add someone later</div>
-
-<div style="margin-top:auto;padding-top:20px"><div class="ce">Next</div></div>
-</div></div>
-
-<div class="ar">↓</div>
-
-<!-- SCREEN 3: STAKES -->
-<div class="tg">
-<div class="tl">SCREEN 3</div>
-<div class="tt">The Stakes</div>
-<div class="td">How serious are you? By this point they've already committed socially — the money feels like sealing what they've decided, not a cold ask.</div>
-</div>
-
-<div class="phone">
-<div class="notch"></div>
-<div class="inner">
-<div class="glow" style="background:radial-gradient(circle,rgba(212,162,79,0.06) 0%,rgba(180,130,60,0.02) 35%,transparent 55%)"></div>
-<div class="bk"><svg width="18" height="18" fill="none" stroke="rgba(212,162,79,0.25)" stroke-width="1.5" stroke-linecap="round"><path d="M12 3L5 9.5L12 16"/></svg></div>
-
-<div style="font-family:'Playfair Display',serif;font-size:40px;font-weight:800;letter-spacing:-1px;line-height:0.96;color:rgba(242,234,220,0.94);margin-bottom:12px">How serious<br>are you?</div>
-<div style="width:32px;height:2px;background:rgba(212,162,79,0.25);margin:0 0 24px"></div>
-<div style="font-family:'Crimson Pro',serif;font-size:14px;color:rgba(212,162,79,0.32);font-style:italic;margin-bottom:32px">"Gym 3x" · this week · Sarah's watching</div>
-
-<!-- Amount pills -->
-<div style="display:flex;gap:8px;margin-bottom:32px">
-<div style="flex:1;height:86px;border-radius:20px;background:rgba(222,210,192,0.03);border:1px solid rgba(222,210,192,0.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
-<div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:800;color:rgba(242,234,220,0.48);letter-spacing:-1px">$10</div>
-<div style="font-family:'Crimson Pro',serif;font-size:11px;color:rgba(212,162,79,0.22);font-style:italic">a nudge</div>
-</div>
-<div style="flex:1;height:86px;border-radius:20px;background:rgba(212,162,79,0.07);border:1.5px solid rgba(212,162,79,0.14);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;box-shadow:0 0 28px rgba(212,162,79,0.05)">
-<div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:800;color:rgba(212,162,79,0.82);letter-spacing:-1px;text-shadow:0 0 20px rgba(212,162,79,0.08)">$25</div>
-<div style="font-family:'Crimson Pro',serif;font-size:11px;color:rgba(212,162,79,0.32);font-style:italic">stings</div>
-</div>
-<div style="flex:1;height:86px;border-radius:20px;background:rgba(222,210,192,0.03);border:1px solid rgba(222,210,192,0.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
-<div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:800;color:rgba(242,234,220,0.48);letter-spacing:-1px">$50</div>
-<div style="font-family:'Crimson Pro',serif;font-size:11px;color:rgba(212,162,79,0.22);font-style:italic">serious</div>
-</div>
-<div style="flex:1;height:86px;border-radius:20px;background:rgba(222,210,192,0.03);border:1px solid rgba(222,210,192,0.04);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px">
-<div style="font-family:'Playfair Display',serif;font-size:26px;font-weight:800;color:rgba(242,234,220,0.48);letter-spacing:-1px">$100</div>
-<div style="font-family:'Crimson Pro',serif;font-size:11px;color:rgba(212,162,79,0.22);font-style:italic">dead serious</div>
-</div>
-</div>
-
-<div style="padding:16px 0;border-top:1px solid rgba(212,162,79,0.06);display:flex;justify-content:space-between;align-items:center">
-<div style="font-family:'Crimson Pro',serif;font-size:14px"><span style="color:rgba(222,210,192,0.28)">If you break it → </span><span style="color:rgba(242,234,220,0.6);font-weight:600">ALS Association</span></div>
-<span style="color:rgba(212,162,79,0.38);font-size:13px;font-family:'Crimson Pro',serif;font-style:italic;padding:8px 0;min-width:44px;text-align:right">change</span>
-</div>
-
-<div style="padding:12px 0;font-family:'Crimson Pro',serif;font-size:14px;color:rgba(130,185,130,0.45);font-style:italic">✓ Keep your word — every penny back.</div>
-
-<div style="margin-top:auto;padding-top:24px;position:relative">
-<div style="position:absolute;bottom:28px;left:50%;transform:translateX(-50%);width:300px;height:60px;border-radius:60px;background:radial-gradient(ellipse,rgba(212,162,79,0.08) 0%,transparent 60%);pointer-events:none"></div>
-<div class="cg">Seal my vow — $25</div>
-<div style="text-align:center;margin-top:12px;font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.22);font-style:italic">No charge unless you break your vow.</div>
-</div>
-</div></div>
-
-<div class="ar">↓</div>
-
-<!-- SCREEN 4: SEAL -->
-<div class="tg">
-<div class="tl">SCREEN 4</div>
-<div class="tt">The Seal</div>
-<div class="td">Auth + payment. Vow recap confirms everything. Phone number for OTP + verdict texts. Then Apple Pay or card.</div>
-</div>
-
-<div class="phone">
-<div class="notch"></div>
-<div class="inner">
-<div class="glow" style="background:radial-gradient(circle,rgba(212,162,79,0.07) 0%,rgba(180,130,60,0.025) 30%,transparent 50%)"></div>
-<div class="bk"><svg width="18" height="18" fill="none" stroke="rgba(212,162,79,0.25)" stroke-width="1.5" stroke-linecap="round"><path d="M12 3L5 9.5L12 16"/></svg></div>
-
-<div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:800;letter-spacing:-1px;line-height:0.96;color:rgba(242,234,220,0.94);margin-bottom:12px">Almost<br>sealed.</div>
-<div style="width:32px;height:2px;background:rgba(212,162,79,0.25);margin:0 0 20px"></div>
-
-<!-- Vow recap -->
-<div style="background:rgba(212,162,79,0.04);border:1px solid rgba(212,162,79,0.08);border-radius:16px;padding:18px 20px;margin-bottom:32px">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-<div style="font-family:'Crimson Pro',serif;font-size:15px;color:rgba(242,234,220,0.65);font-weight:500">Gym 3x this week</div>
-<div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:rgba(212,162,79,0.7)">$25</div>
-</div>
-<div style="display:flex;gap:16px;font-family:'Crimson Pro',serif;font-size:13px">
-<span style="color:rgba(222,210,192,0.3);font-style:italic">Sarah's watching</span>
-<span style="color:rgba(222,210,192,0.2)">·</span>
-<span style="color:rgba(222,210,192,0.3);font-style:italic">Due Sunday</span>
-<span style="color:rgba(222,210,192,0.2)">·</span>
-<span style="color:rgba(222,210,192,0.3);font-style:italic">ALS Association</span>
-</div>
-</div>
-
-<!-- Phone input -->
-<div style="margin-bottom:28px">
-<div class="il" style="margin-bottom:14px">Enter your number to seal it</div>
-<div style="font-family:'Crimson Pro',serif;font-size:13px;color:rgba(222,210,192,0.22);margin-bottom:14px">We'll text you reminders + text Sarah when it's time to judge.</div>
-<div style="width:100%;height:56px;border-radius:16px;background:rgba(222,210,192,0.03);border:1px solid rgba(212,162,79,0.1);display:flex;align-items:center;padding:0 18px;gap:10px">
-<span style="font-family:'Crimson Pro',serif;font-size:15px;color:rgba(222,210,192,0.35)">🇺🇸 +1</span>
-<span style="width:1px;height:24px;background:rgba(212,162,79,0.08)"></span>
-<span style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(222,210,192,0.2)">(555) 000-0000</span>
-</div>
-</div>
-
-<div style="display:flex;align-items:center;gap:12px;margin-bottom:24px">
-<div style="flex:1;height:1px;background:rgba(212,162,79,0.06)"></div>
-<span style="font-family:'Crimson Pro',serif;font-size:12px;color:rgba(222,210,192,0.18);font-style:italic">or continue with</span>
-<div style="flex:1;height:1px;background:rgba(212,162,79,0.06)"></div>
-</div>
-
-<div style="display:flex;gap:10px;margin-bottom:32px">
-<div style="flex:1;height:52px;border-radius:14px;background:rgba(222,210,192,0.04);border:1px solid rgba(222,210,192,0.06);display:flex;align-items:center;justify-content:center;gap:8px">
-<span style="font-size:16px">&#63743;</span>
-<span style="font-family:'Crimson Pro',serif;font-size:14px;color:rgba(222,210,192,0.35)">Apple</span>
-</div>
-<div style="flex:1;height:52px;border-radius:14px;background:rgba(222,210,192,0.04);border:1px solid rgba(222,210,192,0.06);display:flex;align-items:center;justify-content:center;gap:8px">
-<span style="font-size:14px;color:rgba(222,210,192,0.35);font-weight:600">G</span>
-<span style="font-family:'Crimson Pro',serif;font-size:14px;color:rgba(222,210,192,0.35)">Google</span>
-</div>
-</div>
-
-<div style="font-family:'Crimson Pro',serif;font-size:13px;color:rgba(222,210,192,0.2);font-style:italic;line-height:1.6">After you verify, you'll save a card. No charge unless you break your vow.</div>
-
-<div style="margin-top:auto;padding-top:16px;position:relative">
-<div style="position:absolute;bottom:24px;left:50%;transform:translateX(-50%);width:300px;height:60px;border-radius:60px;background:radial-gradient(ellipse,rgba(212,162,79,0.08) 0%,transparent 60%);pointer-events:none"></div>
-<div class="cg" style="font-size:17px;height:64px">Send verification code</div>
-</div>
-</div></div>
-
-<div class="ar">↓</div>
-
-<!-- SEALED CONFIRMATION -->
-<div class="tg">
-<div class="tl">AFTER PAYMENT</div>
-<div class="tt">Sealed</div>
-<div class="td">"Your word is your bond" lands HERE — after they've committed, not before. This is the peak moment.</div>
-</div>
-
-<div class="phone">
-<div class="notch"></div>
-<div class="inner" style="justify-content:center;align-items:center;text-align:center">
-<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:500px;height:500px;border-radius:500px;background:radial-gradient(circle,rgba(212,162,79,0.08) 0%,rgba(212,162,79,0.03) 30%,transparent 55%);pointer-events:none"></div>
-
-<div style="width:80px;height:80px;border-radius:50%;background:linear-gradient(135deg,rgba(212,162,79,0.15),rgba(212,162,79,0.08));border:2px solid rgba(212,162,79,0.2);display:flex;align-items:center;justify-content:center;margin-bottom:28px;box-shadow:0 0 48px rgba(212,162,79,0.06);position:relative">
-<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(212,162,79,0.7)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-</div>
-
-<div style="font-family:'Playfair Display',serif;font-size:36px;font-weight:800;letter-spacing:-1px;color:rgba(242,234,220,0.94);margin-bottom:8px;position:relative">Sealed.</div>
-<div style="font-family:'Crimson Pro',serif;font-size:18px;color:rgba(212,162,79,0.55);font-style:italic;margin-bottom:32px;position:relative">Your word is your bond.</div>
-
-<div style="background:rgba(212,162,79,0.04);border:1px solid rgba(212,162,79,0.08);border-radius:16px;padding:20px;text-align:left;width:100%;margin-bottom:28px;position:relative">
-<div style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(242,234,220,0.65);font-weight:500;margin-bottom:14px">Gym 3x this week</div>
-<div style="display:flex;flex-direction:column;gap:8px;font-family:'Crimson Pro',serif;font-size:13px">
-<div style="display:flex;justify-content:space-between"><span style="color:rgba(222,210,192,0.3)">Stakes</span><span style="color:rgba(212,162,79,0.6);font-weight:500">$25</span></div>
-<div style="display:flex;justify-content:space-between"><span style="color:rgba(222,210,192,0.3)">Witness</span><span style="color:rgba(222,210,192,0.5)">Sarah Chen</span></div>
-<div style="display:flex;justify-content:space-between"><span style="color:rgba(222,210,192,0.3)">Due</span><span style="color:rgba(222,210,192,0.5)">Sunday, Apr 20</span></div>
-<div style="display:flex;justify-content:space-between"><span style="color:rgba(222,210,192,0.3)">If broken</span><span style="color:rgba(222,210,192,0.5)">ALS Association</span></div>
-</div>
-</div>
-
-<div style="width:100%;position:relative">
-<div class="cg" style="font-size:17px;height:62px">Tell Sarah — send the text</div>
-<div style="margin-top:14px;font-family:'Crimson Pro',serif;font-size:13px;color:rgba(222,210,192,0.2);font-style:italic">Share your vow — dare a friend to make one too</div>
-</div>
-</div></div>
-
-</div>
-
-<!-- ═══════════════════════════════════════════════════════════ -->
-<!-- SECTION 4: DARE THIRD LINE OPTIONS -->
-<!-- ═══════════════════════════════════════════════════════════ -->
-
-<div style="max-width:520px;margin:56px auto 0">
-
-<div style="text-align:center;margin-bottom:24px">
-<div style="font-family:'Playfair Display',serif;font-size:18px;font-weight:700;margin-bottom:8px">The Dare — Third Line Options</div>
-<div style="width:32px;height:2px;background:rgba(212,162,79,0.25);margin:0 auto 12px"></div>
-<div style="font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.25);font-style:italic">If you go with The Dare (#1 pick), which third line?</div>
-</div>
-
-<!-- Compact cards -->
-<div style="display:flex;flex-direction:column;gap:10px;margin-bottom:32px">
-
-<div style="padding:16px 20px;border-radius:14px;background:rgba(212,162,79,0.04);border:1.5px solid rgba(212,162,79,0.12)">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-<span style="font-family:'Crimson Pro',serif;font-size:11px;font-weight:600;color:rgba(212,162,79,0.5);letter-spacing:0.8px">THE ECHO</span>
-<span style="font-family:'Crimson Pro',serif;font-size:11px;color:rgba(130,185,130,0.5);font-style:italic">← panel pick</span>
-</div>
-<div style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(242,234,220,0.65)">Let's see if you mean it.</div>
-<div style="font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.25);font-style:italic;margin-top:6px">Echoes "Mean it." Dares the user. Ties the whole screen together.</div>
-</div>
-
-<div style="padding:16px 20px;border-radius:14px;border:1px solid rgba(212,162,79,0.06)">
-<div style="font-family:'Crimson Pro',serif;font-size:11px;font-weight:600;color:rgba(212,162,79,0.5);letter-spacing:0.8px;margin-bottom:6px">THE PRINCIPLE</div>
-<div style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(242,234,220,0.65)">Your word is your bond.</div>
-<div style="font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.25);font-style:italic;margin-top:6px">Noble. A code. Better saved for the "Sealed" confirmation screen.</div>
-</div>
-
-<div style="padding:16px 20px;border-radius:14px;border:1px solid rgba(212,162,79,0.06)">
-<div style="font-family:'Crimson Pro',serif;font-size:11px;font-weight:600;color:rgba(212,162,79,0.5);letter-spacing:0.8px;margin-bottom:6px">THE CONSEQUENCE</div>
-<div style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(242,234,220,0.65)">Break it, and you'll pay.</div>
-<div style="font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.25);font-style:italic;margin-top:6px">Ominous. Double meaning — literal and figurative. Most shareable.</div>
-</div>
-
-<div style="padding:16px 20px;border-radius:14px;border:1px solid rgba(212,162,79,0.06)">
-<div style="font-family:'Crimson Pro',serif;font-size:11px;font-weight:600;color:rgba(212,162,79,0.5);letter-spacing:0.8px;margin-bottom:6px">THE IDIOM</div>
-<div style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(242,234,220,0.65)">Because talk is cheap.</div>
-<div style="font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.25);font-style:italic;margin-top:6px">Barbed. Implies every other promise was just talk. This one isn't.</div>
-</div>
-
-<div style="padding:16px 20px;border-radius:14px;border:1px solid rgba(212,162,79,0.06)">
-<div style="font-family:'Crimson Pro',serif;font-size:11px;font-weight:600;color:rgba(212,162,79,0.5);letter-spacing:0.8px;margin-bottom:6px">THE CHALLENGE</div>
-<div style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(242,234,220,0.65)">Then prove it.</div>
-<div style="font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.25);font-style:italic;margin-top:6px">Two words. Maximum confrontation. The gauntlet thrown.</div>
-</div>
-
-<div style="padding:16px 20px;border-radius:14px;border:1px solid rgba(212,162,79,0.06)">
-<div style="font-family:'Crimson Pro',serif;font-size:11px;font-weight:600;color:rgba(212,162,79,0.5);letter-spacing:0.8px;margin-bottom:6px">THE SOCIAL</div>
-<div style="font-family:'Crimson Pro',serif;font-size:16px;color:rgba(242,234,220,0.65)">They're watching.</div>
-<div style="font-family:'Crimson Pro',serif;font-size:12px;color:rgba(212,162,79,0.25);font-style:italic;margin-top:6px">Social pressure in two words. Paranoid. The friend becomes the enforcer.</div>
-</div>
-
-</div>
-</div>
+<div class="screen">
+
+  <div class="nav">
+    <div class="nav-dot"></div>
+    <span class="nav-name">Unbreakable Vow</span>
+    <div class="nav-right">
+      <span class="nav-count">2,847 vows</span>
+      <svg width="17" height="12" fill="none" stroke="rgba(212,162,79,0.16)" stroke-width="1.3" stroke-linecap="round"><line x1="0" y1="1.5" x2="17" y2="1.5"/><line x1="4" y1="6" x2="17" y2="6"/><line x1="8" y1="10.5" x2="17" y2="10.5"/></svg>
+    </div>
+  </div>
+
+  <div style="margin-bottom:32px;position:relative">
+    <div class="hero-1">Make a<br>vow.</div>
+    <div class="hero-2" style="margin-bottom:32px">Mean it.</div>
+
+    <div>
+      <div>
+        <span class="def-word">un·break·a·ble vow</span>
+        <span class="def-pron">/ˌənˈbrākəbəl vaʊ/</span>
+        <span class="def-pos">noun</span>
+      </div>
+      <p class="def-body">A promise made to a friend. Backed by real money.<br><span class="def-punch">Break it, and you'll pay — to charity.</span></p>
+    </div>
+  </div>
+
+  <div style="margin-bottom:24px;position:relative">
+    <div class="input-label" style="margin-bottom:14px">What commitment will you bet on?</div>
+    <input class="input-field" type="text" placeholder="gym 3x this week" style="margin-bottom:22px">
+    <div class="chips">
+      <span class="chip" data-vow="Workout 3x this week">Workout 3x this week</span>
+      <span class="chip" data-vow="Delete TikTok">Delete TikTok</span>
+      <span class="chip" data-vow="No alcohol 2 weeks">No alcohol 2 weeks</span>
+      <span class="chip" data-vow="Read every night">Read every night</span>
+    </div>
+    <div style="text-align:center;margin-top:16px">
+      <span class="hiw" id="hiw-link">How does it work?</span>
+    </div>
+  </div>
+
+  <div style="margin-top:auto;padding-top:16px">
+    <div class="cta" id="cta-btn">I'm in</div>
+  </div>
+
+</div>
+
+<div class="sheet-overlay" id="sheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">How it works</div>
+    <div class="sheet-step"><span class="sheet-arrow">→</span><span class="sheet-text">Pick a commitment</span></div>
+    <div class="sheet-step"><span class="sheet-arrow">→</span><span class="sheet-text">Choose a friend to hold you to it</span></div>
+    <div class="sheet-step"><span class="sheet-arrow">→</span><span class="sheet-text">Put $10–$100 on the line</span></div>
+    <div class="sheet-step"><span class="sheet-arrow">→</span><span class="sheet-text">Keep your word — every penny back</span></div>
+    <div class="sheet-step"><span class="sheet-arrow">→</span><span class="sheet-text">Break it — your money goes to charity</span></div>
+    <div class="sheet-note">That's it. No catch.</div>
+    <button class="sheet-btn" id="sheet-close">Got it</button>
+  </div>
+</div>
+
+<script>
+document.querySelectorAll('.chip').forEach(function(chip){
+  chip.addEventListener('click',function(){
+    document.querySelector('.input-field').value=chip.dataset.vow;
+  });
+});
+var sheet=document.getElementById('sheet');
+document.getElementById('hiw-link').addEventListener('click',function(){sheet.classList.add('open')});
+document.getElementById('sheet-close').addEventListener('click',function(){sheet.classList.remove('open')});
+sheet.addEventListener('click',function(e){if(e.target===sheet)sheet.classList.remove('open')});
+</script>
 
 </body>
 </html>
