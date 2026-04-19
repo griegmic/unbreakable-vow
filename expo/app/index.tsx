@@ -253,7 +253,7 @@ const styles = StyleSheet.create({
   },
   navName: {
     fontSize: 11,
-    color: 'rgba(232,220,200,0.75)',
+    color: 'rgba(232,220,200,0.85)',
     fontWeight: '700' as const,
     letterSpacing: 2.5,
     textTransform: 'uppercase',
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
   dollarProof: {
     fontFamily: serifFont,
     fontSize: 12,
-    color: 'rgba(196,168,77,0.45)',
+    color: 'rgba(196,168,77,0.55)',
     fontStyle: 'italic',
     marginLeft: 'auto',
   },
@@ -292,7 +292,7 @@ const styles = StyleSheet.create({
     fontFamily: serifFont,
     fontSize: 16,
     lineHeight: 26,
-    color: 'rgba(222,210,192,0.42)',
+    color: 'rgba(222,210,192,0.55)',
   },
   // Input
   inputSection: {
@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   inputLabel: {
-    color: 'rgba(196,168,77,0.5)',
+    color: 'rgba(196,168,77,0.6)',
     fontSize: 14,
     fontWeight: '500' as const,
     fontFamily: serifFont,
@@ -308,10 +308,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   inputLabelFocused: {
-    color: 'rgba(196,168,77,0.65)',
+    color: 'rgba(196,168,77,0.75)',
   },
   input: {
-    color: 'rgba(222,210,192,0.55)',
+    color: 'rgba(222,210,192,0.65)',
     fontSize: 19,
     fontFamily: serifFont,
     minHeight: 28,
@@ -335,8 +335,8 @@ const styles = StyleSheet.create({
     paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.08)',
-    backgroundColor: 'rgba(255,255,255,0.04)',
+    borderColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(255,255,255,0.05)',
     minHeight: 40,
     justifyContent: 'center',
   },
@@ -345,12 +345,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(196,168,77,0.08)',
   },
   chipText: {
-    color: 'rgba(222,210,192,0.55)',
+    color: 'rgba(222,210,192,0.65)',
     fontSize: 13,
     fontFamily: serifFont,
   },
   chipTextActive: {
-    color: 'rgba(196,168,77,0.7)',
+    color: 'rgba(196,168,77,0.8)',
   },
   // CTA
   ctaSection: {
@@ -391,7 +391,7 @@ const styles = StyleSheet.create({
   footerText: {
     fontFamily: serifFont,
     fontSize: 14,
-    color: 'rgba(196,168,77,0.35)',
+    color: 'rgba(196,168,77,0.45)',
     fontStyle: 'italic',
     textAlign: 'center',
   },
