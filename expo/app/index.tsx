@@ -140,8 +140,7 @@ export default function HomeScreen() {
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
             <Text style={styles.explainer}>
-              Vow to a friend one thing you've been putting off.{'\n'}
-              <Text style={styles.explainerPunch}>Break it, and you pay — to charity!</Text>
+              Vow to a friend something you've{'\n'}been putting off. Break it, your{'\n'}money goes to charity.
             </Text>
           </Animated.View>
 
@@ -196,6 +195,12 @@ export default function HomeScreen() {
               </Pressable>
             </Animated.View>
           </Animated.View>
+
+          {/* How it works footer */}
+          <View style={styles.footer}>
+            <View style={styles.footerLine} />
+            <Text style={styles.footerText}>How it works  ↗</Text>
+          </View>
 
         </ScrollView>
       </SafeAreaView>
@@ -291,9 +296,6 @@ const styles = StyleSheet.create({
     lineHeight: 26,
     color: 'rgba(222,210,192,0.42)',
   },
-  explainerPunch: {
-    color: 'rgba(222,210,192,0.42)',
-  },
   // Input
   inputSection: {
     marginTop: 32,
@@ -378,5 +380,22 @@ const styles = StyleSheet.create({
   },
   ctaTextGold: {
     color: '#1C1816',
+  },
+  // Footer
+  footer: {
+    marginTop: 'auto',
+    paddingTop: 40,
+  },
+  footerLine: {
+    height: 1,
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    marginBottom: 20,
+  },
+  footerText: {
+    fontFamily: serifFont,
+    fontSize: 14,
+    color: 'rgba(196,168,77,0.35)',
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
 });

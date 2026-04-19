@@ -27,10 +27,9 @@ export const palette = {
 
 export const vowExamples: string[] = [
   'Workout 3x this week',
-  'Delete TikTok for a week',
+  'Delete TikTok',
   'No alcohol 2 weeks',
-  'No texting my ex for a month',
-  'Finish the side project',
+  'No texting my ex',
 ];
 
 export const stakeAmounts: number[] = [10, 25, 50, 100];
