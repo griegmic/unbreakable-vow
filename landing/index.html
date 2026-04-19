@@ -6,7 +6,7 @@
 <title>Unbreakable Vow</title>
 <meta name="description" content="Vow to a friend. Put money on it. Break it, and you pay — to charity!">
 <meta property="og:title" content="Unbreakable Vow">
-<meta property="og:description" content="Vow to a friend. Put money on it. Break it, and you pay — to charity!">
+<meta property="og:description" content="Vow to a friend one thing you've been putting off. Break it, and you pay — to charity!">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://unbreakablevow.app">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,150 +14,236 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+
 body{
-  background:#13100B;
+  background:#111;
   color:#E8DCC8;
   font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;
   min-height:100vh;min-height:100dvh;
   display:flex;align-items:center;justify-content:center;
-  overflow-x:hidden;
 }
-.screen{
-  width:100%;max-width:420px;
-  padding:48px 28px 32px;
-  display:flex;flex-direction:column;
+
+.card{
+  width:100%;max-width:440px;
   min-height:100vh;min-height:100dvh;
-  position:relative;margin:0 auto;
+  background:#1C1816;
+  display:flex;flex-direction:column;
+  position:relative;
+  overflow:hidden;
 }
-.screen::before{
-  content:'';position:absolute;
-  top:-80px;left:50%;transform:translateX(-50%);
-  width:500px;height:500px;border-radius:500px;
-  background:radial-gradient(circle,rgba(212,162,79,0.025) 0%,transparent 55%);
-  pointer-events:none;
+
+@media(min-width:480px){
+  .card{
+    min-height:auto;
+    border-radius:28px;
+    margin:40px 20px;
+    box-shadow:0 48px 96px rgba(0,0,0,0.4);
+  }
 }
+
+.inner{
+  padding:48px 32px 32px;
+  display:flex;flex-direction:column;
+  flex:1;
+}
+
 /* Nav */
-.nav{display:flex;align-items:center;gap:10px;margin-bottom:32px}
-.nav-icon{width:28px;height:28px;border-radius:8px;background:rgba(212,162,79,0.1);border:1px solid rgba(212,162,79,0.12);display:flex;align-items:center;justify-content:center}
-.nav-icon span{font-family:'Playfair Display',serif;font-size:12px;color:rgba(212,162,79,0.5);font-weight:700}
-.nav-name{font-size:11px;color:rgba(212,162,79,0.35);font-weight:600;letter-spacing:2px;text-transform:uppercase}
-.nav-dollar{margin-left:auto;font-family:'Crimson Pro',serif;font-size:13px;color:rgba(212,162,79,0.3);font-style:italic}
+.nav{display:flex;align-items:center;gap:12px;margin-bottom:40px}
+.nav-icon{
+  width:32px;height:32px;border-radius:9px;
+  background:#2A2520;
+  display:flex;align-items:center;justify-content:center;
+}
+.nav-icon-diamond{
+  width:12px;height:12px;
+  background:rgba(196,168,77,0.6);
+  transform:rotate(45deg);
+  border-radius:2px;
+}
+.nav-name{
+  font-size:12px;font-weight:700;letter-spacing:3.5px;
+  text-transform:uppercase;color:rgba(232,220,200,0.75);
+}
+.nav-dollar{
+  margin-left:auto;
+  font-family:'Crimson Pro',serif;font-size:13px;
+  color:rgba(196,168,77,0.45);font-style:italic;
+}
+
 /* Hero */
-.hero-1{font-family:'Playfair Display',serif;font-size:clamp(44px,13vw,52px);font-weight:800;letter-spacing:-1.2px;line-height:0.96;color:rgba(242,234,220,0.94)}
-.hero-2{font-family:'Playfair Display',serif;font-size:clamp(44px,13vw,52px);font-weight:800;letter-spacing:-1.2px;line-height:0.96;color:rgba(212,162,79,0.68);font-style:italic;text-shadow:0 0 32px rgba(212,162,79,0.06)}
+.hero{margin-bottom:24px}
+.hero-1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(48px,14vw,58px);font-weight:800;
+  letter-spacing:-1.5px;line-height:0.95;
+  color:rgba(242,234,220,0.92);
+}
+.hero-2{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(48px,14vw,58px);font-weight:800;
+  letter-spacing:-1.5px;line-height:0.95;
+  color:rgba(196,168,77,0.7);font-style:italic;
+}
+
 /* Explainer */
-.explainer{font-family:'Crimson Pro',serif;color:rgba(222,210,192,0.42);font-size:16px;line-height:1.65}
+.explainer{
+  font-family:'Crimson Pro',serif;
+  font-size:17px;line-height:1.65;
+  color:rgba(222,210,192,0.42);
+  margin-bottom:40px;
+}
+
 /* Input */
-.input-label{font-family:'Crimson Pro',serif;font-size:15px;color:rgba(212,162,79,0.48);font-style:italic}
-.input-field{font-family:'Crimson Pro',serif;font-size:20px;color:rgba(222,210,192,0.6);padding-bottom:14px;border:none;border-bottom:2px solid rgba(212,162,79,0.2);background:transparent;width:100%;outline:none;caret-color:rgba(212,162,79,0.5)}
-.input-field::placeholder{color:rgba(222,210,192,0.22)}
-.input-field:focus{border-bottom-color:rgba(212,162,79,0.35)}
+.input-label{
+  font-family:'Crimson Pro',serif;font-size:15px;
+  color:rgba(196,168,77,0.5);font-style:italic;
+  margin-bottom:14px;
+}
+.input-field{
+  font-family:'Crimson Pro',serif;font-size:21px;
+  color:rgba(222,210,192,0.55);
+  padding-bottom:14px;border:none;
+  border-bottom:1.5px solid rgba(196,168,77,0.15);
+  background:transparent;width:100%;outline:none;
+  caret-color:rgba(196,168,77,0.5);
+}
+.input-field::placeholder{color:rgba(222,210,192,0.2)}
+.input-field:focus{border-bottom-color:rgba(196,168,77,0.3);color:rgba(222,210,192,0.65)}
+
 /* Chips */
-.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
 .chip{
-  padding:10px 16px;border-radius:999px;
-  background:rgba(212,162,79,0.04);border:1px solid rgba(212,162,79,0.08);
-  font-size:13px;color:rgba(222,210,192,0.42);font-family:'Crimson Pro',serif;
+  padding:11px 18px;border-radius:999px;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08);
+  font-size:14px;color:rgba(222,210,192,0.55);
+  font-family:'Crimson Pro',serif;
   min-height:44px;display:flex;align-items:center;
   cursor:pointer;transition:all 0.15s ease;
   -webkit-tap-highlight-color:transparent;
 }
-.chip:active{background:rgba(212,162,79,0.08);border-color:rgba(212,162,79,0.14)}
-/* CTA — gold filled */
+.chip:active{background:rgba(196,168,77,0.08);border-color:rgba(196,168,77,0.14)}
+
+/* CTA */
+.cta-wrap{margin-top:40px}
 .cta{
-  width:100%;height:64px;border-radius:18px;
-  background:linear-gradient(135deg,rgba(212,162,79,0.85),rgba(196,150,60,0.7));
+  width:100%;height:68px;border-radius:16px;
+  background:rgba(196,168,77,0.75);
   display:flex;align-items:center;justify-content:center;
-  font-family:'Playfair Display',serif;font-size:18px;font-weight:700;
-  color:#13100B;letter-spacing:-0.2px;
+  font-family:'Playfair Display',serif;
+  font-size:20px;font-weight:700;font-style:italic;
+  color:#1C1816;letter-spacing:-0.3px;
   cursor:pointer;transition:all 0.2s ease;
   -webkit-tap-highlight-color:transparent;
-  box-shadow:0 0 32px rgba(212,162,79,0.06),0 6px 20px rgba(0,0,0,0.15);
 }
-.cta:active{background:linear-gradient(135deg,rgba(212,162,79,0.95),rgba(196,150,60,0.8))}
-/* How it works footer */
-.hiw-footer{
-  display:flex;align-items:center;justify-content:center;gap:6px;
-  padding-top:20px;margin-top:16px;
-  border-top:1px solid rgba(212,162,79,0.06);
+.cta:active{background:rgba(196,168,77,0.85)}
+
+/* Footer */
+.footer{
+  margin-top:auto;
+  padding-top:24px;
+  border-top:1px solid rgba(255,255,255,0.06);
+}
+.hiw{
+  display:flex;align-items:center;justify-content:center;gap:8px;
+  padding:20px 0 8px;
   cursor:pointer;-webkit-tap-highlight-color:transparent;
 }
-.hiw-text{font-family:'Crimson Pro',serif;font-size:14px;color:rgba(212,162,79,0.28);font-style:italic}
-.hiw-arrow{font-size:12px;color:rgba(212,162,79,0.2)}
+.hiw-text{font-family:'Crimson Pro',serif;font-size:15px;color:rgba(196,168,77,0.35);font-style:italic}
+.hiw-arrow{font-size:14px;color:rgba(196,168,77,0.25)}
+
 /* Bottom sheet */
 .sheet-overlay{
   display:none;position:fixed;top:0;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,0.5);z-index:100;
+  background:rgba(0,0,0,0.55);z-index:100;
   align-items:flex-end;justify-content:center;
 }
 .sheet-overlay.open{display:flex}
 .sheet{
-  width:100%;max-width:420px;
-  background:#1A1610;border-radius:24px 24px 0 0;
-  padding:28px 28px 40px;
-  animation:slideUp 0.3s ease;
+  width:100%;max-width:440px;
+  background:#1E1A16;border-radius:24px 24px 0 0;
+  padding:24px 32px 40px;
+  animation:slideUp 0.3s cubic-bezier(0.2,0,0,1);
 }
 @keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
-.sheet-handle{width:36px;height:4px;border-radius:4px;background:rgba(212,162,79,0.12);margin:0 auto 24px}
-.sheet-title{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:rgba(242,234,220,0.85);margin-bottom:24px}
-.sheet-step{display:flex;align-items:flex-start;gap:14px;margin-bottom:18px}
-.sheet-arrow{font-family:'Crimson Pro',serif;font-size:16px;color:rgba(212,162,79,0.4);flex-shrink:0;margin-top:1px}
-.sheet-text{font-family:'Crimson Pro',serif;font-size:16px;color:rgba(222,210,192,0.5);line-height:1.5}
-.sheet-note{font-family:'Crimson Pro',serif;font-size:14px;color:rgba(212,162,79,0.3);font-style:italic;margin-top:24px;line-height:1.6}
+.sheet-handle{width:36px;height:4px;border-radius:4px;background:rgba(255,255,255,0.08);margin:0 auto 28px}
+.sheet-title{
+  font-family:'Playfair Display',serif;font-size:22px;
+  font-weight:700;color:rgba(242,234,220,0.85);
+  margin-bottom:28px;
+}
+.sheet-step{display:flex;align-items:flex-start;gap:14px;margin-bottom:20px}
+.sheet-arrow{
+  font-family:'Crimson Pro',serif;font-size:16px;
+  color:rgba(196,168,77,0.45);flex-shrink:0;margin-top:1px;
+}
+.sheet-text{
+  font-family:'Crimson Pro',serif;font-size:16px;
+  color:rgba(222,210,192,0.5);line-height:1.5;
+}
+.sheet-note{
+  font-family:'Crimson Pro',serif;font-size:14px;
+  color:rgba(196,168,77,0.3);font-style:italic;
+  margin-top:28px;line-height:1.7;
+}
 .sheet-btn{
-  width:100%;height:56px;border-radius:16px;margin-top:24px;
-  background:rgba(212,162,79,0.08);border:1px solid rgba(212,162,79,0.12);
+  width:100%;height:56px;border-radius:14px;margin-top:28px;
+  background:transparent;
+  border:1px solid rgba(196,168,77,0.15);
   font-family:'Playfair Display',serif;font-size:16px;font-weight:700;
-  color:rgba(212,162,79,0.5);cursor:pointer;
+  color:rgba(196,168,77,0.45);cursor:pointer;
   -webkit-tap-highlight-color:transparent;
 }
 </style>
 </head>
 <body>
 
-<div class="screen">
+<div class="card">
+<div class="inner">
 
   <!-- Nav -->
   <div class="nav">
-    <div class="nav-icon"><span>◆</span></div>
+    <div class="nav-icon"><div class="nav-icon-diamond"></div></div>
     <span class="nav-name">Unbreakable Vow</span>
     <span class="nav-dollar">$47,320 on the line</span>
   </div>
 
   <!-- Hero -->
-  <div style="margin-bottom:20px;position:relative">
+  <div class="hero">
     <div class="hero-1">Make a vow.</div>
     <div class="hero-2">Mean it.</div>
   </div>
 
   <!-- Explainer -->
-  <div style="margin-bottom:32px">
-    <p class="explainer">Vow to a friend. Put money on it.<br>Break it, and you pay — to charity!</p>
-  </div>
+  <p class="explainer">Vow to a friend one thing you've been putting off.<br>Break it, and you pay — to charity!</p>
 
   <!-- Input -->
-  <div style="margin-bottom:24px">
-    <div class="input-label" style="margin-bottom:12px">What commitment will you bet on?</div>
-    <input class="input-field" type="text" placeholder="gym 3x this week" style="margin-bottom:18px">
+  <div>
+    <div class="input-label">What will you commit to?</div>
+    <input class="input-field" type="text" placeholder="gym 3x this week">
     <div class="chips">
       <span class="chip" data-vow="Workout 3x this week">Workout 3x this week</span>
-      <span class="chip" data-vow="Delete TikTok">Delete TikTok</span>
+      <span class="chip" data-vow="Delete TikTok for a week">Delete TikTok for a week</span>
       <span class="chip" data-vow="No alcohol 2 weeks">No alcohol 2 weeks</span>
-      <span class="chip" data-vow="Read every night">Read every night</span>
+      <span class="chip" data-vow="No texting my ex for a month">No texting my ex for a month</span>
+      <span class="chip" data-vow="Finish the side project">Finish the side project</span>
     </div>
   </div>
 
-  <!-- CTA — gold filled -->
-  <div style="margin-top:auto;padding-top:12px">
+  <!-- CTA -->
+  <div class="cta-wrap">
     <div class="cta" id="cta-btn">Make my vow</div>
   </div>
 
-  <!-- How it works — footer, below CTA -->
-  <div class="hiw-footer" id="hiw-link">
-    <span class="hiw-text">How it works</span>
-    <span class="hiw-arrow">↗</span>
+  <!-- Footer -->
+  <div class="footer">
+    <div class="hiw" id="hiw-link">
+      <span class="hiw-text">How it works</span>
+      <span class="hiw-arrow">↗</span>
+    </div>
   </div>
 
+</div>
 </div>
 
 <!-- Bottom sheet -->

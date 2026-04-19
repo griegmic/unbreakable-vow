@@ -118,7 +118,7 @@ export default function HomeScreen() {
     <View style={styles.screen}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={StyleSheet.absoluteFill}>
-        <View style={{ flex: 1, backgroundColor: '#13100B' }} />
+        <View style={{ flex: 1, backgroundColor: '#1C1816' }} />
       </View>
       <View pointerEvents="none" style={styles.ambientGlow} />
 
@@ -141,7 +141,7 @@ export default function HomeScreen() {
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
             <Text style={styles.explainer}>
-              Vow to a friend. Put money on it.{'\n'}
+              Vow to a friend one thing you've been putting off.{'\n'}
               <Text style={styles.explainerPunch}>Break it, and you pay — to charity!</Text>
             </Text>
           </Animated.View>
@@ -153,7 +153,7 @@ export default function HomeScreen() {
               { opacity: inputFade, transform: [{ translateY: inputSlide }] },
             ]}
           >
-            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>What commitment will you bet on?</Text>
+            <Text style={[styles.inputLabel, focused && styles.inputLabelFocused]}>What will you commit to?</Text>
             <TextInput
               ref={inputRef}
               style={styles.input}
@@ -207,17 +207,16 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#13100B',
+    backgroundColor: '#1C1816',
   },
   safe: {
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 28,
+    paddingHorizontal: 32,
     paddingTop: 8,
-    paddingBottom: 40,
+    paddingBottom: 32,
     flexGrow: 1,
-    justifyContent: 'center',
   },
   ambientGlow: {
     position: 'absolute',
@@ -227,85 +226,81 @@ const styles = StyleSheet.create({
     width: 500,
     height: 500,
     borderRadius: 500,
-    backgroundColor: 'rgba(212,162,79,0.025)',
+    backgroundColor: 'rgba(196,168,77,0.015)',
   },
+  // Nav
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginBottom: 28,
+    gap: 12,
+    marginBottom: 40,
     marginTop: 4,
   },
   navIcon: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: 'rgba(212,162,79,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.12)',
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    backgroundColor: '#2A2520',
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 0,
   },
   navIconText: {
-    fontFamily: serifFont,
     fontSize: 12,
-    color: 'rgba(212,162,79,0.5)',
+    color: 'rgba(196,168,77,0.6)',
   },
   navName: {
-    fontSize: 11,
-    color: 'rgba(212,162,79,0.35)',
-    fontWeight: '600' as const,
-    letterSpacing: 2,
+    fontSize: 12,
+    color: 'rgba(232,220,200,0.75)',
+    fontWeight: '700' as const,
+    letterSpacing: 3.5,
     textTransform: 'uppercase',
     flex: 1,
   },
   dollarProof: {
     fontFamily: serifFont,
     fontSize: 13,
-    color: 'rgba(212,162,79,0.3)',
+    color: 'rgba(196,168,77,0.45)',
     fontStyle: 'italic',
-    letterSpacing: 0.3,
-    marginRight: 8,
+  },
+  // Hero
+  heroBlock: {
+    marginBottom: 24,
   },
   heroLine1: {
-    color: 'rgba(242,234,220,0.94)',
-    fontSize: 48,
-    lineHeight: 46,
+    color: 'rgba(242,234,220,0.92)',
+    fontSize: 52,
+    lineHeight: 50,
     fontWeight: '800' as const,
     fontFamily: serifFont,
-    letterSpacing: -1.2,
-  },
-  heroBlock: {
-    marginBottom: 8,
+    letterSpacing: -1.5,
   },
   heroLine2: {
-    color: 'rgba(212,162,79,0.68)',
-    fontSize: 48,
-    lineHeight: 46,
+    color: 'rgba(196,168,77,0.7)',
+    fontSize: 52,
+    lineHeight: 50,
     fontWeight: '800' as const,
     fontFamily: serifFont,
     fontStyle: 'italic',
-    letterSpacing: -1.2,
-    marginBottom: 20,
-    textShadowColor: 'rgba(212,162,79,0.06)',
-    textShadowOffset: { width: 0, height: 0 },
-    textShadowRadius: 32,
+    letterSpacing: -1.5,
+    marginBottom: 24,
   },
   explainer: {
     fontFamily: serifFont,
-    fontSize: 16,
-    lineHeight: 26,
+    fontSize: 17,
+    lineHeight: 28,
     color: 'rgba(222,210,192,0.42)',
   },
   explainerPunch: {
-    color: 'rgba(222,210,192,0.52)',
+    color: 'rgba(222,210,192,0.42)',
   },
+  // Input
   inputSection: {
-    marginTop: 28,
-    marginBottom: 16,
+    marginTop: 40,
+    marginBottom: 0,
   },
   inputLabel: {
-    color: 'rgba(212,162,79,0.48)',
+    color: 'rgba(196,168,77,0.5)',
     fontSize: 15,
     fontWeight: '500' as const,
     fontFamily: serifFont,
@@ -313,78 +308,75 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   inputLabelFocused: {
-    color: 'rgba(212,162,79,0.65)',
+    color: 'rgba(196,168,77,0.65)',
   },
   input: {
-    color: 'rgba(242,234,220,0.85)',
-    fontSize: 20,
+    color: 'rgba(222,210,192,0.55)',
+    fontSize: 21,
     fontFamily: serifFont,
     minHeight: 30,
     paddingVertical: 0,
     marginBottom: 0,
   },
   inputLine: {
-    height: 2,
-    backgroundColor: 'rgba(212,162,79,0.2)',
+    height: 1.5,
+    backgroundColor: 'rgba(196,168,77,0.15)',
     marginTop: 14,
-    marginBottom: 18,
+    marginBottom: 22,
   },
+  // Chips
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: 10,
   },
   chip: {
     paddingHorizontal: 18,
-    paddingVertical: 12,
+    paddingVertical: 11,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.08)',
-    backgroundColor: 'rgba(212,162,79,0.04)',
+    borderColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: 'rgba(255,255,255,0.04)',
     minHeight: 44,
     justifyContent: 'center',
   },
   chipActive: {
-    borderColor: 'rgba(212,162,79,0.14)',
-    backgroundColor: 'rgba(212,162,79,0.07)',
+    borderColor: 'rgba(196,168,77,0.15)',
+    backgroundColor: 'rgba(196,168,77,0.08)',
   },
   chipText: {
-    color: 'rgba(222,210,192,0.42)',
+    color: 'rgba(222,210,192,0.55)',
     fontSize: 14,
     fontFamily: serifFont,
   },
   chipTextActive: {
-    color: 'rgba(212,162,79,0.65)',
+    color: 'rgba(196,168,77,0.7)',
   },
+  // CTA
   ctaSection: {
+    marginTop: 40,
     marginBottom: 24,
   },
   ctaWrap: {
-    borderRadius: 18,
-    minHeight: 64,
+    borderRadius: 16,
+    minHeight: 68,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(212,162,79,0.08)',
-    borderWidth: 1.5,
-    borderColor: 'rgba(212,162,79,0.14)',
+    backgroundColor: 'rgba(196,168,77,0.12)',
+    borderWidth: 0,
   },
   ctaWrapGold: {
-    backgroundColor: 'rgba(212,162,79,0.82)',
-    borderColor: 'rgba(212,162,79,0.85)',
-    shadowColor: 'rgba(212,162,79,1)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.06,
-    shadowRadius: 32,
-    elevation: 8,
+    backgroundColor: 'rgba(196,168,77,0.75)',
   },
   ctaText: {
     fontFamily: serifFont,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700' as const,
-    color: 'rgba(212,162,79,0.3)',
-    letterSpacing: -0.2,
+    fontStyle: 'italic',
+    color: 'rgba(196,168,77,0.3)',
+    letterSpacing: -0.3,
   },
   ctaTextGold: {
-    color: '#13100B',
+    color: '#1C1816',
   },
 });
