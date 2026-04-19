@@ -128,20 +128,25 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Dollar social proof + menu */}
-          <Animated.View style={[styles.topRow, { opacity: fadeIn, transform: [{ translateY: slideUp }] }]}>
-            <View style={{ flex: 1 }} />
+          {/* Nav — brand + dollar social proof */}
+          <Animated.View style={[styles.navRow, { opacity: fadeIn, transform: [{ translateY: slideUp }] }]}>
+            <View style={styles.navIcon}><Text style={styles.navIconText}>◆</Text></View>
+            <Text style={styles.navName}>Unbreakable Vow</Text>
             <Text style={styles.dollarProof}>$47,320 on the line</Text>
             <AppMenuButton />
           </Animated.View>
 
           {/* Hero */}
-          <Animated.View style={{ opacity: heroFade, transform: [{ translateY: heroSlide }] }}>
+          <Animated.View style={[styles.heroBlock, { opacity: heroFade, transform: [{ translateY: heroSlide }] }]}>
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
+            <Text style={styles.explainer}>
+              Vow to a friend. Put money on it.{'\n'}
+              <Text style={styles.explainerPunch}>Break it, and you pay — to charity!</Text>
+            </Text>
           </Animated.View>
 
-          {/* Input — bare on canvas, no card -->  */}
+          {/* Input */}
           <Animated.View
             style={[
               styles.inputSection,
@@ -177,7 +182,7 @@ export default function HomeScreen() {
             </View>
           </Animated.View>
 
-          {/* CTA */}
+          {/* CTA — gold filled */}
           <Animated.View style={[styles.ctaSection, { opacity: ctaFade, transform: [{ translateY: ctaSlide }] }]}>
             <Animated.View style={{ transform: [{ scale: btnScale }] }}>
               <Pressable
@@ -185,10 +190,10 @@ export default function HomeScreen() {
                 onPress={handleContinue}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
-                style={[styles.ctaWrap, canContinue && styles.ctaWrapActive]}
+                style={[styles.ctaWrap, canContinue && styles.ctaWrapGold]}
                 testID="home-continue"
               >
-                <Text style={[styles.ctaText, canContinue && styles.ctaTextActive]}>I'm in</Text>
+                <Text style={[styles.ctaText, canContinue && styles.ctaTextGold]}>Make my vow</Text>
               </Pressable>
             </Animated.View>
           </Animated.View>
@@ -224,12 +229,35 @@ const styles = StyleSheet.create({
     borderRadius: 500,
     backgroundColor: 'rgba(212,162,79,0.025)',
   },
-  topRow: {
+  navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 32,
+    gap: 10,
+    marginBottom: 28,
     marginTop: 4,
+  },
+  navIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: 'rgba(212,162,79,0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  navIconText: {
+    fontFamily: serifFont,
+    fontSize: 12,
+    color: 'rgba(212,162,79,0.5)',
+  },
+  navName: {
+    fontSize: 11,
+    color: 'rgba(212,162,79,0.35)',
+    fontWeight: '600' as const,
+    letterSpacing: 2,
+    textTransform: 'uppercase',
+    flex: 1,
   },
   dollarProof: {
     fontFamily: serifFont,
@@ -237,6 +265,7 @@ const styles = StyleSheet.create({
     color: 'rgba(212,162,79,0.3)',
     fontStyle: 'italic',
     letterSpacing: 0.3,
+    marginRight: 8,
   },
   heroLine1: {
     color: 'rgba(242,234,220,0.94)',
@@ -246,6 +275,9 @@ const styles = StyleSheet.create({
     fontFamily: serifFont,
     letterSpacing: -1.2,
   },
+  heroBlock: {
+    marginBottom: 8,
+  },
   heroLine2: {
     color: 'rgba(212,162,79,0.68)',
     fontSize: 48,
@@ -254,10 +286,19 @@ const styles = StyleSheet.create({
     fontFamily: serifFont,
     fontStyle: 'italic',
     letterSpacing: -1.2,
-    marginBottom: 24,
+    marginBottom: 20,
     textShadowColor: 'rgba(212,162,79,0.06)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 32,
+  },
+  explainer: {
+    fontFamily: serifFont,
+    fontSize: 16,
+    lineHeight: 26,
+    color: 'rgba(222,210,192,0.42)',
+  },
+  explainerPunch: {
+    color: 'rgba(222,210,192,0.52)',
   },
   inputSection: {
     marginTop: 28,
@@ -319,7 +360,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   ctaWrap: {
-    borderRadius: 20,
+    borderRadius: 18,
     minHeight: 64,
     alignItems: 'center',
     justifyContent: 'center',
@@ -327,9 +368,14 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: 'rgba(212,162,79,0.14)',
   },
-  ctaWrapActive: {
-    backgroundColor: 'rgba(212,162,79,0.12)',
-    borderColor: 'rgba(212,162,79,0.2)',
+  ctaWrapGold: {
+    backgroundColor: 'rgba(212,162,79,0.82)',
+    borderColor: 'rgba(212,162,79,0.85)',
+    shadowColor: 'rgba(212,162,79,1)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.06,
+    shadowRadius: 32,
+    elevation: 8,
   },
   ctaText: {
     fontFamily: serifFont,
@@ -338,7 +384,7 @@ const styles = StyleSheet.create({
     color: 'rgba(212,162,79,0.3)',
     letterSpacing: -0.2,
   },
-  ctaTextActive: {
-    color: 'rgba(212,162,79,0.55)',
+  ctaTextGold: {
+    color: '#13100B',
   },
 });
