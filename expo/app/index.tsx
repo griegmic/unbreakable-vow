@@ -128,8 +128,10 @@ export default function HomeScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Menu — subtle top-right, just in case */}
-          <Animated.View style={[styles.menuCorner, { opacity: fadeIn }]}>
+          {/* Dollar social proof + menu */}
+          <Animated.View style={[styles.topRow, { opacity: fadeIn, transform: [{ translateY: slideUp }] }]}>
+            <View style={{ flex: 1 }} />
+            <Text style={styles.dollarProof}>$47,320 on the line</Text>
             <AppMenuButton />
           </Animated.View>
 
@@ -222,11 +224,19 @@ const styles = StyleSheet.create({
     borderRadius: 500,
     backgroundColor: 'rgba(212,162,79,0.025)',
   },
-  menuCorner: {
-    alignItems: 'flex-end',
-    marginBottom: 20,
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 32,
     marginTop: 4,
-    opacity: 0.4,
+  },
+  dollarProof: {
+    fontFamily: serifFont,
+    fontSize: 13,
+    color: 'rgba(212,162,79,0.3)',
+    fontStyle: 'italic',
+    letterSpacing: 0.3,
   },
   heroLine1: {
     color: 'rgba(242,234,220,0.94)',
