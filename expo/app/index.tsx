@@ -237,8 +237,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   navIcon: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     borderRadius: 9,
     backgroundColor: '#2A2520',
     alignItems: 'center',
@@ -246,8 +246,8 @@ const styles = StyleSheet.create({
     borderWidth: 0,
   },
   navIconText: {
-    fontSize: 12,
-    color: 'rgba(196,168,77,0.6)',
+    fontSize: 13,
+    color: 'rgba(196,168,77,0.75)',
   },
   navName: {
     fontSize: 12,
@@ -269,16 +269,16 @@ const styles = StyleSheet.create({
   },
   heroLine1: {
     color: 'rgba(242,234,220,0.92)',
-    fontSize: 52,
-    lineHeight: 50,
+    fontSize: 54,
+    lineHeight: 54,
     fontWeight: '800' as const,
     fontFamily: serifFont,
     letterSpacing: -1.5,
   },
   heroLine2: {
     color: 'rgba(196,168,77,0.7)',
-    fontSize: 52,
-    lineHeight: 50,
+    fontSize: 54,
+    lineHeight: 54,
     fontWeight: '800' as const,
     fontFamily: serifFont,
     fontStyle: 'italic',
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   },
   // Input
   inputSection: {
-    marginTop: 40,
+    marginTop: 36,
     marginBottom: 0,
   },
   inputLabel: {
@@ -319,8 +319,8 @@ const styles = StyleSheet.create({
     marginBottom: 0,
   },
   inputLine: {
-    height: 1.5,
-    backgroundColor: 'rgba(196,168,77,0.15)',
+    height: 1,
+    backgroundColor: 'rgba(196,168,77,0.12)',
     marginTop: 14,
     marginBottom: 22,
   },
@@ -354,19 +354,19 @@ const styles = StyleSheet.create({
   },
   // CTA
   ctaSection: {
-    marginTop: 40,
+    marginTop: 36,
     marginBottom: 24,
   },
   ctaWrap: {
-    borderRadius: 16,
-    minHeight: 68,
+    borderRadius: 14,
+    minHeight: 72,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(196,168,77,0.12)',
     borderWidth: 0,
   },
   ctaWrapGold: {
-    backgroundColor: 'rgba(196,168,77,0.75)',
+    backgroundColor: '#C4A84D',
   },
   ctaText: {
     fontFamily: serifFont,
