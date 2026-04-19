@@ -139,9 +139,7 @@ export default function HomeScreen() {
           <Animated.View style={[styles.heroBlock, { opacity: heroFade, transform: [{ translateY: heroSlide }] }]}>
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
-            <Text style={styles.explainer}>
-              Vow to a friend something you've{'\n'}been putting off. Break it, your{'\n'}money goes to charity.
-            </Text>
+            <Text style={styles.explainer}>Vow to a friend one thing you've been putting off. Break it, your money goes to charity.</Text>
           </Animated.View>
 
           {/* Input */}
@@ -199,7 +197,7 @@ export default function HomeScreen() {
           {/* How it works footer */}
           <View style={styles.footer}>
             <View style={styles.footerLine} />
-            <Text style={styles.footerText}>How it works  ↗</Text>
+            <Text style={styles.footerText}>{'How it works  \u2197'}</Text>
           </View>
 
         </ScrollView>
@@ -274,20 +272,20 @@ const styles = StyleSheet.create({
   },
   heroLine1: {
     color: 'rgba(242,234,220,0.92)',
-    fontSize: 46,
-    lineHeight: 46,
+    fontSize: 50,
+    lineHeight: 50,
     fontWeight: '800' as const,
     fontFamily: serifFont,
-    letterSpacing: -1.2,
+    letterSpacing: -1.5,
   },
   heroLine2: {
     color: 'rgba(196,168,77,0.7)',
-    fontSize: 46,
-    lineHeight: 46,
+    fontSize: 50,
+    lineHeight: 50,
     fontWeight: '800' as const,
     fontFamily: serifFont,
     fontStyle: 'italic',
-    letterSpacing: -1.2,
+    letterSpacing: -1.5,
     marginBottom: 20,
   },
   explainer: {
@@ -298,7 +296,7 @@ const styles = StyleSheet.create({
   },
   // Input
   inputSection: {
-    marginTop: 32,
+    marginTop: 36,
     marginBottom: 0,
   },
   inputLabel: {
@@ -374,7 +372,6 @@ const styles = StyleSheet.create({
     fontFamily: serifFont,
     fontSize: 18,
     fontWeight: '700' as const,
-    fontStyle: 'italic',
     color: 'rgba(196,168,77,0.3)',
     letterSpacing: -0.3,
   },
