@@ -131,9 +131,8 @@ export default function HomeScreen() {
           {/* Nav — brand + dollar social proof */}
           <Animated.View style={[styles.navRow, { opacity: fadeIn, transform: [{ translateY: slideUp }] }]}>
             <View style={styles.navIcon}><Text style={styles.navIconText}>◆</Text></View>
-            <Text style={styles.navName}>Unbreakable Vow</Text>
-            <Text style={styles.dollarProof}>$47,320 on the line</Text>
-            <AppMenuButton />
+            <Text style={styles.navName} numberOfLines={1}>Unbreakable Vow</Text>
+            <Text style={styles.dollarProof} numberOfLines={1}>$47,320 on the line</Text>
           </Animated.View>
 
           {/* Hero */}
@@ -213,9 +212,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 32,
-    paddingTop: 8,
-    paddingBottom: 32,
+    paddingHorizontal: 28,
+    paddingTop: 4,
+    paddingBottom: 28,
     flexGrow: 1,
   },
   ambientGlow: {
@@ -232,63 +231,64 @@ const styles = StyleSheet.create({
   navRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 40,
+    gap: 10,
+    marginBottom: 32,
     marginTop: 4,
   },
   navIcon: {
-    width: 34,
-    height: 34,
-    borderRadius: 9,
+    width: 30,
+    height: 30,
+    borderRadius: 8,
     backgroundColor: '#2A2520',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 0,
   },
   navIconText: {
-    fontSize: 13,
+    fontSize: 11,
     color: 'rgba(196,168,77,0.75)',
   },
   navName: {
-    fontSize: 12,
+    fontSize: 11,
     color: 'rgba(232,220,200,0.75)',
     fontWeight: '700' as const,
-    letterSpacing: 3.5,
+    letterSpacing: 2.5,
     textTransform: 'uppercase',
-    flex: 1,
+    flexShrink: 1,
   },
   dollarProof: {
     fontFamily: serifFont,
-    fontSize: 13,
+    fontSize: 12,
     color: 'rgba(196,168,77,0.45)',
     fontStyle: 'italic',
+    marginLeft: 'auto',
   },
   // Hero
   heroBlock: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   heroLine1: {
     color: 'rgba(242,234,220,0.92)',
-    fontSize: 54,
-    lineHeight: 54,
+    fontSize: 46,
+    lineHeight: 46,
     fontWeight: '800' as const,
     fontFamily: serifFont,
-    letterSpacing: -1.5,
+    letterSpacing: -1.2,
   },
   heroLine2: {
     color: 'rgba(196,168,77,0.7)',
-    fontSize: 54,
-    lineHeight: 54,
+    fontSize: 46,
+    lineHeight: 46,
     fontWeight: '800' as const,
     fontFamily: serifFont,
     fontStyle: 'italic',
-    letterSpacing: -1.5,
-    marginBottom: 24,
+    letterSpacing: -1.2,
+    marginBottom: 20,
   },
   explainer: {
     fontFamily: serifFont,
-    fontSize: 17,
-    lineHeight: 28,
+    fontSize: 16,
+    lineHeight: 26,
     color: 'rgba(222,210,192,0.42)',
   },
   explainerPunch: {
@@ -296,48 +296,48 @@ const styles = StyleSheet.create({
   },
   // Input
   inputSection: {
-    marginTop: 36,
+    marginTop: 32,
     marginBottom: 0,
   },
   inputLabel: {
     color: 'rgba(196,168,77,0.5)',
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500' as const,
     fontFamily: serifFont,
     fontStyle: 'italic',
-    marginBottom: 14,
+    marginBottom: 10,
   },
   inputLabelFocused: {
     color: 'rgba(196,168,77,0.65)',
   },
   input: {
     color: 'rgba(222,210,192,0.55)',
-    fontSize: 21,
+    fontSize: 19,
     fontFamily: serifFont,
-    minHeight: 30,
+    minHeight: 28,
     paddingVertical: 0,
     marginBottom: 0,
   },
   inputLine: {
     height: 1,
     backgroundColor: 'rgba(196,168,77,0.12)',
-    marginTop: 14,
-    marginBottom: 22,
+    marginTop: 12,
+    marginBottom: 16,
   },
   // Chips
   chipsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: 8,
   },
   chip: {
-    paddingHorizontal: 18,
-    paddingVertical: 11,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
     borderRadius: 999,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
     backgroundColor: 'rgba(255,255,255,0.04)',
-    minHeight: 44,
+    minHeight: 40,
     justifyContent: 'center',
   },
   chipActive: {
@@ -346,7 +346,7 @@ const styles = StyleSheet.create({
   },
   chipText: {
     color: 'rgba(222,210,192,0.55)',
-    fontSize: 14,
+    fontSize: 13,
     fontFamily: serifFont,
   },
   chipTextActive: {
@@ -354,12 +354,12 @@ const styles = StyleSheet.create({
   },
   // CTA
   ctaSection: {
-    marginTop: 36,
-    marginBottom: 24,
+    marginTop: 28,
+    marginBottom: 16,
   },
   ctaWrap: {
     borderRadius: 14,
-    minHeight: 72,
+    minHeight: 64,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(196,168,77,0.12)',
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontFamily: serifFont,
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700' as const,
     fontStyle: 'italic',
     color: 'rgba(196,168,77,0.3)',
