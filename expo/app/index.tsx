@@ -3,7 +3,9 @@ import { Stack, router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Easing,
   Keyboard,
+  Modal,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -106,6 +108,38 @@ export default function HomeScreen() {
     Keyboard.dismiss();
   };
 
+  const [howItWorksOpen, setHowItWorksOpen] = useState<boolean>(false);
+  const sheetTranslate = useRef(new Animated.Value(600)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+
+  const openHowItWorks = () => {
+    console.log('[HomeScreen] open how it works');
+    void Haptics.selectionAsync();
+    setHowItWorksOpen(true);
+    Animated.parallel([
+      Animated.timing(backdropOpacity, { toValue: 1, duration: 250, useNativeDriver: true }),
+      Animated.timing(sheetTranslate, {
+        toValue: 0,
+        duration: 360,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const closeHowItWorks = () => {
+    console.log('[HomeScreen] close how it works');
+    Animated.parallel([
+      Animated.timing(backdropOpacity, { toValue: 0, duration: 220, useNativeDriver: true }),
+      Animated.timing(sheetTranslate, {
+        toValue: 600,
+        duration: 280,
+        easing: Easing.in(Easing.cubic),
+        useNativeDriver: true,
+      }),
+    ]).start(() => setHowItWorksOpen(false));
+  };
+
   const btnScale = useRef(new Animated.Value(1)).current;
   const handlePressIn = () => {
     Animated.spring(btnScale, { toValue: 0.97, useNativeDriver: true, speed: 40, bounciness: 4 }).start();
@@ -139,7 +173,7 @@ export default function HomeScreen() {
           <Animated.View style={[styles.heroBlock, { opacity: heroFade, transform: [{ translateY: heroSlide }] }]}>
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
-            <Text style={styles.explainer}>Vow to a friend one thing you've been putting off. Break it, your money goes to charity.</Text>
+            <Text style={styles.explainer}>Tell a friend the thing you keep putting off. Put money on it. Break it, it goes to charity.</Text>
           </Animated.View>
 
           {/* Input */}
@@ -197,11 +231,62 @@ export default function HomeScreen() {
           {/* How it works footer */}
           <View style={styles.footer}>
             <View style={styles.footerLine} />
-            <Text style={styles.footerText}>{'How it works  \u2197'}</Text>
+            <Pressable onPress={openHowItWorks} testID="how-it-works-trigger" hitSlop={12}>
+              <Text style={styles.footerText}>{'How it works  \u2197'}</Text>
+            </Pressable>
           </View>
 
         </ScrollView>
       </SafeAreaView>
+
+      <Modal
+        visible={howItWorksOpen}
+        transparent
+        animationType="none"
+        onRequestClose={closeHowItWorks}
+      >
+        <View style={styles.modalRoot}>
+          <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+            <Pressable style={StyleSheet.absoluteFill} onPress={closeHowItWorks} />
+          </Animated.View>
+          <Animated.View
+            style={[
+              styles.sheet,
+              { transform: [{ translateY: sheetTranslate }] },
+            ]}
+          >
+            <View style={styles.sheetHandleWrap}>
+              <View style={styles.sheetHandle} />
+            </View>
+            <Text style={styles.sheetTitle}>How it works</Text>
+
+            <View style={styles.stepsList}>
+              {[
+                'Pick a commitment',
+                'Choose a friend to hold you to it',
+                'Put $10\u2013$100 on the line',
+                'Keep your word \u2014 every penny back',
+                'Break it \u2014 your money goes to charity',
+              ].map((step) => (
+                <View key={step} style={styles.stepRow}>
+                  <Text style={styles.stepArrow}>{'\u2192'}</Text>
+                  <Text style={styles.stepText}>{step}</Text>
+                </View>
+              ))}
+            </View>
+
+            <Text style={styles.sheetNote}>That\u2019s it. No catch.</Text>
+
+            <Pressable
+              onPress={closeHowItWorks}
+              style={styles.gotItBtn}
+              testID="how-it-works-close"
+            >
+              <Text style={styles.gotItText}>Got it</Text>
+            </Pressable>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -391,8 +476,93 @@ const styles = StyleSheet.create({
   footerText: {
     fontFamily: serifFont,
     fontSize: 14,
-    color: 'rgba(196,168,77,0.45)',
+    color: 'rgba(196,168,77,0.55)',
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  // How it works sheet
+  modalRoot: {
+    flex: 1,
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+  },
+  sheet: {
+    backgroundColor: '#1F1A17',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    paddingHorizontal: 28,
+    paddingTop: 10,
+    paddingBottom: 40,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: 'rgba(196,168,77,0.08)',
+  },
+  sheetHandleWrap: {
+    alignItems: 'center',
+    paddingVertical: 10,
+    marginBottom: 14,
+  },
+  sheetHandle: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(222,210,192,0.25)',
+  },
+  sheetTitle: {
+    fontFamily: serifFont,
+    color: 'rgba(242,234,220,0.95)',
+    fontSize: 30,
+    fontWeight: '800' as const,
+    letterSpacing: -0.8,
+    marginBottom: 22,
+  },
+  stepsList: {
+    gap: 16,
+    marginBottom: 24,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
+  },
+  stepArrow: {
+    color: 'rgba(196,168,77,0.9)',
+    fontSize: 18,
+    lineHeight: 24,
+    width: 20,
+  },
+  stepText: {
+    flex: 1,
+    fontFamily: serifFont,
+    color: 'rgba(232,220,200,0.92)',
+    fontSize: 17,
+    lineHeight: 24,
+  },
+  sheetNote: {
+    fontFamily: serifFont,
+    color: 'rgba(196,168,77,0.75)',
+    fontSize: 15,
+    fontStyle: 'italic',
+    marginBottom: 24,
+  },
+  gotItBtn: {
+    borderRadius: 14,
+    minHeight: 58,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: 'rgba(196,168,77,0.55)',
+    backgroundColor: 'transparent',
+  },
+  gotItText: {
+    fontFamily: serifFont,
+    fontSize: 17,
+    color: 'rgba(196,168,77,0.95)',
+    fontStyle: 'italic',
+    fontWeight: '600' as const,
   },
 });
