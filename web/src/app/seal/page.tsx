@@ -528,6 +528,9 @@ export default function SealPage() {
             No charge unless you break your vow
           </p>
         )}
+        <p style={{ fontSize: 10, textAlign: 'center', color: 'var(--uv-text-faint)', marginTop: 8, opacity: 0.6, lineHeight: 1.5 }}>
+          By signing in, you agree to receive transactional SMS (verification codes, vow updates). Your witness will receive a text when you seal. Reply STOP to opt out anytime.
+        </p>
       </RitualScreen>
 
       <AuthModal
