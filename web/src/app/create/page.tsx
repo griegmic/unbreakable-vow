@@ -3,6 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { AuthModal } from '@/components/auth-modal';
 import { VowInput } from './components/VowInput';
 import { StakesStep } from './components/StakesStep';
 import { IfBrokenSheet } from './components/IfBrokenSheet';
@@ -20,6 +21,7 @@ export default function CreatePage() {
   const [stakeAmount, setStakeAmount] = useState(50);
   const [destination, setDestination] = useState('ALS Association');
   const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>('charity');
+  const [showAuth, setShowAuth] = useState(false);
 
   // Step 1 → Step 3 (skip witness on web)
   const handleVowNext = useCallback(() => {
@@ -42,24 +44,21 @@ export default function CreatePage() {
     setStep(3);
   }, []);
 
-  // Step 3 "Seal my vow" — persist draft to Supabase and route to /seal
+  // Step 3 "Seal my vow" — check auth, persist draft, route to /seal
   const handleReview = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      try {
-        sessionStorage.setItem('create-draft', JSON.stringify({
-          vowText, endsAt: endsAt?.toISOString(),
-          stakeAmount, destination, destinationKind,
-        }));
-      } catch {}
-      router.push('/auth/callback?redirect=/create');
+      setShowAuth(true);
       return;
     }
+    await createDraftAndSeal(session.user.id);
+  }, []);
 
+  const createDraftAndSeal = useCallback(async (userId: string) => {
     const { data, error } = await supabase
       .from('vows')
       .insert({
-        user_id: session.user.id,
+        user_id: userId,
         raw_input: vowText,
         refined_text: vowText,
         status: 'draft',
@@ -81,6 +80,16 @@ export default function CreatePage() {
 
     router.push(`/seal?id=${data.id}`);
   }, [vowText, endsAt, stakeAmount, destination, destinationKind, router]);
+
+  const handleAuthSuccess = useCallback(async () => {
+    setShowAuth(false);
+    // Give session a moment to propagate
+    await new Promise(r => setTimeout(r, 300));
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await createDraftAndSeal(session.user.id);
+    }
+  }, [createDraftAndSeal]);
 
   // Render based on current step
   if (step === 1) {
@@ -108,17 +117,24 @@ export default function CreatePage() {
 
   // Step 3
   return (
-    <StakesStep
-      stakeAmount={stakeAmount}
-      setStakeAmount={setStakeAmount}
-      destination={destination}
-      destinationKind={destinationKind}
-      onIfBroken={handleIfBroken}
-      onNext={handleReview}
-      onBack={() => setStep(1)}
-      vowText={vowText}
-      witnessName="TBD"
-      endsAt={endsAt}
-    />
+    <>
+      <StakesStep
+        stakeAmount={stakeAmount}
+        setStakeAmount={setStakeAmount}
+        destination={destination}
+        destinationKind={destinationKind}
+        onIfBroken={handleIfBroken}
+        onNext={handleReview}
+        onBack={() => setStep(1)}
+        vowText={vowText}
+        witnessName="TBD"
+        endsAt={endsAt}
+      />
+      <AuthModal
+        visible={showAuth}
+        onDismiss={() => setShowAuth(false)}
+        onSuccess={handleAuthSuccess}
+      />
+    </>
   );
 }
