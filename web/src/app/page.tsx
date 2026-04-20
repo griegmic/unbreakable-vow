@@ -18,220 +18,239 @@ const FEED_ROWS = [
 // ─── Ceremony ───────────────────────────────────────────────────────────────
 
 function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
-  const [screen, setScreen] = useState<1 | 2>(1);
-  const [line1, setLine1] = useState(false);
-  const [line2, setLine2] = useState(false);
-  const [line3, setLine3] = useState(false);
+  const [phase, setPhase] = useState(0); // 0=dark, 1-4=lines, 5=pause, 6=screen2
   const [skipReady, setSkipReady] = useState(false);
-  const [fading, setFading] = useState(false);
-
-  // Screen 2 states
-  const [s2Line1, setS2Line1] = useState(false);
-  const [s2Line2, setS2Line2] = useState(false);
-  const [s2Sub, setS2Sub] = useState(false);
-  const [s2Cta, setS2Cta] = useState(false);
-
-  const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Screen 1 staggered entrance
-  useEffect(() => {
-    if (screen !== 1) return;
-    const t1 = setTimeout(() => setLine1(true), 200);
-    const t2 = setTimeout(() => setLine2(true), 800);
-    const t3 = setTimeout(() => setLine3(true), 1400);
-    const tSkip = setTimeout(() => setSkipReady(true), 600);
-
-    // Auto-advance 3.2s after line 3 settles
-    autoAdvanceRef.current = setTimeout(() => {
-      goToScreen2();
-    }, 1400 + 3200);
-
-    return () => {
-      clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(tSkip);
-      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
-    };
-  }, [screen]);
-
-  // Screen 2 staggered entrance
-  useEffect(() => {
-    if (screen !== 2) return;
-    const t1 = setTimeout(() => setS2Line1(true), 200);
-    const t2 = setTimeout(() => setS2Line2(true), 800);
-    const t3 = setTimeout(() => setS2Sub(true), 1600);
-    const t4 = setTimeout(() => setS2Cta(true), 2200);
-    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); clearTimeout(t4); };
-  }, [screen]);
-
-  const goToScreen2 = useCallback(() => {
-    if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
-    setFading(true);
-    setTimeout(() => {
-      setFading(false);
-      setScreen(2);
-    }, 400);
-  }, []);
-
-  const finish = useCallback(() => {
-    try { localStorage.setItem('uv_ceremony_seen', '1'); } catch {}
-    setFading(true);
-    setTimeout(() => onComplete(), 400);
-  }, [onComplete]);
-
-  const handleTap = () => {
-    if (screen === 1) goToScreen2();
-  };
+  const [exiting, setExiting] = useState(false);
 
   const reducedMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
-  const fadeStyle = (visible: boolean): React.CSSProperties => ({
+  useEffect(() => {
+    const dur = reducedMotion ? 200 : undefined;
+    // Phase 0: pure darkness for 800ms — let the void breathe
+    const timers = [
+      setTimeout(() => setPhase(1), dur ?? 800),    // gold ember appears
+      setTimeout(() => setPhase(2), dur ?? 2000),    // line 1
+      setTimeout(() => setPhase(3), dur ?? 3200),    // line 2
+      setTimeout(() => setPhase(4), dur ?? 4600),    // line 3
+      setTimeout(() => setSkipReady(true), dur ?? 1500),
+      setTimeout(() => setPhase(5), dur ?? 7200),    // pause — weight
+      setTimeout(() => setPhase(6), dur ?? 8400),    // screen 2
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, [reducedMotion]);
+
+  const finish = useCallback(() => {
+    try { localStorage.setItem('uv_ceremony_seen', '1'); } catch {}
+    setExiting(true);
+    setTimeout(() => onComplete(), 600);
+  }, [onComplete]);
+
+  const advance = () => {
+    if (phase < 5) setPhase(5);
+    else if (phase === 5) setPhase(6);
+  };
+
+  const slow = (visible: boolean, delay = 0): React.CSSProperties => ({
     opacity: visible ? 1 : 0,
-    transform: visible ? 'translateY(0) scale(1)' : 'translateY(20px) scale(0.98)',
-    filter: visible ? 'blur(0)' : 'blur(6px)',
+    transform: visible ? 'translateY(0)' : 'translateY(12px)',
+    filter: visible ? 'blur(0)' : 'blur(8px)',
     transition: reducedMotion
       ? 'opacity 100ms ease'
-      : 'opacity 600ms cubic-bezier(0.19,1,0.22,1), transform 600ms cubic-bezier(0.19,1,0.22,1), filter 600ms cubic-bezier(0.19,1,0.22,1)',
+      : `opacity 1s cubic-bezier(0.19,1,0.22,1) ${delay}ms, transform 1s cubic-bezier(0.19,1,0.22,1) ${delay}ms, filter 1s cubic-bezier(0.19,1,0.22,1) ${delay}ms`,
   });
 
   return (
     <div
-      onClick={handleTap}
+      onClick={advance}
+      role="dialog"
+      aria-live="polite"
       style={{
-        position: 'fixed',
-        inset: 0,
-        zIndex: 9999,
-        background: 'var(--uv-bg)',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 32,
-        cursor: screen === 1 ? 'pointer' : 'default',
-        opacity: fading ? 0 : 1,
-        transition: 'opacity 400ms ease',
+        position: 'fixed', inset: 0, zIndex: 9999,
+        background: '#050403',
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center',
+        cursor: phase < 6 ? 'pointer' : 'default',
+        opacity: exiting ? 0 : 1,
+        transition: 'opacity 600ms ease',
+        overflow: 'hidden',
       }}
     >
-      {/* Skip button */}
+      {/* Atmospheric layers */}
+
+      {/* Deep vignette — always on */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at center, transparent 30%, #050403 75%)',
+      }} />
+
+      {/* Gold ember — breathes in from center, very slow */}
+      <div style={{
+        position: 'absolute', top: '40%', left: '50%',
+        width: 400, height: 400,
+        transform: 'translate(-50%, -50%)',
+        borderRadius: '50%',
+        background: 'radial-gradient(circle, rgba(212,168,74,0.15) 0%, rgba(212,168,74,0.04) 40%, transparent 70%)',
+        opacity: phase >= 1 ? 1 : 0,
+        filter: 'blur(40px)',
+        transition: 'opacity 2s ease',
+        pointerEvents: 'none',
+        animation: phase >= 1 ? 'ceremonyBreath 6s ease-in-out infinite' : 'none',
+      }} />
+
+      {/* Faint gold particles — tiny dots drifting up */}
+      {phase >= 2 && !reducedMotion && (
+        <>
+          {[...Array(8)].map((_, i) => (
+            <div key={i} style={{
+              position: 'absolute',
+              left: `${20 + (i * 8.5)}%`,
+              bottom: -10,
+              width: 2, height: 2,
+              borderRadius: '50%',
+              background: 'var(--uv-gold)',
+              opacity: 0.3 + (i % 3) * 0.15,
+              animation: `particleRise ${4 + (i % 3) * 2}s ease-in-out ${i * 0.7}s infinite`,
+              pointerEvents: 'none',
+            }} />
+          ))}
+        </>
+      )}
+
+      {/* Skip */}
       <button
         onClick={(e) => { e.stopPropagation(); if (skipReady) finish(); }}
         style={{
-          position: 'absolute',
-          top: 16,
-          right: 16,
-          padding: '8px 16px',
-          background: 'none',
-          border: 'none',
+          position: 'absolute', top: 20, right: 20,
+          padding: '10px 16px', background: 'none', border: 'none',
           cursor: skipReady ? 'pointer' : 'default',
-          opacity: skipReady ? 0.5 : 0,
-          transition: 'opacity 300ms',
-          fontFamily: 'var(--uv-font-sans)',
-          fontSize: 12,
-          color: 'var(--uv-text-faint)',
-          minWidth: 44,
-          minHeight: 44,
+          opacity: skipReady ? 0.3 : 0,
+          transition: 'opacity 1s',
+          fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+          color: 'var(--uv-text-faint)', letterSpacing: '0.5px',
+          minWidth: 44, minHeight: 44,
         }}
       >
-        Skip →
+        skip
       </button>
 
-      {screen === 1 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, maxWidth: 340 }}>
-          <h1 style={{
-            ...fadeStyle(line1),
+      {phase < 6 ? (
+        /* ─── SCREEN 1: The Accusation ─── */
+        <div style={{
+          display: 'flex', flexDirection: 'column', alignItems: 'center',
+          gap: 0, maxWidth: 360, position: 'relative', zIndex: 1,
+          opacity: phase === 5 ? 0 : 1,
+          transition: 'opacity 800ms ease',
+        }}>
+          <span style={{
+            ...slow(phase >= 2),
             fontFamily: 'var(--uv-font-serif)',
-            fontSize: 36,
+            fontSize: 'clamp(32px, 8vw, 42px)',
             fontWeight: 400,
-            color: 'var(--uv-text)',
+            color: '#f5f0e4',
             textAlign: 'center',
             lineHeight: 1.15,
-            margin: 0,
           }}>
             Every promise
-          </h1>
-          <h1 style={{
-            ...fadeStyle(line2),
+          </span>
+          <span style={{
+            ...slow(phase >= 3),
             fontFamily: 'var(--uv-font-serif)',
-            fontSize: 36,
+            fontSize: 'clamp(32px, 8vw, 42px)',
             fontWeight: 400,
-            color: 'var(--uv-text)',
+            color: '#f5f0e4',
             textAlign: 'center',
             lineHeight: 1.15,
-            margin: '4px 0',
+            marginTop: 4,
           }}>
-            you've ever broken
-          </h1>
-          <h1 style={{
-            ...fadeStyle(line3),
+            you&apos;ve ever broken
+          </span>
+          <span style={{
+            ...slow(phase >= 4),
             fontFamily: 'var(--uv-font-serif)',
-            fontSize: 36,
+            fontSize: 'clamp(32px, 8vw, 42px)',
             fontWeight: 400,
-            color: 'var(--uv-text)',
+            color: '#f5f0e4',
             textAlign: 'center',
             lineHeight: 1.15,
-            margin: 0,
+            marginTop: 4,
           }}>
             had one thing in common.
-          </h1>
+          </span>
         </div>
       ) : (
+        /* ─── SCREEN 2: The Revelation ─── */
         <div
           onClick={(e) => e.stopPropagation()}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 0, maxWidth: 340 }}
+          style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 0, maxWidth: 360, position: 'relative', zIndex: 1,
+          }}
         >
           <span style={{
-            ...fadeStyle(s2Line1),
+            ...slow(true, 0),
             fontFamily: 'var(--uv-font-serif)',
-            fontSize: 36,
+            fontSize: 'clamp(32px, 8vw, 40px)',
             fontWeight: 400,
-            color: 'var(--uv-text)',
+            color: 'rgba(245,240,228,0.6)',
             textAlign: 'center',
           }}>
             It was
           </span>
           <span style={{
-            ...fadeStyle(s2Line2),
+            ...slow(true, 400),
             fontFamily: 'var(--uv-font-serif)',
-            fontSize: 56,
+            fontSize: 'clamp(56px, 14vw, 72px)',
             fontWeight: 400,
             fontStyle: 'italic',
             color: 'var(--uv-gold)',
             textAlign: 'center',
-            lineHeight: 1.0,
+            lineHeight: 0.95,
             marginTop: 4,
+            textShadow: '0 0 40px rgba(212,168,74,0.3)',
           }}>
             free.
           </span>
+
+          {/* Thin gold line — divider */}
+          <div style={{
+            ...slow(true, 900),
+            width: 40, height: 1, marginTop: 32,
+            background: 'linear-gradient(90deg, transparent, var(--uv-gold), transparent)',
+          }} />
+
           <p style={{
-            ...fadeStyle(s2Sub),
+            ...slow(true, 1200),
             fontFamily: 'var(--uv-font-sans)',
             fontSize: 15,
-            color: 'var(--uv-text-muted)',
+            color: 'rgba(245,240,228,0.5)',
             textAlign: 'center',
-            maxWidth: 320,
-            lineHeight: 1.55,
+            maxWidth: 300,
+            lineHeight: 1.6,
             marginTop: 24,
           }}>
-            An Unbreakable Vow — a vow to be better, sworn to a friend. Break it, and you'll pay.
+            An Unbreakable Vow is sworn to someone you trust. Break it, and you pay. Keep it, and you prove you meant it.
           </p>
-          <div style={{ ...fadeStyle(s2Cta), marginTop: 32, width: '100%', maxWidth: 320 }}>
-            <PrimaryButton onClick={finish}>Begin →</PrimaryButton>
+
+          <div style={{ ...slow(true, 1800), marginTop: 40, width: '100%', maxWidth: 300 }}>
+            <PrimaryButton onClick={finish}>I&apos;m ready.</PrimaryButton>
           </div>
         </div>
       )}
 
-      {/* Ambient gold glow */}
-      <div style={{
-        position: 'absolute',
-        top: -100,
-        right: -80,
-        width: 320,
-        height: 320,
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, var(--uv-gold-glow) 0%, transparent 70%)',
-        opacity: 0.4,
-        filter: 'blur(60px)',
-        pointerEvents: 'none',
-      }} />
+      {/* Breathing + particle keyframes */}
+      <style>{`
+        @keyframes ceremonyBreath {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+          50% { transform: translate(-50%, -50%) scale(1.15); opacity: 1; }
+        }
+        @keyframes particleRise {
+          0% { transform: translateY(0) scale(1); opacity: 0; }
+          10% { opacity: 0.4; }
+          90% { opacity: 0.1; }
+          100% { transform: translateY(-100vh) scale(0.5); opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }
