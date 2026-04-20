@@ -179,7 +179,19 @@ export default function HomePage() {
       }
     } catch {}
 
-    // Always go to dashboard — it handles empty state itself
+    // If user has an in-progress vow, send them to /seal to finish
+    try {
+      const stored = localStorage.getItem('unbreakable-vow-flow');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.rawInput) {
+          router.replace('/seal');
+          return;
+        }
+      }
+    } catch {}
+
+    // Otherwise dashboard
     router.replace('/dashboard');
   }, [isAuthenticated, loading, router, session]);
 
