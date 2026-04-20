@@ -28,8 +28,9 @@ const CHARITIES = [
 ];
 
 export function IfBrokenSheet({ destination, destinationKind, onSelect, onClose }: IfBrokenSheetProps) {
-  const [tab, setTab] = useState<Tab>(destinationKind === 'charity' ? 'charity' : 'anti');
-  const [selectedDest, setSelectedDest] = useState(destination);
+  // Default to charity (safe default, left tab)
+  const [tab, setTab] = useState<Tab>(destinationKind === 'anti' ? 'anti' : 'charity');
+  const [selectedDest, setSelectedDest] = useState(destination || 'ALS Association');
   const [selectedKind, setSelectedKind] = useState<'charity' | 'anti'>(destinationKind);
 
   const handleOrgSelect = (name: string, kind: 'charity' | 'anti') => {
@@ -50,9 +51,8 @@ export function IfBrokenSheet({ destination, destinationKind, onSelect, onClose 
   };
 
   const tabs: { id: Tab; label: string; disabled?: boolean }[] = [
-    { id: 'anti', label: 'A cause you hate' },
     { id: 'charity', label: 'A cause you believe in' },
-    { id: 'witness', label: 'Your witness gets it', disabled: true },
+    { id: 'anti', label: 'A cause you hate' },
   ];
 
   return (
