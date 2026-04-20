@@ -2,7 +2,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Settings, ArrowLeft, Menu, X, Zap, Clock, LayoutGrid, Send } from 'lucide-react';
-import { RitualScreen, HeaderBadge, FadeUp } from '@/components/ui';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { SecondaryButton } from '@/components/uv/SecondaryButton';
+import { SkeletonRow } from '@/components/uv/SkeletonRow';
 import DashboardCard from '@/components/dashboard-card';
 import DashboardHero from '@/components/dashboard-hero';
 import { useAuth } from '@/providers/auth-provider';
@@ -15,7 +18,7 @@ import {
   type SortedVow,
 } from '@/lib/dashboard-sort';
 
-// --- SlideMenu (preserved exactly) ---
+// --- SlideMenu (restyled with --uv-* tokens) ---
 
 function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router = useRouter();
@@ -47,21 +50,32 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
     <>
       <div
         className="fixed inset-0 z-50 transition-opacity duration-200"
-        style={{ opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', backgroundColor: 'rgba(0,0,0,0.6)' }}
+        style={{ opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none', backgroundColor: 'var(--uv-bg-overlay)' }}
         onClick={onClose}
       />
       <div
         className="fixed top-0 left-0 bottom-0 z-[51] w-[280px] flex flex-col transition-transform duration-200 safe-top safe-bottom"
         style={{
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
-          backgroundColor: 'var(--surface-elevated)',
-          borderRight: '1px solid var(--border)',
+          backgroundColor: 'var(--uv-bg-elev)',
+          borderRight: '1px solid var(--uv-border-strong)',
         }}
       >
         <div className="flex items-center justify-between p-5 pb-3">
-          <span className="text-[13px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>Menu</span>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '1.3px',
+              textTransform: 'uppercase',
+              color: 'var(--uv-gold)',
+              fontFamily: 'var(--uv-font-sans)',
+            }}
+          >
+            Menu
+          </span>
           <button onClick={onClose} className="p-1">
-            <X className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
+            <X className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
           </button>
         </div>
         <div className="flex flex-col gap-1 px-3">
@@ -74,15 +88,25 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
             >
               <div
                 className="w-9 h-9 rounded-[12px] flex items-center justify-center shrink-0"
-                style={{ backgroundColor: item.path === '/create' ? 'rgba(212,162,79,0.15)' : 'var(--surface)' }}
+                style={{ backgroundColor: item.path === '/create' ? 'rgba(212,162,79,0.15)' : 'var(--uv-bg-card)' }}
               >
-                <item.icon className="w-[18px] h-[18px]" style={{ color: item.path === '/create' ? 'var(--gold-bright)' : 'var(--text-muted)' }} />
+                <item.icon className="w-[18px] h-[18px]" style={{ color: item.path === '/create' ? 'var(--uv-gold-bright)' : 'var(--uv-text-faint)' }} />
               </div>
               <div>
-                <span className="text-[15px] font-semibold block" style={{ color: item.path === '/create' ? 'var(--gold-bright)' : 'var(--text)' }}>
+                <span
+                  className="block"
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 500,
+                    color: item.path === '/create' ? 'var(--uv-gold-bright)' : 'var(--uv-text-primary)',
+                    fontFamily: 'var(--uv-font-sans)',
+                  }}
+                >
                   {item.label}
                 </span>
-                <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{item.description}</span>
+                <span style={{ fontSize: 12, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
+                  {item.description}
+                </span>
               </div>
             </button>
           ))}
@@ -92,7 +116,7 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   );
 }
 
-// --- InProgressBanner (preserved exactly) ---
+// --- InProgressBanner (restyled with --uv-* tokens) ---
 
 function InProgressBanner() {
   const router = useRouter();
@@ -118,21 +142,21 @@ function InProgressBanner() {
       className="w-full rounded-[18px] p-4 flex items-center gap-3 text-left transition-all active:scale-[0.98]"
       style={{
         backgroundColor: 'rgba(212,162,79,0.08)',
-        border: '1.5px solid var(--gold)',
-        boxShadow: '0 0 20px rgba(212,162,79,0.12)',
+        border: '1.5px solid var(--uv-gold)',
+        boxShadow: '0 0 20px var(--uv-gold-glow)',
       }}
     >
       <div
         className="w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0"
         style={{ backgroundColor: 'rgba(212,162,79,0.15)' }}
       >
-        <ArrowLeft className="w-5 h-5" style={{ color: 'var(--gold-bright)' }} />
+        <ArrowLeft className="w-5 h-5" style={{ color: 'var(--uv-gold-bright)' }} />
       </div>
       <div>
-        <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>
+        <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>
           You have an unfinished vow
         </span>
-        <span className="text-[13px]" style={{ color: 'var(--gold)' }}>
+        <span style={{ fontSize: 13, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
           Tap to continue where you left off
         </span>
       </div>
@@ -144,7 +168,7 @@ function InProgressBanner() {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { isAuthenticated, loading: authLoading } = useAuth();
+  const { isAuthenticated, loading: authLoading, displayName } = useAuth();
   const [myVows, setMyVows] = useState<DashboardVow[]>([]);
   const [witnessingVows, setWitnessingVows] = useState<DashboardVow[]>([]);
   const [challenges, setChallenges] = useState<DashboardVow[]>([]);
@@ -282,12 +306,21 @@ export default function DashboardPage() {
     }
   };
 
+  // --- Greeting ---
+  const firstName = displayName?.split(' ')[0] || '';
+  const activeCount = myDashboardVows.length + theirDashboardVows.length;
+  const subGreeting = activeCount === 0
+    ? 'Nothing on the line.'
+    : activeCount === 1
+    ? 'One on the line.'
+    : `You've got ${activeCount} on the line.`;
+
   // --- Loading state ---
   if (loading || authLoading) {
     return (
       <RitualScreen>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 40 }}>
+          <SkeletonRow count={4} />
         </div>
       </RitualScreen>
     );
@@ -297,8 +330,46 @@ export default function DashboardPage() {
   const isEmpty = myVows.length === 0 && witnessingVows.length === 0 && challenges.length === 0;
 
   if (isEmpty) {
-    router.replace('/?new=1');
-    return null;
+    return (
+      <RitualScreen>
+        <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 48 }}>
+          <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="p-1 -ml-1">
+            <Menu className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
+          </button>
+          <button
+            onClick={() => router.push('/settings')}
+            aria-label="Settings"
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'var(--uv-bg-card)',
+              border: '1px solid var(--uv-border-strong)',
+            }}
+          >
+            <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--uv-text-faint)' }} />
+          </button>
+        </div>
+
+        {/* Empty state */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 40 }}>
+          <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 15, color: 'var(--uv-text-muted)', textAlign: 'center' }}>
+            No promises yet.
+          </p>
+          <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-faint)', textAlign: 'center', maxWidth: 260, lineHeight: 1.5 }}>
+            Make one. Swear on it. See if you can keep it.
+          </p>
+          <div style={{ marginTop: 16, width: '100%', maxWidth: 280 }}>
+            <PrimaryButton onClick={() => router.push('/create')}>+ Make your first vow</PrimaryButton>
+          </div>
+        </div>
+      </RitualScreen>
+    );
   }
 
   // Only redirect if no active own vows AND no witness vows
@@ -316,53 +387,84 @@ export default function DashboardPage() {
   return (
     <>
       <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <RitualScreen
-        footer={
-          !isHero ? (
+      <RitualScreen>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
-              onClick={() => router.push('/create')}
-              className="w-full rounded-[16px] min-h-[56px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Open menu"
+              className="p-1 -ml-1"
+            >
+              <Menu className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
+            </button>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            {keptCount > 0 && (
+              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
+                <span style={{ color: 'var(--uv-status-active)' }}>{keptCount}</span> kept
+                {streak >= 2 && <> &middot; {streak} streak</>}
+              </span>
+            )}
+            <button
+              onClick={() => router.push('/settings')}
+              aria-label="Settings"
               style={{
-                background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: 'var(--uv-bg-card)',
+                border: '1px solid var(--uv-border-strong)',
               }}
             >
-              <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>Make a Vow</span>
+              <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--uv-text-faint)' }} />
             </button>
-          ) : undefined
-        }
-      >
-        {/* Header */}
-        <FadeUp>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setMenuOpen(true)}
-                aria-label="Open menu"
-                className="p-1 -ml-1"
-              >
-                <Menu className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
-              </button>
-              <HeaderBadge />
-            </div>
-            <div className="flex items-center gap-3">
-              {keptCount > 0 && (
-                <span className="text-[12px] font-semibold" style={{ color: '#5a5650' }}>
-                  <span style={{ color: '#52d69a' }}>{keptCount}</span> kept
-                  {streak >= 2 && <> · {streak} streak</>}
-                </span>
-              )}
-              <button
-                onClick={() => router.push('/settings')}
-                aria-label="Settings"
-                className="w-10 h-10 rounded-full flex items-center justify-center"
-                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-              >
-                <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--text-secondary)' }} />
-              </button>
-            </div>
           </div>
-        </FadeUp>
+        </div>
+
+        {/* Greeting */}
+        <div style={{ marginBottom: 20 }}>
+          <h1
+            style={{
+              fontFamily: 'var(--uv-font-serif)',
+              fontSize: 'clamp(24px, 6vw, 32px)',
+              fontWeight: 400,
+              fontStyle: 'italic',
+              color: 'var(--uv-gold)',
+              margin: 0,
+              lineHeight: 1.2,
+            }}
+          >
+            {firstName}.
+          </h1>
+          <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text-muted)', marginTop: 4 }}>
+            {subGreeting}
+          </p>
+        </div>
+
+        {/* + New vow button */}
+        {!isHero && (
+          <div style={{ marginBottom: 16 }}>
+            <button
+              onClick={() => router.push('/create')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--uv-gold)',
+                fontSize: 13,
+                fontWeight: 500,
+                fontFamily: 'var(--uv-font-sans)',
+                padding: '6px 0',
+                cursor: 'pointer',
+              }}
+            >
+              + New vow
+            </button>
+          </div>
+        )}
 
         {isHero ? (
           // --- HERO VIEW (1 own vow, no witness vows) ---
@@ -383,37 +485,45 @@ export default function DashboardPage() {
           />
         ) : (
           // --- SMART STACK ---
-          <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <InProgressBanner />
 
             {/* Your vows section */}
             {myDashboardVows.length > 0 && (
               <>
                 {theirDashboardVows.length > 0 && (
-                  <FadeUp>
-                    <h2 className="text-[11px] font-bold tracking-[1.2px] uppercase pb-1" style={{ color: '#5a5650' }}>
-                      Your vows
-                    </h2>
-                  </FadeUp>
+                  <h2
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      letterSpacing: '1.2px',
+                      textTransform: 'uppercase',
+                      color: 'var(--uv-text-faint)',
+                      fontFamily: 'var(--uv-font-sans)',
+                      paddingBottom: 4,
+                      margin: 0,
+                    }}
+                  >
+                    Your vows
+                  </h2>
                 )}
                 <div className="flex flex-col gap-2">
-                  {myDashboardVows.map((item, i) => (
-                    <FadeUp key={item.vow.id} delay={i * 0.03}>
-                      <DashboardCard
-                        item={item}
-                        onTap={() => router.push(getTapTarget(item))}
-                        onAcceptChallenge={
-                          item.state === 'T1'
-                            ? () => handleAcceptChallenge(item.vow.id)
-                            : undefined
-                        }
-                        onDeclineChallenge={
-                          item.state === 'T1'
-                            ? () => handleDeclineChallenge(item.vow.id)
-                            : undefined
-                        }
-                      />
-                    </FadeUp>
+                  {myDashboardVows.map((item) => (
+                    <DashboardCard
+                      key={item.vow.id}
+                      item={item}
+                      onTap={() => router.push(getTapTarget(item))}
+                      onAcceptChallenge={
+                        item.state === 'T1'
+                          ? () => handleAcceptChallenge(item.vow.id)
+                          : undefined
+                      }
+                      onDeclineChallenge={
+                        item.state === 'T1'
+                          ? () => handleDeclineChallenge(item.vow.id)
+                          : undefined
+                      }
+                    />
                   ))}
                 </div>
               </>
@@ -422,19 +532,28 @@ export default function DashboardPage() {
             {/* Their vows section */}
             {theirDashboardVows.length > 0 && (
               <>
-                <FadeUp delay={myDashboardVows.length * 0.03}>
-                  <h2 className="text-[11px] font-bold tracking-[1.2px] uppercase pt-4 pb-1" style={{ color: '#60A5FA' }}>
-                    Their vows
-                  </h2>
-                </FadeUp>
+                <h2
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 600,
+                    letterSpacing: '1.2px',
+                    textTransform: 'uppercase',
+                    color: 'var(--uv-status-verdict)',
+                    fontFamily: 'var(--uv-font-sans)',
+                    paddingTop: 16,
+                    paddingBottom: 4,
+                    margin: 0,
+                  }}
+                >
+                  Their vows
+                </h2>
                 <div className="flex flex-col gap-2">
-                  {theirDashboardVows.map((item, i) => (
-                    <FadeUp key={item.vow.id} delay={(myDashboardVows.length + i) * 0.03}>
-                      <DashboardCard
-                        item={item}
-                        onTap={() => router.push(getTapTarget(item))}
-                      />
-                    </FadeUp>
+                  {theirDashboardVows.map((item) => (
+                    <DashboardCard
+                      key={item.vow.id}
+                      item={item}
+                      onTap={() => router.push(getTapTarget(item))}
+                    />
                   ))}
                 </div>
               </>
@@ -442,20 +561,23 @@ export default function DashboardPage() {
 
             {/* History link */}
             {completedCount > 0 && (
-              <div className="flex flex-col items-center gap-1 pt-2 pb-4">
-                <span className="text-[11px]" style={{ color: '#3a3530' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, paddingTop: 8, paddingBottom: 16 }}>
+                <span style={{ fontSize: 11, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
                   {completedCount} vow{completedCount !== 1 ? 's' : ''} completed
                 </span>
-                <button
-                  onClick={() => router.push('/history')}
-                  className="text-[12px] transition-opacity active:opacity-70"
-                  style={{ color: '#5a5650' }}
-                >
-                  View history →
-                </button>
+                <SecondaryButton onClick={() => router.push('/history')}>
+                  View history
+                </SecondaryButton>
               </div>
             )}
-          </>
+          </div>
+        )}
+
+        {/* Footer CTA */}
+        {!isHero && (
+          <div style={{ marginTop: 'auto', paddingTop: 24 }}>
+            <PrimaryButton onClick={() => router.push('/create')}>Make a Vow</PrimaryButton>
+          </div>
         )}
       </RitualScreen>
     </>

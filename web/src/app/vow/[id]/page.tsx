@@ -2,7 +2,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Clock, Shield, MessageCircle, Ban, ChevronDown, ChevronUp, Share2, Eye, Trophy, XCircle } from 'lucide-react';
-import { RitualScreen, RitualCard, FadeUp, TitleBlock, PrimaryButton, StatPill } from '@/components/ui';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { Card } from '@/components/uv/Card';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { SecondaryButton } from '@/components/uv/SecondaryButton';
+import { StatusPill } from '@/components/uv/StatusPill';
+import { Countdown } from '@/components/uv/Countdown';
+import { Modal } from '@/components/uv/Modal';
+import { SkeletonRow } from '@/components/uv/SkeletonRow';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
 import Timeline from '@/components/timeline';
 import { useAuth } from '@/providers/auth-provider';
@@ -22,14 +29,6 @@ type Phase =
   | 'kept'
   | 'broken'
   | 'voided';
-
-function getCountdownTint(days: number | null) {
-  if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
-  if (days <= 0) return { bg: 'rgba(255,123,123,0.10)', border: 'rgba(255,123,123,0.25)' };
-  if (days === 1) return { bg: 'rgba(255,180,80,0.10)', border: 'rgba(255,180,80,0.25)' };
-  if (days <= 3) return { bg: 'rgba(212,162,79,0.08)', border: 'rgba(212,162,79,0.20)' };
-  return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
-}
 
 function getPhase(vow: VowRow, isMaker: boolean, isWitness: boolean, isTarget: boolean): Phase {
   // Terminal states
@@ -65,7 +64,7 @@ function getPhase(vow: VowRow, isMaker: boolean, isWitness: boolean, isTarget: b
   if (vow.status === 'active' || vow.status === 'sealed') {
     const isSolo = vow.witness_name === 'Just me';
     const witnessPending = !isSolo && !vow.witness_accepted_at;
-    if (witnessPending) return 'witness_pending'; // handles both pending and declined
+    if (witnessPending) return 'witness_pending';
     return 'active';
   }
 
@@ -86,6 +85,7 @@ export default function VowDetailPage() {
   const [timelineOpen, setTimelineOpen] = useState(false);
   const [verdictBusy, setVerdictBusy] = useState(false);
   const [verdictError, setVerdictError] = useState('');
+  const [voidModalOpen, setVoidModalOpen] = useState(false);
 
   const fetchVow = useCallback(async () => {
     const { data, error } = await supabase
@@ -115,8 +115,8 @@ export default function VowDetailPage() {
   if (loading || authLoading) {
     return (
       <RitualScreen>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
+        <div style={{ paddingTop: 40 }}>
+          <SkeletonRow count={3} />
         </div>
       </RitualScreen>
     );
@@ -125,15 +125,10 @@ export default function VowDetailPage() {
   if (!vow) {
     return (
       <RitualScreen>
-        <FadeUp>
-          <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 py-2">
-            <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
-            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Dashboard</span>
-          </button>
-        </FadeUp>
-        <FadeUp delay={0.1}>
-          <p className="text-center text-[15px] mt-20" style={{ color: 'var(--text-muted)' }}>Vow not found.</p>
-        </FadeUp>
+        <BackNavSimple />
+        <p style={{ textAlign: 'center', fontSize: 15, marginTop: 80, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
+          Vow not found.
+        </p>
       </RitualScreen>
     );
   }
@@ -148,20 +143,13 @@ export default function VowDetailPage() {
   const now = new Date();
   const daysLeft = endsAt ? Math.ceil((endsAt.getTime() - now.getTime()) / 86400000) : null;
   const hoursLeft = endsAt ? Math.max(0, Math.floor((endsAt.getTime() - now.getTime()) / (1000 * 60 * 60))) : 0;
-  const endDateFormatted = endsAt?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) || '—';
+  const endDateFormatted = endsAt?.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) || '';
   const isSolo = vow.witness_name === 'Just me' && !vow.witness_accepted_at;
   const witnessUrl = vow.witness_invite_token && origin ? `${origin}/w/${vow.witness_invite_token}` : '';
   const shareUrl = origin ? `${origin}/outcome/${vow.id}` : '';
   const certificateUrl = origin ? `${origin}/certificate/${vow.id}` : '';
   const stakeLabel = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : null;
   const isTerminal = ['kept', 'broken', 'voided'].includes(vow.status);
-
-  const countdownLabel = daysLeft === null ? null
-    : daysLeft <= 0 ? "Today's the day"
-    : daysLeft === 1 ? 'Last day'
-    : `${daysLeft} days left`;
-
-  const tint = getCountdownTint(daysLeft);
 
   const witnessLabel = isSolo
     ? "You're the judge"
@@ -172,7 +160,7 @@ export default function VowDetailPage() {
     : 'Your witness is watching';
 
   const stakeSubtitle = vow.stake_amount > 0
-    ? `${stakeLabel} at stake · ${vow.destination} if broken`
+    ? `${stakeLabel} at stake \u00b7 ${vow.destination} if broken`
     : 'Accountability only';
 
   // --- Handlers ---
@@ -202,7 +190,7 @@ export default function VowDetailPage() {
   const handleTextWitness = () => {
     const phone = vow.witness_phone;
     const body = encodeURIComponent(
-      `Still holding my vow: "${vow.refined_text}"${stakeLabel ? ` — ${stakeLabel} on the line` : ''}. Just checking in`
+      `Still holding my vow: "${vow.refined_text}"${stakeLabel ? ` \u2014 ${stakeLabel} on the line` : ''}. Just checking in`
     );
     if (phone) {
       const cleanPhone = phone.replace(/[^\d+\-]/g, '');
@@ -213,8 +201,8 @@ export default function VowDetailPage() {
   };
 
   const handleWithdraw = async () => {
+    setVoidModalOpen(false);
     if (actionBusy) return;
-    if (!confirm('This will cancel your vow' + (vow.stake_amount > 0 ? ' and refund your stake' : '') + '. Continue?')) return;
     setActionBusy(true);
     setActionMsg('');
     try {
@@ -287,872 +275,688 @@ export default function VowDetailPage() {
   // --- Shared components ---
 
   const BackNav = () => (
-    <FadeUp>
-      <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 py-2">
-        <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
-        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Dashboard</span>
-      </button>
-    </FadeUp>
+    <button
+      onClick={() => router.push('/dashboard')}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '8px 0',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+      }}
+    >
+      <ArrowLeft className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
+      <span style={{ fontSize: 14, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Dashboard</span>
+    </button>
   );
 
-  const StatusBadge = ({ label, color, pulse }: { label: string; color: string; pulse?: boolean }) => (
-    <FadeUp delay={0.05}>
-      <div className="flex items-center gap-2">
-        <div className={`w-2 h-2 rounded-full ${pulse ? 'animate-pulse' : ''}`} style={{ backgroundColor: color }} />
-        <span className="text-[13px] font-semibold uppercase tracking-[0.5px]" style={{ color }}>{label}</span>
-      </div>
-    </FadeUp>
+  const VowTitle = ({ text, sub }: { text: string; sub?: string }) => (
+    <div style={{ marginBottom: 16 }}>
+      <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 22, fontWeight: 400, color: 'var(--uv-text-primary)', margin: 0, lineHeight: 1.3 }}>
+        {text}
+      </h1>
+      {sub && (
+        <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)', marginTop: 6 }}>
+          {sub}
+        </p>
+      )}
+    </div>
   );
 
-  const CountdownCard = () => (
-    <FadeUp delay={0.12}>
-      <div
-        className="rounded-[20px] p-5 flex flex-col gap-2"
-        style={{ backgroundColor: tint.bg, border: `1px solid ${tint.border}` }}
-      >
-        <span className="text-[22px] font-bold" style={{ color: 'var(--text)' }}>
-          {countdownLabel ?? 'Vow active'}
+  const CountdownSection = () => (
+    <div style={{ margin: '16px 0' }}>
+      {vow.ends_at && (
+        <Countdown endsAt={vow.ends_at} startsAt={vow.starts_at || vow.sealed_at || undefined} />
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 }}>
+        <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--uv-status-active)' }} />
+        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
+          {witnessLabel}
         </span>
-        <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+      </div>
+      {endDateFormatted && (
+        <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)', marginTop: 6 }}>
           Verdict day: {endDateFormatted}
-        </span>
-        <div className="flex items-center gap-2 mt-1">
-          <div className="w-[6px] h-[6px] rounded-full" style={{ backgroundColor: 'var(--success)' }} />
-          <span className="text-[13px] font-semibold" style={{ color: 'var(--success)' }}>
-            {witnessLabel}
-          </span>
-        </div>
-      </div>
-    </FadeUp>
+        </p>
+      )}
+    </div>
   );
 
   const TimelineBlock = () => (
-    <FadeUp delay={0.25}>
+    <div style={{ marginTop: 20 }}>
       <button
         onClick={() => setTimelineOpen(!timelineOpen)}
-        className="w-full flex items-center justify-between py-2"
+        style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: '8px 0',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+        }}
       >
-        <span className="text-[12px] font-bold tracking-[1.2px] uppercase" style={{ color: 'var(--text-muted)' }}>
+        <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
           Timeline
         </span>
         {timelineOpen
-          ? <ChevronUp className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-          : <ChevronDown className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
+          ? <ChevronUp className="w-4 h-4" style={{ color: 'var(--uv-text-faint)' }} />
+          : <ChevronDown className="w-4 h-4" style={{ color: 'var(--uv-text-faint)' }} />
         }
       </button>
       {timelineOpen && (
-        <RitualCard>
+        <Card>
           <Timeline key={timelineKey} vowId={vowId} endsAt={vow.ends_at} />
-        </RitualCard>
+        </Card>
       )}
-    </FadeUp>
+    </div>
   );
 
   const WithdrawButton = () => {
     if (!isMaker || isTerminal) return null;
     return (
-      <FadeUp delay={0.3}>
-        <div className="flex flex-col gap-2">
-          <button
-            disabled={actionBusy}
-            onClick={handleWithdraw}
-            className="w-full min-h-[46px] rounded-[14px] flex items-center justify-center gap-2 transition-opacity"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', opacity: actionBusy ? 0.5 : 1 }}
-          >
-            <Ban className="w-4 h-4" style={{ color: 'var(--text-muted)' }} />
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-muted)' }}>
-              {actionBusy ? 'Withdrawing...' : 'Withdraw vow'}
-            </span>
-          </button>
-        </div>
-      </FadeUp>
+      <div style={{ marginTop: 16 }}>
+        <SecondaryButton onClick={() => setVoidModalOpen(true)}>
+          Withdraw vow
+        </SecondaryButton>
+      </div>
     );
   };
+
+  const VoidConfirmModal = () => (
+    <Modal open={voidModalOpen} onClose={() => setVoidModalOpen(false)} title="Withdraw vow?">
+      <p style={{ fontSize: 14, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', marginBottom: 16, lineHeight: 1.5 }}>
+        This will cancel your vow{vow.stake_amount > 0 ? ' and refund your stake' : ''}. This cannot be undone.
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <PrimaryButton onClick={handleWithdraw} loading={actionBusy}>
+          Yes, withdraw
+        </PrimaryButton>
+        <SecondaryButton onClick={() => setVoidModalOpen(false)}>
+          Never mind
+        </SecondaryButton>
+      </div>
+    </Modal>
+  );
 
   const DevVerdictButtons = () => {
     if (process.env.NODE_ENV !== 'development' || isTerminal || !vow.witness_invite_token) return null;
     return (
-      <FadeUp delay={0.35}>
-        <div className="flex flex-col gap-2">
-          <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
-            Fast-forward (testing)
-          </p>
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => handleTestVerdict('kept')}
-              disabled={verdictBusy}
-              className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
-              style={{ backgroundColor: 'rgba(82,214,154,0.12)', border: '1px solid rgba(82,214,154,0.25)' }}
-            >
-              <span className="text-[13px] font-bold" style={{ color: 'var(--success)' }}>
-                {verdictBusy ? '...' : 'Mark Kept'}
-              </span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleTestVerdict('broken')}
-              disabled={verdictBusy}
-              className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
-              style={{ backgroundColor: 'rgba(255,123,123,0.12)', border: '1px solid rgba(255,123,123,0.25)' }}
-            >
-              <span className="text-[13px] font-bold" style={{ color: 'var(--danger)' }}>
-                {verdictBusy ? '...' : 'Mark Broken'}
-              </span>
-            </button>
-          </div>
-          {verdictError && (
-            <p className="text-[13px] text-center" style={{ color: 'var(--danger)' }}>{verdictError}</p>
-          )}
+      <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', textAlign: 'center', color: 'var(--uv-text-faint)', opacity: 0.5 }}>
+          Fast-forward (testing)
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            type="button"
+            onClick={() => handleTestVerdict('kept')}
+            disabled={verdictBusy}
+            style={{
+              flex: 1,
+              minHeight: 44,
+              borderRadius: 'var(--uv-radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(82,214,154,0.12)',
+              border: '1px solid rgba(82,214,154,0.25)',
+              cursor: verdictBusy ? 'not-allowed' : 'pointer',
+              opacity: verdictBusy ? 0.4 : 1,
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--uv-status-active)' }}>
+              {verdictBusy ? '...' : 'Mark Kept'}
+            </span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTestVerdict('broken')}
+            disabled={verdictBusy}
+            style={{
+              flex: 1,
+              minHeight: 44,
+              borderRadius: 'var(--uv-radius-md)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: 'rgba(248,113,113,0.12)',
+              border: '1px solid rgba(248,113,113,0.25)',
+              cursor: verdictBusy ? 'not-allowed' : 'pointer',
+              opacity: verdictBusy ? 0.4 : 1,
+            }}
+          >
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--uv-danger)' }}>
+              {verdictBusy ? '...' : 'Mark Broken'}
+            </span>
+          </button>
         </div>
-      </FadeUp>
+        {verdictError && (
+          <p style={{ fontSize: 13, textAlign: 'center', color: 'var(--uv-danger)' }}>{verdictError}</p>
+        )}
+      </div>
     );
   };
 
-  // ══════════════════════════════════════════════
+  const DashboardButton = () => (
+    <SecondaryButton onClick={() => router.push('/dashboard')}>My Vows</SecondaryButton>
+  );
+
+  const ActionMessage = () => actionMsg ? (
+    <p style={{ fontSize: 13, textAlign: 'center', color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', marginTop: 8 }}>{actionMsg}</p>
+  ) : null;
+
+  // ============================================================
   //  PHASE: WITNESS PENDING
-  // ══════════════════════════════════════════════
+  // ============================================================
   if (phase === 'witness_pending') {
     const witnessDeclined = vow.witness_declined;
     const nudgeShareText = `Hey, did you see my vow? "${vow.refined_text.replace(/\.$/, '')}"${stakeLabel ? ` I put ${stakeLabel} on it.` : ''} I need you to accept:`;
 
     return (
-      <RitualScreen
-        footer={
-          <div className="flex flex-col gap-2">
-            {witnessDeclined ? (
-              <PrimaryButton label="Go solo instead" onPress={handleGoSolo} loading={actionBusy} />
-            ) : null}
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-            </button>
-          </div>
-        }
-      >
+      <RitualScreen>
         <BackNav />
-        <StatusBadge label="Vow Pending" color="var(--gold)" pulse />
+        <StatusPill variant="pending">Waiting on witness</StatusPill>
 
-        <FadeUp delay={0.08}>
-          <TitleBlock
-            title={vow.refined_text}
-            subtitle={stakeSubtitle}
-          />
-        </FadeUp>
+        <VowTitle text={vow.refined_text} sub={stakeSubtitle} />
 
         {/* Witness declined */}
         {witnessDeclined && (
-          <FadeUp delay={0.12}>
-            <div
-              className="rounded-[20px] p-5 flex flex-col gap-3"
-              style={{ backgroundColor: 'rgba(220,38,38,0.04)', border: '1px solid rgba(220,38,38,0.15)' }}
-            >
-              <span className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>{vow.witness_name} declined.</span>
-              <p className="text-[13px] leading-[19px]" style={{ color: 'var(--text-secondary)' }}>
-                You can continue solo — you&apos;ll judge the vow yourself on verdict day.
-              </p>
+          <Card variant="warn">
+            <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>
+              {vow.witness_name} declined.
+            </span>
+            <p style={{ fontSize: 13, lineHeight: '19px', color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', marginTop: 8 }}>
+              You can continue solo &mdash; you&apos;ll judge the vow yourself on verdict day.
+            </p>
+            <div style={{ marginTop: 12 }}>
+              <PrimaryButton onClick={handleGoSolo} loading={actionBusy}>Go solo instead</PrimaryButton>
             </div>
-          </FadeUp>
+          </Card>
         )}
 
-        {/* Witness pending — nudge card */}
+        {/* Witness pending - nudge card */}
         {!witnessDeclined && witnessUrl && (
-          <FadeUp delay={0.12}>
-            <div
-              className="rounded-[20px] p-5 flex flex-col gap-3"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(212,162,79,0.15)' }}>
-                  <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--gold)' }} />
-                </div>
-                <div>
-                  <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Waiting for your witness</span>
-                  <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                    {vow.witness_phone ? 'We texted them an invite. Nudge if they haven\u2019t checked yet.' : 'Share the invite so they can accept.'}
-                  </span>
-                </div>
+          <Card>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(212,162,79,0.15)' }}>
+                <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--uv-gold)' }} />
               </div>
-              <ShareButton
-                url={witnessUrl}
-                text={nudgeShareText}
-                buttonText={vow.witness_phone ? 'Nudge your witness' : 'Send the invite'}
-              />
-              <div className="flex items-center gap-2">
-                <div className="rounded-[10px] py-2 px-3 flex-1 min-w-0" style={{ backgroundColor: 'var(--surface-elevated)', border: '1px solid var(--border)' }}>
-                  <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{witnessUrl}</p>
-                </div>
-                <CopyLinkButton url={witnessUrl} />
+              <div>
+                <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>
+                  Waiting on {vow.witness_name}.
+                </span>
+                <span style={{ fontSize: 12, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
+                  {vow.witness_phone ? 'We texted them an invite. Nudge if they haven\u2019t checked yet.' : 'Share the invite so they can accept.'}
+                </span>
               </div>
             </div>
-          </FadeUp>
+            <ShareButton
+              url={witnessUrl}
+              text={nudgeShareText}
+              buttonText={vow.witness_phone ? 'Nudge your witness' : 'Send the invite'}
+            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <div style={{ borderRadius: 10, padding: '8px 12px', flex: 1, minWidth: 0, backgroundColor: 'var(--uv-bg-elev)', border: '1px solid var(--uv-border-strong)' }}>
+                <p style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--uv-text-faint)', margin: 0 }}>{witnessUrl}</p>
+              </div>
+              <CopyLinkButton url={witnessUrl} />
+            </div>
+          </Card>
         )}
 
         {/* Go solo link */}
         {!witnessDeclined && (
-          <FadeUp delay={0.16}>
-            <button onClick={handleGoSolo} disabled={actionBusy} className="w-full py-2 flex items-center justify-center gap-2">
-              <Shield className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-              <span className="text-[13px] font-medium" style={{ color: 'var(--text-muted)' }}>or go solo</span>
-            </button>
-          </FadeUp>
-        )}
-
-        {/* Time stats */}
-        <FadeUp delay={0.2}>
-          <div className="flex gap-3">
-            <StatPill value={daysLeft != null && daysLeft > 0 ? `${daysLeft}d` : `${hoursLeft}h`} label="Time left" />
-            <StatPill value={endDateFormatted} label="Verdict day" />
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+            <SecondaryButton onClick={handleGoSolo}>
+              or go solo
+            </SecondaryButton>
           </div>
-        </FadeUp>
+        )}
 
         <TimelineBlock />
         <WithdrawButton />
-
-        {actionMsg && (
-          <FadeUp>
-            <p className="text-[13px] text-center" style={{ color: 'var(--text-secondary)' }}>{actionMsg}</p>
-          </FadeUp>
-        )}
+        <VoidConfirmModal />
+        <ActionMessage />
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+          <DashboardButton />
+        </div>
       </RitualScreen>
     );
   }
 
-  // ══════════════════════════════════════════════
+  // ============================================================
   //  PHASE: ACTIVE
-  // ══════════════════════════════════════════════
+  // ============================================================
   if (phase === 'active') {
     const inviteShareText = vow.stake_amount > 0
       ? `I vowed to ${vow.refined_text.replace(/\.$/, '').toLowerCase()} and put ${stakeLabel} on it. You decide if I kept my word:`
       : `I vowed to ${vow.refined_text.replace(/\.$/, '').toLowerCase()}. If I fail, you get to call me out:`;
 
     return (
-      <RitualScreen
-        footer={
-          <div className="flex flex-col gap-2">
-            {/* Primary CTA: text witness or invite witness */}
-            {!isSolo && vow.witness_phone && (
-              <button
-                onClick={handleTextWitness}
-                className="w-full rounded-[18px] min-h-[52px] flex items-center justify-center gap-2.5 transition-transform active:scale-[0.975]"
-                style={{
-                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                }}
-              >
-                <MessageCircle className="w-[18px] h-[18px]" color="#0B0D11" />
-                <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>
-                  Text {vow.witness_name}
-                </span>
-              </button>
-            )}
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-            </button>
-          </div>
-        }
-      >
+      <RitualScreen>
         <BackNav />
+        <StatusPill variant="active">Active</StatusPill>
 
-        <FadeUp delay={0.05}>
-          <TitleBlock
-            title={vow.refined_text}
-            subtitle={stakeSubtitle}
-          />
-        </FadeUp>
+        <VowTitle text={vow.refined_text} sub={stakeSubtitle} />
 
-        <CountdownCard />
+        <CountdownSection />
 
-        {/* Invite a witness — solo vows only */}
+        {/* Invite a witness - solo vows only */}
         {isSolo && witnessUrl && (
-          <FadeUp delay={0.16}>
-            <button
-              onClick={async () => {
-                if (navigator.share) {
-                  try { await navigator.share({ text: inviteShareText, url: witnessUrl }); } catch {}
-                } else {
-                  await navigator.clipboard.writeText(`${inviteShareText} ${witnessUrl}`);
-                  setActionMsg('Link copied');
-                  setTimeout(() => setActionMsg(''), 2000);
-                }
-              }}
-              className="w-full rounded-[14px] p-3.5 flex items-center gap-3 text-left transition-all active:scale-[0.98]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <Eye className="w-[18px] h-[18px] shrink-0" style={{ color: 'var(--text-muted)' }} />
-              <div className="flex-1 min-w-0">
-                <span className="text-[14px] font-semibold block" style={{ color: 'var(--text-secondary)' }}>Invite a witness</span>
-                <span className="text-[12px] block mt-0.5" style={{ color: 'var(--text-muted)' }}>People keep vows 3x more with someone watching.</span>
+          <Card onClick={async () => {
+            if (navigator.share) {
+              try { await navigator.share({ text: inviteShareText, url: witnessUrl }); } catch {}
+            } else {
+              await navigator.clipboard.writeText(`${inviteShareText} ${witnessUrl}`);
+              setActionMsg('Link copied');
+              setTimeout(() => setActionMsg(''), 2000);
+            }
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <Eye className="w-[18px] h-[18px] shrink-0" style={{ color: 'var(--uv-text-faint)' }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ fontSize: 14, fontWeight: 500, display: 'block', color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Invite a witness</span>
+                <span style={{ fontSize: 12, display: 'block', marginTop: 2, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>People keep vows 3x more with someone watching.</span>
               </div>
               <div onClick={(e) => e.stopPropagation()}>
                 <CopyLinkButton url={witnessUrl} />
               </div>
-            </button>
-          </FadeUp>
+            </div>
+          </Card>
         )}
 
         {/* Share vow */}
         {shareUrl && (
-          <FadeUp delay={0.22}>
+          <div style={{ marginTop: 12 }}>
             <ShareButton
               url={shareUrl}
               text={`My vow: "${vow.refined_text}"`}
               buttonText="Share vow"
             />
-          </FadeUp>
+          </div>
         )}
 
         <TimelineBlock />
         <WithdrawButton />
+        <VoidConfirmModal />
         <DevVerdictButtons />
+        <ActionMessage />
 
-        {actionMsg && (
-          <FadeUp>
-            <p className="text-[13px] text-center" style={{ color: 'var(--text-secondary)' }}>{actionMsg}</p>
-          </FadeUp>
-        )}
+        {/* Footer CTAs */}
+        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {!isSolo && vow.witness_phone && (
+            <PrimaryButton onClick={handleTextWitness}>
+              Text {vow.witness_name}
+            </PrimaryButton>
+          )}
+          <DashboardButton />
+        </div>
       </RitualScreen>
     );
   }
 
-  // ══════════════════════════════════════════════
+  // ============================================================
   //  PHASE: VERDICT WAITING
-  // ══════════════════════════════════════════════
+  // ============================================================
   if (phase === 'verdict_waiting') {
     const witnessAccepted = !!vow.witness_accepted_at;
     const canSelfResolve = isMaker && (isSolo || !witnessAccepted);
 
     return (
-      <RitualScreen
-        footer={
-          <div className="flex flex-col gap-2">
-            {canSelfResolve && (
-              <PrimaryButton label="Deliver your verdict" onPress={() => router.push(`/self-resolve?id=${vow.id}`)} />
-            )}
-            {isMaker && witnessAccepted && vow.witness_phone && (
-              <button
-                onClick={() => {
-                  if (vow.witness_phone) window.open(`sms:${vow.witness_phone}`, '_self');
-                }}
-                className="w-full rounded-[18px] min-h-[52px] flex items-center justify-center gap-2.5 transition-transform active:scale-[0.975]"
-                style={{
-                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                }}
-              >
-                <MessageCircle className="w-[18px] h-[18px]" color="#0B0D11" />
-                <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>
-                  Nudge {vow.witness_name}
-                </span>
-              </button>
-            )}
-            {isMaker && witnessAccepted && !vow.witness_phone && (
-              <ShareButton
-                url={witnessUrl ? `${witnessUrl}/verdict` : ''}
-                text={`Time to deliver the verdict on my vow: "${vow.refined_text}"`}
-                buttonText={`Nudge ${vow.witness_name} to decide`}
-              />
-            )}
-            {/* Deliver verdict link for witnesses */}
-            {isWitness && vow.witness_invite_token && (
-              <a
-                href={`/w/${vow.witness_invite_token}/verdict`}
-                className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] block"
-                style={{
-                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                }}
-              >
-                <div className="min-h-[56px] flex items-center justify-center px-5">
-                  <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                    Deliver your verdict
-                  </span>
-                </div>
-              </a>
-            )}
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-            </button>
-          </div>
-        }
-      >
+      <RitualScreen>
         <BackNav />
-        <StatusBadge label="Verdict Due" color="var(--gold)" />
+        <StatusPill variant="verdict">Verdict due</StatusPill>
 
-        <FadeUp delay={0.08}>
-          <TitleBlock
-            title="Time's up."
-            subtitle={isSolo ? 'How did it go?' : witnessAccepted ? `${vow.witness_name}, it's your call.` : `${vow.witness_name} never accepted. You can self-resolve.`}
-          />
-        </FadeUp>
+        <VowTitle
+          text={isWitness ? `${vow.witness_name}, it's your call.` : isSolo ? "Time's up." : `${vow.witness_name} is deciding.`}
+          sub={isSolo ? 'How did it go?' : witnessAccepted ? undefined : `${vow.witness_name} never accepted. You can self-resolve.`}
+        />
 
-        <FadeUp delay={0.12}>
-          <RitualCard>
-            <p className="text-[17px] font-serif font-medium" style={{ color: 'var(--text)' }}>{vow.refined_text}</p>
-            <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-            <div className="flex items-center justify-between">
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
-              <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>{stakeLabel || 'Accountability only'}</span>
+        <Card>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, color: 'var(--uv-text-primary)', margin: 0 }}>
+            {vow.refined_text}
+          </p>
+          <div style={{ height: 1, backgroundColor: 'var(--uv-border-strong)', margin: '12px 0' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>At stake</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel || 'Accountability only'}</span>
+          </div>
+          {vow.destination && vow.stake_amount > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+              <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>If broken</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>{vow.destination}</span>
             </div>
-            {vow.destination && vow.stake_amount > 0 && (
-              <div className="flex items-center justify-between">
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
-                <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.destination}</span>
-              </div>
-            )}
-          </RitualCard>
-        </FadeUp>
+          )}
+        </Card>
 
         <TimelineBlock />
         <WithdrawButton />
+        <VoidConfirmModal />
         <DevVerdictButtons />
+        <ActionMessage />
 
-        {actionMsg && (
-          <FadeUp>
-            <p className="text-[13px] text-center" style={{ color: 'var(--text-secondary)' }}>{actionMsg}</p>
-          </FadeUp>
-        )}
+        {/* Footer CTAs */}
+        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {canSelfResolve && (
+            <PrimaryButton onClick={() => router.push(`/self-resolve?id=${vow.id}`)}>
+              Deliver your verdict
+            </PrimaryButton>
+          )}
+          {isMaker && witnessAccepted && vow.witness_phone && (
+            <PrimaryButton onClick={() => { if (vow.witness_phone) window.open(`sms:${vow.witness_phone}`, '_self'); }}>
+              Nudge {vow.witness_name}
+            </PrimaryButton>
+          )}
+          {isMaker && witnessAccepted && !vow.witness_phone && (
+            <ShareButton
+              url={witnessUrl ? `${witnessUrl}/verdict` : ''}
+              text={`Time to deliver the verdict on my vow: "${vow.refined_text}"`}
+              buttonText={`Nudge ${vow.witness_name} to decide`}
+            />
+          )}
+          {isWitness && vow.witness_invite_token && (
+            <PrimaryButton onClick={() => router.push(`/w/${vow.witness_invite_token}/verdict`)}>
+              Deliver your verdict
+            </PrimaryButton>
+          )}
+          <DashboardButton />
+        </div>
       </RitualScreen>
     );
   }
 
-  // ══════════════════════════════════════════════
-  //  PHASE: CHALLENGE PENDING (M9)
-  // ══════════════════════════════════════════════
+  // ============================================================
+  //  PHASE: CHALLENGE PENDING
+  // ============================================================
   if (phase === 'challenge_pending') {
     const targetName = vow.target_phone ? vow.target_phone.slice(-4) : 'them';
 
     return (
-      <RitualScreen
-        footer={
-          <div className="flex flex-col gap-2">
-            {vow.target_phone && (
-              <button
-                onClick={() => window.open(`sms:${vow.target_phone}`, '_self')}
-                className="w-full rounded-[18px] min-h-[52px] flex items-center justify-center gap-2.5 transition-transform active:scale-[0.975]"
-                style={{
-                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                }}
-              >
-                <MessageCircle className="w-[18px] h-[18px]" color="#0B0D11" />
-                <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>
-                  Nudge {targetName}
-                </span>
-              </button>
-            )}
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-            </button>
-          </div>
-        }
-      >
+      <RitualScreen>
         <BackNav />
-        <StatusBadge label="Challenge Sent" color="#60A5FA" pulse />
+        <StatusPill variant="pending">Challenge sent</StatusPill>
 
-        <FadeUp delay={0.08}>
-          <TitleBlock
-            title={vow.refined_text}
-            subtitle={`Waiting for ${targetName} to accept the challenge.`}
-          />
-        </FadeUp>
+        <VowTitle text={vow.refined_text} sub={`Waiting for ${targetName} to accept the challenge.`} />
 
-        <FadeUp delay={0.12}>
-          <div
-            className="rounded-[20px] p-5 flex flex-col gap-3"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(96,165,250,0.15)' }}>
-                <Clock className="w-[18px] h-[18px]" style={{ color: '#60A5FA' }} />
-              </div>
-              <div>
-                <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>Challenge pending</span>
-                <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                  They&apos;ll get a text with the dare. Nudge if they haven&apos;t responded.
-                </span>
-              </div>
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(96,165,250,0.15)' }}>
+              <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--uv-status-verdict)' }} />
+            </div>
+            <div>
+              <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>Challenge pending</span>
+              <span style={{ fontSize: 12, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
+                They&apos;ll get a text with the dare. Nudge if they haven&apos;t responded.
+              </span>
             </div>
           </div>
-        </FadeUp>
-
-        {stakeLabel && (
-          <FadeUp delay={0.16}>
-            <div className="flex gap-3">
-              <StatPill value={stakeLabel} label="At stake" />
-              <StatPill value={endDateFormatted} label="Verdict day" />
-            </div>
-          </FadeUp>
-        )}
+        </Card>
 
         <TimelineBlock />
         <WithdrawButton />
+        <VoidConfirmModal />
+
+        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {vow.target_phone && (
+            <PrimaryButton onClick={() => window.open(`sms:${vow.target_phone}`, '_self')}>
+              Nudge {targetName}
+            </PrimaryButton>
+          )}
+          <DashboardButton />
+        </div>
       </RitualScreen>
     );
   }
 
-  // ══════════════════════════════════════════════
-  //  PHASE: CHALLENGE WATCHING (M10)
-  // ══════════════════════════════════════════════
+  // ============================================================
+  //  PHASE: CHALLENGE WATCHING
+  // ============================================================
   if (phase === 'challenge_watching') {
     const targetName = vow.target_phone ? vow.target_phone.slice(-4) : 'them';
 
     return (
-      <RitualScreen
-        footer={
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-          </button>
-        }
-      >
+      <RitualScreen>
         <BackNav />
-        <StatusBadge label="Challenge Active" color="var(--success)" />
+        <StatusPill variant="active">Challenge active</StatusPill>
 
-        <FadeUp delay={0.08}>
-          <TitleBlock
-            title={vow.refined_text}
-            subtitle={`${targetName} accepted. The clock is ticking.`}
-          />
-        </FadeUp>
+        <VowTitle text={vow.refined_text} sub={`${targetName} accepted. The clock is ticking.`} />
 
-        <CountdownCard />
+        <CountdownSection />
         <TimelineBlock />
         <DevVerdictButtons />
+
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+          <DashboardButton />
+        </div>
       </RitualScreen>
     );
   }
 
-  // ══════════════════════════════════════════════
-  //  PHASE: CHALLENGE VERDICT (M11)
-  // ══════════════════════════════════════════════
+  // ============================================================
+  //  PHASE: CHALLENGE VERDICT
+  // ============================================================
   if (phase === 'challenge_verdict') {
     const targetName = vow.target_phone ? vow.target_phone.slice(-4) : 'them';
 
     return (
-      <RitualScreen
-        footer={
-          <div className="flex flex-col gap-2">
-            {vow.witness_invite_token && (
-              <a
-                href={`/w/${vow.witness_invite_token}/verdict`}
-                className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] block"
-                style={{
-                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                }}
-              >
-                <div className="min-h-[56px] flex items-center justify-center px-5">
-                  <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                    Deliver your verdict
-                  </span>
-                </div>
-              </a>
-            )}
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-            </button>
-          </div>
-        }
-      >
+      <RitualScreen>
         <BackNav />
-        <StatusBadge label="Time to Judge" color="var(--gold)" />
+        <StatusPill variant="verdict">Time to judge</StatusPill>
 
-        <FadeUp delay={0.08}>
-          <TitleBlock
-            title="Time's up."
-            subtitle={`Did ${targetName} keep their word?`}
-          />
-        </FadeUp>
+        <VowTitle text="Time's up." sub={`Did ${targetName} keep their word?`} />
 
-        <FadeUp delay={0.12}>
-          <RitualCard>
-            <p className="text-[17px] font-serif font-medium" style={{ color: 'var(--text)' }}>{vow.refined_text}</p>
-            <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-            <div className="flex items-center justify-between">
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
-              <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>{stakeLabel || 'Accountability only'}</span>
-            </div>
-          </RitualCard>
-        </FadeUp>
+        <Card>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, color: 'var(--uv-text-primary)', margin: 0 }}>
+            {vow.refined_text}
+          </p>
+          <div style={{ height: 1, backgroundColor: 'var(--uv-border-strong)', margin: '12px 0' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>At stake</span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel || 'Accountability only'}</span>
+          </div>
+        </Card>
 
         <TimelineBlock />
         <DevVerdictButtons />
+
+        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {vow.witness_invite_token && (
+            <PrimaryButton onClick={() => router.push(`/w/${vow.witness_invite_token}/verdict`)}>
+              Deliver your verdict
+            </PrimaryButton>
+          )}
+          <DashboardButton />
+        </div>
       </RitualScreen>
     );
   }
 
-  // ══════════════════════════════════════════════
-  //  PHASE: WITNESS WATCHING (W2)
-  // ══════════════════════════════════════════════
+  // ============================================================
+  //  PHASE: WITNESS WATCHING
+  // ============================================================
   if (phase === 'witness_watching') {
     return (
-      <RitualScreen
-        footer={
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-          </button>
-        }
-      >
+      <RitualScreen>
         <BackNav />
-        <StatusBadge label="You're Watching" color="var(--success)" />
+        <StatusPill variant="active">You&apos;re watching</StatusPill>
 
-        <FadeUp delay={0.08}>
-          <TitleBlock
-            title={vow.refined_text}
-            subtitle={stakeSubtitle}
-          />
-        </FadeUp>
+        <VowTitle text={vow.refined_text} sub={stakeSubtitle} />
 
-        <CountdownCard />
+        <CountdownSection />
 
-        <FadeUp delay={0.18}>
-          <div
-            className="rounded-[16px] p-4 flex items-center gap-3"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <Eye className="w-5 h-5 shrink-0" style={{ color: 'var(--gold)' }} />
-            <p className="text-[14px]" style={{ color: 'var(--text-secondary)' }}>
+        <Card>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <Eye className="w-5 h-5 shrink-0" style={{ color: 'var(--uv-gold)' }} />
+            <p style={{ fontSize: 14, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: 0 }}>
               You&apos;ll be asked to deliver your verdict on {endDateFormatted}.
             </p>
           </div>
-        </FadeUp>
+        </Card>
 
         <TimelineBlock />
+
+        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
+          <DashboardButton />
+        </div>
       </RitualScreen>
     );
   }
 
-  // ══════════════════════════════════════════════
+  // ============================================================
   //  PHASE: KEPT
-  // ══════════════════════════════════════════════
+  // ============================================================
   if (phase === 'kept') {
     return (
-      <RitualScreen
-        footer={
-          <div className="flex flex-col gap-2">
-            {certificateUrl && (
-              <ShareButton
-                url={certificateUrl}
-                text={`I kept my vow: "${vow.refined_text}"`}
-                buttonText="Share your certificate"
-              />
-            )}
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-            </button>
-          </div>
-        }
-      >
+      <RitualScreen variant="outcome-kept">
         <BackNav />
 
-        <FadeUp delay={0.05}>
-          <div className="flex flex-col items-center gap-4 pt-4">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(82,214,154,0.15)', border: '2px solid rgba(82,214,154,0.3)' }}
-            >
-              <Trophy className="w-7 h-7" style={{ color: 'var(--success)' }} />
-            </div>
-            <div className="text-center">
-              <h1 className="text-[28px] font-bold font-serif" style={{ color: 'var(--success)' }}>Vow Kept</h1>
-              <p className="text-[15px] mt-1" style={{ color: 'var(--text-secondary)' }}>You honored your word.</p>
-            </div>
-          </div>
-        </FadeUp>
-
-        <FadeUp delay={0.1}>
-          <RitualCard>
-            <p className="text-[17px] font-serif font-medium text-center" style={{ color: 'var(--text)' }}>
-              &ldquo;{vow.refined_text}&rdquo;
-            </p>
-            <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-            <div className="flex items-center justify-between">
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Witnessed by</span>
-              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.witness_name}</span>
-            </div>
-            {stakeLabel && (
-              <div className="flex items-center justify-between">
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Stake</span>
-                <span className="text-sm font-bold" style={{ color: 'var(--success)' }}>{stakeLabel} protected</span>
-              </div>
-            )}
-            {vow.verdict_at && (
-              <div className="flex items-center justify-between">
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Verdict</span>
-                <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
-                  {new Date(vow.verdict_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                </span>
-              </div>
-            )}
-          </RitualCard>
-        </FadeUp>
-
-        <TimelineBlock />
-      </RitualScreen>
-    );
-  }
-
-  // ══════════════════════════════════════════════
-  //  PHASE: BROKEN
-  // ══════════════════════════════════════════════
-  if (phase === 'broken') {
-    return (
-      <RitualScreen
-        footer={
-          <div className="flex flex-col gap-2">
-            <button
-              onClick={() => router.push('/create')}
-              className="w-full rounded-[18px] min-h-[52px] flex items-center justify-center gap-2.5 transition-transform active:scale-[0.975]"
-              style={{
-                background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-              }}
-            >
-              <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>
-                Make a new vow
-              </span>
-            </button>
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-            </button>
-          </div>
-        }
-      >
-        <BackNav />
-
-        <FadeUp delay={0.05}>
-          <div className="flex flex-col items-center gap-4 pt-4">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(239,68,68,0.12)', border: '2px solid rgba(239,68,68,0.25)' }}
-            >
-              <XCircle className="w-7 h-7" style={{ color: 'var(--danger)' }} />
-            </div>
-            <div className="text-center">
-              <h1 className="text-[28px] font-bold font-serif" style={{ color: 'var(--danger)' }}>Vow Broken</h1>
-              <p className="text-[15px] mt-1" style={{ color: 'var(--text-secondary)' }}>
-                {stakeLabel ? `${stakeLabel} goes to ${vow.destination}.` : 'The vow was not honored.'}
-              </p>
-            </div>
-          </div>
-        </FadeUp>
-
-        <FadeUp delay={0.1}>
-          <RitualCard>
-            <p className="text-[17px] font-serif font-medium text-center" style={{ color: 'var(--text)' }}>
-              &ldquo;{vow.refined_text}&rdquo;
-            </p>
-            <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-            <div className="flex items-center justify-between">
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Witnessed by</span>
-              <span className="text-sm font-medium" style={{ color: 'var(--text)' }}>{vow.witness_name}</span>
-            </div>
-            {stakeLabel && (
-              <div className="flex items-center justify-between">
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Consequence</span>
-                <span className="text-sm font-bold" style={{ color: 'var(--danger)' }}>{stakeLabel} → {vow.destination}</span>
-              </div>
-            )}
-          </RitualCard>
-        </FadeUp>
-
-        <TimelineBlock />
-      </RitualScreen>
-    );
-  }
-
-  // ══════════════════════════════════════════════
-  //  PHASE: VOIDED
-  // ══════════════════════════════════════════════
-  return (
-    <RitualScreen
-      footer={
-        <div className="flex flex-col gap-2">
-          <button
-            onClick={() => router.push('/create')}
-            className="w-full rounded-[18px] min-h-[52px] flex items-center justify-center gap-2.5 transition-transform active:scale-[0.975]"
-            style={{
-              background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-              boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-            }}
-          >
-            <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>
-              Make a new vow
-            </span>
-          </button>
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="w-full rounded-[14px] min-h-[46px] flex items-center justify-center px-4 transition-transform active:scale-[0.98]"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-          >
-            <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>My Vows</span>
-          </button>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
+          <StatusPill variant="kept">KEPT</StatusPill>
+          <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-status-active)', margin: 0 }}>
+            You kept your word.
+          </h1>
         </div>
-      }
-    >
-      <BackNav />
 
-      <FadeUp delay={0.05}>
-        <div className="flex flex-col items-center gap-4 pt-4">
-          <div
-            className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: 'rgba(90,86,80,0.12)', border: '2px solid rgba(90,86,80,0.25)' }}
-          >
-            <Ban className="w-7 h-7" style={{ color: 'var(--text-muted)' }} />
-          </div>
-          <div className="text-center">
-            <h1 className="text-[28px] font-bold font-serif" style={{ color: 'var(--text-muted)' }}>Withdrawn</h1>
-            <p className="text-[15px] mt-1" style={{ color: 'var(--text-secondary)' }}>
-              {stakeLabel ? `${stakeLabel} was refunded.` : 'This vow was cancelled.'}
-            </p>
-          </div>
-        </div>
-      </FadeUp>
-
-      <FadeUp delay={0.1}>
-        <RitualCard>
-          <p className="text-[17px] font-serif font-medium text-center" style={{ color: 'var(--text-muted)' }}>
+        <Card>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text-primary)', margin: 0 }}>
             &ldquo;{vow.refined_text}&rdquo;
           </p>
-        </RitualCard>
-      </FadeUp>
+          <div style={{ height: 1, backgroundColor: 'var(--uv-border-strong)', margin: '12px 0' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Witnessed by</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>{vow.witness_name}</span>
+          </div>
+          {stakeLabel && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+              <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Stake</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-status-active)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel} protected</span>
+            </div>
+          )}
+          {vow.verdict_at && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+              <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Verdict</span>
+              <span style={{ fontSize: 14, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
+                {new Date(vow.verdict_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            </div>
+          )}
+        </Card>
+
+        <TimelineBlock />
+
+        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          {certificateUrl && (
+            <ShareButton
+              url={certificateUrl}
+              text={`I kept my vow: "${vow.refined_text}"`}
+              buttonText="Share your certificate"
+            />
+          )}
+          <DashboardButton />
+        </div>
+      </RitualScreen>
+    );
+  }
+
+  // ============================================================
+  //  PHASE: BROKEN
+  // ============================================================
+  if (phase === 'broken') {
+    return (
+      <RitualScreen variant="outcome-broken">
+        <BackNav />
+
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
+          <StatusPill variant="broken">BROKEN</StatusPill>
+          <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-danger)', margin: 0 }}>
+            You broke it.
+          </h1>
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: 0 }}>
+            {stakeLabel ? `${stakeLabel} goes to ${vow.destination}.` : 'The vow was not honored.'}
+          </p>
+        </div>
+
+        <Card>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text-primary)', margin: 0 }}>
+            &ldquo;{vow.refined_text}&rdquo;
+          </p>
+          <div style={{ height: 1, backgroundColor: 'var(--uv-border-strong)', margin: '12px 0' }} />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Witnessed by</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>{vow.witness_name}</span>
+          </div>
+          {stakeLabel && (
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
+              <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Consequence</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-danger)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel} &rarr; {vow.destination}</span>
+            </div>
+          )}
+        </Card>
+
+        <TimelineBlock />
+
+        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <PrimaryButton onClick={() => router.push('/create')}>Make a new vow</PrimaryButton>
+          <DashboardButton />
+        </div>
+      </RitualScreen>
+    );
+  }
+
+  // ============================================================
+  //  PHASE: VOIDED
+  // ============================================================
+  return (
+    <RitualScreen>
+      <BackNav />
+
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
+        <StatusPill variant="voided">VOIDED</StatusPill>
+        <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-text-faint)', margin: 0 }}>
+          You called it off.
+        </h1>
+        <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: 0 }}>
+          {stakeLabel ? `${stakeLabel} was refunded.` : 'This vow was cancelled.'}
+        </p>
+      </div>
+
+      <Card>
+        <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text-faint)', margin: 0 }}>
+          &ldquo;{vow.refined_text}&rdquo;
+        </p>
+      </Card>
 
       <TimelineBlock />
+
+      <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <PrimaryButton onClick={() => router.push('/create')}>Make a new vow</PrimaryButton>
+        <DashboardButton />
+      </div>
     </RitualScreen>
+  );
+}
+
+// Simple back nav for not-found state (outside component scope for early return)
+function BackNavSimple() {
+  const router = useRouter();
+  return (
+    <button
+      onClick={() => router.push('/dashboard')}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 8,
+        padding: '8px 0',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+      }}
+    >
+      <ArrowLeft className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
+      <span style={{ fontSize: 14, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Dashboard</span>
+    </button>
   );
 }
