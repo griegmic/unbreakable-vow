@@ -3,14 +3,13 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
-import { inferDeadline } from '@/lib/vow-logic';
 import { VowInput } from './components/VowInput';
-import { ByWhenSheet } from './components/ByWhenSheet';
-import { WitnessStep } from './components/WitnessStep';
 import { StakesStep } from './components/StakesStep';
 import { IfBrokenSheet } from './components/IfBrokenSheet';
 
-type Step = 1 | 1.5 | 2 | 3 | 3.5;
+// Web flow: Step 1 (vow + deadline inline) → Step 3 (stakes) → seal
+// Witness step skipped on web — user shares the link from /sent
+type Step = 1 | 3 | 3.5;
 
 export default function CreatePage() {
   const router = useRouter();
@@ -18,37 +17,12 @@ export default function CreatePage() {
   const [step, setStep] = useState<Step>(1);
   const [vowText, setVowText] = useState('');
   const [endsAt, setEndsAt] = useState<Date | null>(null);
-  const [witnessName, setWitnessName] = useState('');
-  const [witnessPhone, setWitnessPhone] = useState('');
   const [stakeAmount, setStakeAmount] = useState(50);
-  const [destination, setDestination] = useState('ALS Association');
+  const [destination, setDestination] = useState('St. Jude');
   const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>('charity');
 
-  // Step 1 → next: either go to step 2 (deadline inferred) or step 1.5
+  // Step 1 → Step 3 (skip witness on web)
   const handleVowNext = useCallback(() => {
-    const deadline = inferDeadline(vowText);
-    if (deadline) {
-      setEndsAt(deadline);
-      setStep(2);
-    }
-    // If no deadline inferred, the VowInput component calls onByWhen instead
-  }, [vowText]);
-
-  const handleByWhenOpen = useCallback(() => {
-    setStep(1.5);
-  }, []);
-
-  const handleByWhenSelect = useCallback((date: Date) => {
-    setEndsAt(date);
-    setStep(2);
-  }, []);
-
-  const handleByWhenClose = useCallback(() => {
-    setStep(1);
-  }, []);
-
-  // Step 2 → Step 3
-  const handleWitnessNext = useCallback(() => {
     setStep(3);
   }, []);
 
@@ -68,15 +42,13 @@ export default function CreatePage() {
     setStep(3);
   }, []);
 
-  // Step 3 "Review →" — persist draft to Supabase and route to /seal
+  // Step 3 "Seal my vow" — persist draft to Supabase and route to /seal
   const handleReview = useCallback(async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
-      // If not authenticated, redirect to auth first
-      // Store state in sessionStorage for recovery
       try {
         sessionStorage.setItem('create-draft', JSON.stringify({
-          vowText, endsAt: endsAt?.toISOString(), witnessName, witnessPhone,
+          vowText, endsAt: endsAt?.toISOString(),
           stakeAmount, destination, destinationKind,
         }));
       } catch {}
@@ -92,9 +64,9 @@ export default function CreatePage() {
         refined_text: vowText,
         status: 'draft',
         vow_type: 'self',
-        witness_name: witnessName || 'TBD',
-        witness_phone: witnessPhone || null,
-        stake_amount: stakeAmount * 100, // convert to cents
+        witness_name: 'TBD',
+        witness_phone: null,
+        stake_amount: stakeAmount * 100,
         consequence: destinationKind,
         destination,
         ends_at: endsAt?.toISOString() || null,
@@ -108,38 +80,17 @@ export default function CreatePage() {
     }
 
     router.push(`/seal?id=${data.id}`);
-  }, [vowText, endsAt, witnessName, witnessPhone, stakeAmount, destination, destinationKind, router]);
+  }, [vowText, endsAt, stakeAmount, destination, destinationKind, router]);
 
   // Render based on current step
-  if (step === 1 || step === 1.5) {
+  if (step === 1) {
     return (
-      <>
-        <VowInput
-          vowText={vowText}
-          setVowText={setVowText}
-          onNext={handleVowNext}
-          onByWhen={handleByWhenOpen}
-        />
-        <ByWhenSheet
-          open={step === 1.5}
-          onClose={handleByWhenClose}
-          onSelect={handleByWhenSelect}
-        />
-      </>
-    );
-  }
-
-  if (step === 2) {
-    return (
-      <WitnessStep
-        witnessName={witnessName}
-        setWitnessName={setWitnessName}
-        witnessPhone={witnessPhone}
-        setWitnessPhone={setWitnessPhone}
+      <VowInput
         vowText={vowText}
+        setVowText={setVowText}
         endsAt={endsAt}
-        onNext={handleWitnessNext}
-        onBack={() => setStep(1)}
+        setEndsAt={setEndsAt}
+        onNext={handleVowNext}
       />
     );
   }
@@ -164,9 +115,9 @@ export default function CreatePage() {
       destinationKind={destinationKind}
       onIfBroken={handleIfBroken}
       onNext={handleReview}
-      onBack={() => setStep(2)}
+      onBack={() => setStep(1)}
       vowText={vowText}
-      witnessName={witnessName}
+      witnessName="TBD"
       endsAt={endsAt}
     />
   );

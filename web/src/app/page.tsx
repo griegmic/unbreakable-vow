@@ -35,10 +35,15 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
       setTimeout(() => setPhase(4), dur ?? 4600),    // line 3
       setTimeout(() => setSkipReady(true), dur ?? 1500),
       setTimeout(() => setPhase(5), dur ?? 7200),    // pause — weight
-      setTimeout(() => setPhase(6), dur ?? 8400),    // screen 2
+      setTimeout(() => setPhase(6), dur ?? 8400),    // screen 2: revelation
+      setTimeout(() => {                              // auto-dismiss after revelation settles
+        try { localStorage.setItem('uv_ceremony_seen', '1'); } catch {}
+        setExiting(true);
+        setTimeout(() => onComplete(), 600);
+      }, dur ?? 12500),
     ];
     return () => timers.forEach(clearTimeout);
-  }, [reducedMotion]);
+  }, [reducedMotion, onComplete]);
 
   const finish = useCallback(() => {
     try { localStorage.setItem('uv_ceremony_seen', '1'); } catch {}
@@ -232,9 +237,21 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
             An Unbreakable Vow is sworn to someone you trust. Break it, and you pay. Keep it, and you prove you meant it.
           </p>
 
-          <div style={{ ...slow(true, 1800), marginTop: 40, width: '100%', maxWidth: 300 }}>
-            <PrimaryButton onClick={finish}>I&apos;m ready.</PrimaryButton>
-          </div>
+          {/* Auto-advances to landing — tap anywhere to skip */}
+          <button
+            type="button"
+            onClick={finish}
+            style={{
+              ...slow(true, 1800),
+              marginTop: 40,
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+              color: 'var(--uv-text-faint)', letterSpacing: '0.5px',
+              padding: '12px 24px',
+            }}
+          >
+            tap to continue
+          </button>
         </div>
       )}
 
