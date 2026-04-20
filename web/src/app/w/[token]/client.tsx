@@ -1,7 +1,12 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Sparkles, Eye, MessageCircle, Check, Phone } from 'lucide-react';
-import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, StatPill } from '@/components/ui';
+import { Check, Phone, MessageCircle } from 'lucide-react';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { SecondaryButton } from '@/components/uv/SecondaryButton';
+import { OathCheckbox } from '@/components/uv/OathCheckbox';
+import { Card } from '@/components/uv/Card';
+import { Input } from '@/components/uv/Input';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { HamburgerMenu } from '@/components/hamburger-menu';
@@ -170,7 +175,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     const isJustAcceptedState = acceptPhase !== null;
     if (acceptPhase) setAcceptPhase(null);
     const smsBody = isJustAcceptedState
-      ? "Just accepted your vow. I'm watching. 👀"
+      ? "Just accepted your vow. I'm watching. \u{1F440}"
       : getNudgeSms(getElapsed());
     const message = encodeURIComponent(smsBody);
     if (makerPhone) {
@@ -200,26 +205,25 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     const msg = resolvedMessages[vow.status] || resolvedMessages.voided;
     return (
       <RitualScreen>
-        <FadeUp><div className="flex items-center justify-between"><HeaderBadge />{isAuthenticated && <HamburgerMenu />}</div></FadeUp>
-        <FadeUp delay={0.1}>
-          <TitleBlock title={msg.title} subtitle={msg.subtitle} />
-        </FadeUp>
-        <FadeUp delay={0.2}>
-          <a
-            href="/create"
-            className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
-            style={{
-              backgroundColor: 'var(--surface)',
-              border: '1px solid var(--border-strong)',
-            }}
-          >
-            <div className="min-h-[50px] flex items-center justify-center px-5">
-              <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                Your turn &mdash; make a vow of your own
-              </span>
-            </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
+              UNBREAKABLE VOW
+            </span>
+            {isAuthenticated && <HamburgerMenu />}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'center' }}>
+            <h1 style={{ fontSize: 28, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
+              {msg.title}
+            </h1>
+            <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
+              {msg.subtitle}
+            </p>
+          </div>
+          <a href="/create" style={{ textDecoration: 'none' }}>
+            <PrimaryButton>Make your own vow &rarr;</PrimaryButton>
           </a>
-        </FadeUp>
+        </div>
       </RitualScreen>
     );
   }
@@ -239,332 +243,273 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       : `${daysLeft} days left`;
 
     return (
-      <RitualScreen
-        footer={
-          isVerdictDue ? (
-            <PrimaryButton
-              label="Deliver your verdict"
-              onPress={() => window.location.href = `/w/${token}/verdict`}
-            />
-          ) : undefined
-        }
-      >
-        <FadeUp><div className="flex items-center justify-between"><HeaderBadge />{isAuthenticated && <HamburgerMenu />}</div></FadeUp>
+      <RitualScreen>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
+              UNBREAKABLE VOW
+            </span>
+            {isAuthenticated && <HamburgerMenu />}
+          </div>
 
-        {acceptPhase === 'capturing' ? (
-          /* ── POST-ACCEPT: Confirmation line + phone capture ── */
-          <>
-            <FadeUp delay={0.05}>
+          {acceptPhase === 'capturing' ? (
+            /* ── POST-ACCEPT: Confirmation line + phone capture ── */
+            <>
               <div
-                className="flex items-center justify-center gap-2 py-2.5 rounded-full"
-                style={{ backgroundColor: 'rgba(82,214,154,0.08)', border: '1px solid rgba(82,214,154,0.15)' }}
-              >
-                <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
-                <span className="text-[13px] font-semibold" style={{ color: 'var(--success)' }}>
-                  You&apos;re locked in.
-                </span>
-              </div>
-            </FadeUp>
-
-            <FadeUp delay={0.08}>
-              <div className="flex items-baseline gap-2">
-                <span className="text-[10px] font-semibold tracking-[0.5px] uppercase shrink-0" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
-                  The vow
-                </span>
-                <span className="text-[13px] font-serif italic" style={{ color: 'var(--text-muted)' }}>
-                  &ldquo;{vow.refined_text}&rdquo;
-                </span>
-              </div>
-            </FadeUp>
-
-            <FadeUp delay={0.12}>
-              <TitleBlock
-                title="You're the judge."
-                subtitle={`We'll text you on ${endDate} when it's time to deliver your verdict.`}
-              />
-            </FadeUp>
-
-            <FadeUp delay={0.2}>
-              <div
-                className="flex items-center gap-3 py-4 px-[18px] rounded-[18px]"
                 style={{
-                  backgroundColor: 'rgba(255,255,255,0.04)',
-                  border: '1.5px solid rgba(212,162,79,0.2)',
-                  boxShadow: '0 0 20px rgba(212,162,79,0.04)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
+                  padding: '10px 16px',
+                  borderRadius: 999,
+                  backgroundColor: 'rgba(82,214,154,0.08)',
+                  border: '1px solid rgba(82,214,154,0.15)',
                 }}
               >
-                <Phone className="w-[18px] h-[18px] shrink-0" style={{ color: 'var(--text-muted)' }} />
-                <input
-                  type="tel"
-                  inputMode="tel"
-                  value={reminderPhone}
-                  onChange={(e) => setReminderPhone(e.target.value)}
-                  placeholder="Phone number"
-                  autoFocus
-                  className="w-full bg-transparent text-[16px] outline-none"
-                  style={{ color: 'var(--text)' }}
-                />
+                <Check style={{ width: 16, height: 16, color: 'var(--uv-success)' }} />
+                <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>
+                  You&apos;re on it.
+                </span>
               </div>
-            </FadeUp>
 
-            {error && (
-              <div className="rounded-[12px] px-4 py-3 text-[14px]" style={{ backgroundColor: 'rgba(220,38,38,0.1)', color: 'var(--danger)', border: '1px solid var(--danger)' }}>
-                {error}
+              <Card>
+                <p style={{ fontSize: 13, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', color: 'var(--uv-gold)', margin: 0 }}>
+                  &ldquo;{vow.refined_text}&rdquo;
+                </p>
+              </Card>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'center' }}>
+                <h2 style={{ fontSize: 24, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
+                  You&apos;re the judge.
+                </h2>
+                <p style={{ fontSize: 14, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
+                  We&apos;ll text you on {endDate} when it&apos;s time to deliver your verdict.
+                </p>
               </div>
-            )}
 
-            <div className="flex-1" />
+              <Input
+                type="tel"
+                value={reminderPhone}
+                onChange={(val) => setReminderPhone(val)}
+                placeholder="Phone number"
+                label="Phone number"
+              />
 
-            <FadeUp delay={0.3}>
-              <div className="flex flex-col items-center gap-3">
-                <button
-                  type="button"
+              {error && (
+                <div style={{ borderRadius: 12, padding: '12px 16px', fontSize: 14, backgroundColor: 'rgba(220,38,38,0.1)', color: 'var(--uv-danger)', border: '1px solid var(--uv-danger)' }}>
+                  {error}
+                </div>
+              )}
+
+              <div style={{ flex: 1 }} />
+
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                <PrimaryButton
                   onClick={async () => {
                     const digits = reminderPhone.replace(/\D/g, '');
                     if (digits.length < 7) return;
                     await handleSaveReminder();
                     setAcceptPhase(null);
                   }}
-                  disabled={!reminderPhone.trim() || reminderSaving}
-                  className="w-full rounded-[18px] overflow-hidden transition-all duration-300 active:scale-[0.975]"
-                  style={{
-                    background: !reminderPhone.trim()
-                      ? 'rgba(255,255,255,0.04)'
-                      : 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                    border: !reminderPhone.trim() ? '1px solid var(--border)' : 'none',
-                    boxShadow: reminderPhone.trim() ? '0 12px 24px rgba(212,162,79,0.28)' : 'none',
-                    opacity: reminderSaving ? 0.7 : 1,
-                  }}
+                  disabled={!reminderPhone.trim()}
+                  loading={reminderSaving}
                 >
-                  <div className="min-h-[56px] flex items-center justify-center px-5">
-                    <span
-                      className="text-[15px] font-extrabold tracking-[0.2px] transition-colors duration-300"
-                      style={{ color: reminderPhone.trim() ? '#0B0D11' : 'var(--text-muted)', opacity: reminderPhone.trim() ? 1 : 0.4 }}
-                    >
-                      {reminderSaving ? 'Saving...' : 'Done'}
-                    </span>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setReminderSkipped(true); setAcceptPhase(null); }}
-                  className="py-1"
-                >
-                  <span className="text-[13px]" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
-                    Not now
-                  </span>
-                </button>
+                  Done
+                </PrimaryButton>
+                <SecondaryButton onClick={() => { setReminderSkipped(true); setAcceptPhase(null); }}>
+                  Not now
+                </SecondaryButton>
               </div>
-            </FadeUp>
-          </>
-        ) : (
-          /* ── SCREEN 3: Dashboard ── */
-          <>
-            {/* Status badge */}
-            <FadeUp delay={0.05}>
-              <div className="flex justify-center">
+            </>
+          ) : (
+            /* ── DASHBOARD ── */
+            <>
+              {/* Status badge */}
+              <div style={{ display: 'flex', justifyContent: 'center' }}>
                 <div
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full"
                   style={{
-                    backgroundColor: isVerdictDue ? 'rgba(212,162,79,0.12)' : 'var(--success-muted)',
-                    border: isVerdictDue ? '1px solid var(--border-strong)' : '1px solid rgba(82,214,154,0.22)',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 8,
+                    padding: '8px 14px',
+                    borderRadius: 999,
+                    backgroundColor: isVerdictDue ? 'rgba(212,162,79,0.12)' : 'rgba(82,214,154,0.08)',
+                    border: isVerdictDue ? '1px solid var(--uv-border-strong)' : '1px solid rgba(82,214,154,0.22)',
                   }}
                 >
                   <div
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      backgroundColor: isVerdictDue ? 'var(--uv-gold-bright)' : 'var(--uv-success)',
+                    }}
                   />
-                  <span
-                    className="text-[12px] font-bold tracking-[1px] uppercase"
-                    style={{ color: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
-                  >
+                  <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', color: isVerdictDue ? 'var(--uv-gold-bright)' : 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>
                     {isVerdictDue ? 'VERDICT DUE' : 'VOW ACTIVE'}
                   </span>
                 </div>
               </div>
-            </FadeUp>
 
-            {/* Title */}
-            <FadeUp delay={0.1}>
-              <TitleBlock
-                title={isVerdictDue ? "Time's up." : "You're watching."}
-                subtitle={isVerdictDue
-                  ? `Did ${makerFirstName} keep the vow? Your call.`
-                  : `${makerFirstName} is counting on your honesty.`
-                }
-              />
-            </FadeUp>
-
-            {/* Vow quote — compact, not a full card */}
-            <FadeUp delay={0.13}>
-              <div
-                className="flex items-stretch overflow-hidden rounded-[14px]"
-                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-              >
-                <div className="w-[3px] shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
-                <div className="flex-1 py-3 px-3.5">
-                  <p className="text-[16px] leading-[23px] font-serif font-medium" style={{ color: 'var(--text)' }}>
-                    &ldquo;{vow.refined_text}&rdquo;
-                  </p>
-                  <p className="text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                    {vow.stake_amount > 0
-                      ? `$${vow.stake_amount / 100} at stake · ${vow.destination} if broken`
-                      : 'Their word is on the line'}
-                  </p>
-                </div>
+              {/* Title */}
+              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <h1 style={{ fontSize: 26, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
+                  {isVerdictDue ? "Time's up." : "You're watching."}
+                </h1>
+                <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
+                  {isVerdictDue
+                    ? `Did ${makerFirstName} keep the vow? Your call.`
+                    : `${makerFirstName} is counting on your honesty.`
+                  }
+                </p>
               </div>
-            </FadeUp>
 
-            {/* Stats row */}
-            {!isVerdictDue && (
-              <FadeUp delay={0.16}>
-                <div className="flex gap-3">
-                  <StatPill
-                    value={dayNumber !== null ? `Day ${Math.min(dayNumber, totalDays)}` : '—'}
-                    label={`of ${totalDays}`}
-                  />
-                  <StatPill
-                    value={countdownLabel || '—'}
-                    label={`Verdict: ${endDate}`}
-                  />
-                </div>
-              </FadeUp>
-            )}
-
-            {/* Primary CTA: Text the maker — time-based nudge */}
-            {!isVerdictDue && (() => {
-              const elapsed = getElapsed();
-              const nudgeLabel = elapsed < 0.15
-                ? `Send ${makerLabel} a message`
-                : elapsed < 0.85
-                  ? `Check in on ${makerLabel}`
-                  : `The clock is ticking — message ${makerLabel}`;
-              return (
-                <FadeUp delay={0.2}>
-                  <button
-                    type="button"
-                    onClick={handleTextMaker}
-                    className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-                    style={{
-                      background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                      boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                    }}
-                  >
-                    <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-                      <MessageCircle className="w-[18px] h-[18px]" color="#0B0D11" />
-                      <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                        {nudgeLabel}
-                      </span>
-                    </div>
-                  </button>
-                </FadeUp>
-              );
-            })()}
-
-            {/* Phone capture — only if skipped on screen 2 */}
-            {!isVerdictDue && !reminderSaved && reminderSkipped && (
-              <FadeUp delay={0.25}>
-                {reminderExpanded ? (
-                  <div
-                    className="rounded-[18px] p-4 flex flex-col gap-3"
-                    style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Phone className="w-4 h-4" style={{ color: 'var(--gold-bright)' }} />
-                      <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
-                        We&apos;ll text you on verdict day
-                      </span>
-                    </div>
-                    {needsWitnessName && (
-                      <input
-                        type="text"
-                        value={reminderName}
-                        onChange={(e) => setReminderName(e.target.value)}
-                        placeholder="Your first name"
-                        className="w-full bg-transparent text-[15px] outline-none py-2.5 px-3.5 rounded-xl"
-                        style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-                      />
-                    )}
-                    <input
-                      type="tel"
-                      value={reminderPhone}
-                      onChange={(e) => setReminderPhone(e.target.value)}
-                      placeholder="Phone number"
-                      autoFocus
-                      className="w-full bg-transparent text-[15px] outline-none py-2.5 px-3.5 rounded-xl"
-                      style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
-                    />
-                    <div className="flex items-center gap-4">
-                      <button
-                        type="button"
-                        onClick={handleSaveReminder}
-                        disabled={!reminderPhone.trim() || reminderSaving}
-                        className="px-5 py-2.5 rounded-xl text-[14px] font-bold transition-opacity"
-                        style={{
-                          backgroundColor: 'var(--gold-bright)',
-                          color: '#0B0D11',
-                          opacity: !reminderPhone.trim() || reminderSaving ? 0.5 : 1,
-                        }}
-                      >
-                        {reminderSaving ? 'Saving...' : 'Done'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setReminderExpanded(false)}
-                        className="text-[13px] font-medium"
-                        style={{ color: 'var(--text-muted)' }}
-                      >
-                        Not now
-                      </button>
-                    </div>
+              {/* Vow quote */}
+              <Card>
+                <div style={{ display: 'flex', alignItems: 'stretch', gap: 12 }}>
+                  <div style={{ width: 3, borderRadius: 2, backgroundColor: 'var(--uv-gold)', flexShrink: 0 }} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <p style={{ fontSize: 16, lineHeight: '23px', fontFamily: 'var(--uv-font-serif)', fontWeight: 500, color: 'var(--uv-text)', margin: 0 }}>
+                      &ldquo;{vow.refined_text}&rdquo;
+                    </p>
+                    <p style={{ fontSize: 12, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
+                      {vow.stake_amount > 0
+                        ? `$${vow.stake_amount / 100} at stake \u00B7 ${vow.destination} if broken`
+                        : 'Their word is on the line'}
+                    </p>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => setReminderExpanded(true)}
-                    className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-                    style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-                  >
-                    <div className="min-h-[50px] flex items-center justify-center gap-2 px-5">
-                      <Phone className="w-4 h-4" style={{ color: 'var(--gold-bright)' }} />
-                      <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
+                </div>
+              </Card>
+
+              {/* Stats row */}
+              {!isVerdictDue && (
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ flex: 1, padding: '12px 16px', borderRadius: 'var(--uv-radius-md)', backgroundColor: 'var(--uv-bg-card)', border: '1px solid var(--uv-border-strong)', textAlign: 'center' }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', display: 'block' }}>
+                      {dayNumber !== null ? `Day ${Math.min(dayNumber, totalDays)}` : '\u2014'}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>
+                      of {totalDays}
+                    </span>
+                  </div>
+                  <div style={{ flex: 1, padding: '12px 16px', borderRadius: 'var(--uv-radius-md)', backgroundColor: 'var(--uv-bg-card)', border: '1px solid var(--uv-border-strong)', textAlign: 'center' }}>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', display: 'block' }}>
+                      {countdownLabel || '\u2014'}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>
+                      Verdict: {endDate}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Primary CTA: Text the maker */}
+              {!isVerdictDue && (() => {
+                const elapsed = getElapsed();
+                const nudgeLabel = elapsed < 0.15
+                  ? `Send ${makerLabel} a message`
+                  : elapsed < 0.85
+                    ? `Check in on ${makerLabel}`
+                    : `The clock is ticking \u2014 message ${makerLabel}`;
+                return (
+                  <PrimaryButton onClick={handleTextMaker}>
+                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      <MessageCircle style={{ width: 16, height: 16 }} />
+                      {nudgeLabel}
+                    </span>
+                  </PrimaryButton>
+                );
+              })()}
+
+              {/* Verdict due CTA */}
+              {isVerdictDue && (
+                <PrimaryButton onClick={() => window.location.href = `/w/${token}/verdict`}>
+                  Deliver your verdict
+                </PrimaryButton>
+              )}
+
+              {/* Phone capture — only if skipped on screen 2 */}
+              {!isVerdictDue && !reminderSaved && reminderSkipped && (
+                <>
+                  {reminderExpanded ? (
+                    <Card>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <Phone style={{ width: 16, height: 16, color: 'var(--uv-gold-bright)' }} />
+                          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
+                            We&apos;ll text you on verdict day
+                          </span>
+                        </div>
+                        {needsWitnessName && (
+                          <Input
+                            type="text"
+                            value={reminderName}
+                            onChange={(val) => setReminderName(val)}
+                            placeholder="Your first name"
+                          />
+                        )}
+                        <Input
+                          type="tel"
+                          value={reminderPhone}
+                          onChange={(val) => setReminderPhone(val)}
+                          placeholder="Phone number"
+                        />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                          <PrimaryButton
+                            onClick={handleSaveReminder}
+                            disabled={!reminderPhone.trim()}
+                            loading={reminderSaving}
+                          >
+                            Done
+                          </PrimaryButton>
+                          <SecondaryButton onClick={() => setReminderExpanded(false)}>
+                            Not now
+                          </SecondaryButton>
+                        </div>
+                      </div>
+                    </Card>
+                  ) : (
+                    <SecondaryButton onClick={() => setReminderExpanded(true)}>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Phone style={{ width: 14, height: 14 }} />
                         Get a verdict-day reminder
                       </span>
-                    </div>
-                  </button>
-                )}
-              </FadeUp>
-            )}
+                    </SecondaryButton>
+                  )}
+                </>
+              )}
 
-            {/* Saved confirmation */}
-            {!isVerdictDue && reminderSaved && (
-              <FadeUp delay={0.25}>
+              {/* Saved confirmation */}
+              {!isVerdictDue && reminderSaved && (
                 <div
-                  className="flex items-center justify-center gap-2 py-3.5 rounded-[18px]"
-                  style={{ backgroundColor: 'rgba(82,214,154,0.08)', border: '1px solid rgba(82,214,154,0.2)' }}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 8,
+                    padding: '14px 16px',
+                    borderRadius: 'var(--uv-radius-md)',
+                    backgroundColor: 'rgba(82,214,154,0.08)',
+                    border: '1px solid rgba(82,214,154,0.2)',
+                  }}
                 >
-                  <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
-                  <span className="text-[14px] font-semibold" style={{ color: 'var(--success)' }}>
+                  <Check style={{ width: 16, height: 16, color: 'var(--uv-success)' }} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>
                     We&apos;ll text you on {endDate}
                   </span>
                 </div>
-              </FadeUp>
-            )}
+              )}
 
-            {/* Make your own vow — small text link */}
-            <FadeUp delay={0.3}>
-              <div className="flex justify-center pt-2">
-                <a
-                  href="/create"
-                  className="text-[13px] font-medium transition-opacity active:opacity-70"
-                  style={{ color: 'var(--text-muted)' }}
-                >
+              {/* Growth CTAs */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, paddingTop: 8 }}>
+                <a href="/create" style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}>
                   Make your own vow &rarr;
                 </a>
               </div>
-            </FadeUp>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </RitualScreen>
     );
   }
@@ -573,26 +518,32 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   if (status === 'declined') {
     return (
       <RitualScreen>
-        <FadeUp><div className="flex items-center justify-between"><HeaderBadge />{isAuthenticated && <HamburgerMenu />}</div></FadeUp>
-        <FadeUp delay={0.1}>
-          <TitleBlock
-            title="Declined."
-            subtitle={`${makerFirstName} will be notified. The vow continues without a witness.`}
-          />
-        </FadeUp>
-        <FadeUp delay={0.2}>
-          <a
-            href="/create"
-            className="block w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] text-center"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-          >
-            <div className="min-h-[50px] flex items-center justify-center px-5">
-              <span className="text-[14px] font-bold" style={{ color: 'var(--gold-bright)' }}>
-                Make a vow of your own
-              </span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
+              UNBREAKABLE VOW
+            </span>
+            {isAuthenticated && <HamburgerMenu />}
+          </div>
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <h1 style={{ fontSize: 28, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
+              Stepped back.
+            </h1>
+            <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
+              {makerFirstName} has been told.
+            </p>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <a href="/create" style={{ textDecoration: 'none' }}>
+              <PrimaryButton>Make your own vow &rarr;</PrimaryButton>
+            </a>
+            <div style={{ textAlign: 'center' }}>
+              <a href={`/?ref=witness&dare=${encodeURIComponent(makerFirstName)}`} style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}>
+                Dare {makerFirstName} &rarr;
+              </a>
             </div>
-          </a>
-        </FadeUp>
+          </div>
+        </div>
       </RitualScreen>
     );
   }
@@ -601,95 +552,78 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   const stakeDisplay = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : null;
 
   return (
-    <RitualScreen
-      footer={
-        <PrimaryButton
-          label={busy ? 'Accepting...' : "I'll hold them to it"}
-          onPress={handleAccept}
-          loading={busy}
-          disabled={!sworn}
-        />
-      }
-    >
-      <FadeUp><div className="flex items-center justify-between"><HeaderBadge />{isAuthenticated && <HamburgerMenu />}</div></FadeUp>
+    <RitualScreen variant="ceremony">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
+            UNBREAKABLE VOW
+          </span>
+          {isAuthenticated && <HamburgerMenu />}
+        </div>
 
-      <FadeUp delay={0.06}>
-        <h1 className="text-[28px] font-bold font-serif leading-[34px] tracking-[-0.5px] text-center" style={{ color: 'var(--text)' }}>
-          {makerFirstName} made a vow.
-        </h1>
-      </FadeUp>
+        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <h1 style={{ fontSize: 28, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0, lineHeight: 1.2 }}>
+            {makerFirstName} made an Unbreakable Vow.
+          </h1>
+          <p style={{ fontSize: 16, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
+            They&apos;re asking you to judge.
+          </p>
+        </div>
 
-      <FadeUp delay={0.12}>
-        <p className="text-[22px] font-serif font-medium leading-[30px] text-center" style={{ color: 'var(--text)' }}>
-          &ldquo;{vow.refined_text}&rdquo;
-        </p>
-      </FadeUp>
+        <Card variant="elevated">
+          <p style={{ fontSize: 20, fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontStyle: 'italic', color: 'var(--uv-gold)', margin: 0, textAlign: 'center', lineHeight: 1.4 }}>
+            &ldquo;{vow.refined_text}&rdquo;
+          </p>
+        </Card>
 
-      <FadeUp delay={0.18}>
-        <div className="flex flex-col items-center gap-1">
-          <p className="text-[15px] leading-[22px] text-center" style={{ color: 'var(--text-secondary)' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, textAlign: 'center', fontFamily: 'var(--uv-font-sans)' }}>
             {stakeDisplay
               ? `If ${makerFirstName} breaks it, ${stakeDisplay} goes to ${vow.destination}.`
-              : `No money at stake — just their word.`}
+              : `No money at stake \u2014 just their word.`}
           </p>
-          <p className="text-[15px] leading-[22px] text-center" style={{ color: 'var(--text-secondary)' }}>
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, textAlign: 'center', fontFamily: 'var(--uv-font-sans)' }}>
             You decide on {endDate}.
           </p>
         </div>
-      </FadeUp>
 
-      <FadeUp delay={0.24}>
-        <div className="flex flex-col gap-2 -mt-1">
-          <button
-            type="button"
-            onClick={() => setSworn(!sworn)}
-            className="flex items-start gap-3 w-full text-left py-3 px-4 rounded-[16px] transition-all"
-            style={{
-              backgroundColor: sworn ? 'rgba(212,162,79,0.08)' : 'transparent',
-              border: `1px solid ${sworn ? 'rgba(212,162,79,0.25)' : 'var(--border)'}`,
-            }}
+        <OathCheckbox
+          checked={sworn}
+          onChange={setSworn}
+          label={`I swear to keep ${makerLabel} accountable`}
+        />
+
+        {!sworn && (
+          <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
+            they picked you for a reason
+          </p>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <PrimaryButton
+            onClick={handleAccept}
+            loading={busy}
+            disabled={!sworn}
           >
-            <div
-              className="w-6 h-6 rounded-[7px] flex items-center justify-center shrink-0 mt-0.5 transition-all"
-              style={{
-                backgroundColor: sworn ? 'var(--gold-bright)' : 'transparent',
-                border: sworn ? '2px solid var(--gold-bright)' : '2px solid var(--text-muted)',
-              }}
-            >
-              {sworn && (
-                <Check className="w-3.5 h-3.5" style={{ color: '#0B0D11' }} strokeWidth={3} />
-              )}
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[15px] font-bold font-serif" style={{ color: 'var(--gold-bright)' }}>
-                I do solemnly swear
-              </span>
-              <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
-                to keep {makerLabel} accountable
-              </span>
-            </div>
-          </button>
-          {!sworn && (
-            <p className="text-[11px] text-center mt-1" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
-              they picked you for a reason
-            </p>
-          )}
+            I&apos;ll judge &rarr;
+          </PrimaryButton>
+          <div style={{ textAlign: 'center' }}>
+            <SecondaryButton onClick={handleDecline}>
+              I can&apos;t
+            </SecondaryButton>
+          </div>
         </div>
-      </FadeUp>
 
-      <FadeUp delay={0.3}>
-        <p className="text-[11px] text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+        <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
           By accepting, you agree to receive a text on verdict day. Msg &amp; data rates may apply.
         </p>
-      </FadeUp>
 
-      {error && (
-        <FadeUp>
-          <div className="rounded-[12px] px-4 py-3 text-[14px]" style={{ backgroundColor: 'rgba(220,38,38,0.1)', color: 'var(--danger)', border: '1px solid var(--danger)' }}>
+        {error && (
+          <div style={{ borderRadius: 12, padding: '12px 16px', fontSize: 14, backgroundColor: 'rgba(220,38,38,0.1)', color: 'var(--uv-danger)', border: '1px solid var(--uv-danger)', fontFamily: 'var(--uv-font-sans)' }}>
             {error}
           </div>
-        </FadeUp>
-      )}
+        )}
+      </div>
     </RitualScreen>
   );
 }

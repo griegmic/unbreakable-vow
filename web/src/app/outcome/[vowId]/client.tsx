@@ -1,7 +1,9 @@
 'use client';
 import { useState } from 'react';
-import { Check, DollarSign, Sparkles, Share2, Copy, CheckCheck } from 'lucide-react';
-import { RitualScreen, TitleBlock, FadeUp, HeaderBadge } from '@/components/ui';
+import { Check, DollarSign, Share2, CheckCheck } from 'lucide-react';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { Card } from '@/components/uv/Card';
 
 interface Vow {
   id: string;
@@ -20,8 +22,8 @@ export default function OutcomeClient({ vow }: { vow: Vow }) {
 
   const handleShare = async () => {
     const text = isKept
-      ? `Vow kept: "${vow.refined_text}" — $${amount} protected.`
-      : `Vow broken: "${vow.refined_text}" — $${amount} to ${vow.destination}.`;
+      ? `Vow kept: "${vow.refined_text}" \u2014 $${amount} protected.`
+      : `Vow broken: "${vow.refined_text}" \u2014 $${amount} to ${vow.destination}.`;
 
     if (navigator.share) {
       try {
@@ -36,115 +38,129 @@ export default function OutcomeClient({ vow }: { vow: Vow }) {
   };
 
   return (
-    <RitualScreen>
-      <FadeUp><HeaderBadge /></FadeUp>
+    <RitualScreen variant={isKept ? 'outcome-kept' : 'outcome-broken'}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
+          UNBREAKABLE VOW
+        </span>
 
-      {/* Outcome badge */}
-      <FadeUp delay={0.05}>
-        <div className="flex justify-center mt-4">
+        {/* Phone-frame style container */}
+        <div
+          style={{
+            border: '1.5px solid var(--uv-gold)',
+            borderRadius: 'var(--uv-radius-2xl)',
+            padding: 32,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 24,
+            backgroundColor: 'var(--uv-bg-card)',
+            boxShadow: 'var(--uv-shadow-xl)',
+          }}
+        >
+          {/* Outcome icon */}
           <div
-            className="w-20 h-20 rounded-full flex items-center justify-center"
             style={{
-              background: isKept
-                ? 'linear-gradient(135deg, rgba(82,214,154,0.2), rgba(82,214,154,0.08))'
-                : 'linear-gradient(135deg, rgba(220,38,38,0.2), rgba(220,38,38,0.08))',
-              border: isKept
-                ? '2px solid rgba(82,214,154,0.3)'
-                : '2px solid rgba(220,38,38,0.3)',
-              boxShadow: isKept
-                ? '0 0 40px rgba(82,214,154,0.15)'
-                : '0 0 40px rgba(220,38,38,0.15)',
+              width: 72,
+              height: 72,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              backgroundColor: isKept ? 'rgba(82,214,154,0.12)' : 'rgba(220,38,38,0.12)',
+              border: isKept ? '2px solid rgba(82,214,154,0.3)' : '2px solid rgba(220,38,38,0.3)',
             }}
           >
             {isKept ? (
-              <Check className="w-9 h-9" style={{ color: 'var(--success)' }} />
+              <Check style={{ width: 36, height: 36, color: 'var(--uv-success)' }} />
             ) : (
-              <DollarSign className="w-9 h-9" style={{ color: 'var(--danger)' }} />
+              <DollarSign style={{ width: 36, height: 36, color: 'var(--uv-danger)' }} />
             )}
           </div>
-        </div>
-      </FadeUp>
 
-      {/* Title */}
-      <FadeUp delay={0.1}>
-        <TitleBlock
-          title={isKept ? 'Vow kept.' : 'Vow broken.'}
-          subtitle={isKept
-            ? (amount > 0 ? `The vow was honored. $${amount} stays safe.` : 'The vow was honored.')
-            : (amount > 0 ? `$${amount} goes to ${vow.destination}.` : 'The vow was broken. The record stands.')
-          }
-        />
-      </FadeUp>
+          {/* Title */}
+          <h1 style={{
+            fontSize: 32,
+            fontWeight: 600,
+            fontFamily: 'var(--uv-font-serif)',
+            color: isKept ? 'var(--uv-gold)' : 'var(--uv-danger)',
+            margin: 0,
+            textAlign: 'center',
+          }}>
+            {isKept ? 'Kept.' : 'Broken.'}
+          </h1>
 
-      {/* Vow quote */}
-      <FadeUp delay={0.15}>
-        <div
-          className="flex items-stretch overflow-hidden rounded-[14px]"
-          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-        >
-          <div
-            className="w-[3px] shrink-0"
-            style={{ backgroundColor: isKept ? 'var(--success)' : 'var(--danger)' }}
-          />
-          <div className="flex-1 py-3 px-3.5">
-            <div className="flex items-center gap-2 mb-1.5">
-              <Sparkles className="w-3 h-3" style={{ color: 'var(--gold)' }} />
-              <span className="text-[10px] font-bold tracking-[1.2px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
+          {/* Description */}
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, textAlign: 'center', fontFamily: 'var(--uv-font-sans)', lineHeight: 1.5 }}>
+            {isKept
+              ? `${vow.witness_name} called it kept.`
+              : amount > 0
+                ? `$${amount} goes to ${vow.destination}.`
+                : 'The vow was broken. The record stands.'
+            }
+          </p>
+
+          {/* Vow quote */}
+          <div style={{ width: '100%' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'stretch',
+                gap: 12,
+                padding: '12px 16px',
+                borderRadius: 12,
+                backgroundColor: 'var(--uv-bg-elev)',
+                border: '1px solid var(--uv-border-strong)',
+              }}
+            >
+              <div style={{ width: 3, borderRadius: 2, backgroundColor: isKept ? 'var(--uv-success)' : 'var(--uv-danger)', flexShrink: 0 }} />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <p style={{ fontSize: 16, lineHeight: '23px', fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontStyle: 'italic', color: 'var(--uv-text)', margin: 0 }}>
+                  &ldquo;{vow.refined_text}&rdquo;
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--uv-text-dim)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
+                  {amount > 0 ? `$${amount} at stake` : 'Accountability only'} &middot; Witnessed by {vow.witness_name}
+                </p>
+              </div>
             </div>
-            <p className="text-[16px] leading-[23px] font-serif font-medium" style={{ color: 'var(--text)' }}>
-              &ldquo;{vow.refined_text}&rdquo;
-            </p>
-            <p className="text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-              {amount > 0 ? `$${amount} at stake` : 'Accountability only'} &middot; Witnessed by {vow.witness_name}
-            </p>
           </div>
         </div>
-      </FadeUp>
 
-      {/* Share button */}
-      <FadeUp delay={0.2}>
+        {/* Share button */}
         <button
           onClick={handleShare}
-          className="w-full rounded-[14px] min-h-[48px] flex items-center justify-center gap-2.5 transition-transform active:scale-[0.975]"
           style={{
-            backgroundColor: 'var(--surface)',
-            border: '1px solid var(--border-strong)',
+            width: '100%',
+            minHeight: 48,
+            borderRadius: 'var(--uv-radius-md)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            backgroundColor: 'var(--uv-bg-card)',
+            border: '1px solid var(--uv-border-strong)',
+            cursor: 'pointer',
+            transition: 'transform 120ms',
           }}
         >
           {shared ? (
             <>
-              <CheckCheck className="w-4 h-4" style={{ color: 'var(--success)' }} />
-              <span className="text-[14px] font-semibold" style={{ color: 'var(--success)' }}>Copied!</span>
+              <CheckCheck style={{ width: 16, height: 16, color: 'var(--uv-success)' }} />
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>Copied!</span>
             </>
           ) : (
             <>
-              <Share2 className="w-4 h-4" style={{ color: 'var(--text-secondary)' }} />
-              <span className="text-[14px] font-semibold" style={{ color: 'var(--text-secondary)' }}>Share this outcome</span>
+              <Share2 style={{ width: 16, height: 16, color: 'var(--uv-text-muted)' }} />
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Share this outcome</span>
             </>
           )}
         </button>
-      </FadeUp>
 
-      {/* Make your own vow CTA */}
-      <FadeUp delay={0.25}>
-        <div className="flex flex-col gap-3">
-          <a
-            href="https://unbreakablevow.app"
-            className="w-full rounded-[18px] min-h-[56px] flex items-center justify-center transition-transform active:scale-[0.975]"
-            style={{
-              background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-              boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-            }}
-          >
-            <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-              Make a vow of your own
-            </span>
-          </a>
-          <p className="text-center text-[12px]" style={{ color: 'var(--text-muted)' }}>
-            Put money on the line. Pick a witness. Keep your word.
-          </p>
-        </div>
-      </FadeUp>
+        {/* CTA */}
+        <a href="/" style={{ textDecoration: 'none' }}>
+          <PrimaryButton>Make your own vow &rarr;</PrimaryButton>
+        </a>
+      </div>
     </RitualScreen>
   );
 }

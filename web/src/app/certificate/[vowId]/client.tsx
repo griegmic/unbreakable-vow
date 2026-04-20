@@ -1,9 +1,11 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Check, X } from 'lucide-react';
-import { ShareButton } from '@/components/share-button';
-import { FadeUp } from '@/components/ui';
+import { Share2, ArrowLeft, Check, X } from 'lucide-react';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { SecondaryButton } from '@/components/uv/SecondaryButton';
+import { toPng } from 'html-to-image';
 
 interface Vow {
   id: string;
@@ -20,11 +22,13 @@ interface Vow {
 export default function CertificateClient({ vow }: { vow: Vow }) {
   const router = useRouter();
   const [origin, setOrigin] = useState('');
+  const certRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setOrigin(window.location.origin); }, []);
 
   const isResolved = ['kept', 'broken'].includes(vow.status);
   const isKept = vow.verdict === 'kept';
+  const amount = Math.round(vow.stake_amount / 100);
   const sealDate = vow.sealed_at
     ? new Date(vow.sealed_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
     : null;
@@ -33,115 +37,198 @@ export default function CertificateClient({ vow }: { vow: Vow }) {
     : null;
 
   const shareUrl = origin ? `${origin}/certificate/${vow.id}` : '';
-  const shareText = `I made an Unbreakable Vow: "${vow.refined_text}" — ${shareUrl}`;
+
+  const handleShare = async () => {
+    const text = `I made an Unbreakable Vow: "${vow.refined_text}"`;
+
+    if (navigator.share) {
+      try {
+        // Try to export as image for sharing
+        if (certRef.current) {
+          try {
+            const dataUrl = await toPng(certRef.current, { quality: 0.95 });
+            const blob = await (await fetch(dataUrl)).blob();
+            const file = new File([blob], 'certificate.png', { type: 'image/png' });
+            await navigator.share({ text, url: shareUrl, files: [file] });
+            return;
+          } catch {
+            // Fallback to text-only share
+            await navigator.share({ text, url: shareUrl });
+            return;
+          }
+        }
+        await navigator.share({ text, url: shareUrl });
+        return;
+      } catch {}
+    }
+
+    // Fallback: copy URL
+    await navigator.clipboard.writeText(`${text}\n${shareUrl}`);
+  };
 
   return (
-    <div
-      className="min-h-dvh flex flex-col items-center justify-center px-5 py-10"
-      style={{ background: 'linear-gradient(135deg, #030508 0%, #08101A 50%, #0A0F18 100%)' }}
-    >
-      <div className="w-full max-w-[400px] flex flex-col items-center gap-8">
-        {/* Certificate card */}
-        <FadeUp>
-          <div
-            className="w-full rounded-[28px] p-8 flex flex-col items-center gap-6 relative overflow-hidden"
-            style={{
-              backgroundColor: 'rgba(15,18,25,0.9)',
-              border: '1.5px solid rgba(212,162,79,0.3)',
-              boxShadow: '0 24px 48px rgba(0,0,0,0.4), 0 0 80px rgba(212,162,79,0.08)',
-            }}
-          >
-            {/* Top ornament */}
-            <div className="flex items-center gap-2">
-              <div className="h-px w-8" style={{ backgroundColor: 'rgba(212,162,79,0.3)' }} />
-              <Star className="w-5 h-5" style={{ color: '#D4A24F' }} fill="#D4A24F" />
-              <span className="text-[11px] font-bold tracking-[2px] uppercase" style={{ color: '#D4A24F' }}>
-                Unbreakable Vow
-              </span>
-              <Star className="w-5 h-5" style={{ color: '#D4A24F' }} fill="#D4A24F" />
-              <div className="h-px w-8" style={{ backgroundColor: 'rgba(212,162,79,0.3)' }} />
-            </div>
-
-            {/* Vow text */}
-            <p
-              className="text-[22px] leading-[30px] font-serif font-bold text-center"
-              style={{ color: '#F5F5F5' }}
+    <RitualScreen variant={isResolved ? (isKept ? 'outcome-kept' : 'outcome-broken') : 'ceremony'}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center' }}>
+        {/* Certificate card (phone-frame style) */}
+        <div
+          ref={certRef}
+          style={{
+            width: '100%',
+            borderRadius: 'var(--uv-radius-2xl)',
+            padding: 32,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: 20,
+            backgroundColor: 'var(--uv-bg-card)',
+            border: '1.5px solid var(--uv-gold)',
+            boxShadow: 'var(--uv-shadow-xl)',
+            position: 'relative',
+            overflow: 'hidden',
+          }}
+        >
+          {/* Kept stamp overlay */}
+          {isResolved && isKept && (
+            <div
+              style={{
+                position: 'absolute',
+                top: 20,
+                right: -20,
+                transform: 'rotate(15deg)',
+                border: '3px solid var(--uv-success)',
+                borderRadius: 8,
+                padding: '4px 24px',
+                opacity: 0.7,
+              }}
             >
-              &ldquo;{vow.refined_text}&rdquo;
-            </p>
-
-            {/* Details */}
-            <div className="flex flex-col items-center gap-1.5">
-              <span className="text-[13px]" style={{ color: '#8B8B9E' }}>
-                Witnessed by {vow.witness_name}
+              <span style={{ fontSize: 20, fontWeight: 600, letterSpacing: '3px', color: 'var(--uv-success)', fontFamily: 'var(--uv-font-serif)', textTransform: 'uppercase' }}>
+                KEPT
               </span>
-              <span className="text-[13px] font-semibold" style={{ color: vow.stake_amount > 0 ? '#D4A24F' : '#8B8B9E' }}>
-                {vow.stake_amount > 0
-                  ? `$${Math.round(vow.stake_amount / 100)} on the line`
-                  : 'Accountability vow'}
-              </span>
-              {sealDate && (
-                <span className="text-[12px]" style={{ color: '#6B6B7E' }}>
-                  Sealed: {sealDate}
-                </span>
-              )}
             </div>
+          )}
 
-            {/* Verdict badge */}
-            {isResolved && (
-              <>
-                <div className="w-full h-px" style={{ backgroundColor: 'rgba(212,162,79,0.15)' }} />
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center"
-                    style={{
-                      backgroundColor: isKept ? 'rgba(82,214,154,0.15)' : 'rgba(239,68,68,0.15)',
-                    }}
-                  >
-                    {isKept ? (
-                      <Check className="w-5 h-5" style={{ color: '#52D69A' }} />
-                    ) : (
-                      <X className="w-5 h-5" style={{ color: '#EF4444' }} />
-                    )}
-                  </div>
-                  <div className="flex flex-col">
-                    <span
-                      className="text-[15px] font-bold uppercase tracking-[1px]"
-                      style={{ color: isKept ? '#52D69A' : '#EF4444' }}
-                    >
-                      Vow {isKept ? 'Kept' : 'Broken'}
-                    </span>
-                    {verdictDate && (
-                      <span className="text-[12px]" style={{ color: '#6B6B7E' }}>{verdictDate}</span>
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
+          {/* Label */}
+          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>
+              CERTIFICATE OF
+            </span>
+            <span style={{ fontSize: 18, fontWeight: 600, letterSpacing: '2px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-serif)' }}>
+              UNBREAKABLE VOW
+            </span>
           </div>
-        </FadeUp>
+
+          {/* Ornamental divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '80%' }}>
+            <div style={{ flex: 1, height: 1, backgroundColor: 'var(--uv-gold)', opacity: 0.3 }} />
+            <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--uv-gold)', opacity: 0.5 }} />
+            <div style={{ flex: 1, height: 1, backgroundColor: 'var(--uv-gold)', opacity: 0.3 }} />
+          </div>
+
+          {/* Vow text */}
+          <p style={{
+            fontSize: 20,
+            lineHeight: 1.4,
+            fontFamily: 'var(--uv-font-serif)',
+            fontStyle: 'italic',
+            fontWeight: 500,
+            color: 'var(--uv-text)',
+            margin: 0,
+            textAlign: 'center',
+            padding: '0 8px',
+          }}>
+            &ldquo;{vow.refined_text}&rdquo;
+          </p>
+
+          {/* Meta grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16, width: '100%', marginTop: 4 }}>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)', display: 'block' }}>
+                STAKE
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: amount > 0 ? 'var(--uv-gold)' : 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', display: 'block', marginTop: 2 }}>
+                {amount > 0 ? `$${amount}` : 'Honor'}
+              </span>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)', display: 'block' }}>
+                JUDGE
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', display: 'block', marginTop: 2 }}>
+                {vow.witness_name}
+              </span>
+            </div>
+            <div style={{ textAlign: 'center' }}>
+              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)', display: 'block' }}>
+                BY
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', display: 'block', marginTop: 2 }}>
+                {sealDate ? new Date(vow.sealed_at!).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '\u2014'}
+              </span>
+            </div>
+          </div>
+
+          {/* Verdict badge if resolved */}
+          {isResolved && (
+            <>
+              <div style={{ width: '80%', height: 1, backgroundColor: 'var(--uv-gold)', opacity: 0.15 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: isKept ? 'rgba(82,214,154,0.12)' : 'rgba(220,38,38,0.12)',
+                  }}
+                >
+                  {isKept ? (
+                    <Check style={{ width: 18, height: 18, color: 'var(--uv-success)' }} />
+                  ) : (
+                    <X style={{ width: 18, height: 18, color: 'var(--uv-danger)' }} />
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', color: isKept ? 'var(--uv-success)' : 'var(--uv-danger)', fontFamily: 'var(--uv-font-sans)' }}>
+                    {isKept ? 'Kept' : 'Broken'}
+                  </span>
+                  {verdictDate && (
+                    <span style={{ fontSize: 11, color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>{verdictDate}</span>
+                  )}
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Brand footer */}
+          <div style={{ marginTop: 8 }}>
+            <span style={{ fontSize: 10, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
+              unbreakablevow.app
+            </span>
+          </div>
+        </div>
 
         {/* Actions */}
-        <FadeUp delay={0.1}>
-          <div className="w-full flex flex-col gap-3">
-            {shareUrl && (
-              <ShareButton
-                url={shareUrl}
-                text={shareText}
-                buttonText="Share"
-              />
-            )}
-            <button
-              onClick={() => router.push('/dashboard')}
-              className="min-h-[46px] flex items-center justify-center w-full"
-            >
-              <span className="text-sm font-semibold" style={{ color: '#8B8B9E' }}>
-                Back to Dashboard
+        <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {shareUrl && (
+            <PrimaryButton onClick={handleShare}>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <Share2 style={{ width: 16, height: 16 }} />
+                Share
               </span>
-            </button>
+            </PrimaryButton>
+          )}
+          <div style={{ textAlign: 'center' }}>
+            <SecondaryButton onClick={() => router.push('/dashboard')}>
+              <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                <ArrowLeft style={{ width: 14, height: 14 }} />
+                Back
+              </span>
+            </SecondaryButton>
           </div>
-        </FadeUp>
+        </div>
       </div>
-    </div>
+    </RitualScreen>
   );
 }
