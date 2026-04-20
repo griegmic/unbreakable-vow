@@ -28,21 +28,21 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   useEffect(() => {
-    const f = reducedMotion ? 0.15 : 1; // speed multiplier for reduced motion
+    const f = reducedMotion ? 0.15 : 1;
     const timers = [
-      setTimeout(() => setPhase(1), 900 * f),     // ember breathes to life
-      setTimeout(() => setPhase(2), 2200 * f),     // "Every promise"
-      setTimeout(() => setPhase(3), 3800 * f),     // "you've ever broken"
-      setTimeout(() => setPhase(4), 5600 * f),     // "had one thing in common."
-      setTimeout(() => setSkipReady(true), 2000 * f),
-      setTimeout(() => setPhase(5), 8200 * f),     // long silence — 2.6s of nothing
-      setTimeout(() => setPhase(6), 10800 * f),    // "free." alone, enormous
-      setTimeout(() => setPhase(7), 13000 * f),    // orb grows around the word
-      setTimeout(() => {                            // auto-exit
+      setTimeout(() => setPhase(1), 400 * f),      // ember
+      setTimeout(() => setPhase(2), 1000 * f),      // "Every promise"
+      setTimeout(() => setPhase(3), 2000 * f),      // "you've ever broken"
+      setTimeout(() => setPhase(4), 3100 * f),      // "had one thing in common."
+      setTimeout(() => setSkipReady(true), 800 * f),
+      setTimeout(() => setPhase(5), 4600 * f),      // brief pause
+      setTimeout(() => setPhase(6), 5400 * f),      // "free."
+      setTimeout(() => setPhase(7), 6800 * f),      // orb
+      setTimeout(() => {                             // auto-exit
         try { localStorage.setItem('uv_ceremony_seen', '1'); } catch {}
         setExiting(true);
-        setTimeout(() => onComplete(), 800);
-      }, 19000 * f),
+        setTimeout(() => onComplete(), 600);
+      }, 10000 * f),
     ];
     return () => timers.forEach(clearTimeout);
   }, [reducedMotion, onComplete]);
