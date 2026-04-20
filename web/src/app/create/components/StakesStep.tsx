@@ -127,13 +127,13 @@ export function StakesStep({
           display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 28,
         }}>
           <span style={{
-            fontFamily: 'var(--uv-font-serif)', fontSize: 68, fontWeight: 400,
+            fontFamily: 'var(--uv-font-sans)', fontSize: 64, fontWeight: 600,
             color: 'var(--uv-gold)', lineHeight: 1, letterSpacing: '-2px',
           }}>
             ${stakeAmount}
           </span>
           <span style={{
-            fontFamily: 'var(--uv-font-serif)', fontSize: 17,
+            fontFamily: 'var(--uv-font-serif)', fontSize: 16,
             fontStyle: 'italic', color: 'var(--uv-text-dim)',
             lineHeight: 1.2,
           }}>
