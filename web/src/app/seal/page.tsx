@@ -542,7 +542,7 @@ export default function SealPage() {
               </div>
               <div>
                 <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>JUDGE</span>
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{witnessName === 'TBD' ? 'TBD' : witnessName}</span>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{witnessName === 'TBD' || witnessName === 'Witness' ? 'You decide' : witnessName}</span>
               </div>
               <div>
                 <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>BY</span>
@@ -603,28 +603,26 @@ export default function SealPage() {
             </div>
           )}
 
-          <div style={{ flex: 1, minHeight: 32 }} />
-
-          {/* Seal CTA */}
-          <PrimaryButton onClick={handlePhoneContinue} loading={phoneBusy}>
-            Seal my vow — ${vow.stake.amount}
-          </PrimaryButton>
-
-          {/* Trust lines */}
+          {/* Trust lines — ABOVE the CTA (reassurance before commitment) */}
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 13,
             color: '#6ee7a0', textAlign: 'center',
-            margin: '12px 0 4px',
+            margin: '24px 0 4px',
           }}>
             Keep your word, get every cent back
           </p>
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 11,
             color: 'var(--uv-text-faint)', textAlign: 'center',
-            margin: '0 0 8px',
+            margin: '0 0 16px',
           }}>
             No charge unless you break your vow
           </p>
+
+          {/* Seal CTA — tight under trust lines */}
+          <PrimaryButton onClick={handlePhoneContinue} loading={phoneBusy}>
+            Seal my vow — ${vow.stake.amount}
+          </PrimaryButton>
 
           {/* Google fallback — tiny */}
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
