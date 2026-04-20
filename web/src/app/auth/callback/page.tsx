@@ -90,6 +90,20 @@ export default function AuthCallbackPage() {
       })();
 
       const handleCallback = async () => {
+        // PKCE flow: if URL has ?code=, explicitly exchange it for a session
+        const params = new URLSearchParams(window.location.search);
+        const code = params.get('code');
+        if (code) {
+          const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+          if (exchangeError) {
+            console.error('[auth/callback] Code exchange failed:', exchangeError.message);
+            // Fall through to getSession check — might already have a session
+          } else if (exchangeData.session) {
+            router.replace(redirectTo);
+            return;
+          }
+        }
+
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
 
         if (sessionError) {
@@ -103,9 +117,24 @@ export default function AuthCallbackPage() {
           return;
         }
 
+        // Hash fragment flow (implicit grant — older Supabase configs)
+        if (window.location.hash) {
+          // detectSessionInUrl should handle this, give it a moment
+          timeout = setTimeout(async () => {
+            const { data: { session: retrySession } } = await supabase.auth.getSession();
+            if (retrySession) {
+              router.replace(redirectTo);
+            } else {
+              setError('Sign-in timed out. Redirecting...');
+              setTimeout(() => router.replace('/'), 2000);
+            }
+          }, 3000);
+          return;
+        }
+
         timeout = setTimeout(() => {
           setError('Sign-in timed out. Redirecting...');
-          setTimeout(() => router.replace('/dashboard'), 2000);
+          setTimeout(() => router.replace('/'), 2000);
         }, 5000);
       };
 
