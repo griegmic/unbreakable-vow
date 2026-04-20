@@ -154,11 +154,23 @@ export default function HomePage() {
     setChecked(true);
   }, []);
 
-  // Authenticated users go to dashboard (not seal, not live — always dashboard)
+  // Authenticated users: check for in-progress vow first, then dashboard
   useEffect(() => {
     if (loading || !isAuthenticated || !session) return;
 
-    // Honor auth return paths (from OAuth callbacks)
+    // FIRST: if user has an in-progress vow, send to /seal
+    try {
+      const stored = localStorage.getItem('unbreakable-vow-flow');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed.rawInput) {
+          router.replace('/seal');
+          return;
+        }
+      }
+    } catch {}
+
+    // Then check return paths
     try {
       const cookieMatch = document.cookie.match(/(?:^|;\s*)auth_return_path=([^;]*)/);
       if (cookieMatch) {

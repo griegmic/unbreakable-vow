@@ -50,46 +50,47 @@ export default function AuthCallbackPage() {
       //         → vow flow state check
       //         → dashboard
       const redirectTo = (() => {
-        // 1. Check cookie (most reliable — survives Safari cross-origin wipes)
+        // 1. FIRST: check for in-progress vow flow — this is the most reliable
+        // signal because it's on the same domain and survives cross-origin redirects
         try {
-          const match = document.cookie.match(/(?:^|;\s*)auth_return_path=([^;]*)/);
-          if (match) {
-            const cookiePath = decodeURIComponent(match[1]);
-            // Clear the cookie
-            document.cookie = 'auth_return_path=; path=/; max-age=0';
-            if (cookiePath && cookiePath !== '/') return cookiePath;
-          }
-        } catch {}
-
-        // 2. Check URL query param
-        try {
-          const params = new URLSearchParams(window.location.search);
-          const urlReturn = params.get('return_to');
-          if (urlReturn && urlReturn !== '/') return urlReturn;
-        } catch {}
-
-        try {
-          // 3. Check localStorage
-          const returnPath = localStorage.getItem('auth-return-path');
-          localStorage.removeItem('auth-return-path');
-          if (returnPath && returnPath !== '/') return returnPath;
-        } catch {}
-
-        try {
-          // 4. Check sessionStorage (survives same-tab navigation)
-          const sessionReturn = sessionStorage.getItem('auth-return-path');
-          sessionStorage.removeItem('auth-return-path');
-          if (sessionReturn && sessionReturn !== '/') return sessionReturn;
-        } catch {}
-
-        try {
-          // 5. Check for in-progress vow flow — if user has vow data, send to /seal
           const stored = localStorage.getItem('unbreakable-vow-flow');
           if (stored) {
             const parsed = JSON.parse(stored);
             if (parsed.rawInput) return '/seal';
           }
         } catch {}
+
+        // 2. Check cookie
+        try {
+          const match = document.cookie.match(/(?:^|;\s*)auth_return_path=([^;]*)/);
+          if (match) {
+            const cookiePath = decodeURIComponent(match[1]);
+            document.cookie = 'auth_return_path=; path=/; max-age=0';
+            if (cookiePath && cookiePath !== '/') return cookiePath;
+          }
+        } catch {}
+
+        // 3. Check URL query param
+        try {
+          const params = new URLSearchParams(window.location.search);
+          const urlReturn = params.get('return_to');
+          if (urlReturn && urlReturn !== '/') return urlReturn;
+        } catch {}
+
+        // 4. Check localStorage
+        try {
+          const returnPath = localStorage.getItem('auth-return-path');
+          localStorage.removeItem('auth-return-path');
+          if (returnPath && returnPath !== '/') return returnPath;
+        } catch {}
+
+        // 5. Check sessionStorage
+        try {
+          const sessionReturn = sessionStorage.getItem('auth-return-path');
+          sessionStorage.removeItem('auth-return-path');
+          if (sessionReturn && sessionReturn !== '/') return sessionReturn;
+        } catch {}
+
         return '/dashboard';
       })();
 
