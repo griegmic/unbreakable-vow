@@ -167,6 +167,7 @@ export default function CreatePage() {
       onBack={() => setStep(2)}
       vowText={vowText}
       witnessName={witnessName}
+      endsAt={endsAt}
     />
   );
 }
