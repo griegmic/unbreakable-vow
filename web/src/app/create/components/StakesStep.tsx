@@ -215,8 +215,8 @@ export function StakesStep({
         {/* Trust + destination block */}
         <div style={{ marginBottom: 0 }}>
           <p style={{
-            fontFamily: 'var(--uv-font-serif)', fontSize: 16,
-            fontStyle: 'italic', color: 'var(--uv-success)',
+            fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+            fontStyle: 'italic', color: '#6ee7a0',
             margin: '0 0 8px', lineHeight: 1.4,
           }}>
             Keep it and every cent stays yours.
