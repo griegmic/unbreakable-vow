@@ -167,6 +167,25 @@ export function WitnessStep({
           </PrimaryButton>
           <button
             type="button"
+            onClick={() => {
+              setWitnessName('');
+              onNext();
+            }}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: '10px 0',
+              cursor: 'pointer',
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 13,
+              color: 'var(--uv-gold-dim, #8a7540)',
+              textAlign: 'center',
+            }}
+          >
+            Decide later — share the link yourself
+          </button>
+          <button
+            type="button"
             onClick={onBack}
             style={{
               background: 'none',

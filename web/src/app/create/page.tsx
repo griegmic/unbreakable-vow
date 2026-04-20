@@ -92,7 +92,7 @@ export default function CreatePage() {
         refined_text: vowText,
         status: 'draft',
         vow_type: 'self',
-        witness_name: witnessName,
+        witness_name: witnessName || 'TBD',
         witness_phone: witnessPhone || null,
         stake_amount: stakeAmount * 100, // convert to cents
         consequence: destinationKind,
