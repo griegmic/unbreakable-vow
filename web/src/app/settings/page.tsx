@@ -1,8 +1,9 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { LogOut, User, History, ArrowLeft } from 'lucide-react';
-import { RitualScreen, HeaderBadge, TitleBlock, RitualCard, PrimaryButton, FadeUp } from '@/components/ui';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { Card } from '@/components/uv/Card';
 import { AuthModal } from '@/components/auth-modal';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -18,67 +19,137 @@ export default function SettingsPage() {
 
   return (
     <RitualScreen>
-      <FadeUp>
-        <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 py-2">
-          <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
-          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Dashboard</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingTop: 16 }}>
+        {/* Back */}
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--uv-text-muted)',
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: 'pointer',
+            fontFamily: 'var(--uv-font-sans)',
+            textAlign: 'left',
+            padding: '4px 0',
+          }}
+        >
+          &larr; Dashboard
         </button>
-      </FadeUp>
 
-      <FadeUp delay={0.05}>
-        <TitleBlock title="Settings" subtitle="Manage your account" />
-      </FadeUp>
+        {/* Hero */}
+        <h1
+          style={{
+            fontFamily: 'var(--uv-font-serif)',
+            fontSize: 32,
+            fontWeight: 500,
+            color: 'var(--uv-text)',
+            lineHeight: 1.2,
+          }}
+        >
+          Settings.
+        </h1>
 
-      {isAuthenticated ? (
-        <>
-          <FadeUp delay={0.1}>
-            <RitualCard>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: 'var(--surface-elevated)' }}>
-                  <User className="w-5 h-5" style={{ color: 'var(--gold)' }} />
+        {isAuthenticated ? (
+          <>
+            {/* Account card */}
+            <Card variant="elevated">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'var(--uv-gold-bg)',
+                    fontSize: 18,
+                    fontFamily: 'var(--uv-font-serif)',
+                    color: 'var(--uv-gold)',
+                    fontWeight: 500,
+                  }}
+                >
+                  {(displayName || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <span className="text-[15px] font-semibold block" style={{ color: 'var(--text)' }}>
+                  <span
+                    style={{
+                      fontSize: 15,
+                      fontWeight: 600,
+                      color: 'var(--uv-text)',
+                      display: 'block',
+                      fontFamily: 'var(--uv-font-sans)',
+                    }}
+                  >
                     {displayName || 'User'}
                   </span>
-                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: 'var(--uv-text-muted)',
+                      fontFamily: 'var(--uv-font-sans)',
+                    }}
+                  >
                     {session?.user?.email || ''}
                   </span>
                 </div>
               </div>
-            </RitualCard>
-          </FadeUp>
+            </Card>
 
-          <FadeUp delay={0.15}>
-            <button
-              onClick={() => router.push('/history')}
-              className="w-full rounded-[18px] p-4 flex items-center gap-3 transition-opacity active:opacity-80"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
-            >
-              <History className="w-5 h-5" style={{ color: 'var(--text-muted)' }} />
-              <span className="text-[15px] font-medium" style={{ color: 'var(--text)' }}>Vow history</span>
-            </button>
-          </FadeUp>
+            {/* Vow history */}
+            <Card onClick={() => router.push('/history')}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span
+                  style={{
+                    fontSize: 15,
+                    fontWeight: 500,
+                    color: 'var(--uv-text)',
+                    fontFamily: 'var(--uv-font-sans)',
+                  }}
+                >
+                  Vow history
+                </span>
+                <span style={{ fontSize: 18, color: 'var(--uv-text-muted)' }}>&rsaquo;</span>
+              </div>
+            </Card>
 
-          <FadeUp delay={0.2}>
+            {/* Sign out */}
             <button
               onClick={handleSignOut}
-              className="w-full rounded-[18px] p-4 flex items-center gap-3 transition-opacity active:opacity-80"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              style={{
+                width: '100%',
+                borderRadius: 'var(--uv-radius-2xl)',
+                padding: 16,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: 'var(--uv-bg-card)',
+                border: '1px solid var(--uv-border-strong)',
+                cursor: 'pointer',
+                transition: 'opacity 120ms',
+              }}
             >
-              <LogOut className="w-5 h-5" style={{ color: 'var(--danger)' }} />
-              <span className="text-[15px] font-medium" style={{ color: 'var(--danger)' }}>Sign out</span>
+              <span
+                style={{
+                  fontSize: 15,
+                  fontWeight: 500,
+                  color: 'var(--uv-danger)',
+                  fontFamily: 'var(--uv-font-sans)',
+                }}
+              >
+                Sign out
+              </span>
             </button>
-          </FadeUp>
-        </>
-      ) : (
-        <FadeUp delay={0.1}>
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <p className="text-[15px]" style={{ color: 'var(--text-muted)' }}>Not signed in</p>
-            <PrimaryButton label="Sign in" onPress={() => setShowAuth(true)} />
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', gap: 16 }}>
+            <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: 0 }}>Not signed in</p>
+            <PrimaryButton onClick={() => setShowAuth(true)}>Sign in</PrimaryButton>
           </div>
-        </FadeUp>
-      )}
+        )}
+      </div>
 
       <AuthModal
         visible={showAuth}

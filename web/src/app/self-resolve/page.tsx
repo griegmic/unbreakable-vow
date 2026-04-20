@@ -1,8 +1,10 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Check, DollarSign, Hand, ShieldCheck } from 'lucide-react';
-import { RitualScreen, TitleBlock, RitualCard, PrimaryButton, OathCheckbox, FadeUp, HeaderBadge } from '@/components/ui';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { Card } from '@/components/uv/Card';
+import { OathCheckbox } from '@/components/uv/OathCheckbox';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/types';
@@ -58,7 +60,6 @@ export default function SelfResolvePage() {
       setVow(data);
       setLoading(false);
 
-      // Pre-select choice if passed via query param (from dashboard buttons)
       const choiceParam = params.get('choice');
       if (choiceParam === 'kept' || choiceParam === 'broken') {
         setChoice(choiceParam);
@@ -92,7 +93,6 @@ export default function SelfResolvePage() {
 
       if (fnError) {
         const detail = fnData?.error || fnError.message || 'Unknown error';
-        console.error('Verdict submission error:', detail, fnData);
         const msg = detail === 'already_judged' ? 'This vow has already been judged.'
           : detail === 'invalid_token' ? 'Could not find this vow.'
           : detail === 'invalid_status' ? 'This vow is not ready for a verdict yet.'
@@ -105,7 +105,6 @@ export default function SelfResolvePage() {
       }
 
       if (fnData?.error) {
-        console.error('Verdict response error:', fnData.error);
         const msg = fnData.error === 'already_judged' ? 'This vow has already been judged.'
           : fnData.error === 'refund_failed' ? 'Refund could not be processed right now. Please try again in a moment.'
           : typeof fnData.error === 'string' ? fnData.error : 'Verdict submission failed. Please try again.';
@@ -148,8 +147,18 @@ export default function SelfResolvePage() {
   if (loading || authLoading) {
     return (
       <RitualScreen>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              border: '2px solid var(--uv-gold)',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'uv-spin 600ms linear infinite',
+            }}
+          />
+          <style>{`@keyframes uv-spin{to{transform:rotate(360deg)}}`}</style>
         </div>
       </RitualScreen>
     );
@@ -165,52 +174,57 @@ export default function SelfResolvePage() {
   if (view === 'confirm') {
     const isKept = choice === 'kept';
     return (
-      <RitualScreen
-        footer={
-          <>
-            {error && (
-              <div className="rounded-xl p-3 mb-2" style={{ backgroundColor: 'var(--danger-muted)' }}>
-                <p className="text-sm text-center" style={{ color: 'var(--danger)' }}>{error}</p>
-              </div>
-            )}
-            <PrimaryButton
-              label="Confirm"
-              onPress={handleConfirm}
-              loading={busy}
-            />
-            <button
-              onClick={handleBack}
-              className="min-h-[46px] flex items-center justify-center w-full"
-            >
-              <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Go back</span>
-            </button>
-          </>
-        }
-      >
-        <FadeUp><HeaderBadge /></FadeUp>
-        <FadeUp delay={0.1}>
-          <div className="flex justify-center mt-4">
-            <div
-              className="w-16 h-16 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: isKept ? 'var(--success-muted)' : 'var(--warm-amber-muted)' }}
-            >
-              {isKept ? (
-                <ShieldCheck className="w-8 h-8" style={{ color: 'var(--success)' }} />
-              ) : (
-                <DollarSign className="w-8 h-8" style={{ color: 'var(--warm-amber)' }} />
-              )}
-            </div>
-          </div>
-        </FadeUp>
-        <FadeUp delay={0.15}>
-          <TitleBlock
-            title={isKept ? 'You kept your word.' : 'Honest. Respect.'}
-            subtitle={isKept
+      <RitualScreen variant={isKept ? 'outcome-kept' : 'outcome-broken'}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 40 }}>
+          <h1
+            style={{
+              fontFamily: 'var(--uv-font-serif)',
+              fontSize: 32,
+              fontWeight: 500,
+              color: 'var(--uv-text)',
+              textAlign: 'center',
+            }}
+          >
+            {isKept ? 'You kept your word.' : 'Honest. Respect.'}
+          </h1>
+          <p
+            style={{
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 15,
+              color: 'var(--uv-text-muted)',
+              textAlign: 'center',
+              lineHeight: 1.5,
+            }}
+          >
+            {isKept
               ? (isZeroStake ? 'Word honored.' : `${stakeDisplay} stays safe. No charge.`)
               : (isZeroStake ? 'The record stands. This cannot be undone.' : `${stakeDisplay} will be donated to ${destination}. This cannot be undone.`)
             }
-          />
-        </FadeUp>
+          </p>
+
+          {error && (
+            <div style={{ background: 'var(--uv-danger-bg)', borderRadius: 12, padding: 12 }}>
+              <p style={{ fontSize: 14, color: 'var(--uv-danger)', textAlign: 'center', margin: 0 }}>{error}</p>
+            </div>
+          )}
+
+          <PrimaryButton onClick={handleConfirm} loading={busy}>Confirm</PrimaryButton>
+          <button
+            onClick={handleBack}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--uv-text-muted)',
+              fontSize: 14,
+              fontWeight: 500,
+              padding: '12px 0',
+              cursor: 'pointer',
+              fontFamily: 'var(--uv-font-sans)',
+            }}
+          >
+            Go back
+          </button>
+        </div>
       </RitualScreen>
     );
   }
@@ -218,118 +232,164 @@ export default function SelfResolvePage() {
   // Main choose view
   return (
     <RitualScreen>
-      <FadeUp><HeaderBadge /></FadeUp>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 24 }}>
+        {/* Hero */}
+        <div style={{ textAlign: 'center' }}>
+          <h1
+            style={{
+              fontFamily: 'var(--uv-font-serif)',
+              fontSize: 32,
+              fontWeight: 500,
+              color: 'var(--uv-text)',
+              lineHeight: 1.2,
+            }}
+          >
+            Only you know.
+          </h1>
+          <p
+            style={{
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 15,
+              color: 'var(--uv-text-muted)',
+              marginTop: 8,
+              lineHeight: 1.5,
+            }}
+          >
+            No one else can answer this for you.
+          </p>
+        </div>
 
-      {/* Hand icon */}
-      <FadeUp delay={0.05}>
-        <div className="flex justify-center">
-          <div className="relative">
-            <div
-              className="absolute inset-0 rounded-full animate-pulse"
-              style={{ backgroundColor: 'var(--gold-glow)', transform: 'scale(1.4)' }}
-            />
-            <div
-              className="relative w-14 h-14 rounded-full flex items-center justify-center"
-              style={{ backgroundColor: 'rgba(212,162,79,0.12)', border: '1px solid var(--border-strong)' }}
+        {/* Vow card */}
+        <Card variant="elevated">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <p
+              style={{
+                fontSize: 17,
+                fontFamily: 'var(--uv-font-serif)',
+                fontWeight: 500,
+                color: 'var(--uv-text)',
+                margin: 0,
+              }}
             >
-              <Hand className="w-6 h-6" style={{ color: 'var(--gold-bright)' }} />
+              {vow.refined_text}
+            </p>
+            <div style={{ height: 1, background: 'var(--uv-border-strong)' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>At stake</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>{stakeDisplay || 'Honor only'}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>If broken</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>Donated to {destination}</span>
             </div>
           </div>
-        </div>
-      </FadeUp>
+        </Card>
 
-      <FadeUp delay={0.1}>
-        <TitleBlock
-          title="Time to be honest."
-          subtitle="No one knows but you."
-        />
-      </FadeUp>
-
-      {/* Vow card */}
-      <FadeUp delay={0.15}>
-        <RitualCard>
-          <p className="text-[17px] font-serif font-semibold" style={{ color: 'var(--text)' }}>
-            {vow.refined_text}
-          </p>
-          <div className="h-px" style={{ backgroundColor: 'var(--border)' }} />
-          <div className="flex items-center justify-between">
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>At stake</span>
-            <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>{stakeDisplay}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>If broken</span>
-            <span className="text-sm font-semibold" style={{ color: 'var(--text)' }}>Donated to {destination}</span>
-          </div>
-        </RitualCard>
-      </FadeUp>
-
-      {/* Oath checkbox */}
-      <FadeUp delay={0.2}>
-        <div
-          className="rounded-[20px] p-[18px]"
-          style={{
-            backgroundColor: 'var(--surface)',
-            border: `1px solid ${sworn ? 'var(--border-strong)' : 'var(--border)'}`,
-            boxShadow: sworn ? '0 6px 12px rgba(212,162,79,0.06)' : 'none',
-            transition: 'border-color 0.3s, box-shadow 0.3s',
-          }}
-        >
+        {/* Oath */}
+        <Card>
           <OathCheckbox
             checked={sworn}
             onChange={setSworn}
             label="I swear to tell the truth, even if it costs me money."
           />
-        </div>
-      </FadeUp>
+        </Card>
 
-      {/* Verdict buttons */}
-      {sworn ? (
-        <>
-          <FadeUp delay={0}>
+        {/* Verdict choice cards */}
+        {sworn ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <button
               onClick={() => handleChoose('kept')}
               disabled={busy}
-              className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
-              style={{ backgroundColor: 'var(--success-muted)', border: '1.5px solid rgba(82,214,154,0.3)' }}
+              style={{
+                width: '100%',
+                borderRadius: 'var(--uv-radius-2xl)',
+                padding: 20,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                textAlign: 'left',
+                background: 'rgba(82,214,154,0.08)',
+                border: '1.5px solid rgba(82,214,154,0.3)',
+                cursor: 'pointer',
+                transition: 'transform 120ms',
+              }}
             >
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'rgba(82,214,154,0.2)' }}>
-                <ShieldCheck className="w-6 h-6" style={{ color: 'var(--success)' }} />
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(82,214,154,0.15)',
+                  fontSize: 24,
+                }}
+              >
+                &#x2714;
               </div>
               <div>
-                <span className="text-[17px] font-semibold block" style={{ color: 'var(--success)' }}>I kept my vow</span>
-                <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+                <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--uv-status-active)', display: 'block', fontFamily: 'var(--uv-font-sans)' }}>I kept my vow</span>
+                <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
                   {isZeroStake ? 'Word honored.' : `${stakeDisplay} stays safe.`}
                 </span>
               </div>
             </button>
-          </FadeUp>
 
-          <FadeUp delay={0.05}>
             <button
               onClick={() => handleChoose('broken')}
               disabled={busy}
-              className="w-full rounded-[22px] p-5 flex items-center gap-4 text-left transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
-              style={{ backgroundColor: 'var(--warm-amber-muted)', border: '1.5px solid var(--warm-amber-border)' }}
+              style={{
+                width: '100%',
+                borderRadius: 'var(--uv-radius-2xl)',
+                padding: 20,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                textAlign: 'left',
+                background: 'rgba(248,113,113,0.08)',
+                border: '1.5px solid rgba(248,113,113,0.3)',
+                cursor: 'pointer',
+                transition: 'transform 120ms',
+              }}
             >
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center" style={{ backgroundColor: 'rgba(212,162,79,0.2)' }}>
-                <DollarSign className="w-6 h-6" style={{ color: 'var(--warm-amber)' }} />
+              <div
+                style={{
+                  width: 48,
+                  height: 48,
+                  borderRadius: 14,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'rgba(248,113,113,0.15)',
+                  fontSize: 24,
+                }}
+              >
+                &#x2717;
               </div>
               <div>
-                <span className="text-[17px] font-semibold block" style={{ color: 'var(--warm-amber)' }}>I broke it</span>
-                <span className="text-[13px]" style={{ color: 'var(--text-secondary)' }}>
+                <span style={{ fontSize: 17, fontWeight: 600, color: 'var(--uv-danger)', display: 'block', fontFamily: 'var(--uv-font-sans)' }}>I broke it</span>
+                <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
                   {isZeroStake ? 'The record stands.' : `${stakeDisplay} goes to ${destination}.`}
                 </span>
               </div>
             </button>
-          </FadeUp>
-        </>
-      ) : (
-        <FadeUp delay={0.25}>
-          <p className="text-center text-[13px] italic" style={{ color: 'var(--text-muted)' }}>
+          </div>
+        ) : (
+          <p
+            style={{
+              textAlign: 'center',
+              fontSize: 13,
+              fontStyle: 'italic',
+              color: 'var(--uv-text-muted)',
+              fontFamily: 'var(--uv-font-sans)',
+              margin: 0,
+            }}
+          >
             Take the oath to unlock your verdict.
           </p>
-        </FadeUp>
-      )}
+        )}
+      </div>
     </RitualScreen>
   );
 }

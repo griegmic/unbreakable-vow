@@ -1,19 +1,25 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { CheckCircle, XCircle, Clock, ArrowLeft, Ban, Circle } from 'lucide-react';
-import { RitualScreen, HeaderBadge, TitleBlock, RitualCard, StatPill, PrimaryButton, FadeUp } from '@/components/ui';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { Card } from '@/components/uv/Card';
+import { Chip } from '@/components/uv/Chip';
+import { StatusPill } from '@/components/uv/StatusPill';
+import { SkeletonRow } from '@/components/uv/SkeletonRow';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/types';
 
 type HistoryVow = Pick<Database['public']['Tables']['vows']['Row'], 'id' | 'refined_text' | 'status' | 'witness_name' | 'stake_amount' | 'verdict' | 'created_at'>;
+type Filter = 'all' | 'kept' | 'broken' | 'voided';
 
 export default function HistoryPage() {
   const router = useRouter();
   const { isAuthenticated, loading: authLoading } = useAuth();
   const [vows, setVows] = useState<HistoryVow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<Filter>('all');
 
   useEffect(() => {
     if (authLoading) return;
@@ -22,7 +28,7 @@ export default function HistoryPage() {
       return;
     }
 
-    const fetch = async () => {
+    const fetchVows = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
       const { data } = await supabase.from('vows')
@@ -32,92 +38,131 @@ export default function HistoryPage() {
       setVows(data ?? []);
       setLoading(false);
     };
-    fetch();
+    fetchVows();
   }, [isAuthenticated, authLoading, router]);
 
   const keptCount = vows.filter(v => v.verdict === 'kept').length;
   const brokenCount = vows.filter(v => v.verdict === 'broken').length;
+  const voidedCount = vows.filter(v => v.status === 'voided').length;
+
+  const filtered = vows.filter(v => {
+    if (filter === 'all') return true;
+    if (filter === 'kept') return v.verdict === 'kept';
+    if (filter === 'broken') return v.verdict === 'broken';
+    if (filter === 'voided') return v.status === 'voided';
+    return true;
+  });
 
   if (loading || authLoading) {
     return (
       <RitualScreen>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
+        <div style={{ paddingTop: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <SkeletonRow count={4} />
         </div>
       </RitualScreen>
     );
   }
 
   return (
-    <RitualScreen
-      footer={<PrimaryButton label="Make a new vow" onPress={() => router.push('/create')} />}
-    >
-      <FadeUp>
-        <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 py-2">
-          <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text-secondary)' }} />
-          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Dashboard</span>
+    <RitualScreen>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingTop: 16 }}>
+        {/* Back */}
+        <button
+          onClick={() => router.push('/dashboard')}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--uv-text-muted)',
+            fontSize: 14,
+            fontWeight: 500,
+            cursor: 'pointer',
+            fontFamily: 'var(--uv-font-sans)',
+            textAlign: 'left',
+            padding: '4px 0',
+          }}
+        >
+          &larr; Dashboard
         </button>
-      </FadeUp>
 
-      <FadeUp delay={0.05}>
-        <TitleBlock title="Your vows" subtitle={`${vows.length} total vows`} />
-      </FadeUp>
+        {/* Hero */}
+        <h1
+          style={{
+            fontFamily: 'var(--uv-font-serif)',
+            fontSize: 32,
+            fontWeight: 500,
+            color: 'var(--uv-text)',
+            lineHeight: 1.2,
+          }}
+        >
+          Past vows
+        </h1>
 
-      {vows.length > 0 && (
-        <FadeUp delay={0.1}>
-          <div className="flex gap-3">
-            <StatPill value={String(vows.length)} label="Total" />
-            <StatPill value={String(keptCount)} label="Kept" tone="success" />
-            <StatPill value={String(brokenCount)} label="Broken" tone="danger" />
-          </div>
-        </FadeUp>
-      )}
+        {/* Counts */}
+        <div style={{ display: 'flex', gap: 16, fontFamily: 'var(--uv-font-sans)', fontSize: 13 }}>
+          <span style={{ color: 'var(--uv-text-muted)' }}>{vows.length} total</span>
+          <span style={{ color: 'var(--uv-status-active)' }}>{keptCount} kept</span>
+          <span style={{ color: 'var(--uv-danger)' }}>{brokenCount} broken</span>
+          <span style={{ color: 'var(--uv-text-muted)' }}>{voidedCount} voided</span>
+        </div>
 
-      <div className="flex flex-col gap-3">
-        {vows.map((v, i) => {
-          const isKept = v.verdict === 'kept';
-          const isBroken = v.verdict === 'broken';
-          const isActive = ['sealed', 'active', 'awaiting_verdict'].includes(v.status);
-          const isVoided = v.status === 'voided';
-          const isDraft = v.status === 'draft';
+        {/* Filter chips */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <Chip label="All" selected={filter === 'all'} onClick={() => setFilter('all')} />
+          <Chip label="Kept" selected={filter === 'kept'} onClick={() => setFilter('kept')} />
+          <Chip label="Broken" selected={filter === 'broken'} onClick={() => setFilter('broken')} />
+          <Chip label="Voided" selected={filter === 'voided'} onClick={() => setFilter('voided')} />
+        </div>
 
-          return (
-            <FadeUp key={v.id} delay={0.15 + i * 0.05}>
-              <div
-                onClick={() => router.push(`/vow/${v.id}`)}
-                className="cursor-pointer transition-transform active:scale-[0.98]"
-              >
-                <RitualCard>
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 mr-3">
-                      <p className="text-[15px] font-serif font-medium" style={{ color: 'var(--text)' }}>{v.refined_text}</p>
-                      <div className="flex items-center gap-2 mt-2">
-                        <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>
-                          {v.witness_name} · ${v.stake_amount / 100}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="shrink-0">
-                      {isKept && <CheckCircle className="w-5 h-5" style={{ color: 'var(--success)' }} />}
-                      {isBroken && <XCircle className="w-5 h-5" style={{ color: 'var(--danger)' }} />}
-                      {isActive && <Clock className="w-5 h-5" style={{ color: 'var(--gold)' }} />}
-                      {isVoided && <Ban className="w-5 h-5" style={{ color: '#5a5650' }} />}
-                      {isDraft && <Circle className="w-5 h-5" strokeDasharray="4 3" style={{ color: '#5a5650' }} />}
+        {/* Vow list */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.map((v) => {
+            const isKept = v.verdict === 'kept';
+            const isBroken = v.verdict === 'broken';
+            const isActive = ['sealed', 'active', 'awaiting_verdict'].includes(v.status);
+            const isVoided = v.status === 'voided';
+
+            const pillVariant = isKept ? 'kept' : isBroken ? 'broken' : isActive ? 'active' : isVoided ? 'voided' : 'pending';
+            const pillLabel = isKept ? 'Kept' : isBroken ? 'Broken' : isActive ? 'Active' : isVoided ? 'Voided' : 'Draft';
+
+            return (
+              <Card key={v.id} onClick={() => router.push(`/vow/${v.id}`)}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+                  <div style={{ flex: 1 }}>
+                    <p
+                      style={{
+                        fontSize: 15,
+                        fontFamily: 'var(--uv-font-serif)',
+                        fontWeight: 500,
+                        color: 'var(--uv-text)',
+                        margin: 0,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      {v.refined_text}
+                    </p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+                      <span style={{ fontSize: 12, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
+                        {v.witness_name} &middot; ${v.stake_amount / 100}
+                      </span>
                     </div>
                   </div>
-                </RitualCard>
-              </div>
-            </FadeUp>
-          );
-        })}
+                  <StatusPill variant={pillVariant}>{pillLabel}</StatusPill>
+                </div>
+              </Card>
+            );
+          })}
 
-        {vows.length === 0 && (
-          <FadeUp delay={0.15}>
-            <div className="flex flex-col items-center justify-center py-16 gap-3">
-              <p className="text-[15px]" style={{ color: 'var(--text-muted)' }}>No vows yet</p>
+          {filtered.length === 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 0', gap: 12 }}>
+              <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: 0 }}>
+                {filter === 'all' ? 'No vows yet' : `No ${filter} vows`}
+              </p>
             </div>
-          </FadeUp>
-        )}
+          )}
+        </div>
+
+        {/* CTA */}
+        <PrimaryButton onClick={() => router.push('/create')}>Make a new vow</PrimaryButton>
       </div>
     </RitualScreen>
   );

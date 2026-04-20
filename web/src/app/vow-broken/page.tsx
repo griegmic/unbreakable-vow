@@ -1,8 +1,9 @@
 'use client';
-import { Suspense, useRef, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Share2, AlertTriangle } from 'lucide-react';
-import { RitualScreen, TitleBlock, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { Card } from '@/components/uv/Card';
 import { antiCauses } from '@/lib/vow-logic';
 
 function isAntiCause(destination: string): boolean {
@@ -20,30 +21,27 @@ function VowBrokenContent() {
   const isZeroStake = !amount || amount === '0';
   const antiCause = isAntiCause(destination);
   const [copied, setCopied] = useState(false);
-  const receiptRef = useRef<HTMLDivElement>(null);
 
-  const firstName = selfWitness ? 'You' : (witness && witness !== 'Your witness' ? witness.split(' ')[0] : 'The witness');
-
-  const title = selfWitness ? 'You took the L.' : `${firstName} called it.`;
-
+  // Two variants based on anti-cause
+  const title = antiCause && !isZeroStake ? 'You played yourself.' : 'It happens.';
   const subtitle = (() => {
     if (antiCause && !isZeroStake) {
-      return `Yeah... $${amount} just went to ${destination}. Time for a redemption arc.`;
+      return `$${amount} just went to ${destination}. Time for a redemption arc.`;
     }
     if (!isZeroStake) {
-      return `$${amount} → ${destination}. Honesty noted.`;
+      return `$${amount} goes to ${destination}. Honesty noted.`;
     }
-    return "Broken. But you told the truth.";
+    return 'Broken. But you told the truth.';
   })();
 
   const getShareText = () => {
     if (isZeroStake) {
-      return `I couldn't even keep a free vow: "${vowText}" — unbreakablevow.app`;
+      return `I couldn't even keep a free vow: "${vowText}" -- unbreakablevow.app`;
     }
     if (antiCause) {
-      return `I broke my vow and $${amount} just went to ${destination}. Don't be me. → unbreakablevow.app`;
+      return `I broke my vow and $${amount} just went to ${destination}. Don't be me. -> unbreakablevow.app`;
     }
-    return `I broke my vow: "${vowText}" — $${amount} went to ${destination}. Could you do better? → unbreakablevow.app`;
+    return `I broke my vow: "${vowText}" -- $${amount} went to ${destination}. Could you do better? -> unbreakablevow.app`;
   };
 
   const handleShare = () => {
@@ -59,216 +57,142 @@ function VowBrokenContent() {
   };
 
   return (
-    <RitualScreen
-      footer={
-        <>
-          <PrimaryButton
-            label="Double down"
-            onPress={() => router.push(`/create?text=${encodeURIComponent(vowText)}&stake=${amount}`)}
-          />
-          <SecondaryButton
-            label="Challenge a friend"
-            onPress={() => router.push('/cast')}
-          />
-        </>
-      }
-    >
-      {/* Dramatic icon */}
-      <FadeUp>
-        <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 8, paddingBottom: 4 }}>
-          <div
-            className="animate-scale-in"
-            style={{
-              width: 80,
-              height: 80,
-              borderRadius: '50%',
-              backgroundColor: 'rgba(255,123,123,0.14)',
-              border: '1px solid rgba(255,123,123,0.28)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 24px rgba(255,123,123,0.2)',
-            }}
-          >
-            <AlertTriangle style={{ width: 32, height: 32, color: '#FF7B7B' }} />
-          </div>
-        </div>
-      </FadeUp>
-
-      {/* Title + subtitle */}
-      <FadeUp delay={0.05}>
-        <TitleBlock title={title} subtitle={subtitle} />
-      </FadeUp>
-
-      {/* Shareable receipt card — gradient border via wrapper */}
-      <FadeUp delay={0.1}>
-        <div
-          ref={receiptRef}
-          className="vow-broken-card"
+    <RitualScreen variant={antiCause ? 'anti-cause-broken' : 'outcome-broken'}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 48 }}>
+        {/* Title */}
+        <h1
           style={{
-            background: 'linear-gradient(135deg, var(--warm-amber), #FF7B7B)',
-            borderRadius: 22,
-            padding: 1,
-            boxShadow: '0 16px 28px rgba(0,0,0,0.26), 0 0 0 1px rgba(255,123,123,0.12)',
+            fontFamily: 'var(--uv-font-serif)',
+            fontSize: 40,
+            fontWeight: 500,
+            color: 'var(--uv-text)',
+            textAlign: 'center',
+            lineHeight: 1.1,
           }}
         >
-          <div
-            style={{
-              backgroundColor: 'var(--surface)',
-              borderRadius: 21,
-              padding: '24px 20px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 14,
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {/* Subtle BROKEN watermark */}
-            <div style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%) rotate(-18deg)',
-              fontSize: 48,
-              fontWeight: 900,
-              letterSpacing: '6px',
-              color: 'rgba(255,123,123,0.06)',
-              textTransform: 'uppercase',
-              pointerEvents: 'none',
-              userSelect: 'none',
-              whiteSpace: 'nowrap',
-            }}>
+          {title}
+        </h1>
+        <p
+          style={{
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: 15,
+            color: 'var(--uv-text-muted)',
+            textAlign: 'center',
+            lineHeight: 1.5,
+            margin: 0,
+          }}
+        >
+          {subtitle}
+        </p>
+
+        {/* Receipt card */}
+        <Card variant="elevated">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
+            {/* Watermark */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%) rotate(-18deg)',
+                fontSize: 42,
+                fontWeight: 600,
+                letterSpacing: '6px',
+                color: 'rgba(248,113,113,0.06)',
+                textTransform: 'uppercase' as const,
+                pointerEvents: 'none',
+                userSelect: 'none',
+                whiteSpace: 'nowrap',
+              }}
+            >
               BROKEN
             </div>
 
-            {/* Header stamp */}
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <span style={{
+            <span
+              style={{
                 fontSize: 10,
-                fontWeight: 800,
+                fontWeight: 600,
                 letterSpacing: '3px',
-                color: '#FF7B7B',
-                textTransform: 'uppercase',
-              }}>
-                VOW BROKEN
-              </span>
-            </div>
-
-            {/* Vow text in serif */}
-            <p style={{
-              fontSize: 18,
-              fontFamily: 'var(--font-serif, Georgia, serif)',
-              fontWeight: 500,
-              color: 'var(--text)',
-              textAlign: 'center',
-              lineHeight: '28px',
-              margin: 0,
-              position: 'relative',
-            }}>
+                color: 'var(--uv-danger)',
+                textTransform: 'uppercase' as const,
+                fontFamily: 'var(--uv-font-sans)',
+              }}
+            >
+              VOW BROKEN
+            </span>
+            <p
+              style={{
+                fontSize: 18,
+                fontFamily: 'var(--uv-font-serif)',
+                fontWeight: 500,
+                color: 'var(--uv-text)',
+                textAlign: 'center',
+                lineHeight: '28px',
+                margin: 0,
+                position: 'relative',
+              }}
+            >
               &ldquo;{vowText}&rdquo;
             </p>
+            <div style={{ width: '100%', height: 1, background: 'var(--uv-border-strong)' }} />
 
-            {/* Divider */}
-            <div style={{ width: '100%', height: 1, backgroundColor: 'var(--border)' }} />
-
-            {/* Witness */}
             {witness && !selfWitness && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Witness</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{witness}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
+                <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Witness</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>{witness}</span>
               </div>
             )}
 
-            {/* Payment line (staked) or accountability line ($0) */}
             {!isZeroStake ? (
-              <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 6 }}>
-                <span style={{
-                  fontSize: 14,
-                  fontWeight: 700,
-                  color: 'var(--warm-amber)',
-                }}>
-                  ${amount} → {destination} · Processed ✓
+              <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-danger)', fontFamily: 'var(--uv-font-sans)' }}>
+                  ${amount} &rarr; {destination}
                 </span>
               </div>
             ) : (
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <span style={{
-                  fontSize: 14,
-                  fontWeight: 600,
-                  color: 'var(--text-muted)',
-                }}>
+              <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
+                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
                   Accountability only
                 </span>
               </div>
             )}
-
-            {/* Watermark */}
-            <div style={{ display: 'flex', justifyContent: 'center', paddingTop: 2 }}>
-              <span style={{
-                fontSize: 10,
-                letterSpacing: '1px',
-                fontWeight: 600,
-                color: 'var(--text-muted)',
-                opacity: 0.5,
-              }}>
-                unbreakablevow.app
-              </span>
-            </div>
           </div>
-        </div>
-      </FadeUp>
+        </Card>
 
-      {/* Share section */}
-      <FadeUp delay={0.15}>
+        {/* Share */}
         <button
           onClick={handleShare}
-          className="w-full rounded-[18px] min-h-[52px] flex items-center justify-center gap-2 transition-transform active:scale-[0.975]"
           style={{
-            backgroundColor: antiCause && !isZeroStake ? 'rgba(255,123,123,0.12)' : 'rgba(212,162,79,0.12)',
-            border: `1px solid ${antiCause && !isZeroStake ? 'rgba(255,123,123,0.28)' : 'var(--border-strong)'}`,
+            width: '100%',
+            borderRadius: 'var(--uv-radius-md)',
+            minHeight: 52,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 8,
+            background: antiCause && !isZeroStake ? 'rgba(248,113,113,0.12)' : 'rgba(212,162,79,0.12)',
+            border: `1px solid ${antiCause && !isZeroStake ? 'rgba(248,113,113,0.28)' : 'var(--uv-border-gold-soft)'}`,
+            cursor: 'pointer',
+            transition: 'transform 120ms',
           }}
         >
-          <Share2 className="w-4 h-4" style={{ color: antiCause && !isZeroStake ? '#FF7B7B' : 'var(--warm-amber)' }} />
-          <span className="text-[14px] font-extrabold" style={{ color: antiCause && !isZeroStake ? '#FF7B7B' : 'var(--warm-amber)' }}>
+          <span
+            style={{
+              fontSize: 14,
+              fontWeight: 600,
+              color: antiCause && !isZeroStake ? 'var(--uv-danger)' : 'var(--uv-gold)',
+              fontFamily: 'var(--uv-font-sans)',
+            }}
+          >
             {copied ? 'Copied!' : 'Share the damage'}
           </span>
         </button>
-      </FadeUp>
 
-      {/* Screenshot hint */}
-      <FadeUp delay={0.18}>
-        <p style={{
-          fontSize: 12,
-          color: 'var(--text-muted)',
-          textAlign: 'center',
-          margin: 0,
-          opacity: 0.6,
-        }}>
-          Screenshot the receipt above to share as an image
-        </p>
-      </FadeUp>
-
-      {/* CSS shake animation */}
-      <style>{`
-        @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-3px); }
-          40% { transform: translateX(3px); }
-          60% { transform: translateX(-2px); }
-          80% { transform: translateX(2px); }
-        }
-        .vow-broken-card {
-          animation: shake 0.15s ease-in-out 0.4s 2;
-        }
-        @keyframes scaleIn {
-          0% { transform: scale(0.5); opacity: 0; }
-          100% { transform: scale(1); opacity: 1; }
-        }
-        .animate-scale-in {
-          animation: scaleIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
-        }
-      `}</style>
+        {/* CTA */}
+        <PrimaryButton onClick={() => router.push('/create')}>
+          + Try again
+        </PrimaryButton>
+      </div>
     </RitualScreen>
   );
 }

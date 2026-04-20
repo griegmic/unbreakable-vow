@@ -1,22 +1,140 @@
 'use client';
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen, HeaderBadge, PrimaryButton, FadeUp } from '@/components/ui';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { SecondaryButton } from '@/components/uv/SecondaryButton';
 import { AuthModal } from '@/components/auth-modal';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useVowFlow } from '@/providers/vow-flow';
-import { vowExamples, analyzeVow } from '@/lib/vow-logic';
+
+const FEED_ROWS = [
+  { text: 'Gym 3x this week', amount: 50 },
+  { text: 'Out of bed by 8am, 7 days', amount: 10 },
+  { text: 'No alcohol, 2 weeks', amount: 25 },
+  { text: 'No texting my ex, 30 days', amount: 75 },
+  { text: 'Delete TikTok for a week', amount: 25 },
+];
+
+function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
+  const [screen, setScreen] = useState<1 | 2>(1);
+
+  if (screen === 1) {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 9999,
+          background: 'var(--uv-bg)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: 32,
+          gap: 32,
+        }}
+      >
+        <h1
+          style={{
+            fontFamily: 'var(--uv-font-serif)',
+            fontSize: 36,
+            fontWeight: 500,
+            color: 'var(--uv-text)',
+            textAlign: 'center',
+            lineHeight: 1.2,
+          }}
+        >
+          Words are cheap.
+        </h1>
+        <p
+          style={{
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: 15,
+            color: 'var(--uv-text-muted)',
+            textAlign: 'center',
+            maxWidth: 280,
+            lineHeight: 1.5,
+          }}
+        >
+          You make promises all the time. To yourself. To others. How many have you actually kept?
+        </p>
+        <PrimaryButton onClick={() => setScreen(2)}>Continue</PrimaryButton>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: 'var(--uv-bg)',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 32,
+        gap: 32,
+      }}
+    >
+      <h1
+        style={{
+          fontFamily: 'var(--uv-font-serif)',
+          fontSize: 36,
+          fontWeight: 500,
+          color: 'var(--uv-gold)',
+          textAlign: 'center',
+          lineHeight: 1.2,
+          fontStyle: 'italic',
+        }}
+      >
+        This is different.
+      </h1>
+      <p
+        style={{
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 15,
+          color: 'var(--uv-text-muted)',
+          textAlign: 'center',
+          maxWidth: 300,
+          lineHeight: 1.5,
+        }}
+      >
+        An Unbreakable Vow has stakes. A witness. A deadline. Break it, and your money goes to charity. Keep it, and you prove you meant it.
+      </p>
+      <PrimaryButton
+        onClick={() => {
+          try { localStorage.setItem('uv_ceremony_seen', '1'); } catch {}
+          onComplete();
+        }}
+      >
+        I understand
+      </PrimaryButton>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
   const { setRawInput, setRefinedText, setWitnessName } = useVowFlow();
   const { isAuthenticated, loading, session } = useAuth();
-  const [input, setInput] = useState('');
   const [isNewFlow, setIsNewFlow] = useState(false);
   const [showAuth, setShowAuth] = useState(false);
+  const [showCeremony, setShowCeremony] = useState(false);
   const inlineAuthRef = useRef(false);
+
+  // Check ceremony on mount
+  useEffect(() => {
+    try {
+      if (localStorage.getItem('uv_ceremony_seen') !== '1') {
+        setShowCeremony(true);
+      }
+    } catch {}
+  }, []);
 
   // Pre-fill witness name from URL params (e.g. /?ref=witness&from=Joey)
   useEffect(() => {
@@ -37,11 +155,10 @@ export default function HomePage() {
         localStorage.removeItem('unbreakable-vow-flow');
         setIsNewFlow(true);
         window.history.replaceState({}, '', '/');
-        return; // Stay on creation page
+        return;
       }
 
-      // If we just came from auth, use the stored return path (don't race with handleAuthSuccess)
-      // Priority 1: Cookie (most reliable — survives Safari cross-origin OAuth wipes)
+      // If we just came from auth, use the stored return path
       try {
         const cookieMatch = document.cookie.match(/(?:^|;\s*)auth_return_path=([^;]*)/);
         if (cookieMatch) {
@@ -53,14 +170,12 @@ export default function HomePage() {
           }
         }
       } catch {}
-      // Priority 2: Challenge backup cookie — carries the dare token even if auth_return_path was lost
       try {
         const challengeMatch = document.cookie.match(/(?:^|;\s*)challenge_pending_backup=([^;]*)/);
         if (challengeMatch) {
           const challengeData = decodeURIComponent(challengeMatch[1]);
           const parsed = JSON.parse(challengeData);
           if (parsed.token) {
-            // Restore challenge state to localStorage for the /c/[token] page to consume
             localStorage.setItem('challenge-pending-state', challengeData);
             document.cookie = 'challenge_pending_backup=; path=/; max-age=0';
             router.replace(`/c/${parsed.token}`);
@@ -68,7 +183,6 @@ export default function HomePage() {
           }
         }
       } catch {}
-      // Priority 3: localStorage (works on desktop, may be cleared on mobile Safari OAuth)
       try {
         const returnPath = localStorage.getItem('auth-return-path');
         if (returnPath) {
@@ -84,7 +198,6 @@ export default function HomePage() {
         if (flow) {
           const parsed = JSON.parse(flow);
           if (parsed.rawInput) {
-            // Resume the vow flow where they left off (furthest step reached)
             if (parsed.witnessName && parsed.stake) { router.replace('/seal'); return; }
             if (parsed.refinedText) { router.replace('/stake'); return; }
             router.replace('/refine');
@@ -93,7 +206,7 @@ export default function HomePage() {
         }
       } catch {}
 
-      // Check if user has an active vow — if so, go to /live instead of /dashboard
+      // Check if user has an active vow
       const { data: activeVow } = await supabase
         .from('vows')
         .select('id')
@@ -114,51 +227,61 @@ export default function HomePage() {
     }
   }, [isAuthenticated, loading, router, session]);
 
-  // Show loading spinner only when redirecting (not when ?new=1 keeps us on creation page)
+  // Loading state while redirecting
   if (!loading && isAuthenticated && !isNewFlow && !inlineAuthRef.current) {
     return (
       <RitualScreen>
-        <div className="flex items-center justify-center min-h-[60vh]">
-          <div className="w-8 h-8 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--gold)', borderTopColor: 'transparent' }} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div
+            style={{
+              width: 32,
+              height: 32,
+              border: '2px solid var(--uv-gold)',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'uv-spin 600ms linear infinite',
+            }}
+          />
+          <style>{`@keyframes uv-spin{to{transform:rotate(360deg)}}`}</style>
         </div>
       </RitualScreen>
     );
   }
 
-  const handleContinue = () => {
-    if (!input.trim()) return;
-    const trimmed = input.trim();
-    setRawInput(trimmed);
+  if (showCeremony) {
+    return <CeremonyOverlay onComplete={() => setShowCeremony(false)} />;
+  }
 
-    // Determine destination: good vows skip /refine, vague ones go there
-    const isGoodVow = analyzeVow(trimmed).type === 'already_good' || vowExamples.includes(trimmed);
-    const destination = isGoodVow ? '/stake' : '/refine';
-
-    // If vow is good, also set refinedText so downstream pages have it
-    if (isGoodVow) {
-      setRefinedText(trimmed);
-    }
-
-    // Unauthenticated first-time users: auth → then route to destination
+  const handleMakeVow = () => {
     if (!isAuthenticated) {
       try {
-        localStorage.setItem('auth-return-path', destination);
-        document.cookie = `auth_return_path=${encodeURIComponent(destination)};path=/;max-age=600;SameSite=Lax`;
+        localStorage.setItem('auth-return-path', '/create');
+        document.cookie = `auth_return_path=${encodeURIComponent('/create')};path=/;max-age=600;SameSite=Lax`;
       } catch {}
       inlineAuthRef.current = true;
       setShowAuth(true);
       return;
     }
+    router.push('/create');
+  };
 
-    // Authenticated returning users: go directly
-    router.push(destination);
+  const handleDare = () => {
+    if (!isAuthenticated) {
+      try {
+        localStorage.setItem('auth-return-path', '/cast');
+        document.cookie = `auth_return_path=${encodeURIComponent('/cast')};path=/;max-age=600;SameSite=Lax`;
+      } catch {}
+      inlineAuthRef.current = true;
+      setShowAuth(true);
+      return;
+    }
+    router.push('/cast');
   };
 
   const handleAuthSuccess = () => {
     setShowAuth(false);
     inlineAuthRef.current = false;
-    // Read the destination we stored before auth
-    let dest = '/refine';
+    let dest = '/create';
     try {
       const stored = localStorage.getItem('auth-return-path');
       if (stored) {
@@ -169,88 +292,129 @@ export default function HomePage() {
     router.push(dest);
   };
 
-  const handleChip = (example: string) => {
-    setInput(example);
-  };
-
   return (
-    <RitualScreen
-      footer={
-        <PrimaryButton
-          label="I vow it"
-          onPress={handleContinue}
-          disabled={!input.trim()}
-        />
-      }
-    >
-      <FadeUp>
-        <div className="flex items-center justify-between">
-          <HeaderBadge />
-          <HamburgerMenu />
-        </div>
-      </FadeUp>
+    <RitualScreen>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end' }}>
+        <HamburgerMenu />
+      </div>
 
-      <FadeUp delay={0.1}>
-        <div className="flex flex-col gap-1 mt-2">
-          <h1 className="text-[40px] font-bold font-serif leading-[44px] tracking-[-1px]" style={{ color: 'var(--text)' }}>
-            Make a vow.
-          </h1>
-          <h1
-            className="text-[40px] font-bold font-serif leading-[44px] tracking-[-1px]"
-            style={{ color: 'var(--gold)', textShadow: '0 0 40px rgba(212,162,79,0.3)' }}
-          >
-            Mean it.
-          </h1>
-          <p className="text-[15px] leading-[23px] mt-2 whitespace-pre-line" style={{ color: 'var(--text-secondary)' }}>
-            {'Make a vow to a friend. Put money on it.\nBreak it, it goes to charity.'}
-          </p>
-        </div>
-      </FadeUp>
-
-      <FadeUp delay={0.2}>
-        <div
-          className="rounded-[22px] p-4 flex flex-col gap-3"
-          style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)', boxShadow: '0 16px 28px rgba(0,0,0,0.26)' }}
+      {/* Hero */}
+      <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <h1
+          style={{
+            fontFamily: 'var(--uv-font-serif)',
+            fontSize: 42,
+            fontWeight: 500,
+            color: 'var(--uv-text)',
+            lineHeight: 1.1,
+            letterSpacing: '-1px',
+          }}
         >
-          <span className="text-[13px] font-serif font-medium italic" style={{ color: 'rgba(212,162,79,0.5)' }}>
-            I vow to...
-          </span>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleContinue();
-              }
+          You say a lot.
+        </h1>
+        <h1
+          style={{
+            fontFamily: 'var(--uv-font-serif)',
+            fontSize: 42,
+            fontWeight: 500,
+            fontStyle: 'italic',
+            color: 'var(--uv-gold)',
+            lineHeight: 1.1,
+            letterSpacing: '-1px',
+          }}
+        >
+          This time vow it.
+        </h1>
+        <p
+          style={{
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: 15,
+            color: 'var(--uv-text-muted)',
+            marginTop: 12,
+            lineHeight: 1.5,
+          }}
+        >
+          Put $$ on a goal. A friend decides if you pulled it off.
+        </p>
+      </div>
+
+      {/* Live feed */}
+      <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: '1.5px',
+              textTransform: 'uppercase' as const,
+              color: 'var(--uv-text-muted)',
+              fontFamily: 'var(--uv-font-sans)',
             }}
-            placeholder="No phone in bed all week"
-            rows={2}
-            className="bg-transparent text-[17px] outline-none resize-none"
-            style={{ color: 'var(--text)' }}
+          >
+            THIS WEEK
+          </span>
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              background: 'var(--uv-status-active)',
+              display: 'inline-block',
+            }}
           />
-          <div className="flex flex-wrap gap-[7px]">
-            {vowExamples.map((example) => (
-              <button
-                key={example}
-                onClick={() => handleChip(example)}
-                className="px-3 py-2 rounded-full transition-colors"
+          <span
+            style={{
+              fontSize: 11,
+              color: 'var(--uv-status-active)',
+              fontFamily: 'var(--uv-font-sans)',
+              fontWeight: 500,
+            }}
+          >
+            Live
+          </span>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+          {FEED_ROWS.map((row, i) => (
+            <div
+              key={i}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '11px 0',
+                borderBottom: i < FEED_ROWS.length - 1 ? '1px solid var(--uv-border-strong)' : 'none',
+              }}
+            >
+              <span
                 style={{
-                  backgroundColor: input === example ? 'rgba(212,162,79,0.1)' : 'rgba(255,255,255,0.03)',
-                  border: `1px solid ${input === example ? 'rgba(212,162,79,0.3)' : 'var(--border)'}`,
+                  fontSize: 14,
+                  color: 'var(--uv-text)',
+                  fontFamily: 'var(--uv-font-sans)',
                 }}
               >
-                <span
-                  className="text-[12px] font-medium"
-                  style={{ color: input === example ? 'var(--gold-bright)' : 'var(--text-secondary)' }}
-                >
-                  {example}
-                </span>
-              </button>
-            ))}
-          </div>
+                {row.text}
+              </span>
+              <span
+                style={{
+                  fontSize: 14,
+                  color: 'var(--uv-gold)',
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontWeight: 600,
+                }}
+              >
+                ${row.amount}
+              </span>
+            </div>
+          ))}
         </div>
-      </FadeUp>
+      </div>
+
+      {/* CTAs */}
+      <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+        <PrimaryButton onClick={handleMakeVow}>Make your vow &rarr;</PrimaryButton>
+        <SecondaryButton onClick={handleDare}>Dare a friend &rarr;</SecondaryButton>
+      </div>
 
       <AuthModal
         visible={showAuth}
