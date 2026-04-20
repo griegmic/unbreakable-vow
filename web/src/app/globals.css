@@ -141,3 +141,152 @@ html {
   opacity: 0;
   animation: fadeIn 0.4s ease-out 0.6s forwards;
 }
+
+/* ─── UV Design System Tokens ─── */
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@layer base {
+  :root {
+    /* ── Backgrounds ── */
+    --uv-bg: #0a0907;
+    --uv-bg-card: #100d09;
+    --uv-bg-elev: #15110c;
+    --uv-bg-input: #1a1612;
+    --uv-bg-selected: #2a2015;
+    --uv-bg-overlay: rgba(5, 4, 4, 0.72);
+
+    /* ── Borders ── */
+    --uv-border: #1a1612;
+    --uv-border-strong: #2a231b;
+    --uv-border-gold: var(--uv-gold);
+    --uv-border-gold-soft: rgba(212, 168, 74, 0.24);
+
+    /* ── Text ── */
+    --uv-text: #f5f0e4;
+    --uv-text-muted: #a8a193;
+    --uv-text-dim: #8a8275;
+    --uv-text-faint: #6b6354;
+    --uv-text-invisible: #4a443a;
+    --uv-text-on-gold: #1a1205;
+
+    /* ── Gold accent ── */
+    --uv-gold: #d4a84a;
+    --uv-gold-bright: #f0c86e;
+    --uv-gold-dim: #8a7540;
+    --uv-gold-deep: #8c6423;
+    --uv-gold-bg: #2a2015;
+    --uv-gold-glow: rgba(212, 168, 74, 0.28);
+
+    /* ── Signals ── */
+    --uv-success: #4ade80;
+    --uv-success-bg: #0f2916;
+    --uv-success-border: #1f6b3f;
+    --uv-danger: #f87171;
+    --uv-danger-bg: #2a1612;
+    --uv-warn-bg: #2a1f14;
+    --uv-warn-border: #5a4520;
+
+    /* ── Status ── */
+    --uv-status-active: #52d69a;
+    --uv-status-pending: #fb923c;
+    --uv-status-verdict: #60a5fa;
+    --uv-status-neutral: #5a5650;
+
+    /* ── Anti-cause ── */
+    --uv-anti-red: #c04040;
+    --uv-anti-red-deep: #5a1a1a;
+
+    /* ── Typography ── */
+    --uv-font-serif: var(--font-serif), 'Playfair Display', Georgia, serif;
+    --uv-font-sans: var(--font-sans), 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --uv-font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
+
+    /* ── Spacing (8px grid) ── */
+    --uv-space-1: 4px;
+    --uv-space-2: 8px;
+    --uv-space-3: 12px;
+    --uv-space-4: 16px;
+    --uv-space-5: 20px;
+    --uv-space-6: 24px;
+    --uv-space-7: 32px;
+    --uv-space-8: 40px;
+    --uv-space-9: 56px;
+    --uv-space-10: 80px;
+
+    /* ── Radius ── */
+    --uv-radius-xs: 4px;
+    --uv-radius-sm: 8px;
+    --uv-radius-md: 12px;
+    --uv-radius-lg: 14px;
+    --uv-radius-xl: 18px;
+    --uv-radius-2xl: 22px;
+    --uv-radius-3xl: 28px;
+    --uv-radius-pill: 9999px;
+
+    /* ── Shadows ── */
+    --uv-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --uv-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
+    --uv-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.55);
+    --uv-shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.65);
+    --uv-shadow-sheet: 0 -20px 50px rgba(0, 0, 0, 0.6);
+    --uv-shadow-gold-glow: 0 0 24px rgba(212, 168, 74, 0.28);
+    --uv-shadow-gold-press: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+
+    /* ── Easing ── */
+    --uv-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+    --uv-ease-in: cubic-bezier(0.65, 0, 0.85, 0);
+    --uv-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+    --uv-ease-ceremonial: cubic-bezier(0.19, 1, 0.22, 1);
+
+    /* ── Durations ── */
+    --uv-dur-fast: 120ms;
+    --uv-dur-base: 240ms;
+    --uv-dur-slow: 400ms;
+    --uv-dur-ceremonial: 800ms;
+    --uv-dur-ambient: 8000ms;
+
+    /* ── Z-index ── */
+    --uv-z-base: 0;
+    --uv-z-sticky: 10;
+    --uv-z-menu: 50;
+    --uv-z-backdrop: 90;
+    --uv-z-modal: 100;
+    --uv-z-toast: 200;
+  }
+}
+
+/* ─── UV Keyframes ─── */
+
+@keyframes ceremonyFadeIn {
+  0% { opacity: 0; transform: translateY(20px) scale(0.98); filter: blur(6px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+@keyframes ceremonyFadeOut {
+  0% { opacity: 1; transform: translateY(0); filter: blur(0); }
+  100% { opacity: 0; transform: translateY(-12px); filter: blur(4px); }
+}
+
+@keyframes sealSweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes verdictFlipKept {
+  0% { transform: rotateY(0deg); }
+  50% { transform: rotateY(90deg); background-color: var(--uv-bg-card); }
+  100% { transform: rotateY(0deg); background-color: var(--uv-success-bg); }
+}
+
+@keyframes goldDotPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.7); }
+  50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(74, 222, 128, 0); }
+}

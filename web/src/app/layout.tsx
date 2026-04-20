@@ -1,7 +1,23 @@
 import type { Metadata, Viewport } from 'next';
+import { Playfair_Display, Inter } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/providers/auth-provider';
 import { VowFlowProvider } from '@/providers/vow-flow';
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  style: ['normal', 'italic'],
+  variable: '--font-serif',
+  display: 'swap',
+});
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600'],
+  variable: '--font-sans',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'Unbreakable Vow',
@@ -27,7 +43,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className={`${playfair.variable} ${inter.variable}`}>
       <body>
         <AuthProvider>
           <VowFlowProvider>
