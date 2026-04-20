@@ -397,6 +397,14 @@ export default function SealPage() {
     setPhoneError('');
     setPhoneBusy(true);
 
+    // Check if already authenticated (auth may have loaded late)
+    const { data: { session: existingSession } } = await supabase.auth.getSession();
+    if (existingSession) {
+      // Already signed in — just reload the page to trigger the authenticated flow
+      window.location.reload();
+      return;
+    }
+
     const isLocal = typeof window !== 'undefined' && (
       window.location.hostname === 'localhost' ||
       window.location.hostname === '127.0.0.1'
