@@ -18,19 +18,14 @@ interface StakesStepProps {
   endsAt: Date | null;
 }
 
-const AMOUNTS: { value: number; tag: string }[] = [
-  { value: 10, tag: 'a nudge.' },
-  { value: 25, tag: 'a real stake.' },
-  { value: 50, tag: 'a real stake.' },
-  { value: 100, tag: 'all in.' },
-];
+const AMOUNTS = [10, 25, 50, 100];
 
 function getTag(amount: number): string {
+  if (amount <= 5) return 'just testing the waters.';
   if (amount <= 10) return 'a nudge.';
   if (amount <= 25) return 'a real stake.';
   if (amount <= 50) return 'a real stake.';
-  if (amount >= 100) return 'all in.';
-  return 'a real stake.';
+  return 'all in.';
 }
 
 export function StakesStep({
@@ -49,35 +44,29 @@ export function StakesStep({
     ? `Ends ${endsAt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
     : '';
   const witnessLabel = witnessName && witnessName !== 'TBD'
-    ? witnessName
-    : 'Witness picked next';
+    ? `${witnessName} judging`
+    : '';
+  const metaParts = [deadlineLabel, witnessLabel].filter(Boolean).join(' · ');
 
   return (
     <RitualScreen>
-      <div style={{
-        flex: 1, display: 'flex', flexDirection: 'column',
-        background: 'var(--uv-bg-card)',
-        border: '1px solid var(--uv-border-strong)',
-        borderRadius: 22,
-        padding: '20px 24px 28px',
-        margin: '0 -4px',
-      }}>
-        {/* Top bar: back + progress */}
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 32 }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+
+        {/* Top bar */}
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
           <button
             type="button"
             onClick={onBack}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              width: 36, height: 36, borderRadius: '50%',
+              width: 32, height: 32, borderRadius: '50%',
               background: 'transparent', border: 'none',
-              cursor: 'pointer',
-              marginLeft: -8,
+              cursor: 'pointer', marginLeft: -6,
             }}
           >
-            <ChevronLeft size={20} color="var(--uv-text-dim)" />
+            <ChevronLeft size={18} color="var(--uv-text-dim)" />
           </button>
-          <div style={{ flex: 1, display: 'flex', gap: 6, marginLeft: 16, marginRight: 16 }}>
+          <div style={{ flex: 1, display: 'flex', gap: 6, marginLeft: 12, marginRight: 12 }}>
             {[0, 1, 2].map(i => (
               <div key={i} style={{
                 flex: 1, height: 3, borderRadius: 2,
@@ -87,201 +76,192 @@ export function StakesStep({
           </div>
         </div>
 
-        {/* YOUR VOW recap */}
-        <div style={{ marginBottom: 32 }}>
-          <span style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 500,
-            letterSpacing: '2px', textTransform: 'uppercase' as const,
-            color: 'var(--uv-text-faint)',
-          }}>
-            YOUR VOW
-          </span>
-          <h2 style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 18, fontWeight: 500,
-            color: 'var(--uv-text)', margin: '6px 0 4px', lineHeight: 1.3,
-          }}>
-            {vowText}
-          </h2>
-          <span style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 13,
-            color: 'var(--uv-text-faint)',
-          }}>
-            {[deadlineLabel, witnessLabel].filter(Boolean).join(' · ')}
-          </span>
+        {/* Your vow recap — left gold bar */}
+        <div style={{
+          display: 'flex', gap: 12, marginBottom: 28,
+          paddingLeft: 12,
+          borderLeft: '3px solid var(--uv-gold-deep)',
+        }}>
+          <div>
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500,
+              letterSpacing: '2px', textTransform: 'uppercase' as const,
+              color: 'var(--uv-text-faint)',
+              display: 'block', marginBottom: 4,
+            }}>
+              YOUR VOW
+            </span>
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 16, fontWeight: 500,
+              color: 'var(--uv-text)', display: 'block', lineHeight: 1.3,
+            }}>
+              {vowText}
+            </span>
+            {metaParts && (
+              <span style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+                color: 'var(--uv-text-faint)', display: 'block', marginTop: 3,
+              }}>
+                {metaParts}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Hero */}
         <h1 style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 30, fontWeight: 400,
-          color: 'var(--uv-text)', margin: 0, lineHeight: 1.1,
+          fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400,
+          color: 'var(--uv-text)', margin: 0, lineHeight: 1.15,
         }}>
-          How serious
+          How much to
         </h1>
         <h1 style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 30, fontWeight: 400,
-          fontStyle: 'italic', color: 'var(--uv-gold)', margin: '2px 0 20px', lineHeight: 1.1,
+          fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400,
+          fontStyle: 'italic', color: 'var(--uv-gold)', margin: '2px 0 28px', lineHeight: 1.15,
         }}>
-          are you.
+          make it real?
         </h1>
 
         {/* Big amount + tag */}
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, marginBottom: 24 }}>
+        <div style={{
+          display: 'flex', alignItems: 'baseline', gap: 14, marginBottom: 28,
+        }}>
           <span style={{
-            fontFamily: 'var(--uv-font-serif)', fontSize: 72, fontWeight: 400,
-            color: 'var(--uv-text)', lineHeight: 1, letterSpacing: '-2px',
+            fontFamily: 'var(--uv-font-serif)', fontSize: 68, fontWeight: 400,
+            color: 'var(--uv-gold)', lineHeight: 1, letterSpacing: '-2px',
           }}>
             ${stakeAmount}
           </span>
           <span style={{
-            fontFamily: 'var(--uv-font-serif)', fontSize: 18,
-            fontStyle: 'italic', color: 'var(--uv-gold-dim)',
+            fontFamily: 'var(--uv-font-serif)', fontSize: 17,
+            fontStyle: 'italic', color: 'var(--uv-text-dim)',
             lineHeight: 1.2,
           }}>
             {getTag(stakeAmount)}
           </span>
         </div>
 
-        {/* Slider-style amount selector */}
-        <div style={{ marginBottom: 8 }}>
-          {/* Track */}
+        {/* Slider track */}
+        <div style={{ marginBottom: 6, position: 'relative', height: 20, display: 'flex', alignItems: 'center' }}>
+          {/* Track line */}
           <div style={{
-            position: 'relative', height: 20,
-            display: 'flex', alignItems: 'center',
-          }}>
-            {/* Line */}
-            <div style={{
-              position: 'absolute', left: 0, right: 0, top: '50%',
-              height: 2, background: 'var(--uv-border-strong)',
-              transform: 'translateY(-50%)',
-            }} />
-            {/* Dots */}
-            {AMOUNTS.map((amt, i) => {
-              const active = stakeAmount === amt.value;
-              const pct = (i / (AMOUNTS.length - 1)) * 100;
-              return (
-                <button
-                  key={amt.value}
-                  type="button"
-                  onClick={() => setStakeAmount(amt.value)}
-                  style={{
-                    position: 'absolute',
-                    left: `${pct}%`,
-                    transform: 'translateX(-50%)',
-                    width: active ? 20 : 8,
-                    height: active ? 20 : 8,
-                    borderRadius: '50%',
-                    background: active ? 'var(--uv-gold)' : 'var(--uv-text-faint)',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 200ms cubic-bezier(0.22,1,0.36,1)',
-                    boxShadow: active ? '0 0 12px rgba(212,168,74,0.4)' : 'none',
-                    padding: 0,
-                    zIndex: active ? 2 : 1,
-                  }}
-                />
-              );
-            })}
-          </div>
-          {/* Labels */}
+            position: 'absolute', left: 6, right: 6, top: '50%',
+            height: 2, background: 'var(--uv-border-strong)',
+            transform: 'translateY(-50%)', borderRadius: 1,
+          }} />
+          {/* Active fill */}
           <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            marginTop: 6, padding: '0 0',
-          }}>
-            {AMOUNTS.map(amt => {
-              const active = stakeAmount === amt.value;
-              return (
-                <button
-                  key={amt.value}
-                  type="button"
-                  onClick={() => setStakeAmount(amt.value)}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-                    fontFamily: 'var(--uv-font-sans)',
-                    fontSize: active ? 15 : 14,
-                    fontWeight: active ? 600 : 400,
-                    color: active ? 'var(--uv-text)' : 'var(--uv-text-faint)',
-                    transition: 'all 200ms',
-                    minWidth: 44,
-                  }}
-                >
-                  ${amt.value}
-                </button>
-              );
-            })}
-          </div>
+            position: 'absolute', left: 6, top: '50%',
+            height: 2,
+            width: `${(AMOUNTS.indexOf(stakeAmount) / (AMOUNTS.length - 1)) * (100 - 3)}%`,
+            background: 'var(--uv-gold-deep)',
+            transform: 'translateY(-50%)', borderRadius: 1,
+            transition: 'width 200ms cubic-bezier(0.22,1,0.36,1)',
+          }} />
+          {/* Dots */}
+          {AMOUNTS.map((amt, i) => {
+            const active = stakeAmount === amt;
+            const pct = (i / (AMOUNTS.length - 1)) * 100;
+            return (
+              <button
+                key={amt}
+                type="button"
+                onClick={() => setStakeAmount(amt)}
+                style={{
+                  position: 'absolute', left: `${pct}%`,
+                  transform: 'translateX(-50%)',
+                  width: active ? 18 : 6, height: active ? 18 : 6,
+                  borderRadius: '50%',
+                  background: active ? 'var(--uv-gold)' : 'var(--uv-text-faint)',
+                  border: active ? '2px solid var(--uv-gold-bright)' : 'none',
+                  cursor: 'pointer', padding: 0,
+                  transition: 'all 200ms cubic-bezier(0.22,1,0.36,1)',
+                  boxShadow: active ? '0 0 12px rgba(212,168,74,0.35)' : 'none',
+                  zIndex: active ? 2 : 1,
+                }}
+              />
+            );
+          })}
         </div>
 
-        {/* $5 option */}
-        <div style={{ textAlign: 'center', marginBottom: 24 }}>
-          <button
-            type="button"
-            onClick={() => setStakeAmount(5)}
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: 'var(--uv-font-sans)', fontSize: 13,
-              fontStyle: 'italic',
-              color: stakeAmount === 5 ? 'var(--uv-gold)' : 'var(--uv-text-faint)',
-              padding: '4px 8px',
-              transition: 'color 200ms',
-            }}
-          >
-            not ready? start with $5
-          </button>
-        </div>
-
-        {/* Divider */}
+        {/* Labels */}
         <div style={{
-          height: 1,
-          background: 'linear-gradient(90deg, transparent, var(--uv-border-strong), transparent)',
-          marginBottom: 16,
-        }} />
-
-        {/* If broken row */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 12,
+          display: 'flex', justifyContent: 'space-between', marginBottom: 28,
+          paddingLeft: 0, paddingRight: 0,
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {AMOUNTS.map(amt => {
+            const active = stakeAmount === amt;
+            return (
+              <button
+                key={amt}
+                type="button"
+                onClick={() => setStakeAmount(amt)}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px',
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 14,
+                  fontWeight: active ? 600 : 400,
+                  color: active ? 'var(--uv-gold)' : 'var(--uv-text-faint)',
+                  transition: 'all 200ms',
+                  minWidth: 40,
+                }}
+              >
+                ${amt}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Trust + destination block */}
+        <div style={{ marginBottom: 0 }}>
+          <p style={{
+            fontFamily: 'var(--uv-font-serif)', fontSize: 16,
+            fontStyle: 'italic', color: 'var(--uv-success)',
+            margin: '0 0 8px', lineHeight: 1.4,
+          }}>
+            Keep it and every cent stays yours.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: 4 }}>
             <span style={{
               fontFamily: 'var(--uv-font-sans)', fontSize: 14,
               color: 'var(--uv-text-muted)',
             }}>
-              Break it, ${stakeAmount} goes to
+              Break it and ${stakeAmount} goes to
             </span>
             <span style={{
               fontFamily: 'var(--uv-font-sans)', fontSize: 14,
               color: 'var(--uv-text)', fontWeight: 500,
             }}>
-              {destination}
+              {destination}.
             </span>
           </div>
           <button
             type="button"
             onClick={onIfBroken}
             style={{
-              background: 'none', border: 'none', cursor: 'pointer',
+              background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
               fontFamily: 'var(--uv-font-sans)', fontSize: 13,
-              color: 'var(--uv-gold-dim)', fontStyle: 'italic',
+              color: 'var(--uv-gold)', marginTop: 2,
             }}
           >
             change
           </button>
         </div>
 
-        {/* Trust line */}
-        <p style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 15,
-          fontStyle: 'italic', color: 'var(--uv-success)',
-          margin: '0 0 0', lineHeight: 1.4,
-        }}>
-          Keep it — every penny stays yours. No charge now.
-        </p>
-
         <div style={{ flex: 1, minHeight: 24 }} />
+
+        {/* Fine print */}
+        <p style={{
+          fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+          fontStyle: 'italic', color: 'var(--uv-text-faint)',
+          textAlign: 'center', margin: '0 0 12px',
+        }}>
+          No charge now. Only if you break it.
+        </p>
 
         {/* CTA */}
         <PrimaryButton onClick={onNext}>
-          Seal my vow — ${stakeAmount}
+          Seal my vow — ${stakeAmount} →
         </PrimaryButton>
       </div>
     </RitualScreen>
