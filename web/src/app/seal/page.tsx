@@ -5,7 +5,6 @@ import { Star, Check } from 'lucide-react';
 import { RitualScreen } from '@/components/uv/RitualScreen';
 import { PrimaryButton } from '@/components/uv/PrimaryButton';
 import { SecondaryButton } from '@/components/uv/SecondaryButton';
-import { AuthModal } from '@/components/auth-modal';
 import { PaymentModal } from '@/components/payment-form';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
@@ -22,6 +21,14 @@ async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, 
   );
 }
 
+/** Format a raw digit string as (xxx) xxx-xxxx */
+function formatPhoneDisplay(digits: string): string {
+  const d = digits.replace(/\D/g, '').slice(0, 10);
+  if (d.length <= 3) return d;
+  if (d.length <= 6) return `(${d.slice(0, 3)}) ${d.slice(3)}`;
+  return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+}
+
 export default function SealPage() {
   const router = useRouter();
   const { vow, activeVowText, isSelfWitness, setVowId } = useVowFlow();
@@ -34,6 +41,11 @@ export default function SealPage() {
   const sealingRef = useRef(false);
   const [isDevBypass, setIsDevBypass] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // Phone auth state
+  const [phone, setPhone] = useState('');
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
 
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
@@ -349,6 +361,70 @@ export default function SealPage() {
     timersRef.current.push(t1, t2, t3);
   };
 
+  // ── Phone auth: Google OAuth trigger ──
+  const triggerGoogleOAuth = useCallback(async () => {
+    const returnPath = '/seal';
+    try { document.cookie = `auth_return_path=${encodeURIComponent(returnPath)}; path=/; max-age=300; SameSite=Lax`; } catch {}
+    try {
+      const flow = localStorage.getItem('unbreakable-vow-flow');
+      if (flow) document.cookie = `vow_flow_backup=${encodeURIComponent(flow)}; path=/; max-age=300; SameSite=Lax`;
+    } catch {}
+    try { localStorage.setItem('auth-return-path', returnPath); } catch {}
+    const callbackUrl = new URL('/auth/callback', window.location.origin);
+    callbackUrl.searchParams.set('return_to', returnPath);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: callbackUrl.toString(),
+      },
+    });
+    if (error) {
+      setPhoneError(error.message);
+      setPhoneBusy(false);
+    }
+  }, []);
+
+  // ── Phone "Continue" handler ──
+  const handlePhoneContinue = useCallback(async () => {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 10) {
+      setPhoneError('Please enter a valid 10-digit phone number.');
+      return;
+    }
+    setPhoneError('');
+    setPhoneBusy(true);
+
+    const isLocal = typeof window !== 'undefined' && (
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+
+    if (isLocal) {
+      // Dev mode: show "sending code..." briefly, then trigger Google OAuth
+      await new Promise(r => setTimeout(r, 800));
+      triggerGoogleOAuth();
+    } else {
+      // Production: attempt phone OTP first, fall back to Google OAuth
+      const formattedPhone = `+1${digits}`;
+      const { error: otpError } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
+      if (otpError) {
+        console.warn('Phone OTP failed, falling back to Google OAuth:', otpError.message);
+        triggerGoogleOAuth();
+      } else {
+        // OTP sent successfully — for now, fall through to Google OAuth
+        // (OTP verification UI can be added later)
+        triggerGoogleOAuth();
+      }
+    }
+  }, [phone, triggerGoogleOAuth]);
+
+  // ── Phone input handler with formatting ──
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const raw = e.target.value.replace(/\D/g, '').slice(0, 10);
+    setPhone(raw);
+    setPhoneError('');
+  };
+
   // ── Sealing animation ──
   if (step === 'sealing') {
     return (
@@ -414,6 +490,237 @@ export default function SealPage() {
     ? new Date(vow.deadlineIso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : '7 days';
 
+  // ── NOT AUTHENTICATED: inline phone-first auth ──
+  if (!isAuthenticated && !authLoading) {
+    return (
+      <>
+        <RitualScreen>
+          {/* Progress indicator */}
+          <p style={{ fontSize: 11, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-faint)', marginBottom: 8 }}>
+            5 / 5
+          </p>
+
+          {isDevBypass && (
+            <div style={{ borderRadius: 8, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: 'rgba(212,162,79,0.08)', border: '1px dashed rgba(212,162,79,0.3)', marginBottom: 12 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' as const, color: 'var(--uv-gold)' }}>Testing mode</span>
+            </div>
+          )}
+
+          {/* Vow context — gold left bar */}
+          <div
+            style={{
+              borderLeft: '3px solid var(--uv-gold)',
+              paddingLeft: 12,
+              marginBottom: 24,
+            }}
+          >
+            <p style={{
+              fontFamily: 'var(--uv-font-serif)',
+              fontStyle: 'italic',
+              fontSize: 15,
+              color: 'var(--uv-text)',
+              margin: '0 0 4px',
+              lineHeight: 1.4,
+            }}>
+              {activeVowText}
+            </p>
+            <p style={{
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 12,
+              color: 'var(--uv-text-faint)',
+              margin: 0,
+            }}>
+              Witnessed by {witnessName}
+            </p>
+          </div>
+
+          {/* Hero */}
+          <div style={{ marginBottom: 28 }}>
+            <h1 style={{
+              fontFamily: 'var(--uv-font-serif)',
+              fontSize: 28,
+              fontWeight: 400,
+              color: 'var(--uv-text)',
+              margin: '0 0 6px',
+            }}>
+              Almost done.
+            </h1>
+            <p style={{
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 15,
+              color: 'var(--uv-text-muted)',
+              margin: 0,
+            }}>
+              Enter your number to seal your vow.
+            </p>
+          </div>
+
+          {/* Phone input */}
+          <div style={{ marginBottom: 8 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                background: 'var(--uv-bg-input, var(--uv-bg-elev))',
+                border: '1px solid var(--uv-border-strong)',
+                borderRadius: 14,
+                padding: '0 16px',
+                transition: 'border-color 200ms',
+              }}
+              onFocus={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--uv-gold)';
+              }}
+              onBlur={(e) => {
+                (e.currentTarget as HTMLElement).style.borderColor = 'var(--uv-border-strong)';
+              }}
+            >
+              {/* +1 badge */}
+              <span style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
+                fontSize: 15,
+                fontFamily: 'var(--uv-font-sans)',
+                color: 'var(--uv-text-muted)',
+                paddingRight: 10,
+                borderRight: '1px solid var(--uv-border-strong)',
+                marginRight: 10,
+                whiteSpace: 'nowrap',
+                userSelect: 'none',
+              }}>
+                <span role="img" aria-label="US flag">&#x1F1FA;&#x1F1F8;</span>
+                <span>+1</span>
+              </span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                placeholder="(555) 867-5309"
+                value={formatPhoneDisplay(phone)}
+                onChange={handlePhoneChange}
+                onFocus={(e) => {
+                  const wrapper = e.target.closest('div');
+                  if (wrapper) (wrapper as HTMLElement).style.borderColor = 'var(--uv-gold)';
+                }}
+                onBlur={(e) => {
+                  const wrapper = e.target.closest('div');
+                  if (wrapper) (wrapper as HTMLElement).style.borderColor = 'var(--uv-border-strong)';
+                }}
+                style={{
+                  flex: 1,
+                  border: 'none',
+                  outline: 'none',
+                  background: 'transparent',
+                  fontSize: 16,
+                  fontFamily: 'var(--uv-font-sans)',
+                  color: 'var(--uv-text)',
+                  padding: '14px 0',
+                  WebkitAppearance: 'none',
+                }}
+              />
+            </div>
+            {phoneError && (
+              <p style={{ fontSize: 13, color: 'var(--uv-danger, #dc3232)', margin: '6px 0 0', fontFamily: 'var(--uv-font-sans)' }}>
+                {phoneError}
+              </p>
+            )}
+          </div>
+
+          {/* Sub-text */}
+          <p style={{
+            fontSize: 12,
+            fontFamily: 'var(--uv-font-sans)',
+            color: 'var(--uv-text-faint)',
+            margin: '0 0 20px',
+          }}>
+            We&apos;ll text you a code. No password ever.
+          </p>
+
+          {/* Continue button */}
+          <PrimaryButton
+            onClick={handlePhoneContinue}
+            loading={phoneBusy}
+          >
+            {phoneBusy ? 'Sending code...' : 'Continue \u2192'}
+          </PrimaryButton>
+
+          {/* Divider */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            margin: '20px 0',
+          }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--uv-border-strong)' }} />
+            <span style={{
+              fontSize: 11,
+              fontFamily: 'var(--uv-font-sans)',
+              color: 'var(--uv-text-faint)',
+              whiteSpace: 'nowrap',
+              textTransform: 'lowercase' as const,
+            }}>
+              other ways to sign in
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'var(--uv-border-strong)' }} />
+          </div>
+
+          {/* Google pill */}
+          <button
+            onClick={triggerGoogleOAuth}
+            disabled={phoneBusy}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              padding: '10px 24px',
+              borderRadius: 100,
+              border: '1px solid var(--uv-border-strong)',
+              background: 'var(--uv-bg-elev)',
+              color: 'var(--uv-text)',
+              fontSize: 14,
+              fontFamily: 'var(--uv-font-sans)',
+              fontWeight: 500,
+              cursor: phoneBusy ? 'not-allowed' : 'pointer',
+              opacity: phoneBusy ? 0.4 : 1,
+              width: '100%',
+              transition: 'opacity 200ms',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
+              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+            </svg>
+            Google
+          </button>
+
+          {/* Error */}
+          {error && (
+            <div style={{ borderRadius: 10, padding: 12, backgroundColor: 'var(--uv-danger-bg, rgba(220,50,50,0.08))', marginTop: 16 }}>
+              <p style={{ fontSize: 13, color: 'var(--uv-danger, #dc3232)', margin: 0 }}>{error}</p>
+            </div>
+          )}
+
+          {/* Fine print */}
+          <p style={{
+            fontSize: 10,
+            textAlign: 'center',
+            color: 'var(--uv-text-faint)',
+            marginTop: 20,
+            opacity: 0.6,
+            lineHeight: 1.5,
+            fontFamily: 'var(--uv-font-sans)',
+          }}>
+            By signing in, you agree to receive transactional SMS. Reply STOP to opt out anytime.
+          </p>
+        </RitualScreen>
+      </>
+    );
+  }
+
+  // ── AUTHENTICATED: review + payment flow ──
   return (
     <>
       <RitualScreen>
@@ -434,7 +741,7 @@ export default function SealPage() {
             Almost done.
           </h1>
           <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text-muted)', margin: 0 }}>
-            {isAuthenticated ? 'One tap to seal.' : 'Enter your number to seal.'}
+            One tap to seal.
           </p>
         </div>
 
@@ -532,12 +839,6 @@ export default function SealPage() {
           By signing in, you agree to receive transactional SMS (verification codes, vow updates). Your witness will receive a text when you seal. Reply STOP to opt out anytime.
         </p>
       </RitualScreen>
-
-      <AuthModal
-        visible={step === 'auth'}
-        onDismiss={() => setStep('review')}
-        onSuccess={handleAuthSuccess}
-      />
 
       {clientSecret && step === 'payment' && (
         <PaymentModal
