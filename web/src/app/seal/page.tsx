@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { Star, Sparkles, Check, DollarSign } from 'lucide-react';
-import { RitualScreen, BackButton, TitleBlock, RitualCard, VowPreview, PrimaryButton, SecondaryButton, FadeUp } from '@/components/ui';
+import { Star, Check } from 'lucide-react';
+import { RitualScreen } from '@/components/uv/RitualScreen';
+import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { SecondaryButton } from '@/components/uv/SecondaryButton';
 import { AuthModal } from '@/components/auth-modal';
 import { PaymentModal } from '@/components/payment-form';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -24,7 +26,6 @@ export default function SealPage() {
   const router = useRouter();
   const { vow, activeVowText, isSelfWitness, setVowId } = useVowFlow();
   const { isAuthenticated, session, loading: authLoading } = useAuth();
-  const [smsExpanded, setSmsExpanded] = useState(false);
   const [step, setStep] = useState<SealStep>('review');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState('');
@@ -36,21 +37,8 @@ export default function SealPage() {
 
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
-  const hasWitnessPhone = !isSelfWitness && !!vow.witnessPhone;
-  const displayName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || null;
-  const smsPreview = (() => {
-    if (!hasWitnessPhone) return '';
-    const senderName = displayName || 'You';
-    const stakeText = vow.stake.amount > 0
-      ? `with $${vow.stake.amount} on the line`
-      : 'accountability only — no money, just their word';
-    const vowPreview = activeVowText.length > 100
-      ? activeVowText.substring(0, 97) + '...'
-      : activeVowText;
-    return `${senderName} just made an Unbreakable Vow: "${vowPreview}" — ${stakeText}. You're the witness.`;
-  })();
-
-  const sealLabel = hasWitnessPhone ? `Seal & text ${vow.witnessName}` : 'Seal this vow';
+  const witnessName = isSelfWitness ? 'Just me' : (vow.witnessName || 'Witness');
+  const sealLabel = isAuthenticated ? 'Seal this vow' : 'Seal this vow';
 
   useEffect(() => {
     const isLocal = typeof window !== 'undefined' && (
@@ -68,15 +56,13 @@ export default function SealPage() {
   }, []);
 
   useEffect(() => {
-    // Don't redirect while auth is still loading — session may not have propagated yet
     if (authLoading) return;
     if (!vow.rawInput) {
-      // Double-check localStorage directly — context might not have hydrated yet
       try {
         const stored = localStorage.getItem('unbreakable-vow-flow');
         if (stored) {
           const parsed = JSON.parse(stored);
-          if (parsed.rawInput) return; // state exists, context will catch up
+          if (parsed.rawInput) return;
         }
       } catch {}
       router.replace('/');
@@ -87,8 +73,6 @@ export default function SealPage() {
   const draftCreatingRef = useRef(false);
   const draftPromiseRef = useRef<Promise<{ id: string } | null> | null>(null);
   const ensureDraftVow = useCallback(async (): Promise<{ id: string; error?: string } | null> => {
-    // Reuse existing draft — but sync current flow state to DB
-    // (user may have gone back and changed stake, witness, deadline, etc.)
     if (vow.vowId) {
       const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
       const { data: existing } = await supabase.from('vows')
@@ -108,7 +92,6 @@ export default function SealPage() {
       if (existing) return existing;
     }
 
-    // If a draft creation is already in flight, wait for it instead of returning null
     if (draftCreatingRef.current && draftPromiseRef.current) {
       return draftPromiseRef.current;
     }
@@ -123,9 +106,6 @@ export default function SealPage() {
         await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
 
         const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
-        // Use the token from VowFlow (shared on /witness page) if available,
-        // otherwise generate a fresh one. This ensures the link the witness
-        // already received stays valid.
         const { data: newVow, error: vowError } = await supabase.from('vows').insert({
           user_id: s.user.id,
           raw_input: vow.rawInput,
@@ -158,7 +138,7 @@ export default function SealPage() {
     return promise;
   }, [vow, activeVowText, isSelfWitness, setVowId]);
 
-  // ── Eagerly create draft on page load when authed (makes witness link live) ──
+  // ── Eagerly create draft on page load when authed ──
   useEffect(() => {
     if (isAuthenticated && vow.rawInput && !vow.vowId) {
       ensureDraftVow();
@@ -204,7 +184,6 @@ export default function SealPage() {
     try {
       setError('');
 
-      // Verify we have a session before proceeding
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession) {
         setStep('auth');
@@ -216,14 +195,11 @@ export default function SealPage() {
       const draft = await ensureDraftVow();
       if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
 
-      // Use supabase.functions.invoke() — handles auth token lifecycle automatically
-      // (same approach that works reliably in the expo app)
       const { data: piData, error: piError } = await supabase.functions.invoke('create-payment-intent', {
         body: { vow_id: draft.id, amount: vow.stake.amount * 100 },
       });
 
       if (piError) {
-        // Check if the error response contains auth failure
         let detail = piError.message;
         try {
           if (typeof (piError as any).context?.json === 'function') {
@@ -274,7 +250,6 @@ export default function SealPage() {
         return;
       }
 
-      // ensureDraftVow syncs current flow state (including $0 stake) to DB
       const draft = await ensureDraftVow();
       if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
 
@@ -282,7 +257,7 @@ export default function SealPage() {
       if (!result.ok) {
         throw new Error(result.error || 'Could not activate your vow. Please try again.');
       }
-      router.push('/live');
+      router.push('/sent');
     } catch (err) {
       console.error('Zero-stake seal error:', err);
       setError(err instanceof Error ? err.message : 'Could not seal your vow. Please try again.');
@@ -292,7 +267,6 @@ export default function SealPage() {
   }, [vow, ensureDraftVow, callSealVow, router]);
 
   const handleSealTap = async () => {
-    // If auth is still loading, wait briefly for it to resolve
     if (authLoading) return;
     if (!isAuthenticated) {
       setStep('auth');
@@ -311,20 +285,18 @@ export default function SealPage() {
       const draft = await ensureDraftVow();
       if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
 
-      // Mark vow as active directly (simulates successful payment + seal — no fake Stripe IDs)
       await supabase.from('vows').update({
         status: 'active',
         sealed_at: new Date().toISOString(),
       }).eq('id', draft.id);
 
-      // Skip callSealVow — vow is already active. Just run the animation and redirect.
       setStep('sealing');
       setSealAnimPhase(1);
       const t1 = setTimeout(() => setSealAnimPhase(2), 400);
       const t2 = setTimeout(() => setSealAnimPhase(3), 800);
       const t3 = setTimeout(() => {
         setStep('done');
-        router.push('/live');
+        router.push('/sent');
       }, 1400);
       timersRef.current.push(t1, t2, t3);
     } catch (err) {
@@ -336,12 +308,10 @@ export default function SealPage() {
 
   const handleAuthSuccess = async () => {
     setStep('review');
-    // Poll for session — OAuth callback may not have propagated yet
     const maxAttempts = 10;
     for (let i = 0; i < maxAttempts; i++) {
       const { data: { session: freshSession } } = await supabase.auth.getSession();
       if (freshSession) {
-        // Eagerly create draft so witness link resolves immediately
         await ensureDraftVow();
         if (vow.stake.amount === 0) {
           handleZeroStakeSeal();
@@ -369,174 +339,194 @@ export default function SealPage() {
       }
     }
 
-    // Seal animation sequence with cleanup refs
     setSealAnimPhase(1);
     const t1 = setTimeout(() => setSealAnimPhase(2), 400);
     const t2 = setTimeout(() => setSealAnimPhase(3), 800);
     const t3 = setTimeout(() => {
       setStep('done');
-      router.push('/live');
+      router.push('/sent');
     }, 1400);
     timersRef.current.push(t1, t2, t3);
   };
 
+  // ── Sealing animation ──
   if (step === 'sealing') {
     return (
-      <div className="fixed inset-0 flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div className="flex flex-col items-center gap-6">
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: 'var(--uv-bg)',
+        }}
+      >
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
           {/* Seal ring */}
           <div
-            className="w-[100px] h-[100px] rounded-full flex items-center justify-center transition-all duration-500"
             style={{
-              border: `3px solid ${sealAnimPhase >= 1 ? 'var(--success)' : 'var(--gold)'}`,
+              width: 100,
+              height: 100,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: `3px solid ${sealAnimPhase >= 1 ? 'var(--uv-success)' : 'var(--uv-gold)'}`,
               boxShadow: `0 0 ${sealAnimPhase >= 1 ? 40 : 20}px ${sealAnimPhase >= 1 ? 'rgba(82,214,154,0.4)' : 'rgba(212,162,79,0.3)'}`,
               transform: sealAnimPhase === 1 ? 'scale(1.1)' : 'scale(1)',
+              transition: 'all 500ms',
             }}
           >
             {sealAnimPhase < 2 ? (
-              <Star className="w-10 h-10" style={{ color: 'var(--gold)' }} />
+              <Star style={{ width: 40, height: 40, color: 'var(--uv-gold)' }} />
             ) : (
-              <div className="animate-scale-in">
-                <Check className="w-10 h-10" style={{ color: 'var(--success)' }} />
-              </div>
+              <Check style={{ width: 40, height: 40, color: 'var(--uv-success)', animation: 'uv-scale-in 300ms ease' }} />
             )}
           </div>
 
           {/* Flash text */}
           {sealAnimPhase >= 2 && (
             <p
-              className="text-center text-[22px] font-serif max-w-[280px] animate-fade-in"
-              style={{ color: 'var(--gold)' }}
+              style={{
+                textAlign: 'center',
+                fontSize: 22,
+                fontFamily: 'var(--uv-font-serif)',
+                maxWidth: 280,
+                color: 'var(--uv-gold)',
+                animation: 'uv-fade-in 400ms ease',
+              }}
             >
-              {activeVowText ? `"${activeVowText}"` : 'Your vow is sealed.'}
+              {activeVowText ? `\u201C${activeVowText}\u201D` : 'Your vow is sealed.'}
             </p>
           )}
         </div>
+        <style>{`
+          @keyframes uv-scale-in { from { transform: scale(0); } to { transform: scale(1); } }
+          @keyframes uv-fade-in { from { opacity: 0; } to { opacity: 1; } }
+        `}</style>
       </div>
     );
   }
 
+  // ── Format deadline for review card ──
+  const deadlineLabel = vow.deadlineIso
+    ? new Date(vow.deadlineIso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+    : '7 days';
+
   return (
     <>
-      <RitualScreen
-        footer={
-          <>
-            <PrimaryButton
-              label={sealLabel}
-              onPress={handleSealTap}
-              loading={sealing}
-            />
-            <SecondaryButton label="Back" onPress={() => router.back()} />
-            {isDevBypass && (
-              <button
-                onClick={handleDevBypass}
-                disabled={sealing}
-                className="min-h-[44px] w-full flex items-center justify-center gap-2 text-sm font-medium rounded-xl transition-opacity disabled:opacity-30"
-                style={{ color: 'var(--gold)', border: '1px dashed var(--gold)', background: 'rgba(212,162,79,0.06)' }}
-              >
-                Skip payment (testing)
-              </button>
-            )}
-          </>
-        }
-      >
-        <FadeUp><BackButton /></FadeUp>
+      <RitualScreen>
+        {/* Progress indicator */}
+        <p style={{ fontSize: 11, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-faint)', marginBottom: 8 }}>
+          5 / 5
+        </p>
 
         {isDevBypass && (
-          <div className="rounded-lg px-3 py-1.5 flex items-center justify-center gap-1.5" style={{ backgroundColor: 'rgba(212,162,79,0.08)', border: '1px dashed rgba(212,162,79,0.3)' }}>
-            <span className="text-[11px] font-semibold tracking-wide uppercase" style={{ color: 'var(--gold)' }}>Testing mode — localhost</span>
+          <div style={{ borderRadius: 8, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: 'rgba(212,162,79,0.08)', border: '1px dashed rgba(212,162,79,0.3)', marginBottom: 12 }}>
+            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' as const, color: 'var(--uv-gold)' }}>Testing mode</span>
           </div>
         )}
 
-        <FadeUp delay={0.05}>
-          <TitleBlock
-            title="Your Unbreakable Vow"
-            subtitle="No takebacks. No excuses."
-          />
-        </FadeUp>
+        {/* Hero */}
+        <div style={{ marginBottom: 24 }}>
+          <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-text)', margin: 0, marginBottom: 6 }}>
+            Almost done.
+          </h1>
+          <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text-muted)', margin: 0 }}>
+            {isAuthenticated ? 'One tap to seal.' : 'Enter your number to seal.'}
+          </p>
+        </div>
 
-        {/* Seal ring */}
-        <FadeUp delay={0.1}>
-          <div className="flex justify-center my-1">
-            <div
-              className="w-[48px] h-[48px] rounded-full flex items-center justify-center"
+        {/* Review card */}
+        <div
+          style={{
+            background: 'var(--uv-bg-elev)',
+            border: '1px solid var(--uv-border-strong)',
+            borderRadius: 12,
+            padding: '12px 14px',
+            marginBottom: 20,
+          }}
+        >
+          {/* Vow label + text */}
+          <p style={{ fontSize: 11, fontFamily: 'var(--uv-font-sans)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--uv-text-faint)', margin: '0 0 4px' }}>
+            I VOW TO
+          </p>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--uv-text)', margin: '0 0 10px', lineHeight: 1.4 }}>
+            {activeVowText}
+          </p>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: 'var(--uv-border-strong)', margin: '10px 0' }} />
+
+          {/* 3-col grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div>
+              <p style={{ fontSize: 10, fontFamily: 'var(--uv-font-sans)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--uv-text-faint)', margin: '0 0 2px' }}>STAKE</p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-gold)', margin: 0 }}>
+                {vow.stake.amount > 0 ? `$${vow.stake.amount}` : 'My word'}
+              </p>
+            </div>
+            <div>
+              <p style={{ fontSize: 10, fontFamily: 'var(--uv-font-sans)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--uv-text-faint)', margin: '0 0 2px' }}>JUDGE</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text)', margin: 0 }}>
+                {witnessName}
+              </p>
+            </div>
+            <div>
+              <p style={{ fontSize: 10, fontFamily: 'var(--uv-font-sans)', textTransform: 'uppercase' as const, letterSpacing: '0.08em', color: 'var(--uv-text-faint)', margin: '0 0 2px' }}>BY</p>
+              <p style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text)', margin: 0 }}>
+                {deadlineLabel}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Error */}
+        {error && (
+          <div style={{ borderRadius: 10, padding: 12, backgroundColor: 'var(--uv-danger-bg, rgba(220,50,50,0.08))', marginBottom: 12 }}>
+            <p style={{ fontSize: 13, color: 'var(--uv-danger, #dc3232)', margin: 0 }}>{error}</p>
+          </div>
+        )}
+
+        {/* CTA area */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
+          <PrimaryButton onClick={handleSealTap} loading={sealing}>
+            {sealLabel}
+          </PrimaryButton>
+          <SecondaryButton onClick={() => router.back()}>Back</SecondaryButton>
+
+          {isDevBypass && (
+            <button
+              onClick={handleDevBypass}
+              disabled={sealing}
               style={{
-                border: '2px solid var(--gold)',
-                boxShadow: '0 0 20px rgba(212,162,79,0.2)',
+                minHeight: 44,
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                fontSize: 13,
+                fontWeight: 500,
+                borderRadius: 12,
+                color: 'var(--uv-gold)',
+                border: '1px dashed var(--uv-gold)',
+                background: 'rgba(212,162,79,0.06)',
+                cursor: sealing ? 'not-allowed' : 'pointer',
+                opacity: sealing ? 0.3 : 1,
               }}
             >
-              <Star className="w-5 h-5" style={{ color: 'var(--gold)' }} />
-            </div>
-          </div>
-        </FadeUp>
+              Skip payment (testing)
+            </button>
+          )}
+        </div>
 
-        {/* Vow summary card */}
-        <FadeUp delay={0.15}>
-          <RitualCard>
-            <div className="flex items-center gap-2 mb-1">
-              <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-              <span className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>THE VOW</span>
-            </div>
-            <p className="text-xl font-semibold font-serif" style={{ color: 'var(--text)' }}>
-              {activeVowText}
-            </p>
-
-            <div className="h-px my-1" style={{ backgroundColor: 'var(--border)' }} />
-
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 shrink-0" style={{ color: 'var(--gold)' }} />
-              <div className="flex items-center gap-1.5">
-                <span className="text-[11px] uppercase tracking-wider" style={{ color: 'var(--text-muted)' }}>At Stake</span>
-                <span className="text-sm font-bold" style={{ color: 'var(--gold)' }}>{vow.stake.amount > 0 ? `$${vow.stake.amount}` : 'My word'}</span>
-              </div>
-            </div>
-
-            <span className="text-[12px]" style={{ color: 'var(--text-muted)' }}>{verdictInfo.verdictLabel}</span>
-          </RitualCard>
-        </FadeUp>
-
-        {/* SMS preview — collapsed with expand */}
-        {hasWitnessPhone && (
-          <FadeUp delay={0.18}>
-            <div
-              className="rounded-[16px] p-3.5 flex flex-col gap-2"
-              style={{ backgroundColor: 'rgba(212,162,79,0.04)', border: '1px solid rgba(212,162,79,0.15)' }}
-            >
-              <button
-                onClick={() => setSmsExpanded(!smsExpanded)}
-                className="flex items-center justify-between gap-3 w-full text-left"
-              >
-                <span className="text-[13px] leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
-                  {vow.witnessName} will get a text with your vow and a link to accept
-                </span>
-                <span className="text-[12px] font-semibold shrink-0" style={{ color: 'var(--gold)' }}>
-                  {smsExpanded ? 'Hide' : 'Preview'}
-                </span>
-              </button>
-              {smsExpanded && (
-                <p
-                  className="text-[13px] leading-[19px] italic pt-2"
-                  style={{ color: 'var(--text-muted)', borderTop: '1px solid rgba(212,162,79,0.1)' }}
-                >
-                  {smsPreview}
-                </p>
-              )}
-            </div>
-          </FadeUp>
-        )}
-
-        {error && (
-          <div className="rounded-xl p-3" style={{ backgroundColor: 'var(--danger-muted)' }}>
-            <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>
-          </div>
-        )}
-
+        {/* Fine print */}
         {vow.stake.amount > 0 && (
-          <FadeUp delay={0.2}>
-            <p className="text-[12px] text-center" style={{ color: 'var(--text-muted)' }}>
-              You'll authorize a hold — released if you keep your vow.
-            </p>
-          </FadeUp>
+          <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-faint)', marginTop: 12 }}>
+            No charge unless you break your vow
+          </p>
         )}
       </RitualScreen>
 
@@ -553,7 +543,6 @@ export default function SealPage() {
           onSuccess={handlePaymentSuccess}
           onCancel={() => { setStep('review'); sealingRef.current = false; setSealing(false); }}
           onSkip={isDevBypass ? async () => {
-            // Skip payment: seal as a $0 vow atomically via edge function
             if (!vow.vowId) {
               setError('Could not skip payment. Please try again.');
               sealingRef.current = false;
@@ -569,13 +558,12 @@ export default function SealPage() {
               setSealing(false);
               return;
             }
-            // Success — run seal animation and redirect
             setSealAnimPhase(1);
             const t1 = setTimeout(() => setSealAnimPhase(2), 400);
             const t2 = setTimeout(() => setSealAnimPhase(3), 800);
             const t3 = setTimeout(() => {
               setStep('done');
-              router.push('/live');
+              router.push('/sent');
             }, 1400);
             timersRef.current.push(t1, t2, t3);
           } : undefined}
