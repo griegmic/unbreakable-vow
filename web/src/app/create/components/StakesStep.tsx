@@ -236,15 +236,13 @@ export function StakesStep({
           }}>
             No charge unless you break your vow.
           </p>
-        </div>
 
-        <div style={{ flex: 1 }} />
-
-        {/* CTA */}
-        <div style={{ paddingTop: 24, paddingBottom: 16 }}>
-          <PrimaryButton onClick={onNext}>
-            Seal my vow — ${stakeAmount}
-          </PrimaryButton>
+          {/* CTA inside card */}
+          <div style={{ marginTop: 24 }}>
+            <PrimaryButton onClick={onNext}>
+              Seal my vow — ${stakeAmount}
+            </PrimaryButton>
+          </div>
         </div>
       </div>
     </RitualScreen>
