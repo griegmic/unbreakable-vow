@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { RitualScreen } from '@/components/uv/RitualScreen';
 import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { ChevronLeft } from 'lucide-react';
+import { ChevronLeft, Heart, Eye, Flame } from 'lucide-react';
 
 interface IfBrokenSheetProps {
   destination: string;
@@ -47,10 +47,10 @@ export function IfBrokenSheet({ destination, destinationKind, onSelect, onClose 
     setSelectedKind(kind);
   };
 
-  const modes: { id: Mode; icon: string; title: string; sub: string; accent: string; bg: string; border: string; disabled?: boolean }[] = [
+  const modes: { id: Mode; icon: React.ReactNode; title: string; sub: string; accent: string; bg: string; border: string; disabled?: boolean }[] = [
     {
       id: 'charity',
-      icon: '💚',
+      icon: <Heart size={18} />,
       title: 'A cause you believe in',
       sub: 'Your money does some good.',
       accent: 'var(--uv-success)',
@@ -59,7 +59,7 @@ export function IfBrokenSheet({ destination, destinationKind, onSelect, onClose 
     },
     {
       id: 'witness',
-      icon: '👁️',
+      icon: <Eye size={18} />,
       title: 'Your witness gets it',
       sub: 'They profit from your failure.',
       accent: 'var(--uv-gold)',
@@ -69,7 +69,7 @@ export function IfBrokenSheet({ destination, destinationKind, onSelect, onClose 
     },
     {
       id: 'anti',
-      icon: '🔥',
+      icon: <Flame size={18} />,
       title: 'A cause you hate',
       sub: 'Maximum pain. Maximum motivation.',
       accent: 'var(--uv-danger)',
@@ -145,7 +145,7 @@ export function IfBrokenSheet({ destination, destinationKind, onSelect, onClose 
                 </div>
 
                 {/* Icon */}
-                <span style={{ fontSize: 22 }}>{m.icon}</span>
+                <span style={{ color: active ? m.accent : 'var(--uv-text-dim)', transition: 'color 200ms', display: 'flex' }}>{m.icon}</span>
 
                 {/* Text */}
                 <div style={{ flex: 1 }}>

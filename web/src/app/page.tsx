@@ -184,74 +184,91 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
           </span>
         </div>
       ) : (
-        /* ─── SCREEN 2: The Revelation ─── */
+        /* ─── SCREEN 2: The Orb ─── */
         <div
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => { e.stopPropagation(); finish(); }}
           style={{
             display: 'flex', flexDirection: 'column', alignItems: 'center',
-            gap: 0, maxWidth: 360, position: 'relative', zIndex: 1,
+            justifyContent: 'center',
+            position: 'relative', zIndex: 1, cursor: 'pointer',
           }}
         >
-          <span style={{
-            ...slow(true, 0),
-            fontFamily: 'var(--uv-font-serif)',
-            fontSize: 'clamp(32px, 8vw, 40px)',
-            fontWeight: 400,
-            color: 'rgba(245,240,228,0.6)',
-            textAlign: 'center',
-          }}>
-            It was
-          </span>
-          <span style={{
-            ...slow(true, 400),
-            fontFamily: 'var(--uv-font-serif)',
-            fontSize: 'clamp(56px, 14vw, 72px)',
-            fontWeight: 400,
-            fontStyle: 'italic',
-            color: 'var(--uv-gold)',
-            textAlign: 'center',
-            lineHeight: 0.95,
-            marginTop: 4,
-            textShadow: '0 0 40px rgba(212,168,74,0.3)',
-          }}>
-            free.
-          </span>
-
-          {/* Thin gold line — divider */}
+          {/* The dark orb */}
           <div style={{
-            ...slow(true, 900),
-            width: 40, height: 1, marginTop: 32,
-            background: 'linear-gradient(90deg, transparent, var(--uv-gold), transparent)',
-          }} />
-
-          <p style={{
-            ...slow(true, 1200),
-            fontFamily: 'var(--uv-font-sans)',
-            fontSize: 15,
-            color: 'rgba(245,240,228,0.5)',
-            textAlign: 'center',
-            maxWidth: 300,
-            lineHeight: 1.6,
-            marginTop: 24,
+            ...slow(true, 0),
+            width: 'min(82vw, 380px)',
+            height: 'min(82vw, 380px)',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle at 50% 42%, #1a1510 0%, #0e0c08 55%, #080705 100%)',
+            boxShadow: '0 0 100px rgba(212,168,74,0.06), 0 0 200px rgba(0,0,0,0.7)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '48px 36px',
+            position: 'relative',
+            overflow: 'hidden',
           }}>
-            An Unbreakable Vow is sworn to someone you trust. Break it, and you pay. Keep it, and you prove you meant it.
-          </p>
+            {/* Subtle inner light */}
+            <div style={{
+              position: 'absolute', inset: 0, borderRadius: '50%',
+              background: 'radial-gradient(circle at 50% 35%, rgba(212,168,74,0.05) 0%, transparent 55%)',
+              pointerEvents: 'none',
+            }} />
 
-          {/* Auto-advances to landing — tap anywhere to skip */}
-          <button
-            type="button"
-            onClick={finish}
-            style={{
-              ...slow(true, 1800),
-              marginTop: 40,
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontFamily: 'var(--uv-font-sans)', fontSize: 12,
-              color: 'var(--uv-text-faint)', letterSpacing: '0.5px',
-              padding: '12px 24px',
-            }}
-          >
+            <span style={{
+              ...slow(true, 400),
+              fontFamily: 'var(--uv-font-serif)',
+              fontSize: 'clamp(19px, 5vw, 24px)',
+              fontWeight: 400,
+              fontStyle: 'italic',
+              color: 'var(--uv-gold)',
+              textAlign: 'center',
+              position: 'relative',
+            }}>
+              An Unbreakable Vow —
+            </span>
+
+            <span style={{
+              ...slow(true, 900),
+              fontFamily: 'var(--uv-font-serif)',
+              fontSize: 'clamp(17px, 4.5vw, 21px)',
+              fontWeight: 400,
+              color: 'rgba(245,240,228,0.75)',
+              textAlign: 'center',
+              lineHeight: 1.55,
+              marginTop: 14,
+              position: 'relative',
+            }}>
+              a vow to be better,<br />sworn to a friend.
+            </span>
+
+            <span style={{
+              ...slow(true, 1500),
+              fontFamily: 'var(--uv-font-serif)',
+              fontSize: 'clamp(17px, 4.5vw, 21px)',
+              fontWeight: 500,
+              fontStyle: 'italic',
+              color: 'var(--uv-gold)',
+              textAlign: 'center',
+              marginTop: 20,
+              position: 'relative',
+              textShadow: '0 0 30px rgba(212,168,74,0.2)',
+            }}>
+              Break it, and you&apos;ll pay.
+            </span>
+          </div>
+
+          {/* Hint below */}
+          <span style={{
+            ...slow(true, 2200),
+            marginTop: 32,
+            fontFamily: 'var(--uv-font-sans)', fontSize: 11,
+            color: 'var(--uv-text-faint)', letterSpacing: '0.5px',
+            opacity: 0.5,
+          }}>
             tap to continue
-          </button>
+          </span>
         </div>
       )}
 
