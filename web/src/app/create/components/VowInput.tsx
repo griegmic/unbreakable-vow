@@ -262,12 +262,11 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
             animation: 'fadeIn 300ms ease',
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-              <span style={{ fontSize: 14 }}>⏰</span>
               <span style={{
                 fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500,
                 color: 'var(--uv-text)',
               }}>
-                When does your judge call it?
+                By when?
               </span>
             </div>
 
@@ -333,7 +332,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
                   fontFamily: 'var(--uv-font-sans)', fontSize: 12,
                   color: 'var(--uv-text-faint)',
                 }}>
-                  Your judge decides on
+                  Deadline:
                 </span>
                 <span style={{
                   fontFamily: 'var(--uv-font-sans)', fontSize: 12,

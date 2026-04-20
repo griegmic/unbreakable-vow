@@ -18,8 +18,8 @@ export default function CreatePage() {
   const [vowText, setVowText] = useState('');
   const [endsAt, setEndsAt] = useState<Date | null>(null);
   const [stakeAmount, setStakeAmount] = useState(50);
-  const [destination, setDestination] = useState('St. Jude');
-  const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>('charity');
+  const [destination, setDestination] = useState('The NRA');
+  const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>('anti');
 
   // Step 1 → Step 3 (skip witness on web)
   const handleVowNext = useCallback(() => {
