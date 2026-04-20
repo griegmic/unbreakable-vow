@@ -69,12 +69,21 @@ export default function AuthCallbackPage() {
         } catch {}
 
         try {
-          // 3. Check localStorage (works on desktop, may be cleared on mobile OAuth)
+          // 3. Check localStorage
           const returnPath = localStorage.getItem('auth-return-path');
           localStorage.removeItem('auth-return-path');
           if (returnPath && returnPath !== '/') return returnPath;
+        } catch {}
 
-          // 4. Check for in-progress vow flow — if user has vow data, send to /seal
+        try {
+          // 4. Check sessionStorage (survives same-tab navigation)
+          const sessionReturn = sessionStorage.getItem('auth-return-path');
+          sessionStorage.removeItem('auth-return-path');
+          if (sessionReturn && sessionReturn !== '/') return sessionReturn;
+        } catch {}
+
+        try {
+          // 5. Check for in-progress vow flow — if user has vow data, send to /seal
           const stored = localStorage.getItem('unbreakable-vow-flow');
           if (stored) {
             const parsed = JSON.parse(stored);

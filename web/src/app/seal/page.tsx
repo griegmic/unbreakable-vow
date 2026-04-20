@@ -363,13 +363,16 @@ export default function SealPage() {
 
   // ── Phone auth: Google OAuth trigger ──
   const triggerGoogleOAuth = useCallback(async () => {
+    // Store return path everywhere — belt AND suspenders
     const returnPath = '/seal';
-    try { document.cookie = `auth_return_path=${encodeURIComponent(returnPath)}; path=/; max-age=300; SameSite=Lax`; } catch {}
+    try { document.cookie = `auth_return_path=${encodeURIComponent(returnPath)}; path=/; max-age=600; SameSite=Lax`; } catch {}
+    try { localStorage.setItem('auth-return-path', returnPath); } catch {}
+    try { sessionStorage.setItem('auth-return-path', returnPath); } catch {}
     try {
       const flow = localStorage.getItem('unbreakable-vow-flow');
-      if (flow) document.cookie = `vow_flow_backup=${encodeURIComponent(flow)}; path=/; max-age=300; SameSite=Lax`;
+      if (flow) document.cookie = `vow_flow_backup=${encodeURIComponent(flow)}; path=/; max-age=600; SameSite=Lax`;
     } catch {}
-    try { localStorage.setItem('auth-return-path', returnPath); } catch {}
+
     const callbackUrl = new URL('/auth/callback', window.location.origin);
     callbackUrl.searchParams.set('return_to', returnPath);
     const { error } = await supabase.auth.signInWithOAuth({

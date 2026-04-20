@@ -178,6 +178,14 @@ export default function HomePage() {
         return;
       }
     } catch {}
+    try {
+      const sessionReturn = sessionStorage.getItem('auth-return-path');
+      if (sessionReturn) {
+        sessionStorage.removeItem('auth-return-path');
+        router.replace(sessionReturn);
+        return;
+      }
+    } catch {}
 
     // If user has an in-progress vow, send them to /seal to finish
     try {
