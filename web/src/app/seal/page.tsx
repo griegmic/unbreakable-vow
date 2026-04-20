@@ -490,233 +490,156 @@ export default function SealPage() {
     ? new Date(vow.deadlineIso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : '7 days';
 
-  // ── NOT AUTHENTICATED: inline phone-first auth ──
+  // ── NOT AUTHENTICATED: all-in-one seal page ──
   if (!isAuthenticated && !authLoading) {
     return (
-      <>
-        <RitualScreen>
-          {/* Progress indicator */}
-          <p style={{ fontSize: 11, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-faint)', marginBottom: 8 }}>
-            5 / 5
+      <RitualScreen>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          {/* Hero */}
+          <h1 style={{
+            fontFamily: 'var(--uv-font-sans)', fontSize: 26, fontWeight: 600,
+            color: 'var(--uv-text)', margin: '0 0 6px', textAlign: 'center',
+          }}>
+            Almost done.
+          </h1>
+          <p style={{
+            fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+            color: 'var(--uv-text-muted)', margin: '0 0 24px', textAlign: 'center',
+          }}>
+            Enter your number to seal.
           </p>
 
-          {isDevBypass && (
-            <div style={{ borderRadius: 8, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: 'rgba(212,162,79,0.08)', border: '1px dashed rgba(212,162,79,0.3)', marginBottom: 12 }}>
-              <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' as const, color: 'var(--uv-gold)' }}>Testing mode</span>
-            </div>
-          )}
-
-          {/* Vow context — gold left bar */}
-          <div
-            style={{
-              borderLeft: '3px solid var(--uv-gold)',
-              paddingLeft: 12,
-              marginBottom: 24,
-            }}
-          >
+          {/* Review card */}
+          <div style={{
+            background: 'var(--uv-bg-elev)',
+            border: '1px solid var(--uv-border-strong)',
+            borderRadius: 14,
+            padding: '16px 18px',
+            marginBottom: 20,
+          }}>
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500,
+              letterSpacing: '2px', textTransform: 'uppercase',
+              color: 'var(--uv-text-faint)',
+            }}>
+              I VOW TO
+            </span>
             <p style={{
-              fontFamily: 'var(--uv-font-serif)',
-              fontStyle: 'italic',
-              fontSize: 15,
-              color: 'var(--uv-text)',
-              margin: '0 0 4px',
-              lineHeight: 1.4,
+              fontFamily: 'var(--uv-font-serif)', fontSize: 18,
+              fontStyle: 'italic', color: 'var(--uv-text)',
+              margin: '6px 0 12px', lineHeight: 1.3,
             }}>
               {activeVowText}
             </p>
-            <p style={{
-              fontFamily: 'var(--uv-font-sans)',
-              fontSize: 12,
-              color: 'var(--uv-text-faint)',
-              margin: 0,
-            }}>
-              Witnessed by {witnessName}
-            </p>
-          </div>
-
-          {/* Hero */}
-          <div style={{ marginBottom: 28 }}>
-            <h1 style={{
-              fontFamily: 'var(--uv-font-serif)',
-              fontSize: 28,
-              fontWeight: 400,
-              color: 'var(--uv-text)',
-              margin: '0 0 6px',
-            }}>
-              Almost done.
-            </h1>
-            <p style={{
-              fontFamily: 'var(--uv-font-sans)',
-              fontSize: 15,
-              color: 'var(--uv-text-muted)',
-              margin: 0,
-            }}>
-              Enter your number to seal your vow.
-            </p>
+            <div style={{ height: 1, background: 'var(--uv-border-strong)', margin: '0 0 12px' }} />
+            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <div>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>STAKE</span>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--uv-gold)' }}>${vow.stake.amount}</span>
+              </div>
+              <div>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>JUDGE</span>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{witnessName === 'TBD' ? 'TBD' : witnessName}</span>
+              </div>
+              <div>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>BY</span>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{deadlineLabel}</span>
+              </div>
+            </div>
           </div>
 
           {/* Phone input */}
-          <div style={{ marginBottom: 8 }}>
-            <div
+          <div
+            style={{
+              display: 'flex', alignItems: 'center',
+              background: 'var(--uv-bg-input)',
+              border: '1px solid var(--uv-border-strong)',
+              borderRadius: 14, padding: '0 16px',
+              transition: 'border-color 200ms',
+              marginBottom: 6,
+            }}
+          >
+            <span style={{
+              display: 'inline-flex', alignItems: 'center', gap: 4,
+              fontSize: 15, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-muted)',
+              paddingRight: 10, borderRight: '1px solid var(--uv-border-strong)',
+              marginRight: 10, whiteSpace: 'nowrap', userSelect: 'none',
+            }}>
+              <span role="img" aria-label="US flag">&#x1F1FA;&#x1F1F8;</span>
+              <span>+1</span>
+            </span>
+            <input
+              type="tel" inputMode="numeric" autoComplete="tel-national"
+              placeholder="(555) 867-5309"
+              value={formatPhoneDisplay(phone)}
+              onChange={handlePhoneChange}
+              onFocus={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-gold)'; }}
+              onBlur={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-border-strong)'; }}
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                background: 'var(--uv-bg-input, var(--uv-bg-elev))',
-                border: '1px solid var(--uv-border-strong)',
-                borderRadius: 14,
-                padding: '0 16px',
-                transition: 'border-color 200ms',
+                flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                fontSize: 16, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
+                padding: '14px 0', WebkitAppearance: 'none',
               }}
-              onFocus={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--uv-gold)';
-              }}
-              onBlur={(e) => {
-                (e.currentTarget as HTMLElement).style.borderColor = 'var(--uv-border-strong)';
-              }}
-            >
-              {/* +1 badge */}
-              <span style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4,
-                fontSize: 15,
-                fontFamily: 'var(--uv-font-sans)',
-                color: 'var(--uv-text-muted)',
-                paddingRight: 10,
-                borderRight: '1px solid var(--uv-border-strong)',
-                marginRight: 10,
-                whiteSpace: 'nowrap',
-                userSelect: 'none',
-              }}>
-                <span role="img" aria-label="US flag">&#x1F1FA;&#x1F1F8;</span>
-                <span>+1</span>
-              </span>
-              <input
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                placeholder="(555) 867-5309"
-                value={formatPhoneDisplay(phone)}
-                onChange={handlePhoneChange}
-                onFocus={(e) => {
-                  const wrapper = e.target.closest('div');
-                  if (wrapper) (wrapper as HTMLElement).style.borderColor = 'var(--uv-gold)';
-                }}
-                onBlur={(e) => {
-                  const wrapper = e.target.closest('div');
-                  if (wrapper) (wrapper as HTMLElement).style.borderColor = 'var(--uv-border-strong)';
-                }}
-                style={{
-                  flex: 1,
-                  border: 'none',
-                  outline: 'none',
-                  background: 'transparent',
-                  fontSize: 16,
-                  fontFamily: 'var(--uv-font-sans)',
-                  color: 'var(--uv-text)',
-                  padding: '14px 0',
-                  WebkitAppearance: 'none',
-                }}
-              />
-            </div>
-            {phoneError && (
-              <p style={{ fontSize: 13, color: 'var(--uv-danger, #dc3232)', margin: '6px 0 0', fontFamily: 'var(--uv-font-sans)' }}>
-                {phoneError}
-              </p>
-            )}
+            />
           </div>
 
-          {/* Sub-text */}
+          {phoneError && (
+            <p style={{ fontSize: 13, color: 'var(--uv-danger)', margin: '4px 0 0', fontFamily: 'var(--uv-font-sans)' }}>{phoneError}</p>
+          )}
+
           <p style={{
-            fontSize: 12,
-            fontFamily: 'var(--uv-font-sans)',
-            color: 'var(--uv-text-faint)',
-            margin: '0 0 20px',
+            fontSize: 12, fontFamily: 'var(--uv-font-sans)',
+            color: 'var(--uv-text-faint)', margin: '4px 0 0',
           }}>
             We&apos;ll text you a code. No password ever.
           </p>
 
-          {/* Continue button */}
-          <PrimaryButton
-            onClick={handlePhoneContinue}
-            loading={phoneBusy}
-          >
-            {phoneBusy ? 'Sending code...' : 'Continue \u2192'}
-          </PrimaryButton>
-
-          {/* Divider */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 12,
-            margin: '20px 0',
-          }}>
-            <div style={{ flex: 1, height: 1, background: 'var(--uv-border-strong)' }} />
-            <span style={{
-              fontSize: 11,
-              fontFamily: 'var(--uv-font-sans)',
-              color: 'var(--uv-text-faint)',
-              whiteSpace: 'nowrap',
-              textTransform: 'lowercase' as const,
-            }}>
-              other ways to sign in
-            </span>
-            <div style={{ flex: 1, height: 1, background: 'var(--uv-border-strong)' }} />
-          </div>
-
-          {/* Google pill */}
-          <button
-            onClick={triggerGoogleOAuth}
-            disabled={phoneBusy}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
-              padding: '10px 24px',
-              borderRadius: 100,
-              border: '1px solid var(--uv-border-strong)',
-              background: 'var(--uv-bg-elev)',
-              color: 'var(--uv-text)',
-              fontSize: 14,
-              fontFamily: 'var(--uv-font-sans)',
-              fontWeight: 500,
-              cursor: phoneBusy ? 'not-allowed' : 'pointer',
-              opacity: phoneBusy ? 0.4 : 1,
-              width: '100%',
-              transition: 'opacity 200ms',
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 48 48" style={{ flexShrink: 0 }}>
-              <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
-              <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
-              <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
-              <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
-            </svg>
-            Google
-          </button>
-
-          {/* Error */}
           {error && (
-            <div style={{ borderRadius: 10, padding: 12, backgroundColor: 'var(--uv-danger-bg, rgba(220,50,50,0.08))', marginTop: 16 }}>
-              <p style={{ fontSize: 13, color: 'var(--uv-danger, #dc3232)', margin: 0 }}>{error}</p>
+            <div style={{ borderRadius: 10, padding: 12, backgroundColor: 'var(--uv-danger-bg)', marginTop: 12 }}>
+              <p style={{ fontSize: 13, color: 'var(--uv-danger)', margin: 0 }}>{error}</p>
             </div>
           )}
 
-          {/* Fine print */}
+          <div style={{ flex: 1, minHeight: 32 }} />
+
+          {/* Seal CTA */}
+          <PrimaryButton onClick={handlePhoneContinue} loading={phoneBusy}>
+            Seal my vow — ${vow.stake.amount}
+          </PrimaryButton>
+
+          {/* Trust lines */}
           <p style={{
-            fontSize: 10,
-            textAlign: 'center',
-            color: 'var(--uv-text-faint)',
-            marginTop: 20,
-            opacity: 0.6,
-            lineHeight: 1.5,
-            fontFamily: 'var(--uv-font-sans)',
+            fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+            color: '#6ee7a0', textAlign: 'center',
+            margin: '12px 0 4px',
           }}>
-            By signing in, you agree to receive transactional SMS. Reply STOP to opt out anytime.
+            Keep your word, get every cent back
           </p>
-        </RitualScreen>
-      </>
+          <p style={{
+            fontFamily: 'var(--uv-font-sans)', fontSize: 11,
+            color: 'var(--uv-text-faint)', textAlign: 'center',
+            margin: '0 0 8px',
+          }}>
+            No charge unless you break your vow
+          </p>
+
+          {/* Google fallback — tiny */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+            <button
+              onClick={triggerGoogleOAuth}
+              disabled={phoneBusy}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+                color: 'var(--uv-text-faint)', padding: '8px 0',
+                opacity: phoneBusy ? 0.3 : 0.5,
+              }}
+            >
+              or sign in with Google
+            </button>
+          </div>
+        </div>
+      </RitualScreen>
     );
   }
 

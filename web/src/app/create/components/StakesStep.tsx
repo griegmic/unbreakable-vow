@@ -110,17 +110,17 @@ export function StakesStep({
 
         {/* Hero */}
         <h1 style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400,
-          color: 'var(--uv-text)', margin: 0, lineHeight: 1.15,
+          fontFamily: 'var(--uv-font-sans)', fontSize: 26, fontWeight: 600,
+          color: 'var(--uv-text)', margin: '0 0 4px', lineHeight: 1.15,
         }}>
-          How much to
+          Put money on it.
         </h1>
-        <h1 style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400,
-          fontStyle: 'italic', color: 'var(--uv-gold)', margin: '2px 0 28px', lineHeight: 1.15,
+        <p style={{
+          fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+          color: 'var(--uv-text-dim)', margin: '0 0 24px',
         }}>
-          make it real?
-        </h1>
+          You get it back if you keep your word.
+        </p>
 
         {/* Big amount + tag */}
         <div style={{
