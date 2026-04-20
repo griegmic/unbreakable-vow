@@ -7,7 +7,6 @@ export default function AuthCallbackPage() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    let timeout: ReturnType<typeof setTimeout>;
     let subscription: { unsubscribe: () => void } | null = null;
 
     (async () => {
@@ -90,57 +89,40 @@ export default function AuthCallbackPage() {
       })();
 
       const handleCallback = async () => {
-        // PKCE flow: if URL has ?code=, explicitly exchange it for a session
+        // Try PKCE code exchange first (if ?code= present)
         const params = new URLSearchParams(window.location.search);
         const code = params.get('code');
         if (code) {
-          const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-          if (exchangeError) {
-            console.error('[auth/callback] Code exchange failed:', exchangeError.message);
-            // Fall through to getSession check — might already have a session
-          } else if (exchangeData.session) {
-            router.replace(redirectTo);
-            return;
+          try {
+            const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+            if (!exchangeError && data.session) {
+              router.replace(redirectTo);
+              return;
+            }
+            if (exchangeError) console.error('[auth/callback] Code exchange failed:', exchangeError.message);
+          } catch (e) {
+            console.error('[auth/callback] Code exchange threw:', e);
           }
         }
 
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-
-        if (sessionError) {
-          setError(sessionError.message);
-          timeout = setTimeout(() => router.replace('/dashboard'), 3000);
-          return;
+        // Poll for session — handles implicit flow (#access_token) and
+        // cases where detectSessionInUrl processes the hash asynchronously
+        const maxAttempts = 15;
+        for (let i = 0; i < maxAttempts; i++) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            router.replace(redirectTo);
+            return;
+          }
+          await new Promise(r => setTimeout(r, 500));
         }
 
-        if (session) {
-          router.replace(redirectTo);
-          return;
-        }
-
-        // Hash fragment flow (implicit grant — older Supabase configs)
-        if (window.location.hash) {
-          // detectSessionInUrl should handle this, give it a moment
-          timeout = setTimeout(async () => {
-            const { data: { session: retrySession } } = await supabase.auth.getSession();
-            if (retrySession) {
-              router.replace(redirectTo);
-            } else {
-              setError('Sign-in timed out. Redirecting...');
-              setTimeout(() => router.replace('/'), 2000);
-            }
-          }, 3000);
-          return;
-        }
-
-        timeout = setTimeout(() => {
-          setError('Sign-in timed out. Redirecting...');
-          setTimeout(() => router.replace('/'), 2000);
-        }, 5000);
+        setError('Sign-in timed out. Redirecting...');
+        setTimeout(() => router.replace('/'), 2000);
       };
 
       const { data } = supabase.auth.onAuthStateChange((event, session) => {
         if (event === 'SIGNED_IN' && session) {
-          clearTimeout(timeout);
           router.replace(redirectTo);
         }
       });
@@ -150,7 +132,6 @@ export default function AuthCallbackPage() {
     })();
 
     return () => {
-      clearTimeout(timeout);
       subscription?.unsubscribe();
     };
   }, [router]);
