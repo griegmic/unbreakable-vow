@@ -733,7 +733,7 @@ export default function SealPage() {
           <PrimaryButton onClick={handleSealTap} loading={sealing}>
             {sealLabel}
           </PrimaryButton>
-          <SecondaryButton onClick={() => router.back()}>Back</SecondaryButton>
+          <SecondaryButton onClick={() => router.push('/create')}>Back</SecondaryButton>
 
           {isDevBypass && (
             <button

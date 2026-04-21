@@ -13,14 +13,18 @@ type Step = 1 | 3 | 3.5;
 
 export default function CreatePage() {
   const router = useRouter();
-  const { setRawInput, setRefinedText, setStake, setDeadline } = useVowFlow();
+  const { vow, setRawInput, setRefinedText, setStake, setDeadline } = useVowFlow();
 
-  const [step, setStep] = useState<Step>(1);
-  const [vowText, setVowText] = useState('');
-  const [endsAt, setEndsAt] = useState<Date | null>(null);
-  const [stakeAmount, setStakeAmount] = useState(50);
-  const [destination, setDestination] = useState('ALS Association');
-  const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>('charity');
+  // Restore from VowFlowProvider if coming back from /seal
+  const [step, setStep] = useState<Step>(() => {
+    if (typeof window !== 'undefined' && vow.rawInput) return 3;
+    return 1;
+  });
+  const [vowText, setVowText] = useState(() => vow.rawInput || '');
+  const [endsAt, setEndsAt] = useState<Date | null>(() => vow.deadlineIso ? new Date(vow.deadlineIso) : null);
+  const [stakeAmount, setStakeAmount] = useState(() => vow.stake?.amount || 50);
+  const [destination, setDestination] = useState(() => vow.stake?.destination || 'ALS Association');
+  const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>(() => (vow.stake?.consequence as 'charity' | 'anti') || 'charity');
 
   // Step 1 → Step 3 (skip witness on web)
   const handleVowNext = useCallback(() => {
