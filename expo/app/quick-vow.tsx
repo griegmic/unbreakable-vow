@@ -429,48 +429,67 @@ export default function QuickVowScreen() {
             </Pressable>
           </Animated.View>
 
-          {/* Hero sentence — the whole product in one line */}
+          {/* THE VOW — framed editorial card */}
           <Animated.View
             style={[
-              styles.hero,
+              styles.vowCard,
               { opacity: fadeIn, transform: [{ translateY: cardSlide }] },
             ]}
           >
-            <View style={styles.sentenceLine}>
-              <Text style={styles.sentenceText}>I&apos;ll </Text>
-              <Pressable onPress={() => setEditField('vow')} style={styles.fillButton}>
-                <Text style={styles.fillText} numberOfLines={2}>{vowText || 'add your vow'}</Text>
+            <View style={styles.vowCardHeader}>
+              <Text style={styles.eyebrow}>THE VOW</Text>
+              <Pressable onPress={() => setShowStarters(true)} hitSlop={8}>
+                <Text style={styles.repeatLink}>need an idea?</Text>
               </Pressable>
             </View>
 
-            <View style={[styles.sentenceLine, { marginTop: 10 }]}>
-              <Text style={styles.sentenceTextDim}>by </Text>
-              <Pressable onPress={() => setEditField('deadline')} hitSlop={6}>
-                <Text style={styles.inlineMeta}>{deadlineLabel(deadlinePreset, customDate).toLowerCase()}</Text>
+            <Pressable onPress={() => setEditField('vow')} style={styles.vowBodyPress}>
+              <Text style={styles.vowBodyText} numberOfLines={3}>
+                <Text style={styles.vowBodyLead}>I&apos;ll </Text>
+                {vowText || 'add your vow'}
+              </Text>
+              <View style={styles.vowUnderline} />
+            </Pressable>
+
+            <View style={styles.vowMetaRow}>
+              <Pressable onPress={() => setEditField('witness')} style={styles.vowMetaItem} hitSlop={6}>
+                <Text style={styles.metaLabel}>JUDGE</Text>
+                <Text style={styles.metaValue} numberOfLines={1}>{witnessDisplay}</Text>
               </Pressable>
-              <Text style={styles.sentenceTextDim}>, judged by </Text>
-              <Pressable onPress={() => setEditField('witness')} hitSlop={6}>
-                <Text style={styles.inlineMeta}>{witnessDisplay}</Text>
+              <View style={styles.vowMetaSep} />
+              <Pressable onPress={() => setEditField('deadline')} style={styles.vowMetaItem} hitSlop={6}>
+                <Text style={styles.metaLabel}>BY</Text>
+                <Text style={styles.metaValue} numberOfLines={1}>
+                  {deadlineDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </Text>
               </Pressable>
-              <Text style={styles.sentenceTextDim}>.</Text>
             </View>
           </Animated.View>
 
-          {/* Stake row — the one thing that matters visually */}
-          <Animated.View style={[styles.stakeRow, { opacity: fadeIn }]}>
-            <Text style={styles.stakePrefix}>If I break it,</Text>
-            <Pressable onPress={() => setEditField('stake')} style={styles.stakeChip} testID="edit-stake">
-              <Text style={styles.stakeChipAmount}>${stakeAmount}</Text>
+          <View style={{ flex: 1, minHeight: 20 }} />
+
+          {/* STAKE — the dramatic centerpiece */}
+          <Animated.View style={[styles.stakeCenter, { opacity: fadeIn }]}>
+            <Text style={styles.eyebrowCenter}>ON THE LINE</Text>
+            <Pressable
+              onPress={() => setEditField('stake')}
+              style={styles.stakeAmountPress}
+              testID="edit-stake"
+              hitSlop={8}
+            >
+              <Text style={styles.stakeAmountHero}>${stakeAmount}</Text>
             </Pressable>
-            <Text style={styles.stakePrefix}>to</Text>
-            <Pressable onPress={() => setEditField('destination')} style={styles.destChip}>
-              <Text style={styles.destChipText} numberOfLines={1}>{destination}</Text>
-            </Pressable>
+            <View style={styles.breakLine}>
+              <Text style={styles.breakLineText}>if I break it, it goes to </Text>
+              <Pressable onPress={() => setEditField('destination')} hitSlop={6}>
+                <Text style={styles.breakLineDest} numberOfLines={1}>{destination}</Text>
+              </Pressable>
+            </View>
           </Animated.View>
 
           <View style={{ flex: 1, minHeight: 24 }} />
 
-          {/* CTA — the only loud thing on the page */}
+          {/* CTA — cream pill, dark arrow */}
           <Animated.View style={[styles.ctaBlock, { opacity: fadeIn, transform: [{ scale: btnScale }] }]}>
             <Pressable
               disabled={!vowText.trim() || sealing}
@@ -481,20 +500,20 @@ export default function QuickVowScreen() {
               testID="quickvow-seal"
             >
               <Text style={styles.ctaText}>
-                {sealing ? 'Processing…' : `Lock in  ·  ${stakeAmount}`}
+                {sealing ? 'Processing…' : `Lock it in`}
               </Text>
+              <Text style={styles.ctaDash}>  —  </Text>
+              <Text style={styles.ctaAmount}>${stakeAmount}</Text>
               <View style={styles.ctaArrow}><Text style={styles.ctaArrowText}>{'\u2192'}</Text></View>
             </Pressable>
 
-            <View style={styles.secondaryRow}>
-              <Pressable onPress={() => setShowStarters(true)} hitSlop={8}>
-                <Text style={styles.secondaryLink}>Need an idea?</Text>
-              </Pressable>
-              <Text style={styles.secondaryDot}>·</Text>
-              <Pressable onPress={() => router.push('/cast')} hitSlop={8}>
-                <Text style={styles.secondaryLink}>Dare a friend</Text>
-              </Pressable>
-            </View>
+            <Pressable onPress={() => router.push('/cast')} hitSlop={10} style={styles.dareLink}>
+              <Text style={styles.dareLinkText}>
+                or dare {witnessDisplay === 'a friend' ? 'a friend' : witnessDisplay} to match  →
+              </Text>
+            </Pressable>
+
+            <Text style={styles.tagline}>Keep your word. Keep your ${stakeAmount}.</Text>
           </Animated.View>
         </ScrollView>
       </SafeAreaView>
@@ -774,7 +793,127 @@ const styles = StyleSheet.create({
     borderRadius: 400,
     backgroundColor: 'rgba(217,178,74,0.04)',
   },
-  scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 32, minHeight: '100%' as const, flexGrow: 1 },
+  scroll: { paddingHorizontal: 22, paddingTop: 8, paddingBottom: 28, minHeight: '100%' as const, flexGrow: 1 },
+
+  // Vow card — framed editorial
+  vowCard: {
+    backgroundColor: 'rgba(244,235,216,0.025)',
+    borderWidth: 1,
+    borderColor: 'rgba(244,235,216,0.1)',
+    borderRadius: 18,
+    padding: 22,
+    paddingTop: 18,
+  },
+  vowCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  vowBodyPress: {
+    marginBottom: 18,
+  },
+  vowBodyText: {
+    fontFamily: serifFont,
+    color: CREAM,
+    fontSize: 28,
+    lineHeight: 36,
+    letterSpacing: -0.6,
+    fontWeight: '500' as const,
+  },
+  vowBodyLead: {
+    fontFamily: serifFont,
+    color: 'rgba(244,235,216,0.55)',
+    fontStyle: 'italic',
+    fontWeight: '400' as const,
+  },
+  vowUnderline: {
+    height: 1,
+    backgroundColor: 'rgba(244,235,216,0.18)',
+    marginTop: 10,
+  },
+  vowMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  vowMetaItem: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    flex: 1,
+  },
+  vowMetaSep: {
+    width: 1,
+    height: 14,
+    backgroundColor: 'rgba(244,235,216,0.14)',
+    marginHorizontal: 14,
+  },
+
+  // Stake centerpiece
+  stakeCenter: {
+    alignItems: 'center',
+    paddingTop: 12,
+  },
+  eyebrowCenter: {
+    color: 'rgba(244,235,216,0.45)',
+    fontSize: 10.5,
+    letterSpacing: 2.6,
+    fontWeight: '700' as const,
+    marginBottom: 6,
+  },
+  stakeAmountPress: {
+    paddingHorizontal: 16,
+    paddingVertical: 2,
+  },
+  stakeAmountHero: {
+    fontFamily: serifFont,
+    color: GOLD_BRIGHT,
+    fontSize: 88,
+    lineHeight: 96,
+    fontWeight: '700' as const,
+    letterSpacing: -3,
+  },
+  breakLine: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginTop: 4,
+    paddingHorizontal: 12,
+  },
+  breakLineText: {
+    fontFamily: serifFont,
+    fontStyle: 'italic',
+    color: 'rgba(244,235,216,0.55)',
+    fontSize: 14,
+  },
+  breakLineDest: {
+    fontFamily: serifFont,
+    fontStyle: 'italic',
+    color: CREAM,
+    fontSize: 14,
+    textDecorationLine: 'underline',
+    textDecorationColor: 'rgba(244,235,216,0.35)',
+  },
+  dareLink: {
+    alignItems: 'center',
+    paddingVertical: 4,
+    marginTop: 4,
+  },
+  dareLinkText: {
+    fontFamily: serifFont,
+    fontStyle: 'italic',
+    color: GOLD,
+    fontSize: 15,
+  },
+  tagline: {
+    fontFamily: serifFont,
+    fontStyle: 'italic',
+    color: 'rgba(244,235,216,0.38)',
+    fontSize: 13,
+    textAlign: 'center' as const,
+    marginTop: 2,
+  },
 
   // Top bar
   topBar: {
@@ -1077,48 +1216,53 @@ const styles = StyleSheet.create({
   },
 
   // CTA
-  ctaBlock: { gap: 12, marginTop: 8 },
+  ctaBlock: { gap: 10, marginTop: 8 },
   ctaBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
-    backgroundColor: GOLD,
+    backgroundColor: CREAM,
     borderRadius: 999,
-    paddingVertical: 22,
-    shadowColor: GOLD,
-    shadowOpacity: 0.45,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 14 },
-    ...(Platform.OS === 'android' ? { elevation: 8 } : {}),
+    paddingVertical: 20,
+    paddingHorizontal: 22,
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 22,
+    shadowOffset: { width: 0, height: 10 },
+    ...(Platform.OS === 'android' ? { elevation: 6 } : {}),
   },
   ctaText: {
     color: BG,
     fontFamily: serifFont,
-    fontSize: 19,
+    fontSize: 18,
     fontWeight: '800' as const,
-    letterSpacing: -0.4,
+    letterSpacing: -0.3,
   },
   ctaDash: {
-    color: 'rgba(15,13,11,0.5)',
+    color: 'rgba(15,13,11,0.45)',
+    fontFamily: serifFont,
+    fontSize: 16,
     fontWeight: '400' as const,
   },
   ctaAmount: {
-    color: 'rgba(15,13,11,0.7)',
-    fontWeight: '600' as const,
+    color: 'rgba(15,13,11,0.85)',
+    fontFamily: serifFont,
+    fontSize: 18,
+    fontWeight: '700' as const,
+    marginRight: 12,
   },
   ctaArrow: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: 'rgba(15,13,11,0.15)',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: BG,
     alignItems: 'center',
     justifyContent: 'center',
   },
   ctaArrowText: {
-    color: BG,
+    color: CREAM,
     fontSize: 15,
-    fontWeight: '900' as const,
+    fontWeight: '700' as const,
   },
   dareBtn: {
     paddingVertical: 16,
