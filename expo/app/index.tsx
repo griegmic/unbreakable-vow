@@ -260,7 +260,7 @@ export default function HomeScreen() {
             <Text style={styles.heroLine1}>Make a vow.</Text>
             <Text style={styles.heroLine2}>Mean it.</Text>
             <Text style={styles.explainer}>
-              Tell a friend the thing you keep putting off. Put money on it. Break it, you pay — to charity.
+              Put money on a goal. A friend decides if you pulled it off. Break it — you pay, to charity.
             </Text>
           </Animated.View>
 
