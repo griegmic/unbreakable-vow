@@ -85,9 +85,12 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     }
 
     // Exchange Google ID token for Supabase session
+    // Pass nonce if present to fix "Passed nonce and nonce in id_token
+    // should either both exist or not" error
     const { data, error } = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: idToken,
+      nonce: (response.data as Record<string, unknown>).nonce as string | undefined,
     });
 
     if (error) {
