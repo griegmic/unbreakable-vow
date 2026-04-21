@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
@@ -29,31 +29,54 @@ export default function CreatePage() {
   const [destination, setDestination] = useState(() => vow.stake?.destination || 'ALS Association');
   const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>(() => (vow.stake?.consequence as 'charity' | 'anti') || 'charity');
 
+  // Push history state when step changes so browser back works within the flow
+  const goToStep = useCallback((newStep: Step) => {
+    setStep(newStep);
+    window.history.pushState({ step: newStep }, '', '/create');
+  }, []);
+
+  // Listen for browser back button
+  useEffect(() => {
+    const handlePopState = (e: PopStateEvent) => {
+      const prevStep = e.state?.step as Step | undefined;
+      if (prevStep !== undefined) {
+        setStep(prevStep);
+      } else {
+        // No previous step in history — go to landing
+        router.replace('/');
+      }
+    };
+
+    // Set initial history state
+    window.history.replaceState({ step }, '', '/create');
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [router, step]);
+
   // Step 1 → Step 3 (skip witness on web)
   const handleVowNext = useCallback(() => {
-    setStep(3);
-  }, []);
+    goToStep(3);
+  }, [goToStep]);
 
   // Step 3 → open if-broken inline
   const handleIfBroken = useCallback(() => {
-    setStep(3.5);
-  }, []);
+    goToStep(3.5);
+  }, [goToStep]);
 
   // Step 3.5 → select destination
   const handleIfBrokenSelect = useCallback((dest: string, kind: 'charity' | 'anti') => {
     setDestination(dest);
     setDestinationKind(kind);
-    setStep(3);
-  }, []);
+    goToStep(3);
+  }, [goToStep]);
 
   const handleIfBrokenClose = useCallback(() => {
-    setStep(3);
+    window.history.back(); // go back to step 3 via browser history
   }, []);
 
   // Step 3 "Seal my vow" — save to VowFlowProvider and go to /seal
-  // Auth happens on /seal, not here
   const handleReview = useCallback(() => {
-    // Persist to VowFlowProvider (localStorage) so /seal can pick it up
     setRawInput(vowText);
     setRefinedText(vowText);
     setStake({ amount: stakeAmount, consequence: destinationKind, destination });
@@ -73,12 +96,12 @@ export default function CreatePage() {
       <>
         {hamburgerOverlay}
         <VowInput
-        vowText={vowText}
-        setVowText={setVowText}
-        endsAt={endsAt}
-        setEndsAt={setEndsAt}
-        onNext={handleVowNext}
-      />
+          vowText={vowText}
+          setVowText={setVowText}
+          endsAt={endsAt}
+          setEndsAt={setEndsAt}
+          onNext={handleVowNext}
+        />
       </>
     );
   }
@@ -88,11 +111,11 @@ export default function CreatePage() {
       <>
         {hamburgerOverlay}
         <IfBrokenSheet
-        destination={destination}
-        destinationKind={destinationKind}
-        onSelect={handleIfBrokenSelect}
-        onClose={handleIfBrokenClose}
-      />
+          destination={destination}
+          destinationKind={destinationKind}
+          onSelect={handleIfBrokenSelect}
+          onClose={handleIfBrokenClose}
+        />
       </>
     );
   }
@@ -102,17 +125,17 @@ export default function CreatePage() {
     <>
       {hamburgerOverlay}
       <StakesStep
-      stakeAmount={stakeAmount}
-      setStakeAmount={setStakeAmount}
-      destination={destination}
-      destinationKind={destinationKind}
-      onIfBroken={handleIfBroken}
-      onNext={handleReview}
-      onBack={() => setStep(1)}
-      vowText={vowText}
-      witnessName="TBD"
-      endsAt={endsAt}
-    />
+        stakeAmount={stakeAmount}
+        setStakeAmount={setStakeAmount}
+        destination={destination}
+        destinationKind={destinationKind}
+        onIfBroken={handleIfBroken}
+        onNext={handleReview}
+        onBack={() => window.history.back()}
+        vowText={vowText}
+        witnessName="TBD"
+        endsAt={endsAt}
+      />
     </>
   );
 }
