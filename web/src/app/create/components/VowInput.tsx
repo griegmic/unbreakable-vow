@@ -82,7 +82,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
   const isVague = analysis?.type === 'vague';
   const isTooShort = vowText.trim().length > 0 && vowText.trim().length < 10;
   const isEmpty = !vowText.trim();
-  const isValid = !isEmpty && !isTooShort && !isVague;
+  const isValid = !isEmpty && !isTooShort; // vague is a nudge, not a blocker
   const hasDeadline = !!inferredDeadline || !!endsAt;
   const canContinue = isValid && hasDeadline;
   const verdictDate = endsAt || inferredDeadline;
@@ -93,8 +93,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
     setSelectedChip(null);
     if (byWhenTimerRef.current) clearTimeout(byWhenTimerRef.current);
     const deadline = inferDeadline(val);
-    const result = analyzeVow(val);
-    if (val.trim().length >= 10 && result?.type === 'already_good' && !deadline) {
+    if (val.trim().length >= 10 && !deadline) {
       byWhenTimerRef.current = setTimeout(() => setShowByWhen(true), 2000);
     }
   }, [touched, setVowText]);
@@ -256,13 +255,14 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
             </button>
           )}
 
-          {/* Vague hint */}
-          {touched && isVague && !isEmpty && (
+          {/* Vague hint — soft nudge, not a blocker */}
+          {touched && isVague && !isEmpty && !isTooShort && (
             <p style={{
               fontFamily: 'var(--uv-font-sans)', fontSize: 12,
-              color: '#e8a040', margin: '8px 0 0', lineHeight: 1.4,
+              color: 'var(--uv-text-faint)', margin: '8px 0 0', lineHeight: 1.4,
+              fontStyle: 'italic',
             }}>
-              Be more specific — your friend needs to judge a clear yes or no.
+              Tip: the more specific, the easier for your friend to judge.
             </p>
           )}
 
