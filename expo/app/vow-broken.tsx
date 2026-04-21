@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { antiCauses, palette, serifFont } from '@/constants/unbreakable';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -133,6 +134,10 @@ export default function VowBrokenScreen() {
       }
     >
       <Stack.Screen options={{ headerShown: false }} />
+
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <AppMenuButton />
+      </View>
 
       {/* Dramatic icon — animated scale-in */}
       <View style={styles.alertWrap}>

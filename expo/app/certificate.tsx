@@ -5,6 +5,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { VowCertificate } from '@/components/vow-certificate';
 import { PrimaryButton, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { palette } from '@/constants/unbreakable';
@@ -78,20 +79,17 @@ export default function CertificateScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
 
-      <Pressable
-        style={styles.backRow}
-        onPress={() => {
-          if (router.canGoBack()) {
-            router.back();
-          } else {
-            router.replace('/');
-          }
-        }}
-        hitSlop={8}
-      >
-        <ChevronLeft color={palette.textSecondary} size={20} />
-        <Text style={styles.backText}>Back</Text>
-      </Pressable>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Pressable
+          style={styles.backRow}
+          onPress={() => router.replace('/dashboard')}
+          hitSlop={8}
+        >
+          <ChevronLeft color={palette.textSecondary} size={20} />
+          <Text style={styles.backText}>Back</Text>
+        </Pressable>
+        <AppMenuButton />
+      </View>
 
       <TitleBlock
         title="It's official."

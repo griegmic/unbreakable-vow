@@ -78,7 +78,7 @@ export default function WitnessScreen() {
             setVowId(vow.vowId, result.witnessInviteToken);
           }
           void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          router.back();
+          router.replace('/stake');
         } else {
           Alert.alert('Something went wrong', result.error || 'Please try again.');
         }

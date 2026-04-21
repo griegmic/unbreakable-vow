@@ -18,6 +18,7 @@ import {
 
 import ContactPickerModal from '@/components/contact-picker-modal';
 
+import { AppMenuButton } from '@/components/app-menu';
 import AuthSheet from '@/components/auth-sheet';
 import { ChoiceChip, PrimaryButton, RitualCard, RitualScreen } from '@/components/vow-ui';
 import {
@@ -482,11 +483,14 @@ export default function QuickVowScreen() {
       >
         <Stack.Screen options={{ headerShown: false }} />
 
-        {/* Back to Dashboard */}
-        <Pressable onPress={() => router.push('/dashboard')} style={styles.backRow}>
-          <ArrowLeft color={palette.textSecondary} size={16} />
-          <Text style={styles.backLabel}>Dashboard</Text>
-        </Pressable>
+        {/* Back to Dashboard + menu */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Pressable onPress={() => router.push('/dashboard')} style={styles.backRow}>
+            <ArrowLeft color={palette.textSecondary} size={16} />
+            <Text style={styles.backLabel}>Dashboard</Text>
+          </Pressable>
+          <AppMenuButton />
+        </View>
 
         {/* Hero prompt + input */}
         <View style={styles.vowInputCard}>

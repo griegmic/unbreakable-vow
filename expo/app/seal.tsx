@@ -350,7 +350,7 @@ export default function SealScreen() {
         sealed ? null : (
           <>
             <PrimaryButton label={sealLabel} onPress={handleSeal} disabled={loading} testID="seal-primary" />
-            <SecondaryButton label="Back" onPress={() => router.back()} testID="seal-back" />
+            <SecondaryButton label="Back" onPress={() => router.replace('/witness')} testID="seal-back" />
           </>
         )
       }

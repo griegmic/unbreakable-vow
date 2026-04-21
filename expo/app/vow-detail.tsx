@@ -15,6 +15,7 @@ import {
   View,
 } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { palette, serifFont } from '@/constants/unbreakable';
 import { getVowDetail, getVowTimeline, voidVowV2 } from '@/lib/vow-api';
 import { useAuth } from '@/providers/auth-provider';
@@ -212,7 +213,7 @@ export default function VowDetailScreen() {
             setWithdrawing(false);
             if (result.success) {
               void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-              router.back();
+              router.replace('/dashboard');
             } else {
               Alert.alert('Failed', result.error || 'Could not withdraw vow.');
             }
@@ -246,7 +247,7 @@ export default function VowDetailScreen() {
       <SafeAreaView style={styles.centered}>
         <Stack.Screen options={{ headerShown: false }} />
         <Text style={styles.errorText}>Vow not found.</Text>
-        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+        <Pressable style={styles.backBtn} onPress={() => router.replace('/dashboard')}>
           <Text style={styles.backBtnText}>Go back</Text>
         </Pressable>
       </SafeAreaView>
@@ -277,18 +278,21 @@ export default function VowDetailScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Back button */}
-        <Pressable
-          onPress={() => {
-            void Haptics.selectionAsync();
-            router.back();
-          }}
-          style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
-          testID="vow-detail-back"
-          accessibilityLabel="Go back"
-        >
-          <Text style={styles.backArrow}>{'\u2190'}</Text>
-        </Pressable>
+        {/* Back button + menu */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Pressable
+            onPress={() => {
+              void Haptics.selectionAsync();
+              router.replace('/dashboard');
+            }}
+            style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
+            testID="vow-detail-back"
+            accessibilityLabel="Go back"
+          >
+            <Text style={styles.backArrow}>{'\u2190'}</Text>
+          </Pressable>
+          <AppMenuButton />
+        </View>
 
         {/* Vow text */}
         <View style={styles.vowTextBlock}>

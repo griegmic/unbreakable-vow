@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Animated, Linking, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { antiCauses, palette, serifFont } from '@/constants/unbreakable';
 import { getVowHistory } from '@/lib/vow-api';
@@ -178,6 +179,10 @@ export default function VowKeptScreen() {
       }
     >
       <Stack.Screen options={{ headerShown: false }} />
+
+      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' }}>
+        <AppMenuButton />
+      </View>
 
       {/* Trophy icon with gold glow pulse */}
       <View style={styles.medalWrap}>

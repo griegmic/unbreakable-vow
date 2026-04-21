@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import AuthSheet from '@/components/auth-sheet';
 import ContactPickerModal from '@/components/contact-picker-modal';
 import { ChoiceChip, PrimaryButton, RitualCard, RitualScreen, SecondaryButton } from '@/components/vow-ui';
@@ -606,11 +607,14 @@ export default function CastScreen() {
       >
         <Stack.Screen options={{ headerShown: false }} />
 
-        {/* Back */}
-        <Pressable onPress={() => router.push('/dashboard')} style={styles.backRow}>
-          <ArrowLeft color={palette.textSecondary} size={16} />
-          <Text style={styles.backLabel}>Dashboard</Text>
-        </Pressable>
+        {/* Back + menu */}
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Pressable onPress={() => router.push('/dashboard')} style={styles.backRow}>
+            <ArrowLeft color={palette.textSecondary} size={16} />
+            <Text style={styles.backLabel}>Dashboard</Text>
+          </Pressable>
+          <AppMenuButton />
+        </View>
 
         <Text style={styles.pageTitle}>Dare a friend to an{'\n'}Unbreakable Vow</Text>
 

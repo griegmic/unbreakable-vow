@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import * as Clipboard from 'expo-clipboard';
 import { ActivityIndicator, Alert, Animated, Easing, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
+import { AppMenuButton } from '@/components/app-menu';
 import { PrimaryButton, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { getDailyNudge, getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
@@ -834,23 +835,20 @@ export default function LiveScreen() {
       <Stack.Screen options={{ headerShown: false }} />
 
       {/* Top nav — always visible */}
-      <Pressable
-        style={styles.backRow}
-        onPress={() => {
-          void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          if (searchParams.vowId) {
-            // Came from dashboard — go back
-            router.back();
-          } else {
-            // Came from seal/quick-vow — push to dashboard (don't go back to seal)
-            router.push('/dashboard');
-          }
-        }}
-        hitSlop={8}
-      >
-        <ChevronLeft color={palette.textSecondary} size={20} />
-        <Text style={styles.backText}>My Vows</Text>
-      </Pressable>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Pressable
+          style={styles.backRow}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.replace('/dashboard');
+          }}
+          hitSlop={8}
+        >
+          <ChevronLeft color={palette.textSecondary} size={20} />
+          <Text style={styles.backText}>My Vows</Text>
+        </Pressable>
+        <AppMenuButton />
+      </View>
 
       {renderBadge()}
 
