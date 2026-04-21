@@ -511,13 +511,13 @@ export default function SealPage() {
             fontFamily: 'var(--uv-font-sans)', fontSize: 26, fontWeight: 600,
             color: 'var(--uv-text)', margin: '0 0 6px', textAlign: 'center',
           }}>
-            This is it.
+            Almost done.
           </h1>
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 14,
             color: 'var(--uv-text-muted)', margin: '0 0 24px', textAlign: 'center',
           }}>
-            Enter your number. No turning back.
+            Enter your number to seal.
           </p>
 
           {/* Review card */}
@@ -670,10 +670,10 @@ export default function SealPage() {
         {/* Hero */}
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-text)', margin: 0, marginBottom: 6 }}>
-            This is it.
+            Almost done.
           </h1>
           <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text-muted)', margin: 0 }}>
-            One tap. No turning back.
+            One tap to seal.
           </p>
         </div>
 
