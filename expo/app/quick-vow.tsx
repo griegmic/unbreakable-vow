@@ -396,6 +396,7 @@ export default function QuickVowScreen() {
 
   const witnessDisplay = witnessName && witnessName !== 'Just me' ? witnessName : 'a friend';
   const destinations = consequence === 'charity' ? charities : antiCauses;
+  const [showStarters, setShowStarters] = useState(false);
 
   return (
     <View style={styles.screen}>
@@ -412,110 +413,64 @@ export default function QuickVowScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Top bar */}
+          {/* Minimal top bar: just a close */}
           <Animated.View style={[styles.topBar, { opacity: fadeIn }]}>
             <View style={styles.topBarLeft}>
-              <View style={styles.brandMark}><Text style={styles.brandMarkText}>◆</Text></View>
-              <Text style={styles.brandName}>ENCORE</Text>
-            </View>
-            <View style={styles.topBarRight}>
               <Animated.View style={[styles.liveDot, { opacity: pulse }]} />
               <Text style={styles.liveText}>{vowingNow} vowing now</Text>
-              <Pressable
-                onPress={() => router.push('/dashboard')}
-                hitSlop={12}
-                style={styles.closeBtn}
-                testID="quickvow-close"
-              >
-                <X color="rgba(244,235,216,0.5)" size={18} />
-              </Pressable>
             </View>
+            <Pressable
+              onPress={() => router.push('/dashboard')}
+              hitSlop={16}
+              style={styles.closeBtn}
+              testID="quickvow-close"
+            >
+              <X color="rgba(244,235,216,0.45)" size={20} />
+            </Pressable>
           </Animated.View>
 
-          {/* Main card — editorial sentence */}
+          {/* Hero sentence — the whole product in one line */}
           <Animated.View
             style={[
-              styles.card,
+              styles.hero,
               { opacity: fadeIn, transform: [{ translateY: cardSlide }] },
             ]}
           >
-            <View style={styles.cardHeaderRow}>
-              <Text style={styles.eyebrow}>YOUR NEXT VOW</Text>
-              <Pressable
-                onPress={() => {
-                  void Haptics.selectionAsync();
-                }}
-                hitSlop={8}
-              >
-                <Text style={styles.repeatLink}>repeat of last</Text>
+            <View style={styles.sentenceLine}>
+              <Text style={styles.sentenceText}>I&apos;ll </Text>
+              <Pressable onPress={() => setEditField('vow')} style={styles.fillButton}>
+                <Text style={styles.fillText} numberOfLines={2}>{vowText || 'add your vow'}</Text>
               </Pressable>
             </View>
 
-            {/* Sentence */}
-            <View style={styles.sentenceBlock}>
-              <View style={styles.sentenceLine}>
-                <Text style={styles.sentenceText}>I&apos;ll </Text>
-                <Pressable onPress={() => setEditField('vow')} style={styles.fillButton}>
-                  <Text style={styles.fillText} numberOfLines={1}>{vowText || 'add your vow'}</Text>
-                </Pressable>
-                <Text style={styles.sentenceText}>.</Text>
-              </View>
-
-              <View style={styles.sentenceLine}>
-                <Text style={styles.sentenceTextItalic}>If not, </Text>
-                <Pressable onPress={() => setEditField('stake')} style={styles.fillButtonAmber}>
-                  <Text style={styles.fillTextAmber}>${stakeAmount}</Text>
-                </Pressable>
-                <Text style={styles.sentenceTextItalic}> to </Text>
-                <Pressable onPress={() => setEditField('destination')} style={styles.fillUnderline}>
-                  <Text style={styles.fillTextAmber} numberOfLines={1}>{destination}</Text>
-                </Pressable>
-                <Text style={styles.sentenceTextItalic}>.</Text>
-              </View>
-            </View>
-
-            <View style={styles.metaDivider} />
-
-            <View style={styles.metaRow}>
-              <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>JUDGE</Text>
-                <Pressable onPress={() => setEditField('witness')} style={styles.metaValueWrap}>
-                  <Text style={styles.metaValue}>{witnessDisplay}</Text>
-                  <View style={styles.metaUnderline} />
-                </Pressable>
-              </View>
-              <View style={styles.metaSep} />
-              <View style={styles.metaItem}>
-                <Text style={styles.metaLabel}>BY</Text>
-                <Pressable onPress={() => setEditField('deadline')} style={styles.metaValueWrap}>
-                  <Text style={styles.metaValue}>{deadlineLabel(deadlinePreset, customDate)}</Text>
-                  <View style={styles.metaUnderline} />
-                </Pressable>
-              </View>
+            <View style={[styles.sentenceLine, { marginTop: 10 }]}>
+              <Text style={styles.sentenceTextDim}>by </Text>
+              <Pressable onPress={() => setEditField('deadline')} hitSlop={6}>
+                <Text style={styles.inlineMeta}>{deadlineLabel(deadlinePreset, customDate).toLowerCase()}</Text>
+              </Pressable>
+              <Text style={styles.sentenceTextDim}>, judged by </Text>
+              <Pressable onPress={() => setEditField('witness')} hitSlop={6}>
+                <Text style={styles.inlineMeta}>{witnessDisplay}</Text>
+              </Pressable>
+              <Text style={styles.sentenceTextDim}>.</Text>
             </View>
           </Animated.View>
 
-          {/* Starters */}
-          <Animated.View style={[styles.startersBlock, { opacity: fadeIn }]}>
-            <Text style={styles.startersLabel}>OR TRY ONE OF THESE</Text>
-            <View style={styles.startersList}>
-              {QUICK_VOW_STARTERS.map((s) => (
-                <Pressable
-                  key={s.text}
-                  onPress={() => handleStarter(s.text, s.stake)}
-                  style={({ pressed }) => [styles.starterRow, pressed && styles.starterRowPressed]}
-                  testID={`starter-${s.text}`}
-                >
-                  <Text style={styles.starterText} numberOfLines={1}>{s.text}</Text>
-                  <Text style={styles.starterStake}>${s.stake}</Text>
-                </Pressable>
-              ))}
-            </View>
+          {/* Stake row — the one thing that matters visually */}
+          <Animated.View style={[styles.stakeRow, { opacity: fadeIn }]}>
+            <Text style={styles.stakePrefix}>If I break it,</Text>
+            <Pressable onPress={() => setEditField('stake')} style={styles.stakeChip} testID="edit-stake">
+              <Text style={styles.stakeChipAmount}>${stakeAmount}</Text>
+            </Pressable>
+            <Text style={styles.stakePrefix}>to</Text>
+            <Pressable onPress={() => setEditField('destination')} style={styles.destChip}>
+              <Text style={styles.destChipText} numberOfLines={1}>{destination}</Text>
+            </Pressable>
           </Animated.View>
 
-          <View style={{ height: 16 }} />
+          <View style={{ flex: 1, minHeight: 24 }} />
 
-          {/* CTA */}
+          {/* CTA — the only loud thing on the page */}
           <Animated.View style={[styles.ctaBlock, { opacity: fadeIn, transform: [{ scale: btnScale }] }]}>
             <Pressable
               disabled={!vowText.trim() || sealing}
@@ -526,40 +481,40 @@ export default function QuickVowScreen() {
               testID="quickvow-seal"
             >
               <Text style={styles.ctaText}>
-                {sealing ? 'Processing' : 'Lock it in'}
-                <Text style={styles.ctaDash}>  —  </Text>
-                <Text style={styles.ctaAmount}>${stakeAmount}</Text>
+                {sealing ? 'Processing…' : `Lock in  ·  ${stakeAmount}`}
               </Text>
               <View style={styles.ctaArrow}><Text style={styles.ctaArrowText}>{'\u2192'}</Text></View>
             </Pressable>
 
-            {witnessName && witnessName !== 'Just me' ? (
-              <Pressable
-                onPress={() => router.push('/cast')}
-                style={styles.dareBtn}
-                testID="quickvow-dare"
-              >
-                <Text style={styles.dareText}>
-                  Or dare {witnessName} to match {'\u2192'}
-                </Text>
+            <View style={styles.secondaryRow}>
+              <Pressable onPress={() => setShowStarters(true)} hitSlop={8}>
+                <Text style={styles.secondaryLink}>Need an idea?</Text>
               </Pressable>
-            ) : (
-              <Pressable
-                onPress={() => router.push('/cast')}
-                style={styles.dareBtn}
-              >
-                <Text style={styles.dareText}>Or dare a friend to match {'\u2192'}</Text>
+              <Text style={styles.secondaryDot}>·</Text>
+              <Pressable onPress={() => router.push('/cast')} hitSlop={8}>
+                <Text style={styles.secondaryLink}>Dare a friend</Text>
               </Pressable>
-            )}
-
-            <Text style={styles.ctaTagline}>Keep your word. Keep your ${stakeAmount}.</Text>
+            </View>
           </Animated.View>
-
-          <Pressable onPress={() => router.push('/?guided=1')} hitSlop={8} style={styles.guidedLink}>
-            <Text style={styles.guidedLinkText}>Use guided flow instead</Text>
-          </Pressable>
         </ScrollView>
       </SafeAreaView>
+
+      {/* Ideas sheet — moved out of the hero */}
+      <EditSheet visible={showStarters} title="A few to steal" onClose={() => setShowStarters(false)}>
+        <View style={styles.startersList}>
+          {QUICK_VOW_STARTERS.map((s) => (
+            <Pressable
+              key={s.text}
+              onPress={() => { handleStarter(s.text, s.stake); setShowStarters(false); }}
+              style={({ pressed }) => [styles.starterRow, pressed && styles.starterRowPressed]}
+              testID={`starter-${s.text}`}
+            >
+              <Text style={styles.starterText} numberOfLines={1}>{s.text}</Text>
+              <Text style={styles.starterStake}>${s.stake}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </EditSheet>
 
       {/* ---- Edit sheets ---- */}
       <EditSheet visible={editField === 'vow'} title="What will you do?" onClose={() => setEditField(null)}>
@@ -819,17 +774,94 @@ const styles = StyleSheet.create({
     borderRadius: 400,
     backgroundColor: 'rgba(217,178,74,0.04)',
   },
-  scroll: { paddingHorizontal: 20, paddingTop: 8, paddingBottom: 32 },
+  scroll: { paddingHorizontal: 24, paddingTop: 8, paddingBottom: 32, minHeight: '100%' as const, flexGrow: 1 },
 
   // Top bar
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 20,
-    paddingHorizontal: 4,
+    marginBottom: 56,
+    paddingHorizontal: 2,
   },
-  topBarLeft: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  hero: {
+    marginBottom: 40,
+  },
+  sentenceTextDim: {
+    fontFamily: serifFont,
+    color: 'rgba(244,235,216,0.55)',
+    fontSize: 18,
+    lineHeight: 28,
+    fontStyle: 'italic',
+  },
+  inlineMeta: {
+    fontFamily: serifFont,
+    color: CREAM,
+    fontSize: 18,
+    lineHeight: 28,
+    fontStyle: 'italic',
+    textDecorationLine: 'underline',
+    textDecorationColor: 'rgba(244,235,216,0.3)',
+  },
+  stakeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  stakePrefix: {
+    fontFamily: serifFont,
+    fontStyle: 'italic',
+    color: 'rgba(244,235,216,0.55)',
+    fontSize: 16,
+  },
+  stakeChip: {
+    backgroundColor: 'rgba(217,178,74,0.12)',
+    borderWidth: 1,
+    borderColor: GOLD,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+  },
+  stakeChipAmount: {
+    fontFamily: serifFont,
+    color: GOLD_BRIGHT,
+    fontSize: 20,
+    fontWeight: '800' as const,
+    letterSpacing: -0.3,
+  },
+  destChip: {
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(244,235,216,0.25)',
+    borderStyle: 'dashed' as const,
+    paddingBottom: 2,
+    maxWidth: '60%',
+  },
+  destChipText: {
+    fontFamily: serifFont,
+    color: CREAM,
+    fontSize: 16,
+    fontStyle: 'italic',
+  },
+  secondaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginTop: 18,
+  },
+  secondaryLink: {
+    color: 'rgba(244,235,216,0.5)',
+    fontSize: 13,
+    fontFamily: serifFont,
+    fontStyle: 'italic',
+    textDecorationLine: 'underline',
+  },
+  secondaryDot: {
+    color: 'rgba(244,235,216,0.3)',
+    fontSize: 14,
+  },
+  topBarLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   brandMark: {
     width: 26,
@@ -909,9 +941,10 @@ const styles = StyleSheet.create({
   sentenceText: {
     fontFamily: serifFont,
     color: CREAM,
-    fontSize: 22,
-    lineHeight: 34,
-    letterSpacing: -0.3,
+    fontSize: 34,
+    lineHeight: 44,
+    letterSpacing: -0.8,
+    fontWeight: '400' as const,
   },
   sentenceTextItalic: {
     fontFamily: serifFont,
@@ -922,21 +955,19 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   fillButton: {
-    borderWidth: 1,
-    borderColor: 'rgba(217,178,74,0.55)',
-    backgroundColor: 'rgba(217,178,74,0.10)',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 6,
-    marginHorizontal: 2,
-    maxWidth: '85%',
+    borderBottomWidth: 2,
+    borderBottomColor: GOLD,
+    paddingHorizontal: 2,
+    paddingBottom: 2,
+    maxWidth: '90%',
   },
   fillText: {
     fontFamily: serifFont,
     color: CREAM,
-    fontSize: 20,
-    fontWeight: '700' as const,
-    letterSpacing: -0.3,
+    fontSize: 34,
+    lineHeight: 44,
+    fontWeight: '500' as const,
+    letterSpacing: -0.8,
   },
   fillButtonAmber: {
     borderWidth: 1,
@@ -1051,22 +1082,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    backgroundColor: CREAM,
-    borderRadius: 16,
-    paddingVertical: 20,
+    gap: 10,
+    backgroundColor: GOLD,
+    borderRadius: 999,
+    paddingVertical: 22,
     shadowColor: GOLD,
-    shadowOpacity: 0.3,
-    shadowRadius: 22,
-    shadowOffset: { width: 0, height: 10 },
-    ...(Platform.OS === 'android' ? { elevation: 6 } : {}),
+    shadowOpacity: 0.45,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 14 },
+    ...(Platform.OS === 'android' ? { elevation: 8 } : {}),
   },
   ctaText: {
     color: BG,
     fontFamily: serifFont,
-    fontSize: 18,
-    fontWeight: '700' as const,
-    letterSpacing: -0.3,
+    fontSize: 19,
+    fontWeight: '800' as const,
+    letterSpacing: -0.4,
   },
   ctaDash: {
     color: 'rgba(15,13,11,0.5)',
@@ -1077,18 +1108,17 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
   },
   ctaArrow: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: BG,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(15,13,11,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: 8,
   },
   ctaArrowText: {
-    color: CREAM,
-    fontSize: 14,
-    fontWeight: '700' as const,
+    color: BG,
+    fontSize: 15,
+    fontWeight: '900' as const,
   },
   dareBtn: {
     paddingVertical: 16,
