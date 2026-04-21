@@ -5,7 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-function CheckoutForm({ onSuccess, onCancel, onSkip, amount }: { onSuccess: () => void; onCancel: () => void; onSkip?: () => void; amount?: number }) {
+function CheckoutForm({ onSuccess, onCancel, onSkip, amount, mode = 'payment' }: { onSuccess: () => void; onCancel: () => void; onSkip?: () => void; amount?: number; mode?: 'payment' | 'setup' }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -18,24 +18,46 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, amount }: { onSuccess: () =
     setLoading(true);
     setError('');
 
-    const result = await stripe.confirmPayment({
-      elements,
-      confirmParams: { return_url: window.location.origin + '/sent' },
-      redirect: 'if_required',
-    });
+    if (mode === 'setup') {
+      const result = await stripe.confirmSetup({
+        elements,
+        confirmParams: { return_url: window.location.origin + '/sent' },
+        redirect: 'if_required',
+      });
 
-    if (result.error) {
-      if (result.error.type === 'card_error' || result.error.type === 'validation_error') {
-        setError(result.error.message || 'Payment failed.');
+      if (result.error) {
+        if (result.error.type === 'card_error' || result.error.type === 'validation_error') {
+          setError(result.error.message || 'Card setup failed.');
+        } else {
+          setError('Card could not be saved. Please try again.');
+        }
+        setLoading(false);
+      } else if (result.setupIntent && result.setupIntent.status === 'succeeded') {
+        onSuccess();
       } else {
-        setError('Payment could not be processed. Please try again.');
+        setError('Card setup could not be completed. Please try again.');
+        setLoading(false);
       }
-      setLoading(false);
-    } else if (result.paymentIntent && (result.paymentIntent.status === 'succeeded' || result.paymentIntent.status === 'requires_capture')) {
-      onSuccess();
     } else {
-      setError('Payment could not be completed. Please try again.');
-      setLoading(false);
+      const result = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: window.location.origin + '/sent' },
+        redirect: 'if_required',
+      });
+
+      if (result.error) {
+        if (result.error.type === 'card_error' || result.error.type === 'validation_error') {
+          setError(result.error.message || 'Payment failed.');
+        } else {
+          setError('Payment could not be processed. Please try again.');
+        }
+        setLoading(false);
+      } else if (result.paymentIntent && (result.paymentIntent.status === 'succeeded' || result.paymentIntent.status === 'requires_capture')) {
+        onSuccess();
+      } else {
+        setError('Payment could not be completed. Please try again.');
+        setLoading(false);
+      }
     }
   };
 
@@ -61,7 +83,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, amount }: { onSuccess: () =
         {loading ? (
           <div className="w-5 h-5 border-2 border-[#0B0D11] border-t-transparent rounded-full animate-spin" />
         ) : (
-          <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>Lock it in</span>
+          <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>{mode === 'setup' ? 'Save card' : 'Lock it in'}</span>
         )}
       </button>
       {onSkip && (
@@ -93,7 +115,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, amount }: { onSuccess: () =
   );
 }
 
-export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip, amount }: { clientSecret: string; onSuccess: () => void; onCancel: () => void; onSkip?: () => void; amount?: number }) {
+export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip, amount, mode = 'payment' }: { clientSecret: string; onSuccess: () => void; onCancel: () => void; onSkip?: () => void; amount?: number; mode?: 'payment' | 'setup' }) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onCancel();
@@ -120,10 +142,10 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip, amount
           <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'var(--text-muted)', opacity: 0.4 }} />
         </div>
         <h2 className="text-lg font-bold font-serif" style={{ color: 'var(--text)' }}>
-          {amount ? `Hold $${amount} on your card` : 'Authorize hold'}
+          {mode === 'setup' ? 'Save your card' : amount ? `Hold $${amount} on your card` : 'Authorize hold'}
         </h2>
         <p className="text-[13px] mb-3" style={{ color: 'var(--text-muted)' }}>
-          Released if you keep your vow.
+          {mode === 'setup' ? 'No charge now. Only if you break it.' : 'Released if you keep your vow.'}
         </p>
         <Elements
           stripe={stripePromise}
@@ -151,7 +173,7 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip, amount
             },
           }}
         >
-          <CheckoutForm onSuccess={onSuccess} onCancel={onCancel} onSkip={onSkip} amount={amount} />
+          <CheckoutForm onSuccess={onSuccess} onCancel={onCancel} onSkip={onSkip} amount={amount} mode={mode} />
         </Elements>
       </div>
     </div>

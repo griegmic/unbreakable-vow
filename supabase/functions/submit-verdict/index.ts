@@ -13,6 +13,20 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY')!;
 
+async function stripePost(endpoint: string, params: Record<string, string>) {
+  const res = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(params).toString(),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message || `Stripe error: ${res.status}`);
+  return data;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -63,10 +77,57 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString();
 
+    // === NEW: SetupIntent flow ===
+    const hasSetupIntent = !!vow.stripe_payment_method_id;
+    if (hasSetupIntent && verdict === 'broken') {
+      // Charge the saved card off-session
+      try {
+        // Look up stripe_customer_id from users table
+        const { data: userRow } = await supabase
+          .from('users')
+          .select('stripe_customer_id')
+          .eq('id', vow.user_id)
+          .single();
+
+        if (!userRow?.stripe_customer_id) {
+          throw new Error('No Stripe customer found for user');
+        }
+
+        const pi = await stripePost('payment_intents', {
+          amount: String(vow.stake_amount),
+          currency: 'usd',
+          customer: userRow.stripe_customer_id,
+          payment_method: vow.stripe_payment_method_id,
+          off_session: 'true',
+          confirm: 'true',
+          'metadata[vow_id]': vow.id,
+          'metadata[user_id]': vow.user_id,
+          'metadata[verdict]': 'broken',
+        });
+
+        // Save the new PI to the vow
+        await supabase.from('vows').update({
+          stripe_payment_intent_id: pi.id,
+        }).eq('id', vow.id);
+
+        console.log(`[submit-verdict] SetupIntent flow: charge created ${pi.id}`);
+        await createAuditEvent(supabase, vow.id, 'charge_created', 'system', null, { payment_intent_id: pi.id });
+      } catch (chargeErr) {
+        console.error('[submit-verdict] SetupIntent charge failed:', chargeErr);
+        const errorMessage = chargeErr instanceof Error ? chargeErr.message : String(chargeErr);
+        await supabase.from('vows').update({ refund_failed: true }).eq('id', vow.id);
+        await createAuditEvent(supabase, vow.id, 'charge_failed', 'system', null, { error: errorMessage });
+        // Continue to finalize verdict even if charge fails — flag is set for retry
+      }
+    } else if (hasSetupIntent && verdict === 'kept') {
+      // SetupIntent flow: nothing to refund — no money was ever captured
+      console.log('[submit-verdict] SetupIntent flow: kept verdict, nothing to refund');
+    }
+
     // For "kept" verdicts with a real Stripe payment, return the money BEFORE finalizing verdict.
     // Skip Stripe operations for dev/test PI IDs (not starting with 'pi_')
     const hasRealStripePI = vow.stripe_payment_intent_id && vow.stripe_payment_intent_id.startsWith('pi_');
-    if (verdict === 'kept' && hasRealStripePI) {
+    if (verdict === 'kept' && hasRealStripePI && !hasSetupIntent) {
       try {
         // First, check the payment intent's actual status on Stripe
         const piRes = await fetch(`https://api.stripe.com/v1/payment_intents/${vow.stripe_payment_intent_id}`, {
@@ -171,7 +232,7 @@ Deno.serve(async (req) => {
 
     // Audit events
     await createAuditEvent(supabase, vow.id, 'verdict_submitted', 'witness', null, { verdict });
-    if (verdict === 'kept' && hasRealStripePI) {
+    if (verdict === 'kept' && hasRealStripePI && !hasSetupIntent) {
       await createAuditEvent(supabase, vow.id, 'refund_issued', 'system');
     }
 

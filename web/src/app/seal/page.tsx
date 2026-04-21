@@ -207,18 +207,18 @@ export default function SealPage() {
       const draft = await ensureDraftVow();
       if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
 
-      const { data: piData, error: piError } = await supabase.functions.invoke('create-payment-intent', {
-        body: { vow_id: draft.id, amount: vow.stake.amount * 100 },
+      const { data: siData, error: siError } = await supabase.functions.invoke('save-card', {
+        body: { vow_id: draft.id },
       });
 
-      if (piError) {
-        let detail = piError.message;
+      if (siError) {
+        let detail = siError.message;
         try {
-          if (typeof (piError as any).context?.json === 'function') {
-            const body = await (piError as any).context.json();
+          if (typeof (siError as any).context?.json === 'function') {
+            const body = await (siError as any).context.json();
             detail = body?.error || body?.message || detail;
-          } else if (typeof (piError as any).context?.text === 'function') {
-            const text = await (piError as any).context.text();
+          } else if (typeof (siError as any).context?.text === 'function') {
+            const text = await (siError as any).context.text();
             detail = text || detail;
           }
         } catch {}
@@ -233,9 +233,9 @@ export default function SealPage() {
         throw new Error(`Payment: ${detail}`);
       }
 
-      const secret = piData?.clientSecret || piData?.client_secret;
+      const secret = siData?.clientSecret || siData?.client_secret;
       if (!secret) {
-        throw new Error(`No client secret. Response: ${JSON.stringify(piData)}`);
+        throw new Error(`No client secret. Response: ${JSON.stringify(siData)}`);
       }
 
       setClientSecret(secret);
@@ -774,6 +774,7 @@ export default function SealPage() {
 
       {clientSecret && step === 'payment' && (
         <PaymentModal
+          mode="setup"
           clientSecret={clientSecret}
           amount={vow.stake.amount}
           onSuccess={handlePaymentSuccess}

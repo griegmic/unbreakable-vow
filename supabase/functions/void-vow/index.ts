@@ -70,8 +70,15 @@ Deno.serve(async (req) => {
 
     // Refund if staked (only for real Stripe PIs, not dev_bypass_ IDs)
     let refunded = false;
-    const hasRealStripePI = vow.stripe_payment_intent_id && vow.stripe_payment_intent_id.startsWith('pi_');
-    if (hasRealStripePI && vow.stake_amount > 0) {
+
+    if (vow.stripe_setup_intent_id && !vow.stripe_payment_intent_id) {
+      // SetupIntent flow: no money captured, nothing to refund
+      console.log('[void-vow] SetupIntent — nothing to reverse');
+      refunded = true;
+    } else {
+      // Legacy flow
+      const hasRealStripePI = vow.stripe_payment_intent_id && vow.stripe_payment_intent_id.startsWith('pi_');
+      if (hasRealStripePI && vow.stake_amount > 0) {
       try {
         // Check the payment intent's actual status on Stripe
         const piRes = await fetch(`https://api.stripe.com/v1/payment_intents/${vow.stripe_payment_intent_id}`, {
@@ -138,6 +145,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+    }
     }
 
     // Void the vow (atomic guard: only update if status is still active/awaiting_verdict)

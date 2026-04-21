@@ -116,29 +116,51 @@ Deno.serve(async (req) => {
     }
 
     if (vow.stake_amount > 0 && !skip_payment) {
-      // === EXISTING STRIPE LOGIC — DO NOT MODIFY ===
-      if (!vow.stripe_payment_intent_id) {
+      if (vow.stripe_setup_intent_id) {
+        // === NEW: SetupIntent flow — verify setup succeeded, save payment method ===
+        const setupIntent = await stripeGet(`setup_intents/${vow.stripe_setup_intent_id}`);
+        if (setupIntent.status !== 'succeeded') {
+          return new Response(JSON.stringify({
+            error: 'Card setup not completed',
+            setup_status: setupIntent.status,
+          }), {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        // Save payment_method to vow for later off-session charge
+        const { error: pmErr } = await supabase.from('vows').update({
+          stripe_payment_method_id: setupIntent.payment_method,
+        }).eq('id', vow_id);
+        if (pmErr) {
+          console.error('[seal-vow] Failed to save payment_method:', pmErr);
+        }
+        console.log('[seal-vow] SetupIntent verified, payment_method saved:', setupIntent.payment_method);
+        // No capture needed — money is only charged if vow is broken
+        // === END SetupIntent flow ===
+      } else if (vow.stripe_payment_intent_id) {
+        // === EXISTING STRIPE LOGIC — DO NOT MODIFY ===
+        // Verify payment status and capture if needed
+        const paymentIntent = await stripeGet(`payment_intents/${vow.stripe_payment_intent_id}`);
+
+        if (paymentIntent.status === 'requires_capture') {
+          await stripePost(`payment_intents/${vow.stripe_payment_intent_id}/capture`);
+        } else if (paymentIntent.status !== 'succeeded') {
+          return new Response(JSON.stringify({
+            error: 'Payment not confirmed',
+            payment_status: paymentIntent.status,
+          }), {
+            status: 402,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        // === END EXISTING LOGIC ===
+      } else {
         return new Response(JSON.stringify({ error: 'Payment not yet captured' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-
-      // Verify payment status and capture if needed
-      const paymentIntent = await stripeGet(`payment_intents/${vow.stripe_payment_intent_id}`);
-
-      if (paymentIntent.status === 'requires_capture') {
-        await stripePost(`payment_intents/${vow.stripe_payment_intent_id}/capture`);
-      } else if (paymentIntent.status !== 'succeeded') {
-        return new Response(JSON.stringify({
-          error: 'Payment not confirmed',
-          payment_status: paymentIntent.status,
-        }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-      // === END EXISTING LOGIC ===
     } else {
       // $0 vow or skip_payment — skip Stripe entirely
       console.log(skip_payment ? 'skip_payment — skipping Stripe, stake preserved for display' : '$0 vow — skipping Stripe');
