@@ -32,7 +32,7 @@ import {
   stakeAmounts as defaultStakeAmounts,
 } from '@/constants/unbreakable';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
-import { createPaymentIntent, setupPaymentSheet, showPaymentSheet } from '@/lib/stripe';
+import { saveCard, setupPaymentSheetForSetup, showPaymentSheet } from '@/lib/stripe';
 import { createVow, voidVowV2 } from '@/lib/vow-api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -351,8 +351,8 @@ export default function QuickVowScreen() {
       }
 
       // Staked: payment flow
-      const { clientSecret } = await createPaymentIntent(vowId, stakeAmount * 100);
-      await setupPaymentSheet(clientSecret);
+      const { clientSecret } = await saveCard(vowId);
+      await setupPaymentSheetForSetup(clientSecret);
       const paid = await showPaymentSheet();
 
       if (!paid) {
