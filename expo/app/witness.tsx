@@ -125,7 +125,7 @@ export default function WitnessScreen() {
             )}
           </View>
           <View style={styles.heroCopy}>
-            <Text style={styles.heroTitle}>Text a friend</Text>
+            <Text style={styles.heroTitle}>Pick your witness</Text>
             <Text style={styles.heroSubtitle}>They'll decide if you kept your word</Text>
           </View>
           <ChevronRight color={palette.goldBright} size={18} />
