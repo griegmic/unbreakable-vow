@@ -17,6 +17,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "app.unbreakablevow.ios",
       "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false,
         "CFBundleURLTypes": [
           {
             "CFBundleTypeRole": "Editor",

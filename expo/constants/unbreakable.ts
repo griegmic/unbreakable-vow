@@ -26,12 +26,11 @@ export const palette = {
 } as const;
 
 export const vowExamples: string[] = [
-  'Gym 3x this week',
-  'No alcohol, 2 weeks',
-  'Delete TikTok',
-  'Deep clean the house this weekend',
-  '10k steps daily for a week',
-  'No phone til noon',
+  'Workout 3x this week',
+  'Delete TikTok for a week',
+  'No alcohol 2 weeks',
+  'No texting my ex for a month',
+  'Finish the side project',
 ];
 
 export const stakeAmounts: number[] = [10, 25, 50, 100];
@@ -65,8 +64,11 @@ export const charities: string[] = [
 ];
 
 export const antiCauses: string[] = [
-  'The NRA',
-  'PETA',
+  'NRA',
+  'Donald Trump',
+  'Planned Parenthood',
+  'Kamala Harris',
+  'Ted Cruz',
 ];
 
 export interface HistoryEntry {
