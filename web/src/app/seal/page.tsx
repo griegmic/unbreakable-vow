@@ -50,7 +50,7 @@ export default function SealPage() {
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
   const witnessName = isSelfWitness ? 'Just me' : (vow.witnessName || 'Witness');
-  const sealLabel = `Seal my vow — $${vow.stake.amount}`;
+  const sealLabel = isAuthenticated ? 'Seal this vow' : 'Seal this vow';
 
   useEffect(() => {
     const isLocal = typeof window !== 'undefined' && (
