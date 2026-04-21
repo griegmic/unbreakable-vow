@@ -3,6 +3,8 @@
 import React, { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useVowFlow } from '@/providers/vow-flow';
+import { useAuth } from '@/providers/auth-provider';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { VowInput } from './components/VowInput';
 import { StakesStep } from './components/StakesStep';
 import { IfBrokenSheet } from './components/IfBrokenSheet';
@@ -13,6 +15,7 @@ type Step = 1 | 3 | 3.5;
 
 export default function CreatePage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { vow, setRawInput, setRefinedText, setStake, setDeadline } = useVowFlow();
 
   // Restore from VowFlowProvider if coming back from /seal
@@ -58,33 +61,47 @@ export default function CreatePage() {
     router.push('/seal');
   }, [vowText, stakeAmount, destinationKind, destination, endsAt, router, setRawInput, setRefinedText, setStake, setDeadline]);
 
+  const hamburgerOverlay = isAuthenticated ? (
+    <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }}>
+      <HamburgerMenu />
+    </div>
+  ) : null;
+
   // Render based on current step
   if (step === 1) {
     return (
-      <VowInput
+      <>
+        {hamburgerOverlay}
+        <VowInput
         vowText={vowText}
         setVowText={setVowText}
         endsAt={endsAt}
         setEndsAt={setEndsAt}
         onNext={handleVowNext}
       />
+      </>
     );
   }
 
   if (step === 3.5) {
     return (
-      <IfBrokenSheet
+      <>
+        {hamburgerOverlay}
+        <IfBrokenSheet
         destination={destination}
         destinationKind={destinationKind}
         onSelect={handleIfBrokenSelect}
         onClose={handleIfBrokenClose}
       />
+      </>
     );
   }
 
   // Step 3
   return (
-    <StakesStep
+    <>
+      {hamburgerOverlay}
+      <StakesStep
       stakeAmount={stakeAmount}
       setStakeAmount={setStakeAmount}
       destination={destination}
@@ -96,5 +113,6 @@ export default function CreatePage() {
       witnessName="TBD"
       endsAt={endsAt}
     />
+    </>
   );
 }

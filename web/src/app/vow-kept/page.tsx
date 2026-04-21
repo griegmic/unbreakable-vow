@@ -6,6 +6,7 @@ import { PrimaryButton } from '@/components/uv/PrimaryButton';
 import { SecondaryButton } from '@/components/uv/SecondaryButton';
 import { Card } from '@/components/uv/Card';
 import { useAuth } from '@/providers/auth-provider';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { supabase } from '@/lib/supabase';
 import { antiCauses } from '@/lib/vow-logic';
 
@@ -79,7 +80,7 @@ function ConfettiEffect() {
 function VowKeptContent() {
   const router = useRouter();
   const params = useSearchParams();
-  const { session } = useAuth();
+  const { session, isAuthenticated } = useAuth();
   const vowText = params.get('text') || 'Your vow';
   const amount = params.get('amount') || '0';
   const destination = params.get('destination') || '';
@@ -128,6 +129,11 @@ function VowKeptContent() {
     <>
       <style dangerouslySetInnerHTML={{ __html: confettiCSS }} />
       <ConfettiEffect />
+      {isAuthenticated && (
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }}>
+          <HamburgerMenu />
+        </div>
+      )}
       <RitualScreen variant="outcome-kept">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 48 }}>
           {/* Big "Kept." */}

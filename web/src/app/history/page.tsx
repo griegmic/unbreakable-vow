@@ -8,6 +8,7 @@ import { Chip } from '@/components/uv/Chip';
 import { StatusPill } from '@/components/uv/StatusPill';
 import { SkeletonRow } from '@/components/uv/SkeletonRow';
 import { useAuth } from '@/providers/auth-provider';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/types';
 
@@ -66,23 +67,26 @@ export default function HistoryPage() {
   return (
     <RitualScreen>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingTop: 16 }}>
-        {/* Back */}
-        <button
-          onClick={() => router.push('/dashboard')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--uv-text-muted)',
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: 'pointer',
-            fontFamily: 'var(--uv-font-sans)',
-            textAlign: 'left',
-            padding: '4px 0',
-          }}
-        >
-          &larr; Dashboard
-        </button>
+        {/* Header with back + hamburger */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--uv-text-muted)',
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'var(--uv-font-sans)',
+              textAlign: 'left',
+              padding: '4px 0',
+            }}
+          >
+            &larr; Dashboard
+          </button>
+          {isAuthenticated && <HamburgerMenu />}
+        </div>
 
         {/* Hero */}
         <h1

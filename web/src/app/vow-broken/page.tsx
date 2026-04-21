@@ -4,6 +4,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { RitualScreen } from '@/components/uv/RitualScreen';
 import { PrimaryButton } from '@/components/uv/PrimaryButton';
 import { Card } from '@/components/uv/Card';
+import { HamburgerMenu } from '@/components/hamburger-menu';
+import { useAuth } from '@/providers/auth-provider';
 import { antiCauses } from '@/lib/vow-logic';
 
 function isAntiCause(destination: string): boolean {
@@ -12,6 +14,7 @@ function isAntiCause(destination: string): boolean {
 
 function VowBrokenContent() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const params = useSearchParams();
   const vowText = params.get('text') || 'Your vow';
   const amount = params.get('amount') || '0';
@@ -57,8 +60,14 @@ function VowBrokenContent() {
   };
 
   return (
-    <RitualScreen variant={antiCause ? 'anti-cause-broken' : 'outcome-broken'}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 48 }}>
+    <>
+      {isAuthenticated && (
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }}>
+          <HamburgerMenu />
+        </div>
+      )}
+      <RitualScreen variant={antiCause ? 'anti-cause-broken' : 'outcome-broken'}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 48 }}>
         {/* Title */}
         <h1
           style={{
@@ -192,8 +201,9 @@ function VowBrokenContent() {
         <PrimaryButton onClick={() => router.push('/create')}>
           + Try again
         </PrimaryButton>
-      </div>
-    </RitualScreen>
+        </div>
+      </RitualScreen>
+    </>
   );
 }
 

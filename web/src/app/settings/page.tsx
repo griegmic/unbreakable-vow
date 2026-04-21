@@ -5,6 +5,7 @@ import { RitualScreen } from '@/components/uv/RitualScreen';
 import { PrimaryButton } from '@/components/uv/PrimaryButton';
 import { Card } from '@/components/uv/Card';
 import { AuthModal } from '@/components/auth-modal';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useAuth } from '@/providers/auth-provider';
 
 export default function SettingsPage() {
@@ -20,23 +21,26 @@ export default function SettingsPage() {
   return (
     <RitualScreen>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingTop: 16 }}>
-        {/* Back */}
-        <button
-          onClick={() => router.push('/dashboard')}
-          style={{
-            background: 'none',
-            border: 'none',
-            color: 'var(--uv-text-muted)',
-            fontSize: 14,
-            fontWeight: 500,
-            cursor: 'pointer',
-            fontFamily: 'var(--uv-font-sans)',
-            textAlign: 'left',
-            padding: '4px 0',
-          }}
-        >
-          &larr; Dashboard
-        </button>
+        {/* Header with back + hamburger */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <button
+            onClick={() => router.push('/dashboard')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: 'var(--uv-text-muted)',
+              fontSize: 14,
+              fontWeight: 500,
+              cursor: 'pointer',
+              fontFamily: 'var(--uv-font-sans)',
+              textAlign: 'left',
+              padding: '4px 0',
+            }}
+          >
+            &larr; Dashboard
+          </button>
+          {isAuthenticated && <HamburgerMenu />}
+        </div>
 
         {/* Hero */}
         <h1

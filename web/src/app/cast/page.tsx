@@ -9,6 +9,7 @@ import { Input } from '@/components/uv/Input';
 import { Textarea } from '@/components/uv/Textarea';
 import { RadioCard } from '@/components/uv/RadioCard';
 import { AuthModal } from '@/components/auth-modal';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { analyzeVow, generateSuggestion } from '@/lib/vow-logic';
@@ -358,23 +359,26 @@ export default function CastPage() {
     <>
       <RitualScreen>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 16 }}>
-          {/* Back */}
-          <button
-            onClick={() => router.push('/dashboard')}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--uv-text-muted)',
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'var(--uv-font-sans)',
-              textAlign: 'left',
-              padding: '4px 0',
-            }}
-          >
-            &larr; Dashboard
-          </button>
+          {/* Header with back + hamburger */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button
+              onClick={() => router.push('/dashboard')}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--uv-text-muted)',
+                fontSize: 14,
+                fontWeight: 500,
+                cursor: 'pointer',
+                fontFamily: 'var(--uv-font-sans)',
+                textAlign: 'left',
+                padding: '4px 0',
+              }}
+            >
+              &larr; Dashboard
+            </button>
+            {isAuthenticated && <HamburgerMenu />}
+          </div>
 
           {/* Hero */}
           <div>
