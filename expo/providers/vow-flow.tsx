@@ -33,7 +33,7 @@ const initialState: VowState = {
   inviteMethod: 'sms',
   phoneNumber: '',
   stake: {
-    amount: 25,
+    amount: 50,
     consequence: 'charity',
     destination: 'ALS Association',
   },

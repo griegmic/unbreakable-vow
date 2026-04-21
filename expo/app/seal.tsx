@@ -12,7 +12,7 @@ import AuthSheet from '@/components/auth-sheet';
 import { BackButton, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
-import { createPaymentIntent, setupPaymentSheet, showPaymentSheet } from '@/lib/stripe';
+import { saveCard, setupPaymentSheetForSetup, showPaymentSheet } from '@/lib/stripe';
 import { createVow, voidVowV2 } from '@/lib/vow-api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
@@ -247,25 +247,25 @@ export default function SealScreen() {
       console.log('[SealScreen] step 1 done, vowId:', vowId);
       setVowId(vowId, vowRecord.witness_invite_token);
 
-      console.log('[SealScreen] step 2: creating payment intent');
-      const { clientSecret } = await createPaymentIntent(vowId, vow.stake.amount * 100);
+      console.log('[SealScreen] step 2: saving card (SetupIntent)');
+      const { clientSecret } = await saveCard(vowId);
       console.log('[SealScreen] step 2 done, got clientSecret');
 
-      console.log('[SealScreen] step 3: setup payment sheet');
-      await setupPaymentSheet(clientSecret);
+      console.log('[SealScreen] step 3: setup payment sheet for card save');
+      await setupPaymentSheetForSetup(clientSecret);
       console.log('[SealScreen] step 3 done');
 
-      console.log('[SealScreen] step 4: showing payment sheet');
-      const paid = await showPaymentSheet();
+      console.log('[SealScreen] step 4: showing payment sheet (save card)');
+      const saved = await showPaymentSheet();
 
-      if (!paid) {
+      if (!saved) {
         await voidVowV2(vowId).catch(() => {});
         setLoading(false);
-        Alert.alert('Payment cancelled', 'No charge was made. You can try again whenever you\'re ready.');
+        Alert.alert('Card not saved', 'No charge was made. You can try again whenever you\'re ready.');
         return;
       }
 
-      paymentCaptured = true;
+      paymentCaptured = true; // card saved successfully
       setPaidVowId(vowId);
 
       await invokeSealEdgeFunction(vowId);
