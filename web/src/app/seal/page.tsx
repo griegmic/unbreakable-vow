@@ -124,7 +124,7 @@ export default function SealPage() {
           refined_text: activeVowText,
           witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
           witness_phone: vow.witnessPhone || null,
-          witness_invite_token: vow.witnessInviteToken || crypto.randomUUID(),
+          witness_invite_token: crypto.randomUUID(),
           stake_amount: vow.stake.amount * 100,
           consequence: vow.stake.consequence,
           destination: vow.stake.destination,
