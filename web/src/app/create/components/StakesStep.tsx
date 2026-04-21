@@ -141,54 +141,8 @@ export function StakesStep({
           </span>
         </div>
 
-        {/* Slider track */}
-        <div style={{ marginBottom: 6, position: 'relative', height: 20, display: 'flex', alignItems: 'center' }}>
-          {/* Track line */}
-          <div style={{
-            position: 'absolute', left: 6, right: 6, top: '50%',
-            height: 2, background: 'var(--uv-border-strong)',
-            transform: 'translateY(-50%)', borderRadius: 1,
-          }} />
-          {/* Active fill */}
-          <div style={{
-            position: 'absolute', left: 6, top: '50%',
-            height: 2,
-            width: `${(AMOUNTS.indexOf(stakeAmount) / (AMOUNTS.length - 1)) * (100 - 3)}%`,
-            background: 'var(--uv-gold-deep)',
-            transform: 'translateY(-50%)', borderRadius: 1,
-            transition: 'width 200ms cubic-bezier(0.22,1,0.36,1)',
-          }} />
-          {/* Dots */}
-          {AMOUNTS.map((amt, i) => {
-            const active = stakeAmount === amt;
-            const pct = (i / (AMOUNTS.length - 1)) * 100;
-            return (
-              <button
-                key={amt}
-                type="button"
-                onClick={() => setStakeAmount(amt)}
-                style={{
-                  position: 'absolute', left: `${pct}%`,
-                  transform: 'translateX(-50%)',
-                  width: active ? 18 : 6, height: active ? 18 : 6,
-                  borderRadius: '50%',
-                  background: active ? 'var(--uv-gold)' : 'var(--uv-text-faint)',
-                  border: active ? '2px solid var(--uv-gold-bright)' : 'none',
-                  cursor: 'pointer', padding: 0,
-                  transition: 'all 200ms cubic-bezier(0.22,1,0.36,1)',
-                  boxShadow: active ? '0 0 12px rgba(212,168,74,0.35)' : 'none',
-                  zIndex: active ? 2 : 1,
-                }}
-              />
-            );
-          })}
-        </div>
-
-        {/* Labels */}
-        <div style={{
-          display: 'flex', justifyContent: 'space-between', marginBottom: 28,
-          paddingLeft: 0, paddingRight: 0,
-        }}>
+        {/* Amount pills — big, tappable */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
           {AMOUNTS.map(amt => {
             const active = stakeAmount === amt;
             return (
@@ -197,16 +151,21 @@ export function StakesStep({
                 type="button"
                 onClick={() => setStakeAmount(amt)}
                 style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: '4px 2px',
-                  fontFamily: 'var(--uv-font-sans)',
-                  fontSize: 14,
-                  fontWeight: active ? 600 : 400,
-                  color: active ? 'var(--uv-gold)' : 'var(--uv-text-faint)',
-                  transition: 'all 200ms',
-                  minWidth: 40,
+                  flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '14px 0', minHeight: 48,
+                  background: active ? 'var(--uv-gold-bg)' : 'var(--uv-bg-input)',
+                  border: `1.5px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
+                  borderRadius: 12, cursor: 'pointer',
+                  transition: 'all 150ms',
+                  boxShadow: active ? '0 0 12px rgba(212,168,74,0.15)' : 'none',
                 }}
               >
-                ${amt}
+                <span style={{
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 16, fontWeight: 600,
+                  color: active ? 'var(--uv-gold)' : 'var(--uv-text-muted)',
+                }}>
+                  ${amt}
+                </span>
               </button>
             );
           })}

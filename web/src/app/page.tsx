@@ -18,7 +18,7 @@ const FEED_ROWS = [
 // ─── Ceremony ───────────────────────────────────────────────────────────────
 
 function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
-  // 0=dark, 1=accusation, 2=punchline, 3=exiting
+  // 0=dark, 1=page1 (accusation + "it was free"), 2=page2 (logo), 3=exit
   const [phase, setPhase] = useState(0);
   const [exiting, setExiting] = useState(false);
 
@@ -28,31 +28,30 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
   const finish = useCallback(() => {
     try { localStorage.setItem('uv_ceremony_seen', '1'); } catch {}
     setExiting(true);
-    setTimeout(() => onComplete(), 600);
+    setTimeout(() => onComplete(), 500);
   }, [onComplete]);
 
   useEffect(() => {
     const f = reducedMotion ? 0.15 : 1;
     const timers = [
-      setTimeout(() => setPhase(1), 500 * f),      // show accusation
-      setTimeout(() => setPhase(2), 3500 * f),      // show "It was free."
-      setTimeout(() => finish(), 7000 * f),          // auto-exit
+      setTimeout(() => setPhase(1), 300 * f),       // page 1 fades in
+      setTimeout(() => setPhase(2), 3800 * f),       // page 2 (logo)
+      setTimeout(() => finish(), 6000 * f),           // auto-exit
     ];
     return () => timers.forEach(clearTimeout);
   }, [reducedMotion, finish]);
 
-  const fade = (visible: boolean): React.CSSProperties => ({
+  const fade = (visible: boolean, delay = 0): React.CSSProperties => ({
     opacity: visible ? 1 : 0,
-    transform: visible ? 'translateY(0)' : 'translateY(8px)',
-    filter: visible ? 'blur(0)' : 'blur(4px)',
+    transform: visible ? 'translateY(0)' : 'translateY(6px)',
     transition: reducedMotion
       ? 'opacity 100ms'
-      : 'opacity 1s cubic-bezier(0.19,1,0.22,1), transform 1s cubic-bezier(0.19,1,0.22,1), filter 1s cubic-bezier(0.19,1,0.22,1)',
+      : `opacity 0.8s cubic-bezier(0.19,1,0.22,1) ${delay}ms, transform 0.8s cubic-bezier(0.19,1,0.22,1) ${delay}ms`,
   });
 
   return (
     <div
-      onClick={finish}
+      onClick={() => { if (phase === 1) setPhase(2); else finish(); }}
       role="dialog"
       aria-live="polite"
       style={{
@@ -62,7 +61,7 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
         alignItems: 'center', justifyContent: 'center',
         cursor: 'pointer',
         opacity: exiting ? 0 : 1,
-        transition: 'opacity 600ms ease',
+        transition: 'opacity 500ms ease',
         overflow: 'hidden',
       }}
     >
@@ -81,45 +80,76 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
         background: 'radial-gradient(circle, rgba(212,168,74,0.12) 0%, transparent 65%)',
         opacity: phase >= 1 ? 1 : 0,
         filter: 'blur(50px)',
-        transition: 'opacity 2s ease',
+        transition: 'opacity 1.5s ease',
         pointerEvents: 'none',
       }} />
 
-      {/* Content */}
+      {/* ─── PAGE 1: Accusation + punchline ─── */}
       <div style={{
-        position: 'relative', zIndex: 1,
+        position: 'absolute', zIndex: 1,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         maxWidth: 340, padding: '0 24px',
+        opacity: phase === 1 ? 1 : 0,
+        transition: 'opacity 0.6s ease',
+        pointerEvents: phase === 1 ? 'auto' : 'none',
       }}>
-        {/* Accusation — one block */}
         <p style={{
-          ...fade(phase >= 1 && phase < 2),
+          ...fade(phase >= 1),
           fontFamily: 'var(--uv-font-serif)',
-          fontSize: 'clamp(20px, 5.5vw, 26px)',
+          fontSize: 'clamp(18px, 5vw, 22px)',
           fontWeight: 400,
-          color: 'rgba(245,240,228,0.85)',
+          color: 'rgba(245,240,228,0.7)',
           textAlign: 'center',
-          lineHeight: 1.45,
-          margin: 0,
-          position: phase >= 2 ? 'absolute' : 'relative',
+          lineHeight: 1.5,
+          margin: '0 0 20px',
         }}>
           Every promise you&apos;ve ever broken had one thing in common.
         </p>
-
-        {/* Punchline */}
         <p style={{
-          ...fade(phase >= 2),
+          ...fade(phase >= 1, 600),
           fontFamily: 'var(--uv-font-serif)',
-          fontSize: 'clamp(28px, 8vw, 38px)',
+          fontSize: 'clamp(32px, 9vw, 44px)',
           fontWeight: 500,
           color: 'var(--uv-gold)',
           textAlign: 'center',
-          lineHeight: 1.2,
+          lineHeight: 1.1,
           margin: 0,
-          textShadow: phase >= 2 ? '0 0 40px rgba(212,168,74,0.25)' : 'none',
+          textShadow: '0 0 40px rgba(212,168,74,0.25)',
         }}>
           It was free.
         </p>
+      </div>
+
+      {/* ─── PAGE 2: Logo ─── */}
+      <div style={{
+        position: 'absolute', zIndex: 1,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        gap: 16,
+        opacity: phase === 2 ? 1 : 0,
+        transform: phase === 2 ? 'scale(1)' : 'scale(0.95)',
+        transition: 'opacity 0.8s ease, transform 0.8s cubic-bezier(0.19,1,0.22,1)',
+        pointerEvents: phase === 2 ? 'auto' : 'none',
+      }}>
+        {/* Gold diamond logo mark */}
+        <div style={{
+          width: 36, height: 36, background: 'var(--uv-gold)', borderRadius: 8,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+        }}>
+          <div style={{
+            width: 14, height: 14, background: '#050403', transform: 'rotate(45deg)',
+          }} />
+        </div>
+        <h1 style={{
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 14,
+          fontWeight: 500,
+          letterSpacing: '3px',
+          textTransform: 'uppercase' as const,
+          color: 'var(--uv-gold)',
+          margin: 0,
+        }}>
+          UNBREAKABLE VOW
+        </h1>
       </div>
 
       {/* Skip hint */}
@@ -127,7 +157,7 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
         position: 'absolute', bottom: '10%',
         fontFamily: 'var(--uv-font-sans)', fontSize: 11,
         color: 'var(--uv-text-faint)', letterSpacing: '0.5px',
-        opacity: phase >= 1 ? 0.3 : 0,
+        opacity: phase >= 1 ? 0.25 : 0,
         transition: 'opacity 1s',
       }}>
         tap anywhere
