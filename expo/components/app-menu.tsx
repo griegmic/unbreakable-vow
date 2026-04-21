@@ -35,8 +35,8 @@ export function AppMenuButton({ style }: AppMenuProps) {
   const [visible, setVisible] = useState<boolean>(false);
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const panelTranslate = useRef(new Animated.Value(-SCREEN_HEIGHT)).current;
-  const itemFades = useRef([0, 1, 2, 3, 4, 5].map(() => new Animated.Value(0))).current;
-  const itemSlides = useRef([0, 1, 2, 3, 4, 5].map(() => new Animated.Value(-20))).current;
+  const itemFades = useRef([0, 1, 2, 3, 4, 5, 6].map(() => new Animated.Value(0))).current;
+  const itemSlides = useRef([0, 1, 2, 3, 4, 5, 6].map(() => new Animated.Value(-20))).current;
 
   const open = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -84,9 +84,15 @@ export function AppMenuButton({ style }: AppMenuProps) {
   const menuItems: MenuItemConfig[] = [
     {
       icon: <Zap color={palette.goldBright} size={18} />,
-      label: 'New Vow',
-      description: 'Create a vow in seconds',
+      label: 'Quick Vow',
+      description: 'Everything on one screen',
       route: '/quick-vow',
+    },
+    {
+      icon: <Sparkles color={palette.goldBright} size={18} />,
+      label: 'Guided Flow',
+      description: 'Step-by-step vow creation',
+      route: '/',
     },
     {
       icon: <BookOpen color={palette.textSecondary} size={18} />,
