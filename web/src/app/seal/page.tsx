@@ -6,6 +6,7 @@ import { RitualScreen } from '@/components/uv/RitualScreen';
 import { PrimaryButton } from '@/components/uv/PrimaryButton';
 import { SecondaryButton } from '@/components/uv/SecondaryButton';
 import { PaymentModal } from '@/components/payment-form';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -655,6 +656,11 @@ export default function SealPage() {
   // ── AUTHENTICATED: review + payment flow ──
   return (
     <>
+      {isAuthenticated && (
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }}>
+          <HamburgerMenu />
+        </div>
+      )}
       <RitualScreen>
         {/* Progress indicator */}
         <p style={{ fontSize: 11, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-faint)', marginBottom: 8 }}>

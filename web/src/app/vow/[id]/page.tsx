@@ -11,6 +11,7 @@ import { Countdown } from '@/components/uv/Countdown';
 import { Modal } from '@/components/uv/Modal';
 import { SkeletonRow } from '@/components/uv/SkeletonRow';
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import Timeline from '@/components/timeline';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
@@ -275,21 +276,24 @@ export default function VowDetailPage() {
   // --- Shared components ---
 
   const BackNav = () => (
-    <button
-      onClick={() => router.push('/dashboard')}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
-        padding: '8px 0',
-        background: 'none',
-        border: 'none',
-        cursor: 'pointer',
-      }}
-    >
-      <ArrowLeft className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
-      <span style={{ fontSize: 14, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Dashboard</span>
-    </button>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <button
+        onClick={() => router.push('/dashboard')}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8,
+          padding: '8px 0',
+          background: 'none',
+          border: 'none',
+          cursor: 'pointer',
+        }}
+      >
+        <ArrowLeft className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
+        <span style={{ fontSize: 14, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Dashboard</span>
+      </button>
+      {isAuthenticated && <HamburgerMenu />}
+    </div>
   );
 
   const VowTitle = ({ text, sub }: { text: string; sub?: string }) => (

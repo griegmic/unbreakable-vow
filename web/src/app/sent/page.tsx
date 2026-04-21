@@ -6,10 +6,13 @@ import { GoldSealBadge } from '@/components/uv/GoldSealBadge';
 import { PrimaryButton } from '@/components/uv/PrimaryButton';
 import { SecondaryButton } from '@/components/uv/SecondaryButton';
 import { Toast } from '@/components/uv/Toast';
+import { HamburgerMenu } from '@/components/hamburger-menu';
+import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function SentPage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const { vow, activeVowText } = useVowFlow();
   const [toast, setToast] = useState<string | null>(null);
   const [showDismissPrompt, setShowDismissPrompt] = useState(false);
@@ -67,6 +70,11 @@ export default function SentPage() {
 
   return (
     <RitualScreen variant="ceremony">
+      {isAuthenticated && (
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }}>
+          <HamburgerMenu />
+        </div>
+      )}
       {/* Gold seal icon */}
       <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20, marginTop: 32 }}>
         <GoldSealBadge size={48} animate />

@@ -5,6 +5,7 @@ import { RitualScreen } from '@/components/uv/RitualScreen';
 import { PrimaryButton } from '@/components/uv/PrimaryButton';
 import { Card } from '@/components/uv/Card';
 import { OathCheckbox } from '@/components/uv/OathCheckbox';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import type { Database } from '@/lib/types';
@@ -140,7 +141,7 @@ export default function SelfResolvePage() {
       setChoice(null);
       setError('');
     } else {
-      router.back();
+      router.push('/dashboard');
     }
   };
 
@@ -232,6 +233,11 @@ export default function SelfResolvePage() {
   // Main choose view
   return (
     <RitualScreen>
+      {isAuthenticated && (
+        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }}>
+          <HamburgerMenu />
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 24 }}>
         {/* Hero */}
         <div style={{ textAlign: 'center' }}>
