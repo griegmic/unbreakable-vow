@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quick Vow Redesign — Two-Step Mock</title>
+<style>
+  :root {
+    --bg: #05070B;
+    --surface: #10141C;
+    --surface-elevated: #181D28;
+    --border: rgba(255,255,255,0.06);
+    --border-strong: rgba(255,255,255,0.10);
+    --gold: #D4A24F;
+    --gold-bright: #F0C86E;
+    --gold-deep: #B8862D;
+    --text: #F6F7FB;
+    --text-secondary: #9BA3B5;
+    --text-muted: #5F6880;
+    --danger: #FF7B7B;
+    --success: #52D69A;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #1a1a2e;
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    color: var(--text);
+    padding: 40px 20px;
+  }
+
+  .mock-grid {
+    display: flex;
+    gap: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .mock-column {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .mock-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+    text-align: center;
+    padding: 6px 16px;
+    background: rgba(212,162,79,0.08);
+    border: 1px solid rgba(212,162,79,0.2);
+    border-radius: 8px;
+  }
+
+  .mock-sublabel {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+    max-width: 320px;
+    line-height: 18px;
+  }
+
+  .phone-frame {
+    width: 375px;
+    min-height: 700px;
+    background: var(--bg);
+    border-radius: 40px;
+    border: 3px solid rgba(255,255,255,0.08);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  }
+
+  .screen-content {
+    padding: 60px 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 100%;
+  }
+
+  /* Status bar */
+  .status-bar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .status-time { font-size: 15px; font-weight: 600; }
+  .status-icons { display: flex; gap: 5px; font-size: 12px; }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .header h1 {
+    font-size: 28px;
+    line-height: 34px;
+    font-weight: 700;
+    font-family: Georgia, 'Times New Roman', serif;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .hamburger {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .hamburger span {
+    width: 16px;
+    height: 1.5px;
+    background: var(--text-muted);
+    border-radius: 1px;
+  }
+
+  /* Card */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 22px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 16px 28px rgba(0,0,0,0.26);
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  /* Textarea */
+  .vow-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    font-size: 17px;
+    color: var(--text);
+    resize: none;
+    font-family: inherit;
+    line-height: 24px;
+  }
+
+  .vow-textarea::placeholder { color: var(--text-muted); }
+
+  /* Suggestion chip */
+  .suggestion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(212,162,79,0.08);
+    border: 1px solid rgba(212,162,79,0.2);
+    font-size: 13px;
+    color: var(--gold);
+    cursor: pointer;
+  }
+
+  .suggestion-chip svg { width: 12px; height: 12px; }
+
+  /* Primary button */
+  .btn-primary {
+    width: 100%;
+    min-height: 52px;
+    border-radius: 18px;
+    border: none;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep));
+    box-shadow: 0 12px 24px rgba(212,162,79,0.28);
+    font-size: 15px;
+    font-weight: 800;
+    color: #0B0D11;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-primary.disabled {
+    opacity: 0.4;
+    box-shadow: none;
+  }
+
+  /* Dare link */
+  .dare-link {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  .dare-link span { text-decoration: underline; }
+
+  /* Step 2: Ceremony vow display */
+  .ceremony-vow {
+    text-align: center;
+    padding: 8px 0;
+  }
+
+  .ceremony-vow p {
+    font-size: 22px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-weight: 500;
+    line-height: 30px;
+    color: var(--gold);
+    text-shadow: 0 0 40px rgba(212,162,79,0.15);
+  }
+
+  /* Terms block */
+  .terms-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+  }
+
+  .term-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .term-row:last-child { border-bottom: none; }
+
+  .term-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .term-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: rgba(212,162,79,0.08);
+    border: 1px solid rgba(212,162,79,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+
+  .term-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+
+  .term-value {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .term-value.gold { color: var(--gold); }
+
+  .change-btn {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+
+  /* Expanded term (accordion) */
+  .term-expanded {
+    padding: 0 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .chip {
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+  }
+
+  .chip.active {
+    background: rgba(212,162,79,0.1);
+    border-color: rgba(212,162,79,0.3);
+    color: var(--gold-bright);
+  }
+
+  /* Solo link */
+  .solo-link {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 4px 0;
+  }
+
+  /* Oath */
+  .oath-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 4px 0;
+  }
+
+  .oath-checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 1.5px solid var(--border-strong);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .oath-checkbox.checked {
+    background: var(--gold);
+    border-color: var(--gold);
+  }
+
+  .oath-checkbox.checked::after {
+    content: '✓';
+    color: #0B0D11;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .oath-text {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-secondary);
+    font-style: italic;
+  }
+
+  /* Back link */
+  .back-link {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    padding: 4px 0;
+  }
+
+  /* Stake subtext */
+  .stake-subtext {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: -12px;
+  }
+
+  /* Footer area */
+  .footer-area {
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-top: 16px;
+  }
+
+  /* Arrow between frames */
+  .arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    font-size: 32px;
+    padding: 0 8px;
+    align-self: center;
+  }
+
+  /* Section title for comparison */
+  .page-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    font-family: Georgia, 'Times New Roman', serif;
+  }
+
+  /* Annotation */
+  .annotation {
+    font-size: 11px;
+    line-height: 16px;
+    color: var(--text-muted);
+    background: rgba(212,162,79,0.04);
+    border: 1px solid rgba(212,162,79,0.1);
+    border-radius: 8px;
+    padding: 10px 14px;
+    max-width: 375px;
+    text-align: center;
+  }
+
+  .annotation strong { color: var(--gold); font-weight: 600; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .mock-grid { flex-direction: column; align-items: center; }
+    .arrow { transform: rotate(90deg); }
+  }
+
+  /* Step 2 variant: with expanded witness */
+  .witness-expanded-section {
+    padding: 12px 20px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .witness-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .witness-input {
+    flex: 1;
+    background: var(--surface-elevated);
+    border: 1px solid var(--border-strong);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+  }
+
+  .add-btn {
+    padding: 10px 18px;
+    border-radius: 12px;
+    background: rgba(212,162,79,0.12);
+    border: 1px solid rgba(212,162,79,0.25);
+    color: var(--gold);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .cancel-link {
+    font-size: 13px;
+    color: var(--text-muted);
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .comparison-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+    font-family: Georgia, 'Times New Roman', serif;
+    margin-bottom: 8px;
+  }
+
+  .comparison-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    text-align: center;
+    max-width: 600px;
+    margin: 0 auto 32px;
+    line-height: 22px;
+  }
+</style>
+</head>
+<body>
+
+<div class="comparison-title">Quick Vow Redesign — Returning Users</div>
+<div class="comparison-subtitle">
+  Two steps: Compose → Seal. Page 1 captures the vow. Page 2 is a ceremony/contract screen with pre-filled terms (tap to edit). The user reads their vow back to themselves before committing.
+</div>
+
+<div class="mock-grid">
+
+  <!-- ============================================ -->
+  <!-- STEP 1: COMPOSE                              -->
+  <!-- ============================================ -->
+  <div class="mock-column">
+    <div class="mock-label">Step 1 — Compose</div>
+    <div class="mock-sublabel">One input. One purpose. "What are you committing to?"</div>
+
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <span class="status-icons">●●● 5G 🔋</span>
+      </div>
+      <div class="screen-content">
+
+        <!-- Header -->
+        <div class="header">
+          <h1>New Vow</h1>
+          <div class="hamburger">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <!-- Vow input card -->
+        <div class="card">
+          <span class="section-label">I WILL...</span>
+          <textarea class="vow-textarea" rows="4" placeholder="No phone in bed all week" readonly>Run 3 miles every morning</textarea>
+          <div class="suggestion-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3l1.5 4.5H18l-3.5 2.5L16 14.5 12 12l-4 2.5L9.5 10 6 7.5h4.5z"/></svg>
+            Run 3 miles every morning, for 7 days.
+          </div>
+        </div>
+
+        <!-- Dare link -->
+        <div class="dare-link">
+          or <span>dare a friend →</span>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-area">
+          <button class="btn-primary">Next</button>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="annotation">
+      <strong>Design intent:</strong> Maximally simple. The only creative input is the vow text. Everything else (witness, stake, deadline) lives on step 2 as pre-filled terms. AI suggestion appears only if the vow is vague.
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow">→</div>
+
+  <!-- ============================================ -->
+  <!-- STEP 2: SEAL (default — all terms collapsed) -->
+  <!-- ============================================ -->
+  <div class="mock-column">
+    <div class="mock-label">Step 2 — Seal (Default)</div>
+    <div class="mock-sublabel">The contract. All terms pre-filled from smart defaults. Scan, confirm, seal.</div>
+
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <span class="status-icons">●●● 5G 🔋</span>
+      </div>
+      <div class="screen-content">
+
+        <!-- Header -->
+        <div class="header">
+          <h1 style="font-size: 20px; color: var(--text-muted); font-weight: 500; font-family: inherit; letter-spacing: 0;">Review & seal</h1>
+          <div class="hamburger">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <!-- Ceremony vow display -->
+        <div class="ceremony-vow">
+          <p>&ldquo;Run 3 miles every morning.&rdquo;</p>
+        </div>
+
+        <!-- Terms block -->
+        <div class="terms-block">
+          <!-- Witness -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">👤</div>
+              <div>
+                <div class="term-label">Witness</div>
+                <div class="term-value">Jordan</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- Stake -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">$</div>
+              <div>
+                <div class="term-label">At stake</div>
+                <div class="term-value gold">$25</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- Deadline -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">📅</div>
+              <div>
+                <div class="term-label">Verdict day</div>
+                <div class="term-value">Sat, Apr 19</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- If broken -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">⚖️</div>
+              <div>
+                <div class="term-label">If broken</div>
+                <div class="term-value">$25 → NRA</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+        </div>
+
+        <!-- Solo option -->
+        <div class="solo-link">No witness — just my word</div>
+
+        <!-- Oath -->
+        <div class="oath-row">
+          <div class="oath-checkbox checked"></div>
+          <div class="oath-text">I do solemnly swear to honor this vow and accept the consequences.</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-area">
+          <button class="btn-primary">Seal this vow</button>
+          <div class="stake-subtext">$25 held until verdict</div>
+          <div class="back-link">Back</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="annotation">
+      <strong>The 90% case:</strong> Everything is pre-filled from the user's last vow. They read their vow in gold, scan 4 term rows, check the oath, seal. Two taps total (oath + seal). Faster than scrolling through 10 sections.
+    </div>
+  </div>
+
+  <!-- ============================================ -->
+  <!-- STEP 2: SEAL (witness expanded)              -->
+  <!-- ============================================ -->
+  <div class="mock-column">
+    <div class="mock-label">Step 2 — Witness Expanded</div>
+    <div class="mock-sublabel">User tapped "Change" on the witness row. Accordion opens with memory chips + new name input.</div>
+
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <span class="status-icons">●●● 5G 🔋</span>
+      </div>
+      <div class="screen-content">
+
+        <!-- Header -->
+        <div class="header">
+          <h1 style="font-size: 20px; color: var(--text-muted); font-weight: 500; font-family: inherit; letter-spacing: 0;">Review & seal</h1>
+          <div class="hamburger">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+
+        <!-- Ceremony vow display -->
+        <div class="ceremony-vow">
+          <p>&ldquo;Run 3 miles every morning.&rdquo;</p>
+        </div>
+
+        <!-- Terms block with witness expanded -->
+        <div class="terms-block">
+          <!-- Witness (expanded) -->
+          <div class="term-row" style="border-bottom: none;">
+            <div class="term-left">
+              <div class="term-icon">👤</div>
+              <div>
+                <div class="term-label">Witness</div>
+                <div class="term-value">Jordan</div>
+              </div>
+            </div>
+            <button class="change-btn" style="color: var(--gold);">Done</button>
+          </div>
+          <div class="witness-expanded-section">
+            <div class="chip-row">
+              <div class="chip active">Jordan</div>
+              <div class="chip">Mom</div>
+              <div class="chip">Sarah</div>
+              <div class="chip">+ New</div>
+            </div>
+          </div>
+
+          <!-- Stake (collapsed) -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">$</div>
+              <div>
+                <div class="term-label">At stake</div>
+                <div class="term-value gold">$25</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- Deadline (collapsed) -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">📅</div>
+              <div>
+                <div class="term-label">Verdict day</div>
+                <div class="term-value">Sat, Apr 19</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- If broken (collapsed) -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">⚖️</div>
+              <div>
+                <div class="term-label">If broken</div>
+                <div class="term-value">$25 → NRA</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+        </div>
+
+        <!-- Solo option -->
+        <div class="solo-link">No witness — just my word</div>
+
+        <!-- Oath -->
+        <div class="oath-row">
+          <div class="oath-checkbox"></div>
+          <div class="oath-text">I do solemnly swear to honor this vow and accept the consequences.</div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-area">
+          <button class="btn-primary disabled">Seal this vow</button>
+          <div class="back-link">Back</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="annotation">
+      <strong>Accordion pattern:</strong> Only one term section expands at a time. Memory chips for past witnesses. "+ New" opens an inline name input. "Done" collapses back to the summary row. The rest of the contract stays visible.
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================ -->
+<!-- ROW 2: Stake expanded + New witness + $0 vow -->
+<!-- ============================================ -->
+<div style="margin-top: 48px;">
+  <div class="comparison-subtitle" style="margin-bottom: 32px;">
+    Additional states: stake editing, new witness entry, and $0 (accountability only) variant.
+  </div>
+</div>
+
+<div class="mock-grid">
+
+  <!-- STEP 2: Stake expanded -->
+  <div class="mock-column">
+    <div class="mock-label">Stake Expanded</div>
+    <div class="mock-sublabel">User tapped "Change" on stake row.</div>
+
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <span class="status-icons">●●● 5G 🔋</span>
+      </div>
+      <div class="screen-content">
+
+        <div class="header">
+          <h1 style="font-size: 20px; color: var(--text-muted); font-weight: 500; font-family: inherit; letter-spacing: 0;">Review & seal</h1>
+          <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+
+        <div class="ceremony-vow">
+          <p>&ldquo;Run 3 miles every morning.&rdquo;</p>
+        </div>
+
+        <div class="terms-block">
+          <!-- Witness (collapsed) -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">👤</div>
+              <div>
+                <div class="term-label">Witness</div>
+                <div class="term-value">Jordan</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- Stake (expanded) -->
+          <div class="term-row" style="border-bottom: none;">
+            <div class="term-left">
+              <div class="term-icon">$</div>
+              <div>
+                <div class="term-label">At stake</div>
+                <div class="term-value gold">$25</div>
+              </div>
+            </div>
+            <button class="change-btn" style="color: var(--gold);">Done</button>
+          </div>
+          <div class="witness-expanded-section">
+            <div class="chip-row">
+              <div class="chip">$10</div>
+              <div class="chip active">$25</div>
+              <div class="chip">$50</div>
+              <div class="chip">$100</div>
+            </div>
+            <div style="font-size: 13px; color: var(--text-muted); cursor: pointer; padding-top: 4px;">
+              or go accountability only
+            </div>
+          </div>
+
+          <!-- Deadline (collapsed) -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">📅</div>
+              <div>
+                <div class="term-label">Verdict day</div>
+                <div class="term-value">Sat, Apr 19</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- If broken (collapsed) -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">⚖️</div>
+              <div>
+                <div class="term-label">If broken</div>
+                <div class="term-value">$25 → NRA</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+        </div>
+
+        <div class="solo-link">No witness — just my word</div>
+
+        <div class="oath-row">
+          <div class="oath-checkbox"></div>
+          <div class="oath-text">I do solemnly swear to honor this vow and accept the consequences.</div>
+        </div>
+
+        <div class="footer-area">
+          <button class="btn-primary disabled">Seal this vow</button>
+          <div class="back-link">Back</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: New witness input -->
+  <div class="mock-column">
+    <div class="mock-label">New Witness Entry</div>
+    <div class="mock-sublabel">User tapped "+ New" in witness chips.</div>
+
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <span class="status-icons">●●● 5G 🔋</span>
+      </div>
+      <div class="screen-content">
+
+        <div class="header">
+          <h1 style="font-size: 20px; color: var(--text-muted); font-weight: 500; font-family: inherit; letter-spacing: 0;">Review & seal</h1>
+          <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+
+        <div class="ceremony-vow">
+          <p>&ldquo;Run 3 miles every morning.&rdquo;</p>
+        </div>
+
+        <div class="terms-block">
+          <!-- Witness (expanded with new input) -->
+          <div class="term-row" style="border-bottom: none;">
+            <div class="term-left">
+              <div class="term-icon">👤</div>
+              <div>
+                <div class="term-label">Witness</div>
+                <div class="term-value" style="color: var(--text-muted);">New witness</div>
+              </div>
+            </div>
+            <button class="change-btn" style="color: var(--gold);">Done</button>
+          </div>
+          <div class="witness-expanded-section">
+            <div class="chip-row">
+              <div class="chip">Jordan</div>
+              <div class="chip">Mom</div>
+              <div class="chip">Sarah</div>
+              <div class="chip active">+ New</div>
+            </div>
+            <div class="witness-input-row">
+              <input class="witness-input" type="text" placeholder="Their name" value="Alex" readonly />
+              <button class="add-btn">Add</button>
+            </div>
+          </div>
+
+          <!-- Stake (collapsed) -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">$</div>
+              <div>
+                <div class="term-label">At stake</div>
+                <div class="term-value gold">$25</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- Deadline (collapsed) -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">📅</div>
+              <div>
+                <div class="term-label">Verdict day</div>
+                <div class="term-value">Sat, Apr 19</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- If broken (collapsed) -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">⚖️</div>
+              <div>
+                <div class="term-label">If broken</div>
+                <div class="term-value">$25 → NRA</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+        </div>
+
+        <div class="solo-link">No witness — just my word</div>
+
+        <div class="oath-row">
+          <div class="oath-checkbox"></div>
+          <div class="oath-text">I do solemnly swear to honor this vow and accept the consequences.</div>
+        </div>
+
+        <div class="footer-area">
+          <button class="btn-primary disabled">Seal this vow</button>
+          <div class="back-link">Back</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: $0 vow (no stake) -->
+  <div class="mock-column">
+    <div class="mock-label">$0 Vow Variant</div>
+    <div class="mock-sublabel">User chose "accountability only." Stake row and "if broken" row adapt.</div>
+
+    <div class="phone-frame">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <span class="status-icons">●●● 5G 🔋</span>
+      </div>
+      <div class="screen-content">
+
+        <div class="header">
+          <h1 style="font-size: 20px; color: var(--text-muted); font-weight: 500; font-family: inherit; letter-spacing: 0;">Review & seal</h1>
+          <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+
+        <div class="ceremony-vow">
+          <p>&ldquo;Run 3 miles every morning.&rdquo;</p>
+        </div>
+
+        <div class="terms-block">
+          <!-- Witness -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">👤</div>
+              <div>
+                <div class="term-label">Witness</div>
+                <div class="term-value">Jordan</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- Stake — accountability only -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">$</div>
+              <div>
+                <div class="term-label">At stake</div>
+                <div class="term-value" style="color: var(--text-secondary);">Accountability only</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- Deadline -->
+          <div class="term-row">
+            <div class="term-left">
+              <div class="term-icon">📅</div>
+              <div>
+                <div class="term-label">Verdict day</div>
+                <div class="term-value">Sat, Apr 19</div>
+              </div>
+            </div>
+            <button class="change-btn">Change</button>
+          </div>
+
+          <!-- No "if broken" row when stake is $0 -->
+        </div>
+
+        <div class="solo-link">No witness — just my word</div>
+
+        <div class="oath-row">
+          <div class="oath-checkbox checked"></div>
+          <div class="oath-text">I do solemnly swear to honor this vow and accept the consequences.</div>
+        </div>
+
+        <div class="footer-area">
+          <button class="btn-primary">Seal this vow</button>
+          <div class="back-link">Back</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="annotation">
+      <strong>$0 adaptation:</strong> "If broken" row disappears entirely when stake is $0. The terms block stays clean — only 3 rows. No stake subtext below the seal button. The "Accountability only" label makes it clear this is a deliberate choice, not a missing field.
+    </div>
+  </div>
+
+</div>
+
+<!-- ============================================ -->
+<!-- Comparison: BEFORE vs AFTER                   -->
+<!-- ============================================ -->
+<div style="margin-top: 64px;">
+  <div class="comparison-title">Before vs. After — Side by Side</div>
+  <div class="comparison-subtitle">
+    Current: one page, 10 sections, form-like. Proposed: two steps, ceremony-first.
+  </div>
+</div>
+
+<div class="mock-grid">
+
+  <!-- BEFORE -->
+  <div class="mock-column">
+    <div class="mock-label" style="background: rgba(255,123,123,0.08); border-color: rgba(255,123,123,0.2); color: var(--danger);">Before — Current</div>
+    <div class="mock-sublabel">10 interactive sections. Scrolls 3+ screens on mobile. Witness auto-filled and scrolled past.</div>
+
+    <div class="phone-frame" style="min-height: 900px;">
+      <div class="status-bar">
+        <span class="status-time">9:41</span>
+        <span class="status-icons">●●● 5G 🔋</span>
+      </div>
+      <div class="screen-content">
+
+        <div class="header">
+          <h1>New Vow</h1>
+          <div class="hamburger"><span></span><span></span><span></span></div>
+        </div>
+
+        <!-- Vow card -->
+        <div class="card" style="gap: 8px;">
+          <span class="section-label">YOUR VOW</span>
+          <textarea class="vow-textarea" rows="3" readonly style="font-size: 16px;">Run 3 miles every morning</textarea>
+          <div style="height: 1px; background: var(--border);"></div>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 13px; font-weight: 600; color: var(--text-muted);">Ends</span>
+            <div class="chip-row">
+              <div class="chip" style="padding: 6px 12px; font-size: 12px;">Tomorrow</div>
+              <div class="chip" style="padding: 6px 12px; font-size: 12px;">End of week</div>
+              <div class="chip active" style="padding: 6px 12px; font-size: 12px;">7 days</div>
+              <div class="chip" style="padding: 6px 12px; font-size: 12px;">Pick</div>
+            </div>
+          </div>
+          <div style="font-size: 13px; color: var(--text-muted);">Sat, Apr 19</div>
+        </div>
+
+        <!-- Witness card -->
+        <div class="card" style="gap: 8px;">
+          <span class="section-label">YOUR WITNESS</span>
+          <div class="chip-row">
+            <div class="chip active" style="padding: 6px 12px; font-size: 12px;">Jordan</div>
+            <div class="chip" style="padding: 6px 12px; font-size: 12px;">Mom</div>
+            <div class="chip" style="padding: 6px 12px; font-size: 12px;">Sarah</div>
+            <div class="chip" style="padding: 6px 12px; font-size: 12px;">+ New</div>
+          </div>
+        </div>
+
+        <div class="dare-link">or <span>dare a friend →</span></div>
+
+        <!-- Stake card -->
+        <div class="card" style="gap: 8px;">
+          <span class="section-label">STAKE</span>
+          <div class="chip-row">
+            <div class="chip" style="padding: 6px 12px; font-size: 12px;">$10</div>
+            <div class="chip active" style="padding: 6px 12px; font-size: 12px;">$25</div>
+            <div class="chip" style="padding: 6px 12px; font-size: 12px;">$50</div>
+            <div class="chip" style="padding: 6px 12px; font-size: 12px;">$100</div>
+          </div>
+          <div style="font-size: 13px; color: var(--text-muted);">or go accountability only</div>
+          <div style="height: 1px; background: var(--border);"></div>
+          <span class="section-label">IF YOU BREAK IT</span>
+          <div style="font-size: 17px; font-family: Georgia, serif; font-weight: 700; color: var(--gold);">$25 goes to NRA.</div>
+          <div style="display: flex; border: 1px solid var(--border); border-radius: 12px; overflow: hidden;">
+            <div style="flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-muted);">A good cause</div>
+            <div style="flex: 1; padding: 10px; text-align: center; font-size: 13px; font-weight: 600; background: rgba(212,162,79,0.12); color: var(--gold-bright);">An anti-cause</div>
+          </div>
+          <div class="chip-row">
+            <div class="chip active" style="padding: 6px 10px; font-size: 11px;">NRA</div>
+            <div class="chip" style="padding: 6px 10px; font-size: 11px;">Tobacco lobby</div>
+            <div class="chip" style="padding: 6px 10px; font-size: 11px;">Oil lobby</div>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="card" style="gap: 8px;">
+          <span class="section-label">PREVIEW</span>
+          <div style="font-size: 17px; font-family: Georgia, serif; color: var(--gold); text-align: center; padding: 8px 0;">&ldquo;Run 3 miles every morning.&rdquo;</div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px;">
+            <div style="color: var(--text-secondary);">👤 Jordan</div>
+            <div style="color: var(--gold);">$ $25</div>
+            <div style="color: var(--text-secondary);">📅 Apr 19</div>
+            <div style="color: var(--text-secondary);">⚖️ NRA</div>
+          </div>
+        </div>
+
+        <!-- Oath -->
+        <div class="oath-row">
+          <div class="oath-checkbox checked"></div>
+          <div class="oath-text">I do solemnly swear to honor this vow and accept the consequences.</div>
+        </div>
+
+        <div class="footer-area">
+          <button class="btn-primary">Seal this vow</button>
+          <div class="stake-subtext">$25 held until verdict</div>
+          <div style="text-align: center; font-size: 13px; text-decoration: underline; color: var(--text-muted);">Use guided flow instead</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Arrow -->
+  <div class="arrow">→</div>
+
+  <!-- AFTER (both steps shown) -->
+  <div class="mock-column">
+    <div class="mock-label" style="background: rgba(82,214,154,0.08); border-color: rgba(82,214,154,0.2); color: var(--success);">After — Proposed</div>
+    <div class="mock-sublabel">Step 1: one input. Step 2: four summary rows. Compose → Contract → Seal.</div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Mini step 1 -->
+      <div class="phone-frame" style="min-height: 420px;">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <span class="status-icons">●●● 5G 🔋</span>
+        </div>
+        <div class="screen-content">
+          <div class="header">
+            <h1>New Vow</h1>
+            <div class="hamburger"><span></span><span></span><span></span></div>
+          </div>
+          <div class="card">
+            <span class="section-label">I WILL...</span>
+            <textarea class="vow-textarea" rows="3" readonly>Run 3 miles every morning</textarea>
+          </div>
+          <div class="footer-area" style="padding-top: 8px;">
+            <button class="btn-primary">Next</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="text-align: center; font-size: 14px; color: var(--text-muted);">↓</div>
+
+      <!-- Mini step 2 -->
+      <div class="phone-frame" style="min-height: 520px;">
+        <div class="status-bar">
+          <span class="status-time">9:41</span>
+          <span class="status-icons">●●● 5G 🔋</span>
+        </div>
+        <div class="screen-content">
+          <div class="ceremony-vow" style="padding-top: 4px;">
+            <p style="font-size: 20px;">&ldquo;Run 3 miles every morning.&rdquo;</p>
+          </div>
+          <div class="terms-block">
+            <div class="term-row" style="padding: 14px 16px;">
+              <div class="term-left">
+                <div class="term-icon" style="width: 28px; height: 28px; font-size: 12px;">👤</div>
+                <div><div class="term-label" style="font-size: 11px;">Witness</div><div class="term-value" style="font-size: 14px;">Jordan</div></div>
+              </div>
+              <button class="change-btn" style="font-size: 12px;">Change</button>
+            </div>
+            <div class="term-row" style="padding: 14px 16px;">
+              <div class="term-left">
+                <div class="term-icon" style="width: 28px; height: 28px; font-size: 12px;">$</div>
+                <div><div class="term-label" style="font-size: 11px;">At stake</div><div class="term-value gold" style="font-size: 14px;">$25</div></div>
+              </div>
+              <button class="change-btn" style="font-size: 12px;">Change</button>
+            </div>
+            <div class="term-row" style="padding: 14px 16px;">
+              <div class="term-left">
+                <div class="term-icon" style="width: 28px; height: 28px; font-size: 12px;">📅</div>
+                <div><div class="term-label" style="font-size: 11px;">Verdict day</div><div class="term-value" style="font-size: 14px;">Sat, Apr 19</div></div>
+              </div>
+              <button class="change-btn" style="font-size: 12px;">Change</button>
+            </div>
+            <div class="term-row" style="padding: 14px 16px;">
+              <div class="term-left">
+                <div class="term-icon" style="width: 28px; height: 28px; font-size: 12px;">⚖️</div>
+                <div><div class="term-label" style="font-size: 11px;">If broken</div><div class="term-value" style="font-size: 14px;">$25 → NRA</div></div>
+              </div>
+              <button class="change-btn" style="font-size: 12px;">Change</button>
+            </div>
+          </div>
+          <div class="oath-row">
+            <div class="oath-checkbox checked"></div>
+            <div class="oath-text" style="font-size: 13px;">I do solemnly swear to honor this vow and accept the consequences.</div>
+          </div>
+          <div class="footer-area" style="padding-top: 4px;">
+            <button class="btn-primary">Seal this vow</button>
+            <div class="stake-subtext">$25 held until verdict</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div style="max-width: 700px; margin: 48px auto 80px; text-align: center;">
+  <div class="annotation" style="max-width: 100%;">
+    <strong>Cross-platform note:</strong> The Expo app's Quick Vow stays as-is (single page with native contact picker + haptics). The web-only two-step redesign is appropriate because web lacks those native affordances that make single-page density tolerable. The mental model is the same on both platforms: compose → confirm terms → seal. The implementation just adapts to each platform's strengths.
+  </div>
+</div>
+
+</body>
+</html>

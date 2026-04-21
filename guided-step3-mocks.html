@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guided Step 3 — Before / After Mocks</title>
+<style>
+  :root {
+    --bg: #05070B;
+    --bg-secondary: #0A0D12;
+    --surface: #10141C;
+    --surface-elevated: #161B25;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 214, 102, 0.18);
+    --text: #F6F7FB;
+    --text-secondary: #A7B0C0;
+    --text-muted: #667085;
+    --gold: #D4A24F;
+    --gold-bright: #F0C86E;
+    --gold-deep: #8C6423;
+    --gold-glow: rgba(212, 162, 79, 0.28);
+    --success: #52D69A;
+    --danger: #FF7B7B;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #111;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    padding: 40px 20px;
+  }
+
+  .font-serif { font-family: Georgia, serif; }
+
+  .mock-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    padding: 10px 0 16px;
+  }
+
+  .mock-label.before { color: var(--danger); }
+  .mock-label.after { color: var(--success); }
+  .mock-label.state { color: var(--gold-bright); }
+
+  .mock-row {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 48px;
+  }
+
+  .mock-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* ─── Phone frame ─── */
+  .phone {
+    width: 375px;
+    min-height: 700px;
+    border-radius: 40px;
+    overflow: hidden;
+    border: 3px solid #222;
+    position: relative;
+    background: linear-gradient(135deg, var(--bg) 0%, #08101A 50%, var(--bg-secondary) 100%);
+  }
+
+  /* Ambient orbs (matching RitualScreen) */
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: -90px;
+    right: -40px;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    background: var(--gold-glow);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+  .phone::after {
+    content: '';
+    position: absolute;
+    top: 180px;
+    left: -50px;
+    width: 160px;
+    height: 160px;
+    border-radius: 50%;
+    background: rgba(94,124,250,0.12);
+    pointer-events: none;
+  }
+
+  .phone-content {
+    position: relative;
+    z-index: 1;
+    padding: 20px 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    min-height: 700px;
+  }
+
+  .phone-footer {
+    position: relative;
+    z-index: 2;
+    padding: 12px 20px 20px;
+    background: rgba(5,7,11,0.8);
+    backdrop-filter: blur(12px);
+  }
+
+  /* ─── Progress bar ─── */
+  .progress-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .progress-bar {
+    flex: 1;
+    height: 3px;
+    border-radius: 3px;
+    background: var(--border);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--gold-bright), var(--gold));
+    width: 100%;
+  }
+  .hamburger {
+    width: 32px;
+    height: 32px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .hamburger-lines {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .hamburger-lines span {
+    display: block;
+    width: 14px;
+    height: 1.5px;
+    background: var(--text-secondary);
+    border-radius: 1px;
+  }
+
+  /* ─── Vow text ─── */
+  .vow-ceremony {
+    padding: 8px 0 4px;
+    text-align: center;
+  }
+  .vow-ceremony p {
+    font-family: Georgia, serif;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 30px;
+    color: var(--gold);
+    text-shadow: 0 0 40px rgba(212,162,79,0.15);
+  }
+
+  .witness-subtitle {
+    font-size: 14px;
+    text-align: center;
+    line-height: 20px;
+    color: var(--text-secondary);
+  }
+
+  /* ─── Witness CTA (empty state) ─── */
+  .witness-cta {
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid rgba(212,162,79,0.25);
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .witness-cta:active { opacity: 0.8; }
+
+  .witness-cta-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    background: rgba(212,162,79,0.08);
+    border: 1px solid rgba(212,162,79,0.2);
+  }
+  .witness-cta-icon svg {
+    width: 24px;
+    height: 24px;
+    color: var(--gold);
+    stroke: var(--gold);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .witness-cta-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .witness-cta-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--gold);
+  }
+  .witness-cta-sub {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .witness-cta-chevron svg {
+    width: 20px;
+    height: 20px;
+    color: var(--gold);
+    stroke: var(--gold);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+
+  .skip-witness {
+    padding: 8px 0;
+    text-align: center;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+  }
+  .skip-witness span {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* ─── Inline input (AFTER state) ─── */
+  .witness-expand-area {
+    overflow: hidden;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+  }
+  .witness-expand-area.collapsed {
+    max-height: 0;
+    opacity: 0;
+  }
+  .witness-expand-area.expanded {
+    max-height: 120px;
+    opacity: 1;
+  }
+
+  .witness-input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding-top: 12px;
+  }
+  .witness-input {
+    flex: 1;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 15px;
+    color: var(--text);
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.2s;
+  }
+  .witness-input:focus {
+    border-color: rgba(255,214,102,0.18);
+    box-shadow: 0 0 0 1px rgba(255,214,102,0.18);
+  }
+  .witness-input::placeholder {
+    color: var(--text-muted);
+  }
+  .witness-add-btn {
+    height: 44px;
+    padding: 0 18px;
+    border-radius: 12px;
+    background: var(--gold-bright);
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    color: #0B0D11;
+    cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .witness-add-btn:active { opacity: 0.8; }
+
+  .witness-cancel {
+    text-align: center;
+    padding: 8px 0 0;
+  }
+  .witness-cancel span {
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+  .witness-cancel span:hover { opacity: 0.7; }
+
+  /* ─── Witness filled state ─── */
+  .witness-filled {
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+  .witness-filled-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .witness-filled-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(212,162,79,0.08);
+    border: 1px solid rgba(212,162,79,0.2);
+  }
+  .witness-filled-icon svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--gold);
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .witness-filled-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+  .witness-filled-label {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+  .witness-change-btn {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    background: none;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  /* ─── Details card ─── */
+  .details-card {
+    border-radius: 22px;
+    padding: 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: 0 16px 28px rgba(0,0,0,0.26);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .detail-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .detail-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .detail-left svg {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+  }
+  .detail-label {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .detail-value {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .detail-value.gold {
+    font-weight: 700;
+    color: var(--gold);
+  }
+
+  /* ─── Oath checkbox ─── */
+  .oath {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .oath-box {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 2px solid var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .oath-box.checked {
+    background: var(--gold-bright);
+    border-color: var(--gold-bright);
+  }
+  .oath-box.checked svg {
+    stroke: #0B0D11;
+  }
+  .oath-label {
+    font-size: 14px;
+    line-height: 20px;
+    color: var(--text-secondary);
+  }
+
+  /* ─── Primary button ─── */
+  .primary-btn {
+    width: 100%;
+    border-radius: 18px;
+    overflow: hidden;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 12px 24px rgba(212,162,79,0.28);
+  }
+  .primary-btn-inner {
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep));
+  }
+  .primary-btn-inner span {
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    color: #0B0D11;
+    font-family: inherit;
+  }
+  .primary-btn.disabled {
+    box-shadow: none;
+  }
+  .primary-btn.disabled .primary-btn-inner {
+    background: #29303C;
+  }
+  .primary-btn.disabled .primary-btn-inner span {
+    color: var(--text-muted);
+  }
+
+  .stake-held {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  .back-link {
+    text-align: center;
+    padding: 8px 0;
+  }
+  .back-link span {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  /* ─── Native prompt overlay (BEFORE mock) ─── */
+  .prompt-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 40px;
+  }
+  .prompt-dialog {
+    width: 270px;
+    background: #2C2C2E;
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .prompt-body {
+    padding: 20px 16px 10px;
+    text-align: center;
+  }
+  .prompt-title {
+    font-size: 17px;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .prompt-input {
+    width: 100%;
+    background: #1C1C1E;
+    border: 0.5px solid rgba(255,255,255,0.15);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 15px;
+    color: #fff;
+    outline: none;
+    font-family: inherit;
+  }
+  .prompt-buttons {
+    display: flex;
+    border-top: 0.5px solid rgba(255,255,255,0.15);
+  }
+  .prompt-btn {
+    flex: 1;
+    padding: 12px 0;
+    text-align: center;
+    font-size: 17px;
+    color: #0A84FF;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .prompt-btn:first-child {
+    border-right: 0.5px solid rgba(255,255,255,0.15);
+  }
+  .prompt-btn.bold {
+    font-weight: 600;
+  }
+
+  /* Section divider */
+  .section-divider {
+    text-align: center;
+    padding: 32px 0 8px;
+    position: relative;
+  }
+  .section-divider::before {
+    content: '';
+    position: absolute;
+    left: 10%;
+    right: 10%;
+    top: 50%;
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+  .section-divider span {
+    position: relative;
+    background: #111;
+    padding: 0 16px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     BEFORE: Current state with native prompt()
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="mock-row">
+  <div class="mock-col">
+    <div class="mock-label before">BEFORE — Current (native prompt)</div>
+    <div class="phone">
+      <!-- Native prompt overlay -->
+      <div class="prompt-overlay">
+        <div class="prompt-dialog">
+          <div class="prompt-body">
+            <div class="prompt-title">Who should hold you to it?</div>
+            <input class="prompt-input" value="Joe" readonly>
+          </div>
+          <div class="prompt-buttons">
+            <button class="prompt-btn">Cancel</button>
+            <button class="prompt-btn bold">OK</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="phone-content">
+        <!-- Progress bar -->
+        <div class="progress-row">
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="hamburger">
+            <div class="hamburger-lines"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Vow text -->
+        <div class="vow-ceremony">
+          <p>&ldquo;Finish cloning promise me Ned repo&rdquo;</p>
+        </div>
+
+        <p class="witness-subtitle">After you seal, share a link — whoever accepts becomes your judge.</p>
+
+        <!-- Witness CTA (empty state — behind prompt) -->
+        <div class="witness-cta" style="opacity: 0.5;">
+          <div class="witness-cta-icon">
+            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          </div>
+          <div class="witness-cta-text">
+            <span class="witness-cta-title">Text a friend</span>
+            <span class="witness-cta-sub">They&rsquo;ll decide if you kept your word</span>
+          </div>
+          <div class="witness-cta-chevron">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+        <button class="skip-witness" style="opacity: 0.5;">
+          <span>I&rsquo;ll hold myself accountable</span>
+        </button>
+
+        <!-- Details card -->
+        <div class="details-card" style="opacity: 0.5;">
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span class="detail-label">Stake</span>
+            </div>
+            <span class="detail-value gold">$10</span>
+          </div>
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><path d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
+              <span class="detail-label">If broken</span>
+            </div>
+            <span class="detail-value">NRA</span>
+          </div>
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="detail-label">Verdict</span>
+            </div>
+            <span class="detail-value">Mon, Apr 20</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="section-divider"><span>Proposed Changes</span></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     AFTER STATE 1: Tapped "Text a friend" — input expanded
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="mock-row">
+  <div class="mock-col">
+    <div class="mock-label after">AFTER — Tap "Text a friend" → inline input expands</div>
+    <div class="phone">
+      <div class="phone-content">
+        <!-- Progress bar -->
+        <div class="progress-row">
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="hamburger">
+            <div class="hamburger-lines"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Vow text -->
+        <div class="vow-ceremony">
+          <p>&ldquo;Finish cloning promise me Ned repo&rdquo;</p>
+        </div>
+
+        <p class="witness-subtitle">After you seal, share a link — whoever accepts becomes your judge.</p>
+
+        <!-- Witness CTA — expanded with input -->
+        <div style="display: flex; flex-direction: column; gap: 0;">
+          <div class="witness-cta" style="border-bottom-left-radius: 0; border-bottom-right-radius: 0; border-bottom-color: transparent;">
+            <div class="witness-cta-icon">
+              <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+            </div>
+            <div class="witness-cta-text">
+              <span class="witness-cta-title">Text a friend</span>
+              <span class="witness-cta-sub">They&rsquo;ll decide if you kept your word</span>
+            </div>
+          </div>
+          <!-- Expanded input area -->
+          <div style="
+            background: var(--surface);
+            border: 1px solid rgba(212,162,79,0.25);
+            border-top: none;
+            border-radius: 0 0 18px 18px;
+            padding: 0 16px 16px;
+          ">
+            <div class="witness-input-row">
+              <input class="witness-input" placeholder="Their name" value="Joe" style="border-color: rgba(255,214,102,0.18); box-shadow: 0 0 0 1px rgba(255,214,102,0.18);" autofocus>
+              <button class="witness-add-btn">Add</button>
+            </div>
+            <div class="witness-cancel"><span>Cancel</span></div>
+          </div>
+        </div>
+
+        <!-- Updated copy -->
+        <button class="skip-witness">
+          <span>Go without a witness</span>
+        </button>
+
+        <!-- Details card -->
+        <div class="details-card">
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span class="detail-label">Stake</span>
+            </div>
+            <span class="detail-value gold">$10</span>
+          </div>
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><path d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
+              <span class="detail-label">If broken</span>
+            </div>
+            <span class="detail-value">NRA</span>
+          </div>
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="detail-label">Verdict</span>
+            </div>
+            <span class="detail-value">Mon, Apr 20</span>
+          </div>
+        </div>
+
+        <!-- Oath -->
+        <div class="oath">
+          <div class="oath-box">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="display:none;">
+              <path d="M3 7L6 10L11 4" stroke="#0B0D11" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="oath-label">I do solemnly swear to honor this vow and accept the consequences.</span>
+        </div>
+
+        <div class="back-link"><span>Back</span></div>
+      </div>
+
+      <div class="phone-footer">
+        <button class="primary-btn disabled">
+          <div class="primary-btn-inner"><span>Seal this vow</span></div>
+        </button>
+        <p class="stake-held">$10 held until verdict</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+       AFTER STATE 2: Witness added — filled state
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="mock-col">
+    <div class="mock-label state">AFTER — Witness added (filled state)</div>
+    <div class="phone">
+      <div class="phone-content">
+        <!-- Progress bar -->
+        <div class="progress-row">
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="hamburger">
+            <div class="hamburger-lines"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Vow text -->
+        <div class="vow-ceremony">
+          <p>&ldquo;Finish cloning promise me Ned repo&rdquo;</p>
+        </div>
+
+        <p class="witness-subtitle">After you seal, share a link — whoever accepts becomes your judge.</p>
+
+        <!-- Witness filled state -->
+        <div class="witness-filled">
+          <div class="witness-filled-left">
+            <div class="witness-filled-icon">
+              <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            </div>
+            <div>
+              <div class="witness-filled-name">Joe</div>
+              <div class="witness-filled-label">Your witness</div>
+            </div>
+          </div>
+          <button class="witness-change-btn">Change</button>
+        </div>
+
+        <!-- Details card -->
+        <div class="details-card">
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span class="detail-label">Stake</span>
+            </div>
+            <span class="detail-value gold">$10</span>
+          </div>
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><path d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
+              <span class="detail-label">If broken</span>
+            </div>
+            <span class="detail-value">NRA</span>
+          </div>
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="detail-label">Verdict</span>
+            </div>
+            <span class="detail-value">Mon, Apr 20</span>
+          </div>
+        </div>
+
+        <!-- Oath — checked -->
+        <div class="oath">
+          <div class="oath-box checked">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <path d="M3 7L6 10L11 4" stroke="#0B0D11" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="oath-label">I do solemnly swear to honor this vow and accept the consequences.</span>
+        </div>
+
+        <div class="back-link"><span>Back</span></div>
+      </div>
+
+      <div class="phone-footer">
+        <button class="primary-btn">
+          <div class="primary-btn-inner"><span>Seal this vow</span></div>
+        </button>
+        <p class="stake-held">$10 held until verdict</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="section-divider"><span>Empty state (no witness yet)</span></div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════
+     AFTER: Default state — before tapping anything
+     ═══════════════════════════════════════════════════════════════ -->
+<div class="mock-row">
+  <div class="mock-col">
+    <div class="mock-label after">AFTER — Default step 3 (before interaction)</div>
+    <div class="phone">
+      <div class="phone-content">
+        <!-- Progress bar -->
+        <div class="progress-row">
+          <div class="progress-bar"><div class="progress-fill"></div></div>
+          <div class="hamburger">
+            <div class="hamburger-lines"><span></span><span></span><span></span></div>
+          </div>
+        </div>
+
+        <!-- Vow text -->
+        <div class="vow-ceremony">
+          <p>&ldquo;Finish cloning promise me Ned repo&rdquo;</p>
+        </div>
+
+        <p class="witness-subtitle">After you seal, share a link — whoever accepts becomes your judge.</p>
+
+        <!-- Witness CTA — collapsed (default) -->
+        <div class="witness-cta">
+          <div class="witness-cta-icon">
+            <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/></svg>
+          </div>
+          <div class="witness-cta-text">
+            <span class="witness-cta-title">Text a friend</span>
+            <span class="witness-cta-sub">They&rsquo;ll decide if you kept your word</span>
+          </div>
+          <div class="witness-cta-chevron">
+            <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+          </div>
+        </div>
+
+        <button class="skip-witness">
+          <span>Go without a witness</span>
+        </button>
+
+        <!-- Details card -->
+        <div class="details-card">
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+              <span class="detail-label">Stake</span>
+            </div>
+            <span class="detail-value gold">$10</span>
+          </div>
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><path d="M12 3 2 12h3v8h6v-6h2v6h6v-8h3L12 3z"/></svg>
+              <span class="detail-label">If broken</span>
+            </div>
+            <span class="detail-value">NRA</span>
+          </div>
+          <div class="detail-row">
+            <div class="detail-left">
+              <svg viewBox="0 0 24 24" style="stroke: var(--text-muted);"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span class="detail-label">Verdict</span>
+            </div>
+            <span class="detail-value">Mon, Apr 20</span>
+          </div>
+        </div>
+
+        <!-- Oath -->
+        <div class="oath">
+          <div class="oath-box">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style="display:none;">
+              <path d="M3 7L6 10L11 4" stroke="#0B0D11" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <span class="oath-label">I do solemnly swear to honor this vow and accept the consequences.</span>
+        </div>
+
+        <div class="back-link"><span>Back</span></div>
+      </div>
+
+      <div class="phone-footer">
+        <button class="primary-btn disabled">
+          <div class="primary-btn-inner"><span>Seal this vow</span></div>
+        </button>
+        <p class="stake-held">$10 held until verdict</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

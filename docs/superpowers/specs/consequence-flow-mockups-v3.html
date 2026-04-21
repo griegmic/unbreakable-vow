@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consequence Flow v3 — Final Design</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap');
+  :root {
+    --bg: #0B0D11; --surface: rgba(255,255,255,0.04); --surface-el: rgba(255,255,255,0.07);
+    --gold: #D4A24F; --gold-bright: #E8C468; --gold-deep: #B8863A;
+    --text: #F5F0E8; --text-sec: rgba(245,240,232,0.7); --text-muted: rgba(245,240,232,0.4);
+    --success: #52D69A; --danger: #DC2626;
+    --border: rgba(255,255,255,0.08); --border-s: rgba(255,255,255,0.15);
+    --hate-border: rgba(220,80,60,0.35); --hate-bg: rgba(220,80,60,0.05);
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#111318; color:#aaa; font-family:var(--sans); padding:40px 16px; }
+
+  /* Layout */
+  .page-h { text-align:center; font-size:28px; font-weight:800; color:var(--gold-bright); margin-bottom:4px; letter-spacing:-1px; }
+  .page-s { text-align:center; font-size:13px; color:var(--text-muted); margin-bottom:60px; }
+  .section-h { text-align:center; margin:70px 0 8px; font-size:11px; font-weight:700; letter-spacing:2.5px; text-transform:uppercase; color:var(--gold); }
+  .section-t { text-align:center; font-size:22px; font-weight:700; color:var(--text); margin-bottom:4px; }
+  .section-d { text-align:center; font-size:13px; color:var(--text-muted); margin-bottom:40px; max-width:500px; margin-left:auto; margin-right:auto; line-height:1.5; }
+  .role { text-align:center; font-size:10px; font-weight:700; letter-spacing:3px; text-transform:uppercase; color:var(--gold-bright); margin:50px 0 28px; display:flex; align-items:center; justify-content:center; gap:10px; }
+  .role::before,.role::after { content:''; height:1px; width:50px; background:linear-gradient(90deg,transparent,var(--gold-deep),transparent); }
+  .row { display:flex; flex-wrap:wrap; justify-content:center; gap:24px; margin-bottom:12px; }
+  .arrow { text-align:center; color:var(--text-muted); font-size:16px; opacity:.2; margin:-2px 0; }
+  .wrap { display:flex; flex-direction:column; align-items:center; gap:8px; }
+  .label { font-size:10px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); }
+  .sublabel { font-size:9px; color:rgba(245,240,232,.2); font-style:italic; margin-top:-4px; }
+  .tag { display:inline-block; font-size:8px; font-weight:700; letter-spacing:.8px; padding:2px 5px; border-radius:3px; background:rgba(212,162,79,.2); color:var(--gold-bright); margin-left:5px; vertical-align:middle; }
+
+  /* Phone */
+  .ph { width:300px; min-height:540px; background:var(--bg); border-radius:30px; border:2px solid rgba(255,255,255,.09); padding:16px 18px 24px; display:flex; flex-direction:column; gap:12px; position:relative; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  .ph.short { min-height:auto; }
+  .ph::before { content:''; position:absolute; top:0; left:50%; transform:translateX(-50%); width:80px; height:20px; background:#111318; border-radius:0 0 12px 12px; }
+
+  /* Elements */
+  .badge { display:inline-flex; align-items:center; gap:5px; margin-top:10px; font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); }
+  .badge::before { content:''; width:6px; height:6px; background:var(--gold); border-radius:2px; transform:rotate(45deg); }
+  .t1 { font-size:22px; font-weight:700; color:var(--text); line-height:1.15; letter-spacing:-.4px; font-family:var(--serif); }
+  .t1.c { text-align:center; }
+  .t1.sm { font-size:18px; }
+  .t2 { font-size:13px; color:var(--text-sec); line-height:1.45; }
+  .t2.c { text-align:center; }
+  .t2.m { color:var(--text-muted); }
+  .vq { font-size:17px; font-family:var(--serif); font-weight:500; color:var(--text); text-align:center; line-height:1.35; }
+  .spacer { flex:1; }
+
+  /* Amount grid */
+  .ag { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+  .ab { background:var(--surface); border:1.5px solid var(--border); border-radius:14px; padding:10px 0; text-align:center; }
+  .ab.on { background:rgba(212,162,79,.12); border-color:var(--gold); box-shadow:0 0 16px rgba(212,162,79,.14); }
+  .ab .v { font-size:16px; font-weight:800; color:var(--text-muted); }
+  .ab.on .v { color:var(--gold-bright); }
+  .ab .h { font-size:8px; color:var(--text-muted); margin-top:1px; line-height:1.3; }
+
+  /* Consequence statement */
+  .stmt { background:var(--surface); border:1px solid var(--border-s); border-radius:14px; padding:12px 14px; }
+  .stmt .m { font-size:14px; font-weight:600; color:var(--text); line-height:1.3; }
+  .stmt .d { font-size:12px; color:var(--text-muted); margin-top:3px; }
+
+  /* Chips */
+  .chips { display:flex; gap:7px; flex-wrap:wrap; }
+  .chip { padding:7px 12px; border-radius:18px; border:1px solid var(--border); background:var(--surface); font-size:12px; font-weight:600; color:var(--text-muted); }
+  .chip.on { border-color:var(--border-s); background:rgba(212,162,79,.14); color:var(--gold-bright); }
+
+  /* Buttons */
+  .btn { width:100%; min-height:50px; border-radius:16px; border:none; background:linear-gradient(135deg,var(--gold-bright),var(--gold),var(--gold-deep)); box-shadow:0 8px 20px rgba(212,162,79,.25); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+  .btn span { font-size:14px; font-weight:800; color:#0B0D11; letter-spacing:.2px; }
+  .btn.off { background:rgba(255,255,255,.04); border:1px solid var(--border); box-shadow:none; }
+  .btn.off span { color:var(--text-muted); opacity:.4; }
+  .btn2 { width:100%; min-height:50px; border-radius:16px; background:var(--surface); border:1px solid var(--border-s); display:flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; }
+  .btn2 span { font-size:13px; font-weight:700; color:var(--gold-bright); }
+  .link { text-align:center; font-size:12px; color:var(--text-muted); cursor:pointer; }
+  .lbl { font-size:9px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--text-muted); opacity:.55; }
+  .dl { font-size:12px; color:var(--text-muted); margin-top:-4px; }
+
+  /* Friend card */
+  .fc { background:var(--surface); border:1.5px solid var(--gold); border-radius:18px; padding:14px; display:flex; align-items:center; gap:12px; box-shadow:0 4px 12px rgba(212,162,79,.1); }
+  .fc .ic { width:42px; height:42px; border-radius:12px; background:rgba(212,162,79,.1); border:1px solid var(--border-s); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; }
+  .fc .ft { font-size:15px; font-weight:700; font-family:var(--serif); color:var(--gold-bright); }
+  .fc .fs { font-size:12px; color:var(--text-sec); margin-top:1px; }
+
+  /* Oath */
+  .oath { display:flex; align-items:flex-start; gap:10px; padding:12px 14px; border-radius:14px; border:1px solid var(--border); transition:all .2s; }
+  .oath.on { background:rgba(212,162,79,.07); border-color:rgba(212,162,79,.22); }
+  .cb { width:20px; height:20px; border-radius:5px; border:2px solid var(--text-muted); flex-shrink:0; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+  .cb.on { background:var(--gold-bright); border-color:var(--gold-bright); }
+  .cb.on::after { content:'\2713'; font-size:12px; font-weight:700; color:#0B0D11; }
+  .oath-t { font-size:14px; font-weight:700; font-family:var(--serif); color:var(--gold-bright); }
+  .oath-s { font-size:12px; color:var(--text-sec); margin-top:1px; }
+  .oath-d { font-size:11px; color:var(--text-muted); margin-top:3px; }
+
+  /* Radio cards (love/hate selector) */
+  .rc { display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:14px; border:1.5px solid var(--border); background:var(--surface); cursor:pointer; transition:all .25s ease; }
+  .rc.love.on { border-color:var(--gold); background:rgba(212,162,79,.06); }
+  .rc.hate.on { border-color:var(--hate-border); background:var(--hate-bg); }
+  .radio { width:18px; height:18px; border-radius:9px; border:2px solid var(--text-muted); flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .2s; }
+  .rc.love.on .radio { border-color:var(--gold-bright); }
+  .rc.hate.on .radio { border-color:rgba(220,80,60,.8); }
+  .radio-dot { width:8px; height:8px; border-radius:4px; display:none; }
+  .rc.on .radio-dot { display:block; }
+  .rc.love.on .radio-dot { background:var(--gold-bright); }
+  .rc.hate.on .radio-dot { background:rgba(220,80,60,.8); }
+  .rc .emoji { font-size:18px; flex-shrink:0; }
+  .rc .rc-t { font-size:14px; font-weight:600; color:var(--text-muted); transition:color .2s; }
+  .rc.on .rc-t { color:var(--text); }
+  .rc .rc-d { font-size:11px; color:var(--text-muted); margin-top:1px; line-height:1.3; }
+
+  /* Charity pills */
+  .pills { display:flex; flex-wrap:wrap; gap:7px; padding:8px 0 2px 28px; }
+  .pill { padding:8px 14px; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; }
+  .pill.love { border:1px solid var(--border-s); background:var(--surface); color:var(--text-sec); }
+  .pill.love:hover { border-color:var(--gold); color:var(--gold-bright); background:rgba(212,162,79,.06); }
+  .pill.hate { border:1px solid var(--hate-border); background:var(--hate-bg); color:rgba(245,200,200,.7); }
+  .pill.hate:hover { border-color:rgba(220,80,60,.6); color:rgba(255,180,180,.9); background:rgba(220,80,60,.1); }
+
+  /* Keep it btn */
+  .keep { width:100%; padding:12px 14px; border-radius:14px; border:1.5px dashed var(--border-s); background:rgba(212,162,79,.03); display:flex; align-items:center; gap:10px; cursor:pointer; transition:all .2s; }
+  .keep:hover { border-color:var(--gold); background:rgba(212,162,79,.08); }
+  .keep.dis { opacity:.2; pointer-events:none; }
+  .keep .kt { font-size:14px; font-weight:700; color:var(--gold-bright); }
+  .keep .kd { font-size:11px; color:var(--text-muted); }
+
+  /* Vow card */
+  .vc { border-radius:12px; background:var(--surface); border:1px solid var(--border-s); overflow:hidden; display:flex; }
+  .vc .ac { width:3px; background:var(--gold); flex-shrink:0; }
+  .vc .ct { padding:10px 12px; flex:1; }
+  .vc .vt { font-size:14px; font-family:var(--serif); font-weight:500; color:var(--text); line-height:1.35; }
+  .vc .vm { font-size:11px; color:var(--text-muted); margin-top:4px; }
+
+  /* Stats */
+  .stats { display:flex; gap:8px; }
+  .stat { flex:1; padding:10px; border-radius:12px; background:var(--surface); border:1px solid var(--border); text-align:center; }
+  .stat .sv { font-size:15px; font-weight:700; color:var(--text); }
+  .stat .sl { font-size:10px; color:var(--text-muted); margin-top:1px; }
+
+  /* Status */
+  .status { display:inline-flex; align-items:center; gap:5px; padding:5px 12px; border-radius:99px; background:rgba(82,214,154,.08); border:1px solid rgba(82,214,154,.2); }
+  .status .dot { width:7px; height:7px; border-radius:4px; background:var(--success); }
+  .status span { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--success); }
+  .status.gold { background:rgba(212,162,79,.1); border-color:rgba(212,162,79,.2); }
+  .status.gold .dot { background:var(--gold-bright); }
+  .status.gold span { color:var(--gold-bright); }
+
+  /* Wait */
+  .wait { padding:10px 12px; border-radius:12px; border:1px dashed rgba(212,162,79,.25); background:rgba(212,162,79,.03); text-align:center; font-size:12px; color:var(--text-muted); }
+
+  /* Reveal */
+  .reveal { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:8px; min-height:500px; }
+  .reveal .pre { font-size:17px; font-family:var(--serif); color:var(--text-sec); }
+  .reveal .mid { font-size:14px; color:var(--text-muted); }
+  .reveal .big { font-size:34px; font-weight:700; font-family:var(--serif); color:var(--gold-bright); letter-spacing:-1px; text-shadow:0 0 40px rgba(212,162,79,.35); margin:12px 0; }
+  .reveal .tg { font-size:13px; font-style:italic; color:var(--text-muted); }
+
+  /* Success badge */
+  .sb { display:flex; align-items:center; justify-content:center; gap:6px; padding:8px 0; border-radius:99px; background:rgba(82,214,154,.08); border:1px solid rgba(82,214,154,.12); }
+  .sb span { font-size:12px; font-weight:600; color:var(--success); }
+
+  /* Phone input */
+  .phi { display:flex; align-items:center; gap:8px; padding:11px 14px; border-radius:14px; background:rgba(255,255,255,.03); border:1.5px solid rgba(212,162,79,.18); }
+  .phi input { background:none; border:none; color:var(--text); font-size:15px; outline:none; width:100%; font-family:inherit; }
+  .phi input::placeholder { color:var(--text-muted); }
+
+  /* Payout */
+  .payout { padding:12px; border-radius:14px; background:var(--surface); border:1px solid var(--border-s); }
+  .payout .ph2 { display:flex; align-items:center; gap:8px; }
+  .payout .pt { font-size:13px; color:var(--text-sec); }
+  .payout .ps { font-size:12px; color:var(--success); margin-top:5px; margin-left:26px; }
+
+  .divider { border:none; border-top:1px dashed rgba(255,255,255,.08); margin:2px 0; }
+
+  @media(max-width:700px) { .row { flex-direction:column; align-items:center; } }
+</style>
+</head>
+<body>
+
+<div class="page-h">v3 &mdash; Final Design</div>
+<div class="page-s">Radio-card love/hate selector &middot; All audit fixes &middot; UI-craft reviewed</div>
+
+<!-- ════════════════════════════════════ -->
+<!-- VERSION 1                            -->
+<!-- ════════════════════════════════════ -->
+<div class="section-h">VERSION 1</div>
+<div class="section-t">Witness Picks Charity</div>
+<div class="section-d">Radio-card love/hate categories. Pills appear inside selected card.<br>No payouts needed. Every staked vow gets a reveal.</div>
+
+<div class="role">Maker Flow</div>
+
+<div class="row">
+  <!-- M1 -->
+  <div class="wrap">
+    <div class="label">M1: Home</div>
+    <div class="ph">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height:16px"></div>
+      <div class="t1 c">Make a vow.</div>
+      <div style="height:10px"></div>
+      <div style="background:var(--surface);border:1px solid var(--border-s);border-radius:16px;padding:14px;">
+        <div style="font-size:15px;color:var(--text-muted)">I vow to...</div>
+        <div style="font-size:15px;color:var(--text);margin-top:3px">go to the gym 3x this week</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);line-height:1.9">
+        &ldquo;No phone after 10pm for a month&rdquo;<br>
+        &ldquo;Read 30 pages every day&rdquo;
+      </div>
+      <div class="spacer"></div>
+      <div class="btn"><span>Make my vow</span></div>
+    </div>
+  </div>
+
+  <!-- M2 -->
+  <div class="wrap">
+    <div class="label">M2: Refine <span class="tag">CONDITIONAL</span></div>
+    <div class="sublabel">Only shows if vow was sharpened</div>
+    <div class="ph">
+      <div style="font-size:12px;color:var(--text-muted);margin-top:14px">&larr; Back</div>
+      <div class="t1">We sharpened it.</div>
+      <div style="height:6px"></div>
+      <div class="lbl">SHARPENED</div>
+      <div style="background:var(--surface);border:1px solid var(--border-s);border-radius:14px;padding:16px;">
+        <div style="font-size:16px;font-family:var(--serif);font-weight:600;color:var(--text);line-height:1.35">
+          &ldquo;Go to the gym at least 3 times this week&rdquo;
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn"><span>That&rsquo;s my vow</span></div>
+      <div class="link">Let me rephrase &rarr;</div>
+    </div>
+  </div>
+
+  <!-- M3 -->
+  <div class="wrap">
+    <div class="label">M3: Stake <span class="tag">UPDATED</span></div>
+    <div class="ph">
+      <div style="font-size:12px;color:var(--text-muted);margin-top:14px">&larr; Back</div>
+      <div class="t1">Set the stakes.</div>
+      <div style="height:4px"></div>
+      <div class="ag">
+        <div class="ab"><div class="v">$10</div><div class="h">A nudge</div></div>
+        <div class="ab"><div class="v">$25</div><div class="h">Enough<br>to sting</div></div>
+        <div class="ab on"><div class="v">$50</div><div class="h">You mean<br>business</div></div>
+        <div class="ab"><div class="v">$100</div><div class="h">Dead<br>serious</div></div>
+      </div>
+      <div class="stmt">
+        <div class="m">If you fail, your witness picks where the money goes.</div>
+        <div class="d">You'll find out when they accept.</div>
+      </div>
+      <div class="lbl">DEADLINE</div>
+      <div class="chips">
+        <div class="chip">This Fri</div>
+        <div class="chip on">End of wk</div>
+        <div class="chip">7 days</div>
+        <div class="chip">Pick date</div>
+      </div>
+      <div class="dl">Ends Sun, Apr 20</div>
+      <div class="btn"><span>Confirm $50 stake</span></div>
+      <div class="link">or make a free vow</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow">&darr;</div>
+
+<div class="row">
+  <!-- M4 -->
+  <div class="wrap">
+    <div class="label">M4: Witness <span class="tag">UPDATED</span></div>
+    <div class="ph">
+      <div style="height:20px"></div>
+      <div class="t1 c">Pick your witness.</div>
+      <div class="t2 c">They'll keep you honest.</div>
+      <div style="height:16px"></div>
+      <div class="fc">
+        <div class="ic">&#128100;</div>
+        <div style="flex:1">
+          <div class="ft">Pick a friend</div>
+          <div class="fs">Share a link</div>
+        </div>
+        <div style="font-size:15px;color:var(--gold-bright)">&rsaquo;</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="link">No witness &mdash; just my word</div>
+    </div>
+  </div>
+
+  <!-- M5 -->
+  <div class="wrap">
+    <div class="label">M5: Seal <span class="tag">UPDATED</span></div>
+    <div class="ph">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height:8px"></div>
+      <div class="t1 c">Seal your vow.</div>
+      <div class="t2 c" style="margin-top:2px">No takebacks.</div>
+      <div style="height:6px"></div>
+      <div class="lbl">THE VOW</div>
+      <div style="background:var(--surface);border:1px solid var(--border-s);border-radius:14px;padding:12px 14px;">
+        <div style="font-size:15px;font-family:var(--serif);font-weight:600;color:var(--text);line-height:1.35">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+        <div style="margin-top:6px;display:flex;flex-direction:column;gap:2px;">
+          <div style="font-size:12px;color:var(--text-sec)">$50 at stake</div>
+          <div style="font-size:12px;color:var(--gold-bright)">Your witness picks the penalty</div>
+          <div style="font-size:12px;color:var(--text-muted)">Verdict: Sun, Apr 20</div>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);line-height:1.5">
+        You'll share a link with Sarah.<br>
+        <span style="opacity:.5">If she doesn't accept, you'll judge yourself on verdict day.</span>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn"><span>Seal &amp; text Sarah</span></div>
+    </div>
+  </div>
+
+  <!-- M6 -->
+  <div class="wrap">
+    <div class="label">M6: Live <span class="tag">UPDATED</span></div>
+    <div class="ph">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height:8px"></div>
+      <div style="display:flex;justify-content:center"><div class="status"><div class="dot"></div><span>Vow Active</span></div></div>
+      <div class="t1 c sm">Your vow is sealed.</div>
+      <div class="vc">
+        <div class="ac"></div>
+        <div class="ct">
+          <div class="vt">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+          <div class="vm">$50 at stake &middot; Verdict: Sun, Apr 20</div>
+        </div>
+      </div>
+      <div class="wait">Waiting on Sarah...</div>
+      <div class="stats">
+        <div class="stat"><div class="sv">Day 1</div><div class="sl">of 7</div></div>
+        <div class="stat"><div class="sv">6 days</div><div class="sl">left</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow">&darr;</div>
+
+<div class="row">
+  <!-- M7 Reveal -->
+  <div class="wrap">
+    <div class="label">M7: Reveal <span class="tag">NEW</span></div>
+    <div class="ph">
+      <div class="reveal">
+        <div class="pre">Sarah made her choice.</div>
+        <div style="height:4px"></div>
+        <div class="mid">If you fail, $50 goes to...</div>
+        <div class="big">NRA</div>
+        <div class="tg">Better keep that vow.</div>
+        <div style="height:18px"></div>
+        <div class="btn" style="width:200px"><span>Continue</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- M8/9 -->
+  <div class="wrap">
+    <div class="label">M8/M9: Outcomes</div>
+    <div class="ph short" style="gap:14px">
+      <div style="height:14px"></div>
+      <div style="text-align:center;padding:18px 0;border-bottom:1px solid var(--border)">
+        <div style="font-size:24px;margin-bottom:4px">&#127881;</div>
+        <div class="t1 c sm">Vow kept!</div>
+        <div class="t2 c" style="margin-top:4px;font-size:12px">$50 refunded.</div>
+        <div style="margin-top:12px"><div class="btn" style="width:160px;margin:0 auto"><span>Share certificate</span></div></div>
+      </div>
+      <div style="text-align:center;padding:18px 0">
+        <div style="font-size:24px;margin-bottom:4px">&#128148;</div>
+        <div class="t1 c sm" style="color:rgba(220,80,60,.85)">Vow broken.</div>
+        <div class="t2 c" style="margin-top:4px;font-size:12px">$50 goes to NRA.</div>
+        <div style="margin-top:12px"><div class="btn2" style="width:160px;margin:0 auto"><span>Make a new vow</span></div></div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:8px;font-style:italic">The best revenge is keeping your next one.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── WITNESS ─── -->
+<div class="role">Witness Flow</div>
+
+<div class="row">
+  <!-- W1: Initial state -->
+  <div class="wrap">
+    <div class="label">W1: Initial <span class="tag">REDESIGNED</span></div>
+    <div class="sublabel">Before oath &mdash; everything locked</div>
+    <div class="ph" style="min-height:580px">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height:4px"></div>
+      <div class="t1 c">Joey put $50<br>on the line.</div>
+      <div class="vq">&ldquo;Go to the gym 3x this week&rdquo;</div>
+
+      <div class="oath">
+        <div class="cb"></div>
+        <div>
+          <div class="oath-t" style="color:var(--text-muted)">I solemnly swear</div>
+          <div class="oath-s">to hold Joey accountable</div>
+          <div class="oath-d">Verdict day: Sun, Apr 20</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:var(--text-muted);opacity:.35">Pick where the money goes.</div>
+
+      <div class="rc love" style="opacity:.3;pointer-events:none">
+        <div class="radio"><div class="radio-dot"></div></div>
+        <div class="emoji">&#128519;</div>
+        <div>
+          <div class="rc-t">They'll love it</div>
+          <div class="rc-d">Your money does some good.</div>
+        </div>
+      </div>
+      <div class="rc hate" style="opacity:.3;pointer-events:none">
+        <div class="radio"><div class="radio-dot"></div></div>
+        <div class="emoji">&#128293;</div>
+        <div>
+          <div class="rc-t">They'll hate it</div>
+          <div class="rc-d">Maximum pain. Maximum motivation.</div>
+        </div>
+      </div>
+
+      <div style="text-align:right"><div class="link">Not now &rarr;</div></div>
+    </div>
+  </div>
+
+  <!-- W1: Oath checked, love selected -->
+  <div class="wrap">
+    <div class="label">W1: Love Selected <span class="tag">REDESIGNED</span></div>
+    <div class="sublabel">Oath checked &rarr; cards enabled &rarr; love tapped</div>
+    <div class="ph" style="min-height:580px">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height:4px"></div>
+      <div class="t1 c">Joey put $50<br>on the line.</div>
+      <div class="vq">&ldquo;Go to the gym 3x this week&rdquo;</div>
+
+      <div class="oath on">
+        <div class="cb on"></div>
+        <div>
+          <div class="oath-t">I solemnly swear</div>
+          <div class="oath-s">to hold Joey accountable</div>
+          <div class="oath-d">Verdict day: Sun, Apr 20</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:var(--text-sec)">Pick where the money goes.</div>
+
+      <!-- Love: selected, pills visible -->
+      <div class="rc love on">
+        <div class="radio"><div class="radio-dot"></div></div>
+        <div class="emoji">&#128519;</div>
+        <div style="flex:1">
+          <div class="rc-t">They'll love it</div>
+          <div class="rc-d">Your money does some good.</div>
+        </div>
+      </div>
+      <div class="pills">
+        <div class="pill love">Red Cross</div>
+        <div class="pill love">St. Jude</div>
+        <div class="pill love">ASPCA</div>
+      </div>
+
+      <!-- Hate: unselected -->
+      <div class="rc hate">
+        <div class="radio"><div class="radio-dot"></div></div>
+        <div class="emoji">&#128293;</div>
+        <div>
+          <div class="rc-t">They'll hate it</div>
+          <div class="rc-d">Maximum pain.</div>
+        </div>
+      </div>
+
+      <div style="text-align:right"><div class="link">Not now &rarr;</div></div>
+    </div>
+  </div>
+
+  <!-- W1: Oath checked, hate selected -->
+  <div class="wrap">
+    <div class="label">W1: Hate Selected <span class="tag">REDESIGNED</span></div>
+    <div class="sublabel">Switched to hate &rarr; hate pills appear</div>
+    <div class="ph" style="min-height:580px">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height:4px"></div>
+      <div class="t1 c">Joey put $50<br>on the line.</div>
+      <div class="vq">&ldquo;Go to the gym 3x this week&rdquo;</div>
+
+      <div class="oath on">
+        <div class="cb on"></div>
+        <div>
+          <div class="oath-t">I solemnly swear</div>
+          <div class="oath-s">to hold Joey accountable</div>
+          <div class="oath-d">Verdict day: Sun, Apr 20</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:var(--text-sec)">Pick where the money goes.</div>
+
+      <!-- Love: unselected -->
+      <div class="rc love">
+        <div class="radio"><div class="radio-dot"></div></div>
+        <div class="emoji">&#128519;</div>
+        <div>
+          <div class="rc-t">They'll love it</div>
+          <div class="rc-d">Does some good.</div>
+        </div>
+      </div>
+
+      <!-- Hate: selected, pills visible -->
+      <div class="rc hate on">
+        <div class="radio"><div class="radio-dot"></div></div>
+        <div class="emoji">&#128293;</div>
+        <div style="flex:1">
+          <div class="rc-t">They'll hate it</div>
+          <div class="rc-d">Maximum pain. Maximum motivation.</div>
+        </div>
+      </div>
+      <div class="pills">
+        <div class="pill hate">NRA</div>
+        <div class="pill hate">Planned Parenthood</div>
+        <div class="pill hate">PETA</div>
+      </div>
+
+      <div style="text-align:right"><div class="link">Not now &rarr;</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow">&darr;</div>
+
+<div class="row">
+  <!-- W2: Confirmation -->
+  <div class="wrap">
+    <div class="label">W2: Confirmation <span class="tag">UPDATED</span></div>
+    <div class="ph short">
+      <div style="height:24px"></div>
+      <div class="sb"><span>&#10003; Sealed.</span></div>
+      <div style="height:8px"></div>
+      <div class="t1 c sm">Joey finds out<br>what you chose.</div>
+      <div style="height:4px"></div>
+      <div class="t2 c" style="font-size:12px">We'll text you on verdict day.</div>
+      <div style="height:10px"></div>
+      <div class="phi">
+        <div style="color:var(--text-muted);font-size:14px">&#128241;</div>
+        <input type="text" placeholder="Your number" disabled>
+      </div>
+      <div class="btn off"><span>Done</span></div>
+      <div class="link">Skip &rarr;</div>
+      <div style="height:12px"></div>
+    </div>
+  </div>
+
+  <!-- W3: Watching -->
+  <div class="wrap">
+    <div class="label">W3: Watching <span class="tag">UPDATED</span></div>
+    <div class="ph">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height:8px"></div>
+      <div style="display:flex;justify-content:center"><div class="status"><div class="dot"></div><span>Vow Active</span></div></div>
+      <div class="t1 c sm">You're watching.</div>
+      <div class="t2 c" style="font-size:12px">Joey's counting on you.</div>
+      <div class="vc">
+        <div class="ac"></div>
+        <div class="ct">
+          <div class="vt">&ldquo;Go to the gym 3x this week&rdquo;</div>
+          <div class="vm">$50 at stake &middot; NRA if broken</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="sv">Day 3</div><div class="sl">of 7</div></div>
+        <div class="stat"><div class="sv">4 days</div><div class="sl">left</div></div>
+      </div>
+      <div class="btn"><span>Message Joey</span></div>
+      <div class="link">Make your own vow &rarr;</div>
+    </div>
+  </div>
+
+  <!-- W4: Verdict -->
+  <div class="wrap">
+    <div class="label">W4: Verdict</div>
+    <div class="ph">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height:8px"></div>
+      <div style="display:flex;justify-content:center"><div class="status gold"><div class="dot"></div><span>Verdict Due</span></div></div>
+      <div class="t1 c" style="font-size:20px">Time's up.</div>
+      <div class="t2 c">Did Joey keep the vow? Your call.</div>
+      <div class="vc">
+        <div class="ac"></div>
+        <div class="ct">
+          <div class="vt">&ldquo;Go to the gym 3x this week&rdquo;</div>
+          <div class="vm">$50 at stake &middot; NRA if broken</div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn"><span>Deliver your verdict</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════ -->
+<!-- VERSION 1.5                          -->
+<!-- ════════════════════════════════════ -->
+<div style="height:24px"></div>
+<hr style="border:none;border-top:2px solid rgba(212,162,79,.15);max-width:250px;margin:0 auto">
+
+<div class="section-h">VERSION 1.5 &mdash; Fast Follow</div>
+<div class="section-t">Adds &ldquo;I Keep It&rdquo;</div>
+<div class="section-d">Same maker flow. Witness gets one more option below the love/hate cards.</div>
+
+<div class="role">Witness Delta (V1.5)</div>
+
+<div class="row">
+  <!-- W1: with keep it -->
+  <div class="wrap">
+    <div class="label">W1: Hate + I Keep It <span class="tag">V1.5</span></div>
+    <div class="sublabel">Full options visible after oath</div>
+    <div class="ph" style="min-height:640px">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height:4px"></div>
+      <div class="t1 c">Joey put $50<br>on the line.</div>
+      <div class="vq">&ldquo;Go to the gym 3x this week&rdquo;</div>
+
+      <div class="oath on">
+        <div class="cb on"></div>
+        <div>
+          <div class="oath-t">I solemnly swear</div>
+          <div class="oath-s">to hold Joey accountable</div>
+          <div class="oath-d">Verdict day: Sun, Apr 20</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:var(--text-sec)">Pick where the money goes.</div>
+
+      <!-- Love: unselected -->
+      <div class="rc love">
+        <div class="radio"><div class="radio-dot"></div></div>
+        <div class="emoji">&#128519;</div>
+        <div><div class="rc-t">They'll love it</div><div class="rc-d">Does some good.</div></div>
+      </div>
+
+      <!-- Hate: selected with pills -->
+      <div class="rc hate on">
+        <div class="radio"><div class="radio-dot"></div></div>
+        <div class="emoji">&#128293;</div>
+        <div style="flex:1"><div class="rc-t">They'll hate it</div><div class="rc-d">Maximum pain.</div></div>
+      </div>
+      <div class="pills">
+        <div class="pill hate">NRA</div>
+        <div class="pill hate">Planned Parenthood</div>
+        <div class="pill hate">PETA</div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Keep it -->
+      <div class="keep">
+        <div style="font-size:16px">&#128176;</div>
+        <div>
+          <div class="kt">I keep it</div>
+          <div class="kd">You get $50 if they fail.</div>
+        </div>
+      </div>
+
+      <div style="text-align:right"><div class="link">Not now &rarr;</div></div>
+    </div>
+  </div>
+
+  <!-- Reveals -->
+  <div class="wrap">
+    <div class="label">Maker Reveal: &ldquo;I Keep It&rdquo; <span class="tag">V1.5</span></div>
+    <div class="ph">
+      <div class="reveal">
+        <div class="pre">Sarah made her choice.</div>
+        <div style="height:4px"></div>
+        <div class="mid">If you fail, $50 goes to...</div>
+        <div class="big">Sarah.</div>
+        <div class="tg">She's coming for your money.</div>
+        <div style="height:18px"></div>
+        <div class="btn" style="width:200px"><span>Continue</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Witness payout -->
+  <div class="wrap">
+    <div class="label">Witness: Payout <span class="tag">V1.5</span></div>
+    <div class="ph short">
+      <div style="height:20px"></div>
+      <div style="text-align:center">
+        <div style="font-size:28px;margin-bottom:8px">&#127881;</div>
+        <div class="t1 c sm">You won!</div>
+        <div class="t2 c" style="margin-top:4px;font-size:12px">Joey broke their vow. $50 is yours.</div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="payout">
+        <div class="ph2"><div style="font-size:16px">&#128184;</div><div class="pt">$50 sent to your PayPal</div></div>
+        <div class="ps">&#10003; Check your PayPal or Venmo</div>
+      </div>
+      <div style="height:10px"></div>
+      <div class="btn"><span>Make your own vow</span></div>
+      <div style="height:14px"></div>
+    </div>
+  </div>
+</div>
+
+<div style="height:70px"></div>
+<div style="text-align:center;font-size:10px;color:var(--text-muted);opacity:.2">
+  Unbreakable Vow &mdash; v3 Final Mockups &mdash; Apr 15, 2026
+</div>
+<div style="height:30px"></div>
+
+</body>
+</html>

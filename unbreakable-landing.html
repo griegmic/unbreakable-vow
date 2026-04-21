@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unbreakable — Break your word. Pay the price.</title>
+<meta name="description" content="Make a vow. Stake real money. If you flake, your friend keeps the cash.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --gold: #C9A84C;
+    --gold-light: #E8D48B;
+    --gold-dark: #A07D2E;
+    --bg: #0A0A0A;
+    --bg-card: #141414;
+    --bg-card-hover: #1A1A1A;
+    --text: #F5F0E8;
+    --text-muted: #8A8474;
+    --text-dim: #5A5549;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: 'Inter', -apple-system, sans-serif;
+    --danger: #C44B4B;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ─── Top bar ─── */
+  .topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(201,168,76,0.08);
+  }
+
+  .topbar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--sans);
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .topbar-logo .diamond {
+    width: 22px;
+    height: 22px;
+    background: var(--gold);
+    transform: rotate(45deg);
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  .topbar-live {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .live-dot {
+    width: 7px;
+    height: 7px;
+    background: #4ADE80;
+    border-radius: 50%;
+    animation: pulse-dot 2s infinite;
+  }
+
+  .live-amount {
+    color: var(--gold);
+    font-weight: 600;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ─── Hero ─── */
+  .hero {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 120px 24px 60px;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(201,168,76,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-headline {
+    font-family: var(--serif);
+    font-weight: 900;
+    font-size: clamp(42px, 8vw, 80px);
+    line-height: 1.05;
+    margin-bottom: 28px;
+    max-width: 700px;
+  }
+
+  .hero-headline em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .hero-sub {
+    font-size: clamp(17px, 2.5vw, 21px);
+    color: var(--text-muted);
+    max-width: 480px;
+    line-height: 1.6;
+    margin-bottom: 56px;
+    font-weight: 300;
+  }
+
+  .hero-sub strong {
+    color: var(--text);
+    font-weight: 500;
+  }
+
+  /* ─── Creator card ─── */
+  .creator {
+    width: 100%;
+    max-width: 480px;
+    background: var(--bg-card);
+    border: 1px solid rgba(201,168,76,0.12);
+    border-radius: 20px;
+    padding: 36px 28px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .creator::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    opacity: 0.3;
+  }
+
+  .creator-section {
+    margin-bottom: 28px;
+  }
+
+  .creator-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .vow-input {
+    width: 100%;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px 18px;
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    font-weight: 400;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .vow-input::placeholder { color: var(--text-dim); }
+
+  .vow-input:focus {
+    border-color: rgba(201,168,76,0.4);
+    box-shadow: 0 0 0 3px rgba(201,168,76,0.08);
+  }
+
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .suggestion {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 20px;
+    padding: 7px 14px;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--sans);
+  }
+
+  .suggestion:hover {
+    background: rgba(201,168,76,0.1);
+    border-color: rgba(201,168,76,0.2);
+    color: var(--text);
+  }
+
+  /* Stakes */
+  .stake-display {
+    text-align: right;
+    font-family: var(--serif);
+    font-size: 40px;
+    font-weight: 800;
+    color: var(--gold);
+    margin-bottom: 12px;
+    transition: all 0.2s;
+  }
+
+  .stake-options {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .stake-btn {
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 12px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--sans);
+  }
+
+  .stake-btn:hover {
+    border-color: rgba(201,168,76,0.3);
+    color: var(--text);
+  }
+
+  .stake-btn.active {
+    background: rgba(201,168,76,0.12);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  /* Witness */
+  .witness-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: rgba(255,255,255,0.03);
+    border: 1px dashed rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 16px 18px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .witness-btn:hover {
+    border-color: rgba(201,168,76,0.3);
+    background: rgba(201,168,76,0.04);
+  }
+
+  .witness-plus {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(201,168,76,0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    font-size: 20px;
+    font-weight: 300;
+    flex-shrink: 0;
+  }
+
+  .witness-text {
+    font-size: 15px;
+    color: var(--text-dim);
+    text-align: left;
+  }
+
+  /* CTA */
+  .cta-btn {
+    width: 100%;
+    padding: 18px;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 8px;
+    letter-spacing: -0.01em;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cta-btn:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(201,168,76,0.25);
+  }
+
+  .cta-btn:active { transform: translateY(0); }
+
+  .cta-reassurance {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 14px;
+    line-height: 1.5;
+  }
+
+  /* ─── Live feed ─── */
+  .feed-section {
+    padding: 80px 24px;
+    text-align: center;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 32px;
+  }
+
+  .feed {
+    max-width: 520px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .feed-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--bg-card);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 14px;
+    padding: 16px 20px;
+    opacity: 0;
+    transform: translateY(12px);
+    animation: feed-in 0.4s ease forwards;
+  }
+
+  .feed-item:nth-child(1) { animation-delay: 0.1s; }
+  .feed-item:nth-child(2) { animation-delay: 0.25s; }
+  .feed-item:nth-child(3) { animation-delay: 0.4s; }
+  .feed-item:nth-child(4) { animation-delay: 0.55s; }
+  .feed-item:nth-child(5) { animation-delay: 0.7s; }
+
+  @keyframes feed-in {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .feed-vow {
+    font-size: 15px;
+    color: var(--text);
+    text-align: left;
+    font-weight: 400;
+  }
+
+  .feed-stake {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--gold);
+    flex-shrink: 0;
+    margin-left: 16px;
+  }
+
+  .feed-time {
+    font-size: 12px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+    margin-left: 12px;
+  }
+
+  /* ─── How it works ─── */
+  .how-section {
+    padding: 80px 24px 100px;
+  }
+
+  .how-section .section-label {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+
+  .how-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .how-step {
+    background: var(--bg-card);
+    padding: 40px 32px;
+    text-align: center;
+    position: relative;
+  }
+
+  .how-step:first-child { border-radius: 16px 0 0 16px; }
+  .how-step:last-child { border-radius: 0 16px 16px 0; }
+
+  .how-number {
+    font-family: var(--serif);
+    font-size: 48px;
+    font-weight: 800;
+    color: rgba(201,168,76,0.15);
+    margin-bottom: 16px;
+  }
+
+  .how-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+
+  .how-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ─── Outcomes ─── */
+  .outcomes-section {
+    padding: 60px 24px 100px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .outcomes-section .section-label {
+    text-align: center;
+    margin-bottom: 40px;
+  }
+
+  .outcomes-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2px;
+  }
+
+  .outcome-card {
+    background: var(--bg-card);
+    padding: 40px 32px;
+    text-align: center;
+  }
+
+  .outcome-card:first-child { border-radius: 16px 0 0 16px; }
+  .outcome-card:last-child { border-radius: 0 16px 16px 0; }
+
+  .outcome-emoji { font-size: 40px; margin-bottom: 16px; }
+
+  .outcome-title {
+    font-family: var(--serif);
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .outcome-kept .outcome-title { color: #4ADE80; }
+  .outcome-broken .outcome-title { color: var(--danger); }
+
+  .outcome-desc {
+    font-size: 14px;
+    color: var(--text-muted);
+    line-height: 1.6;
+    font-weight: 300;
+  }
+
+  /* ─── Social proof ─── */
+  .proof-section {
+    padding: 60px 24px 100px;
+    text-align: center;
+  }
+
+  .proof-stats {
+    display: flex;
+    justify-content: center;
+    gap: 60px;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  .proof-stat-number {
+    font-family: var(--serif);
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+
+  .proof-stat-label {
+    font-size: 13px;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+
+  /* ─── Bottom CTA ─── */
+  .bottom-cta {
+    padding: 80px 24px 120px;
+    text-align: center;
+  }
+
+  .bottom-headline {
+    font-family: var(--serif);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 900;
+    margin-bottom: 12px;
+    line-height: 1.1;
+  }
+
+  .bottom-headline em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .bottom-sub {
+    font-size: 17px;
+    color: var(--text-muted);
+    margin-bottom: 36px;
+    font-weight: 300;
+  }
+
+  .bottom-btn {
+    display: inline-block;
+    padding: 18px 48px;
+    background: var(--gold);
+    color: var(--bg);
+    border: none;
+    border-radius: 14px;
+    font-size: 17px;
+    font-weight: 700;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .bottom-btn:hover {
+    background: var(--gold-light);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 30px rgba(201,168,76,0.25);
+  }
+
+  /* ─── Footer ─── */
+  footer {
+    padding: 40px 24px;
+    text-align: center;
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+
+  footer p {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 640px) {
+    .topbar { padding: 14px 16px; }
+    .hero { padding: 100px 20px 50px; }
+    .creator { padding: 28px 20px; }
+    .how-grid { grid-template-columns: 1fr; gap: 2px; }
+    .how-step:first-child { border-radius: 16px 16px 0 0; }
+    .how-step:last-child { border-radius: 0 0 16px 16px; }
+    .outcomes-grid { grid-template-columns: 1fr; gap: 2px; }
+    .outcome-card:first-child { border-radius: 16px 16px 0 0; }
+    .outcome-card:last-child { border-radius: 0 0 16px 16px; }
+    .proof-stats { flex-direction: column; gap: 32px; }
+    .stake-display { font-size: 32px; }
+  }
+
+  /* ─── Scroll reveal ─── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- ─── Top Bar ─── -->
+<nav class="topbar">
+  <div class="topbar-logo">
+    <div class="diamond"></div>
+    UNBREAKABLE
+  </div>
+  <div class="topbar-live">
+    <span class="live-dot"></span>
+    Live: <span class="live-amount" id="liveAmount">$47,339</span> on the line
+  </div>
+</nav>
+
+<!-- ─── Hero ─── -->
+<section class="hero">
+  <h1 class="hero-headline">
+    Break your word.<br><em>Pay the price.</em>
+  </h1>
+  <p class="hero-sub">
+    Tell a friend what you'll do. Stake cash on it.<br>
+    If you flake, <strong>they keep the money.</strong>
+  </p>
+
+  <!-- Creator Card -->
+  <div class="creator">
+
+    <div class="creator-section">
+      <div class="creator-label">Your Vow</div>
+      <input
+        class="vow-input"
+        type="text"
+        id="vowInput"
+        placeholder="Workout 3x this week"
+        autocomplete="off"
+      >
+      <div class="suggestions">
+        <button class="suggestion" onclick="setVow('No alcohol for 2 weeks')">No alcohol &middot; 2 wks</button>
+        <button class="suggestion" onclick="setVow('Delete TikTok')">Delete TikTok</button>
+        <button class="suggestion" onclick="setVow('Ship the side project')">Ship the side project</button>
+        <button class="suggestion" onclick="setVow('Read 1 book this month')">Read a book</button>
+      </div>
+    </div>
+
+    <div class="creator-section">
+      <div class="creator-label">On the Line</div>
+      <div class="stake-display" id="stakeDisplay">$50</div>
+      <div class="stake-options">
+        <button class="stake-btn" data-amount="10" onclick="setStake(10)">$10</button>
+        <button class="stake-btn" data-amount="25" onclick="setStake(25)">$25</button>
+        <button class="stake-btn active" data-amount="50" onclick="setStake(50)">$50</button>
+        <button class="stake-btn" data-amount="100" onclick="setStake(100)">$100</button>
+      </div>
+    </div>
+
+    <div class="creator-section">
+      <div class="creator-label">Witness</div>
+      <div class="witness-btn" onclick="handleWitness()">
+        <div class="witness-plus">+</div>
+        <span class="witness-text">Pick a friend to hold you to it</span>
+      </div>
+    </div>
+
+    <button class="cta-btn" id="ctaBtn" onclick="handleCTA()">
+      Stake $50 on my vow &rarr;
+    </button>
+
+    <p class="cta-reassurance">
+      No charge until it's sealed. Honor the vow, get every penny back.
+    </p>
+  </div>
+</section>
+
+<!-- ─── Live Feed ─── -->
+<section class="feed-section reveal">
+  <div class="section-label">Happening right now</div>
+  <div class="feed" id="liveFeed">
+    <div class="feed-item">
+      <span class="feed-vow">Run a marathon in under 4 hours</span>
+      <span class="feed-stake">$100</span>
+      <span class="feed-time">2m ago</span>
+    </div>
+    <div class="feed-item">
+      <span class="feed-vow">No social media for 30 days</span>
+      <span class="feed-stake">$50</span>
+      <span class="feed-time">8m ago</span>
+    </div>
+    <div class="feed-item">
+      <span class="feed-vow">Wake up at 6am every day this week</span>
+      <span class="feed-stake">$25</span>
+      <span class="feed-time">14m ago</span>
+    </div>
+    <div class="feed-item">
+      <span class="feed-vow">Finish the online course by Friday</span>
+      <span class="feed-stake">$50</span>
+      <span class="feed-time">21m ago</span>
+    </div>
+    <div class="feed-item">
+      <span class="feed-vow">Cook dinner at home every night</span>
+      <span class="feed-stake">$25</span>
+      <span class="feed-time">34m ago</span>
+    </div>
+  </div>
+</section>
+
+<!-- ─── How It Works ─── -->
+<section class="how-section reveal">
+  <div class="section-label">How it works</div>
+  <div class="how-grid">
+    <div class="how-step">
+      <div class="how-number">1</div>
+      <div class="how-title">Commit</div>
+      <p class="how-desc">Type your vow. Say what you'll do and by when. No wiggle room.</p>
+    </div>
+    <div class="how-step">
+      <div class="how-number">2</div>
+      <div class="how-title">Stake</div>
+      <p class="how-desc">Put $10–$100 on the line. Your card is charged — but held, not spent.</p>
+    </div>
+    <div class="how-step">
+      <div class="how-number">3</div>
+      <div class="how-title">Prove it</div>
+      <p class="how-desc">Your witness decides. Keep the vow, get your money back. Break it, and it's gone.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Outcomes ─── -->
+<section class="outcomes-section reveal">
+  <div class="section-label">Two outcomes. No grey area.</div>
+  <div class="outcomes-grid">
+    <div class="outcome-card outcome-kept">
+      <div class="outcome-emoji">&#x1F4AA;</div>
+      <div class="outcome-title">Vow Kept</div>
+      <p class="outcome-desc">You did what you said. Full refund, instant. Plus bragging rights forever.</p>
+    </div>
+    <div class="outcome-card outcome-broken">
+      <div class="outcome-emoji">&#x1F525;</div>
+      <div class="outcome-title">Vow Broken</div>
+      <p class="outcome-desc">You flaked. The money's gone. Let that sting be the last time.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Social Proof ─── -->
+<section class="proof-section reveal">
+  <div class="section-label">The numbers</div>
+  <div class="proof-stats">
+    <div>
+      <div class="proof-stat-number" id="statVows">12,847</div>
+      <div class="proof-stat-label">Vows made</div>
+    </div>
+    <div>
+      <div class="proof-stat-number">83%</div>
+      <div class="proof-stat-label">Kept rate</div>
+    </div>
+    <div>
+      <div class="proof-stat-number" id="statStaked">$641K</div>
+      <div class="proof-stat-label">Staked to date</div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Bottom CTA ─── -->
+<section class="bottom-cta reveal">
+  <h2 class="bottom-headline">
+    Ready to mean it?<br><em>Make a vow.</em>
+  </h2>
+  <p class="bottom-sub">It takes 30 seconds. Unless you're scared.</p>
+  <button class="bottom-btn" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+    Make my vow &rarr;
+  </button>
+</section>
+
+<!-- ─── Footer ─── -->
+<footer>
+  <p>&copy; 2026 Unbreakable. Your word should cost something.</p>
+</footer>
+
+<script>
+  // ─── Interactive vow creator ───
+  let currentStake = 50;
+
+  function setVow(text) {
+    document.getElementById('vowInput').value = text;
+    document.getElementById('vowInput').focus();
+  }
+
+  function setStake(amount) {
+    currentStake = amount;
+    document.getElementById('stakeDisplay').textContent = '$' + amount;
+    document.getElementById('ctaBtn').textContent = 'Stake $' + amount + ' on my vow →';
+
+    document.querySelectorAll('.stake-btn').forEach(btn => {
+      btn.classList.toggle('active', parseInt(btn.dataset.amount) === amount);
+    });
+
+    // Animate the display
+    const display = document.getElementById('stakeDisplay');
+    display.style.transform = 'scale(1.1)';
+    setTimeout(() => display.style.transform = 'scale(1)', 150);
+  }
+
+  function handleWitness() {
+    const btn = document.querySelector('.witness-btn');
+    const text = btn.querySelector('.witness-text');
+    const plus = btn.querySelector('.witness-plus');
+
+    if (text.textContent === 'Pick a friend to hold you to it') {
+      text.textContent = 'Alex M. — ready to judge you';
+      plus.textContent = '✓';
+      plus.style.background = 'rgba(74,222,128,0.15)';
+      plus.style.color = '#4ADE80';
+      btn.style.borderStyle = 'solid';
+      btn.style.borderColor = 'rgba(74,222,128,0.2)';
+    }
+  }
+
+  function handleCTA() {
+    const btn = document.getElementById('ctaBtn');
+    const vow = document.getElementById('vowInput').value || 'Workout 3x this week';
+    btn.textContent = 'Locking it in...';
+    btn.style.background = 'rgba(201,168,76,0.7)';
+
+    setTimeout(() => {
+      btn.textContent = '🔒 Vow sealed. No turning back.';
+      btn.style.background = '#1a3a1a';
+      btn.style.color = '#4ADE80';
+      btn.style.cursor = 'default';
+    }, 1500);
+  }
+
+  // ─── Live counter animation ───
+  let liveTotal = 47339;
+  function tickCounter() {
+    liveTotal += Math.floor(Math.random() * 30) + 5;
+    document.getElementById('liveAmount').textContent =
+      '$' + liveTotal.toLocaleString();
+  }
+  setInterval(tickCounter, 4000 + Math.random() * 3000);
+
+  // ─── Scroll reveal ───
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.15 });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ─── Rotate live feed ───
+  const extraVows = [
+    { vow: 'Meditate every morning for a month', stake: '$50' },
+    { vow: 'No fast food until summer', stake: '$25' },
+    { vow: 'Apply to 5 jobs this week', stake: '$100' },
+    { vow: 'No buying clothes for 60 days', stake: '$50' },
+    { vow: 'Call mom every Sunday', stake: '$10' },
+    { vow: 'Launch the MVP by April 30', stake: '$100' },
+    { vow: 'No screens after 10pm', stake: '$25' },
+    { vow: 'Gym 4x per week for a month', stake: '$50' },
+  ];
+
+  let vowIndex = 0;
+  function addFeedItem() {
+    const feed = document.getElementById('liveFeed');
+    const item = extraVows[vowIndex % extraVows.length];
+    vowIndex++;
+
+    const el = document.createElement('div');
+    el.className = 'feed-item';
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(-12px)';
+    el.innerHTML = `
+      <span class="feed-vow">${item.vow}</span>
+      <span class="feed-stake">${item.stake}</span>
+      <span class="feed-time">just now</span>
+    `;
+
+    feed.insertBefore(el, feed.firstChild);
+
+    // Animate in
+    requestAnimationFrame(() => {
+      el.style.transition = 'opacity 0.4s ease, transform 0.4s ease';
+      el.style.opacity = '1';
+      el.style.transform = 'translateY(0)';
+    });
+
+    // Remove last if too many
+    if (feed.children.length > 6) {
+      const last = feed.lastElementChild;
+      last.style.opacity = '0';
+      setTimeout(() => last.remove(), 300);
+    }
+  }
+
+  setInterval(addFeedItem, 6000);
+</script>
+</body>
+</html>

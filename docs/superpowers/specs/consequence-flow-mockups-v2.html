@@ -1,0 +1,855 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consequence Flow Mockups v2 — Nikita+Julie Audit Applied</title>
+<style>
+  :root {
+    --bg: #0B0D11;
+    --surface: rgba(255,255,255,0.04);
+    --surface-elevated: rgba(255,255,255,0.07);
+    --gold: #D4A24F;
+    --gold-bright: #E8C468;
+    --gold-deep: #B8863A;
+    --text: #F5F0E8;
+    --text-secondary: rgba(245,240,232,0.7);
+    --text-muted: rgba(245,240,232,0.4);
+    --success: #52D69A;
+    --success-muted: rgba(82,214,154,0.08);
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111318;
+    color: #ccc;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 40px 20px;
+  }
+  .page-title {
+    text-align: center; font-size: 32px; font-weight: 800;
+    color: var(--gold-bright); margin-bottom: 4px; letter-spacing: -1px;
+  }
+  .page-subtitle {
+    text-align: center; font-size: 14px; color: var(--text-muted); margin-bottom: 60px;
+  }
+  .version-header {
+    text-align: center; margin: 80px 0 10px; font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; text-transform: uppercase; color: var(--gold);
+  }
+  .version-title {
+    text-align: center; font-size: 24px; font-weight: 800;
+    color: var(--text); margin-bottom: 6px; letter-spacing: -0.5px;
+  }
+  .version-desc {
+    text-align: center; font-size: 13px; color: var(--text-muted);
+    margin-bottom: 50px; max-width: 560px; margin-left: auto; margin-right: auto; line-height: 1.5;
+  }
+  .role-label {
+    text-align: center; font-size: 11px; font-weight: 700; letter-spacing: 3px;
+    text-transform: uppercase; color: var(--gold-bright); margin: 60px 0 30px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+  }
+  .role-label::before, .role-label::after {
+    content: ''; height: 1px; width: 60px;
+    background: linear-gradient(90deg, transparent, var(--gold-deep), transparent);
+  }
+  .flow-row {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 28px; margin-bottom: 16px;
+  }
+  .screen-wrapper {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .screen-label {
+    font-size: 11px; font-weight: 600; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-muted);
+  }
+  .screen-sublabel {
+    font-size: 10px; color: rgba(245,240,232,0.25); margin-top: -5px; font-style: italic;
+  }
+  .phone {
+    width: 310px; min-height: 560px; background: var(--bg);
+    border-radius: 32px; border: 2px solid rgba(255,255,255,0.1);
+    padding: 18px 20px 26px; display: flex; flex-direction: column; gap: 14px;
+    position: relative; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .phone.compact { min-height: auto; }
+  .phone::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 90px; height: 22px; background: #111318; border-radius: 0 0 14px 14px;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+    font-size: 10px; font-weight: 700; letter-spacing: 1.5px;
+    text-transform: uppercase; color: var(--gold);
+  }
+  .badge::before {
+    content: ''; width: 7px; height: 7px; background: var(--gold);
+    border-radius: 2px; transform: rotate(45deg);
+  }
+  .t { font-family: 'Georgia', serif; }
+  .title {
+    font-size: 24px; font-weight: 700; color: var(--text);
+    line-height: 1.2; letter-spacing: -0.5px; font-family: 'Georgia', serif;
+  }
+  .title.c { text-align: center; }
+  .title.sm { font-size: 20px; }
+  .sub {
+    font-size: 14px; color: var(--text-secondary); line-height: 1.5;
+  }
+  .sub.c { text-align: center; }
+  .sub.sm { font-size: 13px; }
+  .sub.muted { color: var(--text-muted); }
+  .vow-q {
+    font-size: 20px; font-family: 'Georgia', serif; font-weight: 500;
+    color: var(--text); text-align: center; line-height: 1.35;
+  }
+  .amount-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+  .amt {
+    background: var(--surface); border: 1.5px solid var(--border);
+    border-radius: 14px; padding: 12px 0; text-align: center;
+  }
+  .amt.on {
+    background: rgba(212,162,79,0.12); border-color: var(--gold);
+    box-shadow: 0 0 18px rgba(212,162,79,0.15);
+  }
+  .amt .v { font-size: 17px; font-weight: 800; color: var(--text-muted); }
+  .amt.on .v { color: var(--gold-bright); }
+  .amt .h { font-size: 9px; color: var(--text-muted); margin-top: 2px; }
+  .stmt {
+    background: var(--surface); border: 1px solid var(--border-strong);
+    border-radius: 16px; padding: 14px 16px;
+  }
+  .stmt .main { font-size: 15px; font-weight: 600; color: var(--text); line-height: 1.3; }
+  .stmt .detail { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text-muted);
+  }
+  .chip.on {
+    border-color: var(--border-strong); background: rgba(212,162,79,0.14);
+    color: var(--gold-bright);
+  }
+  .btn {
+    width: 100%; min-height: 52px; border-radius: 18px; border: none;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep));
+    box-shadow: 0 10px 22px rgba(212,162,79,0.28);
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+  }
+  .btn span {
+    font-size: 15px; font-weight: 800; color: #0B0D11; letter-spacing: 0.2px;
+  }
+  .btn.off {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border); box-shadow: none;
+  }
+  .btn.off span { color: var(--text-muted); opacity: 0.4; }
+  .btn2 {
+    width: 100%; min-height: 52px; border-radius: 18px;
+    background: var(--surface); border: 1px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
+  }
+  .btn2 span { font-size: 14px; font-weight: 700; color: var(--gold-bright); }
+  .link { text-align: center; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+  .lbl {
+    font-size: 10px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--text-muted); opacity: 0.6;
+  }
+  .dl { font-size: 13px; color: var(--text-muted); margin-top: -6px; }
+  /* Witness */
+  .oath {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 16px; border-radius: 16px; border: 1px solid var(--border);
+  }
+  .oath.on { background: rgba(212,162,79,0.08); border-color: rgba(212,162,79,0.25); }
+  .cb {
+    width: 22px; height: 22px; border-radius: 6px; border: 2px solid var(--text-muted);
+    flex-shrink: 0; display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .cb.on { background: var(--gold-bright); border-color: var(--gold-bright); }
+  .cb.on::after { content: '\2713'; font-size: 13px; font-weight: 700; color: #0B0D11; }
+  .oath-t { font-size: 15px; font-weight: 700; font-family: 'Georgia', serif; color: var(--gold-bright); }
+  .oath-s { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .oath-d { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .cg { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+  .cg.two { grid-template-columns: 1fr 1fr; }
+  .cb-btn {
+    padding: 14px 8px; border-radius: 14px; border: 1px solid var(--border);
+    background: var(--surface); text-align: center; font-size: 13px;
+    font-weight: 600; color: var(--text-muted); cursor: pointer; transition: all 0.3s;
+  }
+  .cb-btn.dis { opacity: 0.2; pointer-events: none; }
+  .cb-btn.en { opacity: 1; border-color: var(--border-strong); }
+  .cb-btn.en:hover { border-color: var(--gold); background: rgba(212,162,79,0.06); }
+  .cb-btn.hate { border-color: rgba(220,80,60,0.2); }
+  .cb-btn.hate.en { border-color: rgba(220,80,60,0.35); background: rgba(220,80,60,0.04); }
+  .cb-btn.hate.en:hover { border-color: rgba(220,80,60,0.6); background: rgba(220,80,60,0.08); }
+  .keep-btn {
+    width: 100%; padding: 14px 16px; border-radius: 16px;
+    border: 1.5px solid var(--border-strong); background: rgba(212,162,79,0.06);
+    display: flex; align-items: center; gap: 12px; cursor: pointer; transition: all 0.3s;
+  }
+  .keep-btn.dis { opacity: 0.2; pointer-events: none; }
+  .keep-btn.en:hover { border-color: var(--gold); background: rgba(212,162,79,0.12); }
+  .keep-t { font-size: 15px; font-weight: 700; color: var(--gold-bright); }
+  .keep-d { font-size: 13px; color: var(--text-secondary); }
+  .divider { border: none; border-top: 1px dashed rgba(255,255,255,0.1); margin: 2px 0; }
+  .success-b {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 10px 0; border-radius: 999px;
+    background: rgba(82,214,154,0.08); border: 1px solid rgba(82,214,154,0.15);
+  }
+  .success-b span { font-size: 13px; font-weight: 600; color: var(--success); }
+  .ph-input {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 16px; border-radius: 16px;
+    background: rgba(255,255,255,0.04); border: 1.5px solid rgba(212,162,79,0.2);
+  }
+  .ph-input input {
+    background: none; border: none; color: var(--text); font-size: 16px;
+    outline: none; width: 100%; font-family: inherit;
+  }
+  .ph-input input::placeholder { color: var(--text-muted); }
+  .vow-card {
+    border-radius: 14px; background: var(--surface);
+    border: 1px solid var(--border-strong); overflow: hidden; display: flex;
+  }
+  .vow-card .ac { width: 3px; background: var(--gold); flex-shrink: 0; }
+  .vow-card .ct { padding: 12px 14px; flex: 1; }
+  .vow-card .vt {
+    font-size: 15px; font-family: 'Georgia', serif; font-weight: 500;
+    color: var(--text); line-height: 1.4;
+  }
+  .vow-card .vm { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  .stats { display: flex; gap: 10px; }
+  .stat {
+    flex: 1; padding: 12px; border-radius: 14px;
+    background: var(--surface); border: 1px solid var(--border); text-align: center;
+  }
+  .stat .sv { font-size: 16px; font-weight: 700; color: var(--text); }
+  .stat .sl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .status-b {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 14px; border-radius: 999px;
+    background: rgba(82,214,154,0.08); border: 1px solid rgba(82,214,154,0.22);
+  }
+  .status-b .dot { width: 8px; height: 8px; border-radius: 4px; background: var(--success); }
+  .status-b span {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    text-transform: uppercase; color: var(--success);
+  }
+  .wait {
+    padding: 12px 14px; border-radius: 14px;
+    border: 1px dashed rgba(212,162,79,0.3); background: rgba(212,162,79,0.04);
+    text-align: center; font-size: 13px; color: var(--text-muted);
+  }
+  .reveal {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; text-align: center; gap: 10px; min-height: 520px;
+  }
+  .reveal .pre { font-size: 18px; font-family: 'Georgia', serif; color: var(--text-secondary); }
+  .reveal .mid { font-size: 15px; color: var(--text-muted); }
+  .reveal .big {
+    font-size: 36px; font-weight: 700; font-family: 'Georgia', serif;
+    color: var(--gold-bright); letter-spacing: -1px;
+    text-shadow: 0 0 40px rgba(212,162,79,0.4); margin: 14px 0;
+  }
+  .reveal .tag { font-size: 14px; font-style: italic; color: var(--text-muted); }
+  .payout-c {
+    padding: 14px; border-radius: 16px; background: var(--surface);
+    border: 1px solid var(--border-strong);
+  }
+  .payout-c .ph { display: flex; align-items: center; gap: 10px; }
+  .payout-c .pt { font-size: 14px; color: var(--text-secondary); }
+  .payout-c .ps {
+    font-size: 13px; color: var(--success);
+    display: flex; align-items: center; gap: 6px; margin-top: 6px; margin-left: 28px;
+  }
+  .spacer { flex: 1; }
+  .arrow {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); font-size: 18px; opacity: 0.25; margin: -4px 0;
+  }
+  .nb {
+    display: inline-block; font-size: 8px; font-weight: 700; letter-spacing: 1px;
+    padding: 2px 5px; border-radius: 3px; background: rgba(212,162,79,0.2);
+    color: var(--gold-bright); margin-left: 6px; vertical-align: middle;
+  }
+  .friend-card {
+    background: var(--surface); border: 1.5px solid var(--gold); border-radius: 20px;
+    padding: 16px; display: flex; align-items: center; gap: 14px;
+    box-shadow: 0 6px 14px rgba(212,162,79,0.12);
+  }
+  .friend-card .ic {
+    width: 44px; height: 44px; border-radius: 14px;
+    background: rgba(212,162,79,0.1); border: 1px solid var(--border-strong);
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .friend-card .ft { font-size: 16px; font-weight: 700; font-family: 'Georgia', serif; color: var(--gold-bright); }
+  .friend-card .fs { font-size: 13px; color: var(--text-secondary); margin-top: 2px; }
+  .friend-card .fa { font-size: 16px; color: var(--gold-bright); }
+  @media (max-width: 720px) { .flow-row { flex-direction: column; align-items: center; } }
+</style>
+</head>
+<body>
+
+<div class="page-title">v2 &mdash; Nikita + Julie Audit Applied</div>
+<div class="page-subtitle">Every copy change, density fix, and CTA improvement from the audit</div>
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- VERSION 1                                           -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div class="version-header">VERSION 1</div>
+<div class="version-title">&ldquo;Ship Now&rdquo; &mdash; Witness Picks Charity</div>
+<div class="version-desc">All Nikita+Julie audit changes applied. Tighter copy, less density, stronger CTAs.</div>
+
+<div class="role-label">Maker Flow</div>
+
+<div class="flow-row">
+  <!-- M1: Home -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M1: Home</div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 20px"></div>
+      <div class="title c">Make a vow.</div>
+      <div style="height: 12px"></div>
+      <div style="background: var(--surface); border: 1px solid var(--border-strong); border-radius: 18px; padding: 16px;">
+        <div style="font-size: 16px; color: var(--text-muted);">I vow to...</div>
+        <div style="font-size: 16px; color: var(--text); margin-top: 4px;">go to the gym 3x this week</div>
+      </div>
+      <div style="font-size: 13px; color: var(--text-muted); line-height: 2;">
+        &ldquo;No phone after 10pm for a month&rdquo;<br>
+        &ldquo;Read 30 pages every day&rdquo;
+      </div>
+      <div class="spacer"></div>
+      <div class="btn"><span>Lock it in</span></div>
+    </div>
+  </div>
+
+  <!-- M2: Refine -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M2: Refine</div>
+    <div class="phone">
+      <div style="font-size: 13px; color: var(--text-muted); margin-top: 16px;">&larr; Back</div>
+      <div class="title">Your vow.</div>
+      <div style="height: 8px"></div>
+      <div style="background: var(--surface); border: 1px solid var(--border-strong); border-radius: 16px; padding: 18px;">
+        <div style="font-size: 18px; font-family: Georgia, serif; font-weight: 600; color: var(--text); line-height: 1.4;">
+          &ldquo;Go to the gym at least 3 times this week&rdquo;
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn"><span>That&rsquo;s my vow</span></div>
+      <div class="link">Let me rephrase &rarr;</div>
+    </div>
+  </div>
+
+  <!-- M3: Stake -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M3: Stake <span class="nb">UPDATED</span></div>
+    <div class="phone">
+      <div style="font-size: 13px; color: var(--text-muted); margin-top: 16px;">&larr; Back</div>
+      <div class="title">Set the stakes.</div>
+      <div style="height: 4px"></div>
+      <div class="amount-grid">
+        <div class="amt"><div class="v">$10</div><div class="h">A nudge</div></div>
+        <div class="amt"><div class="v">$25</div><div class="h">Enough<br>to sting</div></div>
+        <div class="amt on"><div class="v">$50</div><div class="h">You mean<br>business</div></div>
+        <div class="amt"><div class="v">$100</div><div class="h">Dead<br>serious</div></div>
+      </div>
+      <div class="stmt">
+        <div class="main">Your witness decides.</div>
+        <div class="detail">You'll find out when they accept.</div>
+      </div>
+      <div class="lbl">DEADLINE</div>
+      <div class="chips">
+        <div class="chip">This Fri</div>
+        <div class="chip on">End of wk</div>
+        <div class="chip">7 days</div>
+        <div class="chip">Pick date</div>
+      </div>
+      <div class="dl">Ends Sun, Apr 20</div>
+      <div class="btn"><span>Confirm $50 stake</span></div>
+      <div class="link">or make a free vow</div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- M4: Witness -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M4: Witness <span class="nb">UPDATED</span></div>
+    <div class="phone">
+      <div style="height: 24px;"></div>
+      <div class="title c">Pick your witness.</div>
+      <div style="height: 20px;"></div>
+      <div class="friend-card">
+        <div class="ic">&#128101;</div>
+        <div style="flex: 1;">
+          <div class="ft">Pick a friend</div>
+          <div class="fs">We&rsquo;ll send them a link</div>
+        </div>
+        <div class="fa">&rsaquo;</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="link">No witness &mdash; just my word</div>
+    </div>
+  </div>
+
+  <!-- M5: Seal -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M5: Seal <span class="nb">UPDATED</span></div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 10px;"></div>
+      <div class="title c">Seal your vow.</div>
+      <div class="sub c" style="margin-top: 4px;">No takebacks.</div>
+      <div style="height: 8px;"></div>
+      <div class="lbl">THE VOW</div>
+      <div style="background: var(--surface); border: 1px solid var(--border-strong); border-radius: 16px; padding: 14px;">
+        <div style="font-size: 16px; font-family: Georgia, serif; font-weight: 600; color: var(--text); line-height: 1.4;">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+        <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 3px;">
+          <div style="font-size: 13px; color: var(--text-secondary);">$50 at stake</div>
+          <div style="font-size: 13px; color: var(--gold-bright);">Your witness decides the consequence</div>
+          <div style="font-size: 13px; color: var(--text-muted);">Verdict: Sun, Apr 20</div>
+        </div>
+      </div>
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px;">
+        <div style="font-size: 12px; color: var(--text-muted);">&#128241; Sarah will get a text with your vow.</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn"><span>Seal &amp; text Sarah</span></div>
+    </div>
+  </div>
+
+  <!-- M6: Live -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M6: Live <span class="nb">UPDATED</span></div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 10px;"></div>
+      <div style="display: flex; justify-content: center;">
+        <div class="status-b"><div class="dot"></div><span>VOW ACTIVE</span></div>
+      </div>
+      <div class="title c sm">Your vow is sealed.</div>
+      <div class="vow-card">
+        <div class="ac"></div>
+        <div class="ct">
+          <div class="vt">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+          <div class="vm">$50 at stake &middot; Verdict: Sun, Apr 20</div>
+        </div>
+      </div>
+      <div class="wait">Waiting on Sarah...</div>
+      <div class="stats">
+        <div class="stat"><div class="sv">Day 1</div><div class="sl">of 7</div></div>
+        <div class="stat"><div class="sv">6 days left</div><div class="sl">Verdict: Apr 20</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- M7: Reveal -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M7: Reveal <span class="nb">NEW</span></div>
+    <div class="phone">
+      <div class="reveal">
+        <div class="pre">Sarah made her choice.</div>
+        <div style="height: 6px;"></div>
+        <div class="mid">If you fail, $50 goes to...</div>
+        <div class="big">NRA</div>
+        <div class="tag">Better keep that vow.</div>
+        <div style="height: 20px;"></div>
+        <div class="btn" style="width: 220px;"><span>Continue</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- M8/M9: Outcomes -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M8: Kept &amp; M9: Broken</div>
+    <div class="phone compact" style="gap: 16px;">
+      <div style="height: 16px;"></div>
+      <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid var(--border);">
+        <div style="font-size: 26px; margin-bottom: 6px;">&#127881;</div>
+        <div class="title c sm">Vow kept!</div>
+        <div class="sub c sm" style="margin-top: 4px;">You kept your word. $50 refunded.</div>
+        <div style="margin-top: 14px;">
+          <div class="btn" style="width: 180px; margin: 0 auto;"><span>Share certificate</span></div>
+        </div>
+      </div>
+      <div style="text-align: center; padding: 20px 0;">
+        <div style="font-size: 26px; margin-bottom: 6px;">&#128148;</div>
+        <div class="title c sm" style="color: rgba(220,80,60,0.9);">Vow broken.</div>
+        <div class="sub c sm" style="margin-top: 4px;">$50 goes to NRA.</div>
+        <div style="margin-top: 14px;">
+          <div class="btn2" style="width: 180px; margin: 0 auto;"><span>Make a new vow</span></div>
+        </div>
+        <div style="font-size: 12px; color: var(--text-muted); margin-top: 10px; font-style: italic;">The best revenge is keeping your next one.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── WITNESS FLOW ─── -->
+<div class="role-label">Witness Flow</div>
+
+<div class="flow-row">
+  <!-- W1: Before oath -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W1: Before Oath <span class="nb">REDESIGNED</span></div>
+    <div class="screen-sublabel">Charities greyed out</div>
+    <div class="phone" style="min-height: 660px;">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 6px;"></div>
+      <div class="title c" style="font-size: 22px;">Joey put $50<br>on the line.</div>
+      <div class="vow-q" style="font-size: 18px;">&ldquo;Go to the gym 3x this week&rdquo;</div>
+
+      <div class="oath">
+        <div class="cb"></div>
+        <div>
+          <div class="oath-t" style="color: var(--text-muted);">I solemnly swear</div>
+          <div class="oath-s">to hold Joey accountable</div>
+          <div class="oath-d">Verdict day: Sun, Apr 20</div>
+        </div>
+      </div>
+
+      <div style="font-size: 14px; font-weight: 600; color: var(--text-muted); opacity: 0.4;">Pick their punishment.</div>
+
+      <div class="lbl" style="opacity: 0.3;">THEY'LL LOVE IT</div>
+      <div class="cg">
+        <div class="cb-btn dis">Red Cross</div>
+        <div class="cb-btn dis">St. Jude</div>
+        <div class="cb-btn dis">ASPCA</div>
+      </div>
+
+      <div class="lbl" style="opacity: 0.3;">THEY'LL HATE IT</div>
+      <div class="cg">
+        <div class="cb-btn hate dis">NRA</div>
+        <div class="cb-btn hate dis">Planned Parenthood</div>
+        <div class="cb-btn hate dis">PETA</div>
+      </div>
+
+      <div style="text-align: right;"><div class="link">Not now &rarr;</div></div>
+    </div>
+  </div>
+
+  <!-- W1: After oath -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W1: After Oath <span class="nb">REDESIGNED</span></div>
+    <div class="screen-sublabel">Charities light up</div>
+    <div class="phone" style="min-height: 660px;">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 6px;"></div>
+      <div class="title c" style="font-size: 22px;">Joey put $50<br>on the line.</div>
+      <div class="vow-q" style="font-size: 18px;">&ldquo;Go to the gym 3x this week&rdquo;</div>
+
+      <div class="oath on">
+        <div class="cb on"></div>
+        <div>
+          <div class="oath-t">I solemnly swear</div>
+          <div class="oath-s">to hold Joey accountable</div>
+          <div class="oath-d">Verdict day: Sun, Apr 20</div>
+        </div>
+      </div>
+
+      <div style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Pick their punishment.</div>
+
+      <div class="lbl">THEY'LL LOVE IT</div>
+      <div class="cg">
+        <div class="cb-btn en">Red Cross</div>
+        <div class="cb-btn en">St. Jude</div>
+        <div class="cb-btn en">ASPCA</div>
+      </div>
+
+      <div class="lbl">THEY'LL HATE IT</div>
+      <div class="cg">
+        <div class="cb-btn hate en">NRA</div>
+        <div class="cb-btn hate en">Planned Parenthood</div>
+        <div class="cb-btn hate en">PETA</div>
+      </div>
+
+      <div style="text-align: right;"><div class="link">Not now &rarr;</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- W2: Confirmation -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W2: Confirmation <span class="nb">UPDATED</span></div>
+    <div class="phone compact">
+      <div style="height: 28px;"></div>
+      <div class="success-b"><span>&#10003; Sealed.</span></div>
+      <div style="height: 10px;"></div>
+      <div class="title c sm">Joey finds out<br>what you chose.</div>
+      <div style="height: 6px;"></div>
+      <div class="sub c sm">We&rsquo;ll text you on verdict day.</div>
+      <div style="height: 14px;"></div>
+      <div class="ph-input">
+        <div style="color: var(--text-muted); font-size: 15px;">&#128241;</div>
+        <input type="text" placeholder="Your number" disabled>
+      </div>
+      <div class="btn off"><span>Done</span></div>
+      <div class="link">Skip &rarr;</div>
+      <div style="height: 16px;"></div>
+    </div>
+  </div>
+
+  <!-- W3: Dashboard -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W3: Watching <span class="nb">UPDATED</span></div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 10px;"></div>
+      <div style="display: flex; justify-content: center;">
+        <div class="status-b"><div class="dot"></div><span>VOW ACTIVE</span></div>
+      </div>
+      <div class="title c sm">You&rsquo;re watching.</div>
+      <div class="sub c sm">Joey&rsquo;s counting on you.</div>
+      <div class="vow-card">
+        <div class="ac"></div>
+        <div class="ct">
+          <div class="vt">&ldquo;Go to the gym 3x this week&rdquo;</div>
+          <div class="vm">$50 at stake &middot; NRA if broken</div>
+        </div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="sv">Day 3</div><div class="sl">of 7</div></div>
+        <div class="stat"><div class="sv">4 days left</div><div class="sl">Verdict: Apr 20</div></div>
+      </div>
+      <div class="btn"><span>Message Joey</span></div>
+      <div class="link">Make your own vow &rarr;</div>
+    </div>
+  </div>
+
+  <!-- W4: Verdict -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W4: Verdict Day</div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 10px;"></div>
+      <div style="display: flex; justify-content: center;">
+        <div class="status-b" style="background: rgba(212,162,79,0.12); border-color: rgba(212,162,79,0.25);">
+          <div class="dot" style="background: var(--gold-bright);"></div>
+          <span style="color: var(--gold-bright);">VERDICT DUE</span>
+        </div>
+      </div>
+      <div class="title c" style="font-size: 22px;">Time&rsquo;s up.</div>
+      <div class="sub c">Did Joey keep the vow? Your call.</div>
+      <div class="vow-card">
+        <div class="ac"></div>
+        <div class="ct">
+          <div class="vt">&ldquo;Go to the gym 3x this week&rdquo;</div>
+          <div class="vm">$50 at stake &middot; NRA if broken</div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="btn"><span>Deliver your verdict</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════ -->
+<!-- VERSION 1.5                                         -->
+<!-- ═══════════════════════════════════════════════════ -->
+
+<div style="height: 30px;"></div>
+<hr style="border: none; border-top: 2px solid rgba(212,162,79,0.2); max-width: 300px; margin: 0 auto;">
+
+<div class="version-header">VERSION 1.5 &mdash; FAST FOLLOW</div>
+<div class="version-title">Adds &ldquo;I Keep It&rdquo;</div>
+<div class="version-desc">
+  Maker flow identical to V1. Only the witness landing and a few maker screens change.
+</div>
+
+<div class="role-label">Witness Flow (V1.5 Delta)</div>
+
+<div class="flow-row">
+  <!-- W1: Before oath with I keep it -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W1: Before Oath <span class="nb">+ I KEEP IT</span></div>
+    <div class="phone" style="min-height: 740px;">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 6px;"></div>
+      <div class="title c" style="font-size: 22px;">Joey put $50<br>on the line.</div>
+      <div class="vow-q" style="font-size: 18px;">&ldquo;Go to the gym 3x this week&rdquo;</div>
+
+      <div class="oath">
+        <div class="cb"></div>
+        <div>
+          <div class="oath-t" style="color: var(--text-muted);">I solemnly swear</div>
+          <div class="oath-s">to hold Joey accountable</div>
+          <div class="oath-d">Verdict day: Sun, Apr 20</div>
+        </div>
+      </div>
+
+      <div style="font-size: 14px; font-weight: 600; color: var(--text-muted); opacity: 0.4;">Pick their punishment.</div>
+
+      <div class="lbl" style="opacity: 0.3;">THEY'LL LOVE IT</div>
+      <div class="cg">
+        <div class="cb-btn dis">Red Cross</div>
+        <div class="cb-btn dis">St. Jude</div>
+        <div class="cb-btn dis">ASPCA</div>
+      </div>
+
+      <div class="lbl" style="opacity: 0.3;">THEY'LL HATE IT</div>
+      <div class="cg">
+        <div class="cb-btn hate dis">NRA</div>
+        <div class="cb-btn hate dis">Planned Parenthood</div>
+        <div class="cb-btn hate dis">PETA</div>
+      </div>
+
+      <hr class="divider" style="opacity: 0.3;">
+
+      <div class="lbl" style="opacity: 0.3;">...OR KEEP IT YOURSELF</div>
+      <div class="keep-btn dis">
+        <div style="font-size: 18px;">&#128176;</div>
+        <div>
+          <div class="keep-t" style="color: var(--text-muted);">I keep it</div>
+          <div class="keep-d" style="opacity: 0.5;">You get $50 if they fail.</div>
+        </div>
+      </div>
+
+      <div style="text-align: right;"><div class="link">Not now &rarr;</div></div>
+    </div>
+  </div>
+
+  <!-- W1: After oath with I keep it -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W1: After Oath <span class="nb">+ I KEEP IT</span></div>
+    <div class="phone" style="min-height: 740px;">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 6px;"></div>
+      <div class="title c" style="font-size: 22px;">Joey put $50<br>on the line.</div>
+      <div class="vow-q" style="font-size: 18px;">&ldquo;Go to the gym 3x this week&rdquo;</div>
+
+      <div class="oath on">
+        <div class="cb on"></div>
+        <div>
+          <div class="oath-t">I solemnly swear</div>
+          <div class="oath-s">to hold Joey accountable</div>
+          <div class="oath-d">Verdict day: Sun, Apr 20</div>
+        </div>
+      </div>
+
+      <div style="font-size: 14px; font-weight: 600; color: var(--text-secondary);">Pick their punishment.</div>
+
+      <div class="lbl">THEY'LL LOVE IT</div>
+      <div class="cg">
+        <div class="cb-btn en">Red Cross</div>
+        <div class="cb-btn en">St. Jude</div>
+        <div class="cb-btn en">ASPCA</div>
+      </div>
+
+      <div class="lbl">THEY'LL HATE IT</div>
+      <div class="cg">
+        <div class="cb-btn hate en">NRA</div>
+        <div class="cb-btn hate en">Planned Parenthood</div>
+        <div class="cb-btn hate en">PETA</div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="lbl">...OR KEEP IT YOURSELF</div>
+      <div class="keep-btn en">
+        <div style="font-size: 18px;">&#128176;</div>
+        <div>
+          <div class="keep-t">I keep it</div>
+          <div class="keep-d">You get $50 if they fail.</div>
+        </div>
+      </div>
+
+      <div style="text-align: right;"><div class="link">Not now &rarr;</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- M7b: Reveal (I keep it) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">Maker Reveal: &ldquo;I Keep It&rdquo; <span class="nb">NEW</span></div>
+    <div class="phone">
+      <div class="reveal">
+        <div class="pre">Sarah made her choice.</div>
+        <div style="height: 6px;"></div>
+        <div class="mid">If you fail, $50 goes to...</div>
+        <div class="big">Sarah.</div>
+        <div class="tag">She&rsquo;s coming for your money.</div>
+        <div style="height: 20px;"></div>
+        <div class="btn" style="width: 220px;"><span>Continue</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Witness payout claim -->
+  <div class="screen-wrapper">
+    <div class="screen-label">Witness: Payout Claim <span class="nb">NEW</span></div>
+    <div class="phone compact">
+      <div style="height: 24px;"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 32px; margin-bottom: 10px;">&#127881;</div>
+        <div class="title c sm">You won!</div>
+        <div style="height: 6px;"></div>
+        <div class="sub c">Joey broke their vow.<br>$50 is yours.</div>
+      </div>
+      <div style="height: 12px;"></div>
+      <div class="payout-c">
+        <div class="ph">
+          <div style="font-size: 18px;">&#128184;</div>
+          <div class="pt">$50 sent to your PayPal</div>
+        </div>
+        <div class="ps">&#10003; Check your PayPal or Venmo</div>
+      </div>
+      <div style="height: 12px;"></div>
+      <div class="btn"><span>Make your own vow</span></div>
+      <div style="height: 16px;"></div>
+    </div>
+  </div>
+
+  <!-- Maker broken + payout -->
+  <div class="screen-wrapper">
+    <div class="screen-label">Maker: Broken + Payout <span class="nb">NEW</span></div>
+    <div class="phone compact">
+      <div style="height: 20px;"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 26px; margin-bottom: 6px;">&#128148;</div>
+        <div class="title c sm" style="color: rgba(220,80,60,0.9);">Vow broken.</div>
+        <div class="sub c sm" style="margin-top: 4px;">Sarah gets $50.</div>
+      </div>
+      <div class="payout-c">
+        <div class="ph">
+          <div style="font-size: 18px;">&#128184;</div>
+          <div class="pt">Sending $50 to Sarah via PayPal</div>
+        </div>
+        <div class="ps">&#10003; Payment sent</div>
+      </div>
+      <div style="height: 8px;"></div>
+      <div class="btn2"><span>Make a new vow</span></div>
+      <div style="text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 8px; font-style: italic;">The best revenge is keeping your next one.</div>
+      <div style="height: 16px;"></div>
+    </div>
+  </div>
+</div>
+
+<div style="height: 80px;"></div>
+<div style="text-align: center; font-size: 11px; color: var(--text-muted); opacity: 0.25;">
+  Unbreakable Vow &mdash; v2 Mockups (Nikita+Julie Audit) &mdash; Apr 15, 2026
+</div>
+<div style="height: 40px;"></div>
+
+</body>
+</html>

@@ -1,0 +1,1277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Witness Share Flow — Current vs Proposed</title>
+<style>
+  :root {
+    --bg: #0D0B08;
+    --surface: #1A1610;
+    --border: rgba(212,162,79,0.15);
+    --border-strong: rgba(212,162,79,0.3);
+    --gold: #D4A24F;
+    --gold-bright: #E8C068;
+    --text: #F5F0E8;
+    --text-secondary: #A89B8A;
+    --text-muted: #6B5F4F;
+    --success: #52D69A;
+    --danger: #E85454;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #080604;
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Segoe UI', sans-serif;
+    padding: 40px 20px 80px;
+  }
+
+  h1 {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--gold-bright);
+  }
+  .page-sub {
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 48px;
+  }
+
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+  .section-sub {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+  .section-divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border);
+    margin: 56px 0;
+  }
+
+  /* Flow container */
+  .flow {
+    display: flex;
+    gap: 20px;
+    overflow-x: auto;
+    padding: 8px 0 20px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Arrow between screens */
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    color: var(--text-muted);
+    font-size: 20px;
+    flex-shrink: 0;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 280px;
+    min-width: 280px;
+    border-radius: 28px;
+    border: 2px solid var(--border-strong);
+    background: var(--bg);
+    overflow: hidden;
+    scroll-snap-align: start;
+    position: relative;
+  }
+  .phone-notch {
+    width: 100px;
+    height: 24px;
+    background: #000;
+    border-radius: 0 0 14px 14px;
+    margin: 0 auto;
+  }
+  .phone-screen {
+    padding: 16px 18px 24px;
+    min-height: 480px;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 10px 0 6px;
+    background: rgba(0,0,0,0.5);
+  }
+
+  /* Screen elements */
+  .screen-back {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .screen-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    margin-bottom: 4px;
+    font-family: Georgia, serif;
+  }
+  .screen-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+
+  /* Card */
+  .vow-card {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .vow-card-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.3px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .vow-card-text {
+    font-size: 16px;
+    font-weight: 600;
+    font-family: Georgia, serif;
+    color: var(--text);
+    line-height: 1.4;
+  }
+  .vow-card-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 10px 0;
+  }
+  .vow-card-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .vow-card-meta .gold { color: var(--gold); font-weight: 700; font-size: 13px; }
+
+  /* Buttons */
+  .btn-primary {
+    width: 100%;
+    padding: 15px;
+    border-radius: 14px;
+    border: none;
+    font-size: 15px;
+    font-weight: 700;
+    color: #0D0B08;
+    background: linear-gradient(135deg, var(--gold), var(--gold-bright));
+    cursor: pointer;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .btn-secondary {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    background: none;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+    text-align: center;
+  }
+  .btn-outline {
+    width: 100%;
+    padding: 13px;
+    border-radius: 14px;
+    border: 1.5px solid var(--border-strong);
+    background: rgba(212,162,79,0.06);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gold);
+    cursor: pointer;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .btn-muted {
+    width: 100%;
+    padding: 13px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+
+  /* Choice card (witness selection) */
+  .choice-card {
+    width: 100%;
+    border-radius: 18px;
+    padding: 16px;
+    border: 1.5px solid var(--border-strong);
+    background: var(--surface);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    margin-bottom: 12px;
+    text-align: left;
+  }
+  .choice-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: rgba(212,162,79,0.1);
+    border: 1px solid var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 18px;
+  }
+  .choice-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--gold-bright);
+    font-family: Georgia, serif;
+  }
+  .choice-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  /* Share sheet mock */
+  .share-sheet {
+    background: #1C1C1E;
+    border-radius: 14px 14px 0 0;
+    padding: 16px;
+    margin-top: auto;
+  }
+  .share-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .share-sheet-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .share-sheet-cancel {
+    font-size: 13px;
+    color: #0A84FF;
+  }
+  .share-sheet-preview {
+    background: #2C2C2E;
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .share-icons {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+  }
+  .share-icon-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    min-width: 56px;
+  }
+  .share-icon-circle {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+  }
+  .share-icon-label {
+    font-size: 9px;
+    color: var(--text-secondary);
+    text-align: center;
+  }
+
+  /* SMS preview */
+  .sms-preview {
+    background: rgba(212,162,79,0.04);
+    border: 1px solid rgba(212,162,79,0.15);
+    border-radius: 14px;
+    padding: 12px;
+    margin-bottom: 14px;
+  }
+  .sms-preview-header {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+  .sms-preview-toggle {
+    font-size: 11px;
+    color: var(--gold);
+    font-weight: 600;
+    float: right;
+  }
+
+  /* Annotation callouts */
+  .callout {
+    position: relative;
+    background: rgba(212,162,79,0.08);
+    border: 1px solid rgba(212,162,79,0.25);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin: 10px 0;
+    font-size: 11px;
+    color: var(--gold-bright);
+    line-height: 1.5;
+  }
+  .callout-label {
+    font-weight: 700;
+    font-size: 9px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 3px;
+  }
+
+  /* Status indicators */
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .status-pill.pending {
+    background: rgba(212,162,79,0.12);
+    color: var(--gold);
+    border: 1px solid rgba(212,162,79,0.2);
+  }
+  .status-pill.accepted {
+    background: rgba(82,214,154,0.12);
+    color: var(--success);
+    border: 1px solid rgba(82,214,154,0.2);
+  }
+  .status-pill.dead {
+    background: rgba(232,84,84,0.12);
+    color: var(--danger);
+    border: 1px solid rgba(232,84,84,0.2);
+  }
+
+  /* Seal animation */
+  .seal-ring {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    box-shadow: 0 0 20px rgba(212,162,79,0.2);
+    font-size: 24px;
+  }
+
+  /* Witness page elements */
+  .witness-oath {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px;
+    background: rgba(212,162,79,0.06);
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .witness-oath-check {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--border-strong);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+  .witness-oath-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Live page elements */
+  .countdown-block {
+    text-align: center;
+    margin: 12px 0;
+  }
+  .countdown-number {
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--gold-bright);
+    font-family: Georgia, serif;
+  }
+  .countdown-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+  .witness-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .witness-banner.pending {
+    background: rgba(212,162,79,0.08);
+    border: 1px solid rgba(212,162,79,0.2);
+  }
+  .witness-banner.accepted {
+    background: rgba(82,214,154,0.08);
+    border: 1px solid rgba(82,214,154,0.2);
+  }
+  .witness-banner-text {
+    font-size: 12px;
+  }
+  .witness-banner-action {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gold);
+  }
+
+  /* Comparison label */
+  .comparison-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 20px;
+  }
+  .comparison-badge.current {
+    background: rgba(232,84,84,0.1);
+    color: var(--danger);
+    border: 1px solid rgba(232,84,84,0.2);
+  }
+  .comparison-badge.proposed {
+    background: rgba(82,214,154,0.1);
+    color: var(--success);
+    border: 1px solid rgba(82,214,154,0.2);
+  }
+
+  /* Flex spacer */
+  .spacer { flex: 1; }
+
+  /* Scrollbar */
+  .flow::-webkit-scrollbar { height: 4px; }
+  .flow::-webkit-scrollbar-track { background: transparent; }
+  .flow::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 4px; }
+
+  /* Max width container */
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  /* Annotation outside phone */
+  .phone-annotation {
+    margin-top: 10px;
+    text-align: center;
+  }
+  .phone-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .issue-tag {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .issue-tag.problem { background: rgba(232,84,84,0.15); color: var(--danger); }
+  .issue-tag.good { background: rgba(82,214,154,0.15); color: var(--success); }
+  .issue-tag.neutral { background: rgba(212,162,79,0.15); color: var(--gold); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Witness Share Flow</h1>
+<p class="page-sub">Current experience vs. Proposed — scroll each row horizontally</p>
+
+<!-- ============================== -->
+<!-- CURRENT FLOW: MAKER SIDE -->
+<!-- ============================== -->
+
+<div class="comparison-badge current">&#x26A0; CURRENT FLOW — Maker Experience</div>
+<div class="section-title">Maker: Vow Creation → Share → Seal</div>
+<div class="section-sub">Share sheet fires on /witness (before auth, before draft exists). Link may be dead on arrival.</div>
+
+<div class="flow">
+
+  <!-- Screen 1: /witness -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/witness</div>
+      <div class="phone-screen">
+        <div class="screen-back">&#8592; Back</div>
+        <div class="screen-title">Who's holding you to it?</div>
+        <div class="screen-subtitle">Pick someone who won't let you off the hook.</div>
+
+        <div class="choice-card">
+          <div class="choice-icon">&#128101;</div>
+          <div>
+            <div class="choice-title">Text a friend</div>
+            <div class="choice-desc">They'll decide if you kept your word</div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btn-secondary">No witness — just my word</div>
+
+        <div class="callout">
+          <div class="callout-label">What happens on tap</div>
+          Share sheet fires <strong>immediately</strong>.<br>
+          Then auto-navigates to /seal.<br>
+          No draft vow exists yet. No auth yet.
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag problem">Share fires here</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#8594;</div>
+
+  <!-- Screen 2: Share sheet overlay -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">iOS Share Sheet</div>
+      <div class="phone-screen" style="padding: 16px 0 0; background: var(--bg);">
+        <div style="padding: 0 18px; flex: 1;">
+          <div style="text-align: center; padding: 40px 0 20px;">
+            <div style="font-size: 40px; margin-bottom: 12px;">&#128172;</div>
+            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5; padding: 0 10px;">
+              "I just made a vow to run every day for 30 days and put $50 on it. You're my witness: unbreakablevow.app/w/abc123"
+            </div>
+          </div>
+        </div>
+
+        <div class="share-sheet">
+          <div class="share-sheet-header">
+            <div class="share-sheet-title">Share via</div>
+            <div class="share-sheet-cancel">Cancel</div>
+          </div>
+          <div class="share-icons">
+            <div class="share-icon-item">
+              <div class="share-icon-circle" style="background: #34C759;">&#9993;</div>
+              <div class="share-icon-label">Messages</div>
+            </div>
+            <div class="share-icon-item">
+              <div class="share-icon-circle" style="background: #25D366;">&#128172;</div>
+              <div class="share-icon-label">WhatsApp</div>
+            </div>
+            <div class="share-icon-item">
+              <div class="share-icon-circle" style="background: #0088CC;">&#9992;</div>
+              <div class="share-icon-label">Telegram</div>
+            </div>
+            <div class="share-icon-item">
+              <div class="share-icon-circle" style="background: #5865F2;">&#127918;</div>
+              <div class="share-icon-label">Discord</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag problem">Link not live yet</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#8594;</div>
+
+  <!-- Screen 3: /seal (review) -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/seal</div>
+      <div class="phone-screen">
+        <div class="screen-back">&#8592; Back</div>
+        <div class="screen-title">Your Unbreakable Vow</div>
+        <div class="screen-subtitle">No takebacks. No excuses.</div>
+
+        <div class="seal-ring">&#9733;</div>
+
+        <div class="vow-card">
+          <div class="vow-card-label">&#10024; THE VOW</div>
+          <div class="vow-card-text">Run every day for 30 days</div>
+          <div class="vow-card-divider"></div>
+          <div class="vow-card-meta">
+            <span>&#128176;</span>
+            <span>At Stake</span>
+            <span class="gold">$50</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Verdict by May 13</div>
+        </div>
+
+        <div class="sms-preview">
+          <div class="sms-preview-header">
+            Your witness will get a text with your vow and a link to accept
+            <span class="sms-preview-toggle">Preview</span>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btn-primary">Seal & text Your witness</div>
+        <div class="btn-secondary">Back</div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag neutral">Auth + Payment here</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#8594;</div>
+
+  <!-- Screen 4: /live (post-seal) -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/live</div>
+      <div class="phone-screen">
+        <div class="screen-back">&#8592;</div>
+        <div class="screen-title" style="text-align: center; font-size: 16px;">Your Vow</div>
+
+        <div class="countdown-block">
+          <div class="countdown-number">29</div>
+          <div class="countdown-label">days remaining</div>
+        </div>
+
+        <div class="vow-card">
+          <div class="vow-card-text" style="font-size: 14px;">Run every day for 30 days</div>
+          <div class="vow-card-divider"></div>
+          <div class="vow-card-meta">
+            <span class="gold">$50</span> <span>at stake</span>
+          </div>
+        </div>
+
+        <div class="witness-banner pending">
+          <div>
+            <div class="witness-banner-text" style="color: var(--gold);">&#9203; Witness pending</div>
+            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Waiting for Your witness to accept</div>
+          </div>
+          <div class="witness-banner-action">Nudge</div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btn-outline">Check in</div>
+
+        <div class="callout">
+          <div class="callout-label">No share nudge</div>
+          No post-seal reminder to reshare link.<br>
+          If witness didn't get the pre-seal link,<br>
+          only the system SMS (if phone provided) saves it.
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag problem">No reshare CTA</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== -->
+<!-- CURRENT FLOW: WITNESS SIDE -->
+<!-- ============================== -->
+
+<div style="margin-top: 40px;">
+<div class="section-title">Witness: What They See (Current)</div>
+<div class="section-sub">If they open the link before maker seals, they see a dead-end spinner.</div>
+</div>
+
+<div class="flow">
+
+  <!-- Witness: Opens link before seal -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/w/[token] — Before Seal</div>
+      <div class="phone-screen" style="justify-content: center; align-items: center; text-align: center;">
+        <div style="font-size: 36px; margin-bottom: 16px; animation: spin 1.5s linear infinite;">&#9696;</div>
+        <div style="font-size: 18px; font-weight: 600; color: var(--text); font-family: Georgia, serif;">Almost ready...</div>
+        <div style="font-size: 13px; color: var(--text-secondary); margin-top: 8px; padding: 0 20px; line-height: 1.5;">
+          This vow is being sealed. Check back in a moment.
+        </div>
+
+        <div class="callout" style="margin-top: 30px; text-align: left;">
+          <div class="callout-label">Problem</div>
+          Witness opens link from iMessage immediately.<br>
+          Sees spinner. <strong>Bounces.</strong><br>
+          May never come back. First impression ruined.
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag problem">Dead end</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">vs</div>
+
+  <!-- Witness: Opens link after seal (working) -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/w/[token] — After Seal</div>
+      <div class="phone-screen">
+        <div style="text-align: center; padding-top: 16px;">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: var(--gold); margin-bottom: 8px;">&#9733; UNBREAKABLE VOW</div>
+          <div style="font-size: 18px; font-weight: 700; font-family: Georgia, serif; color: var(--text); padding: 0 10px;">
+            Joey swore a vow
+          </div>
+        </div>
+
+        <div class="vow-card" style="margin-top: 16px;">
+          <div class="vow-card-text" style="font-size: 15px; text-align: center;">
+            "Run every day for 30 days"
+          </div>
+          <div class="vow-card-divider"></div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span style="color: var(--text-muted);">At stake: <span style="color: var(--gold); font-weight: 700;">$50</span></span>
+            <span style="color: var(--text-muted);">Ends May 13</span>
+          </div>
+        </div>
+
+        <div class="witness-oath">
+          <div class="witness-oath-check">&#10003;</div>
+          <div class="witness-oath-text">
+            I swear to judge honestly whether Joey kept this vow
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btn-primary">Accept the vow</div>
+        <div class="btn-secondary">Decline</div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag good">Full experience</span>
+    </div>
+  </div>
+</div>
+
+<style>
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+</style>
+
+<div class="section-divider"></div>
+
+<!-- ============================== -->
+<!-- PROPOSED FLOW: MAKER SIDE -->
+<!-- ============================== -->
+
+<div class="comparison-badge proposed">&#10003; PROPOSED FLOW — Maker Experience</div>
+<div class="section-title">Maker: Vow Creation → Auth → Share → Pay → Seal</div>
+<div class="section-sub">Share moves to /seal after draft creation. Link is live when shared. Payment CTA is secondary until share completes.</div>
+
+<div class="flow">
+
+  <!-- Screen 1: /witness (no share sheet) -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/witness</div>
+      <div class="phone-screen">
+        <div class="screen-back">&#8592; Back</div>
+        <div class="screen-title">Who's holding you to it?</div>
+        <div class="screen-subtitle">Pick someone who won't let you off the hook.</div>
+
+        <div class="choice-card">
+          <div class="choice-icon">&#128101;</div>
+          <div>
+            <div class="choice-title">Text a friend</div>
+            <div class="choice-desc">They'll decide if you kept your word</div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btn-secondary">No witness — just my word</div>
+
+        <div class="callout">
+          <div class="callout-label">Change</div>
+          Tap just stores the witness choice.<br>
+          <strong>No share sheet fires.</strong><br>
+          Navigates to /seal where the draft is created first.
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag good">Clean handoff</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#8594;</div>
+
+  <!-- Screen 2: /seal (share-first state) -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/seal — Share First</div>
+      <div class="phone-screen">
+        <div class="screen-back">&#8592; Back</div>
+        <div class="screen-title">Your Unbreakable Vow</div>
+        <div class="screen-subtitle">No takebacks. No excuses.</div>
+
+        <div class="seal-ring">&#9733;</div>
+
+        <div class="vow-card">
+          <div class="vow-card-label">&#10024; THE VOW</div>
+          <div class="vow-card-text">Run every day for 30 days</div>
+          <div class="vow-card-divider"></div>
+          <div class="vow-card-meta">
+            <span>&#128176;</span>
+            <span>At Stake</span>
+            <span class="gold">$50</span>
+          </div>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Verdict by May 13</div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btn-primary" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+          &#128172; Send to Your witness
+        </div>
+        <div class="btn-muted">Seal this vow &mdash; $50</div>
+        <div class="btn-secondary">Back</div>
+
+        <div class="callout">
+          <div class="callout-label">Key change</div>
+          "Send to witness" is <strong>primary</strong>.<br>
+          "Seal this vow" is secondary/muted.<br>
+          Draft already exists → link is <strong>live</strong>.<br>
+          User sees exactly what they're sharing.
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag good">Share is primary CTA</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#8594;</div>
+
+  <!-- Screen 3: Share sheet (link is live) -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">iOS Share Sheet</div>
+      <div class="phone-screen" style="padding: 16px 0 0; background: var(--bg);">
+        <div style="padding: 0 18px; flex: 1;">
+          <div style="text-align: center; padding: 40px 0 20px;">
+            <div style="font-size: 40px; margin-bottom: 12px;">&#128172;</div>
+            <div style="font-size: 14px; color: var(--text-secondary); line-height: 1.5; padding: 0 10px;">
+              "I just made a vow to run every day for 30 days and put $50 on it. You're my witness: unbreakablevow.app/w/abc123"
+            </div>
+          </div>
+          <div style="text-align: center;">
+            <span class="status-pill accepted">&#10003; Link is live — witness sees full vow</span>
+          </div>
+        </div>
+
+        <div class="share-sheet">
+          <div class="share-sheet-header">
+            <div class="share-sheet-title">Share via</div>
+            <div class="share-sheet-cancel">Cancel</div>
+          </div>
+          <div class="share-icons">
+            <div class="share-icon-item">
+              <div class="share-icon-circle" style="background: #34C759;">&#9993;</div>
+              <div class="share-icon-label">Messages</div>
+            </div>
+            <div class="share-icon-item">
+              <div class="share-icon-circle" style="background: #25D366;">&#128172;</div>
+              <div class="share-icon-label">WhatsApp</div>
+            </div>
+            <div class="share-icon-item">
+              <div class="share-icon-circle" style="background: #0088CC;">&#9992;</div>
+              <div class="share-icon-label">Telegram</div>
+            </div>
+            <div class="share-icon-item">
+              <div class="share-icon-circle" style="background: #5865F2;">&#127918;</div>
+              <div class="share-icon-label">Discord</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag good">Link works instantly</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#8594;</div>
+
+  <!-- Screen 4: /seal (post-share, payment primary) -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/seal — After Share</div>
+      <div class="phone-screen">
+        <div class="screen-back">&#8592; Back</div>
+        <div class="screen-title">Your Unbreakable Vow</div>
+        <div class="screen-subtitle">No takebacks. No excuses.</div>
+
+        <div class="seal-ring">&#9733;</div>
+
+        <div class="vow-card">
+          <div class="vow-card-label">&#10024; THE VOW</div>
+          <div class="vow-card-text">Run every day for 30 days</div>
+          <div class="vow-card-divider"></div>
+          <div class="vow-card-meta">
+            <span>&#128176;</span>
+            <span>At Stake</span>
+            <span class="gold">$50</span>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 10px; background: rgba(82,214,154,0.08); border: 1px solid rgba(82,214,154,0.15); margin-bottom: 14px;">
+          <span style="font-size: 14px;">&#10003;</span>
+          <span style="font-size: 12px; color: var(--success);">Link sent to Your witness</span>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btn-primary">Seal this vow &mdash; $50</div>
+        <div class="btn-secondary">Back</div>
+
+        <div class="callout">
+          <div class="callout-label">After share</div>
+          CTAs swap: <strong>"Seal" becomes primary</strong>.<br>
+          Confirmation badge shows link was sent.<br>
+          Social pressure: witness may accept any moment.
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag good">Payment now primary</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#8594;</div>
+
+  <!-- Screen 5: /live (with nudge) -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/live — Post Seal</div>
+      <div class="phone-screen">
+        <div class="screen-back">&#8592;</div>
+        <div class="screen-title" style="text-align: center; font-size: 16px;">Your Vow</div>
+
+        <div class="countdown-block">
+          <div class="countdown-number">29</div>
+          <div class="countdown-label">days remaining</div>
+        </div>
+
+        <div class="vow-card">
+          <div class="vow-card-text" style="font-size: 14px;">Run every day for 30 days</div>
+          <div class="vow-card-divider"></div>
+          <div class="vow-card-meta">
+            <span class="gold">$50</span> <span>at stake</span>
+          </div>
+        </div>
+
+        <div class="witness-banner pending">
+          <div>
+            <div class="witness-banner-text" style="color: var(--gold);">&#9203; Waiting on Your witness</div>
+            <div style="font-size: 10px; color: var(--text-muted); margin-top: 2px;">Haven't accepted yet</div>
+          </div>
+          <div class="witness-banner-action">Copy link</div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btn-outline">Check in</div>
+
+        <div class="callout">
+          <div class="callout-label">Nudge</div>
+          Soft "Copy link" nudge if witness hasn't accepted.<br>
+          Disappears once witness accepts.<br>
+          No share sheet — just lightweight copy.
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag good">Soft reshare nudge</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============================== -->
+<!-- PROPOSED FLOW: WITNESS SIDE -->
+<!-- ============================== -->
+
+<div style="margin-top: 40px;">
+<div class="section-title">Witness: What They See (Proposed)</div>
+<div class="section-sub">Link is always live. Full vow content immediately. Can accept even during draft.</div>
+</div>
+
+<div class="flow">
+
+  <!-- Witness: Opens link (draft state) -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/w/[token] — Draft (pre-seal)</div>
+      <div class="phone-screen">
+        <div style="text-align: center; padding-top: 16px;">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: var(--gold); margin-bottom: 8px;">&#9733; UNBREAKABLE VOW</div>
+          <div style="font-size: 18px; font-weight: 700; font-family: Georgia, serif; color: var(--text); padding: 0 10px;">
+            Joey is making a vow
+          </div>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px;">Sealing in progress...</div>
+        </div>
+
+        <div class="vow-card" style="margin-top: 16px;">
+          <div class="vow-card-text" style="font-size: 15px; text-align: center;">
+            "Run every day for 30 days"
+          </div>
+          <div class="vow-card-divider"></div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span style="color: var(--text-muted);">At stake: <span style="color: var(--gold); font-weight: 700;">$50</span></span>
+            <span style="color: var(--text-muted);">Ends May 13</span>
+          </div>
+        </div>
+
+        <div class="witness-oath">
+          <div class="witness-oath-check">&#10003;</div>
+          <div class="witness-oath-text">
+            I swear to judge honestly whether Joey kept this vow
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="btn-primary">Accept the vow</div>
+        <div class="btn-secondary">Decline</div>
+
+        <div class="callout">
+          <div class="callout-label">Key difference</div>
+          Full vow content visible immediately.<br>
+          <strong>Can accept during draft</strong> — creates social pressure for maker to complete payment.<br>
+          OG preview works in iMessage.
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag good">Works immediately</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">&#8594;</div>
+
+  <!-- Witness: Accepted state -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">/w/[token] — Accepted</div>
+      <div class="phone-screen" style="justify-content: center; align-items: center; text-align: center;">
+        <div style="font-size: 48px; margin-bottom: 16px;">&#128293;</div>
+        <div style="font-size: 22px; font-weight: 700; font-family: Georgia, serif; color: var(--text); margin-bottom: 8px;">
+          You're locked in
+        </div>
+        <div style="font-size: 14px; color: var(--text-secondary); padding: 0 30px; line-height: 1.6; margin-bottom: 24px;">
+          You've accepted the role of witness for Joey's vow. You'll deliver the verdict when the time comes.
+        </div>
+
+        <div class="vow-card" style="width: 100%; text-align: left;">
+          <div class="vow-card-text" style="font-size: 14px;">"Run every day for 30 days"</div>
+          <div class="vow-card-divider"></div>
+          <div style="display: flex; justify-content: space-between; font-size: 12px;">
+            <span style="color: var(--text-muted);">$50 at stake</span>
+            <span style="color: var(--text-muted);">29 days left</span>
+          </div>
+        </div>
+
+        <div style="width: 100%; margin-top: 8px;">
+          <div class="btn-outline">&#128172; Text Joey</div>
+          <div class="btn-muted">&#128276; Get verdict-day reminder</div>
+          <div class="btn-secondary" style="margin-top: 8px; color: var(--gold);">Make your own vow &#8594;</div>
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag good">Conversion CTA</span>
+    </div>
+  </div>
+
+  <div class="flow-arrow">meanwhile...</div>
+
+  <!-- Maker sees notification -->
+  <div class="phone-wrapper">
+    <div class="phone">
+      <div class="phone-notch"></div>
+      <div class="phone-label">Maker's phone — Push</div>
+      <div class="phone-screen" style="justify-content: center; align-items: center; text-align: center; background: #111;">
+
+        <div style="background: var(--surface); border: 1px solid var(--border-strong); border-radius: 16px; padding: 16px 20px; width: 100%; text-align: left; margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+            <div style="width: 28px; height: 28px; border-radius: 8px; background: rgba(212,162,79,0.15); display: flex; align-items: center; justify-content: center; font-size: 14px;">&#9733;</div>
+            <span style="font-size: 13px; font-weight: 700; color: var(--text);">Unbreakable Vow</span>
+            <span style="font-size: 11px; color: var(--text-muted); margin-left: auto;">now</span>
+          </div>
+          <div style="font-size: 15px; font-weight: 600; color: var(--text);">Your witness accepted! &#128293;</div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 3px;">They're locked in. They'll deliver the verdict when the time comes.</div>
+        </div>
+
+        <div class="callout" style="text-align: left;">
+          <div class="callout-label">Social pressure loop</div>
+          Witness accepted while maker is still on /seal.<br>
+          Push notification increases urgency to complete payment.<br>
+          <strong>"My witness is watching — I have to finish."</strong>
+        </div>
+      </div>
+    </div>
+    <div class="phone-annotation">
+      <span class="issue-tag good">Pressure to complete</span>
+    </div>
+  </div>
+</div>
+
+<div class="section-divider"></div>
+
+<!-- ============================== -->
+<!-- SHREYAS ANALYSIS -->
+<!-- ============================== -->
+
+<div style="max-width: 700px; margin: 0 auto;">
+  <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold); margin-bottom: 8px;">SHREYAS DOSHI — FINAL ANALYSIS</div>
+  <div class="section-title">Side-by-Side Evaluation</div>
+
+  <div style="margin-top: 24px;">
+    <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+      <thead>
+        <tr style="border-bottom: 1px solid var(--border-strong);">
+          <th style="text-align: left; padding: 10px 8px; color: var(--text-muted); font-weight: 600;">Dimension</th>
+          <th style="text-align: center; padding: 10px 8px; color: var(--danger); font-weight: 600;">Current</th>
+          <th style="text-align: center; padding: 10px 8px; color: var(--success); font-weight: 600;">Proposed</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 8px; color: var(--text-secondary);">Witness first impression</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--danger);">Spinner / dead link</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--success);">Full vow + accept CTA</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 8px; color: var(--text-secondary);">Maker sees what they're sharing</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--danger);">No — share fires before review</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--success);">Yes — vow card visible above CTA</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 8px; color: var(--text-secondary);">Emotional timing of share</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--gold);">Good — right after choosing witness</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--gold);">Good — same moment, different screen</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 8px; color: var(--text-secondary);">Social pressure on maker</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--danger);">None</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--success);">Witness can accept during payment</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 8px; color: var(--text-secondary);">Post-seal reshare</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--danger);">None</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--success);">Copy-link nudge on /live</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 8px; color: var(--text-secondary);">OG preview in iMessage</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--gold);">Works (already fixed)</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--success);">Works</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 8px; color: var(--text-secondary);">Steps to seal (staked vow)</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--gold);">Share → Review → Auth → Pay</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--gold);">Review → Share → Pay</td>
+        </tr>
+        <tr style="border-bottom: 1px solid var(--border);">
+          <td style="padding: 10px 8px; color: var(--text-secondary);">Risk: maker skips share</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--success);">Low — share is mandatory step</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--gold);">Medium — can tap "Seal" directly</td>
+        </tr>
+        <tr>
+          <td style="padding: 10px 8px; color: var(--text-secondary);">System SMS fallback</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--success);">Yes (on seal)</td>
+          <td style="padding: 10px 8px; text-align: center; color: var(--success);">Yes (on seal, unchanged)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="margin-top: 32px; padding: 20px; background: rgba(212,162,79,0.06); border: 1px solid rgba(212,162,79,0.2); border-radius: 16px;">
+    <div style="font-size: 11px; font-weight: 700; letter-spacing: 1.3px; text-transform: uppercase; color: var(--gold); margin-bottom: 8px;">VERDICT</div>
+    <div style="font-size: 15px; color: var(--text); line-height: 1.6; margin-bottom: 12px;">
+      <strong>Proposed wins on 6 of 9 dimensions.</strong> The two areas where Current is equal or better (emotional timing, skip risk) are addressable:
+    </div>
+    <ul style="font-size: 13px; color: var(--text-secondary); line-height: 1.8; padding-left: 18px;">
+      <li><strong>Emotional timing</strong> — Proposed is only one screen later. The emotional peak doesn't evaporate between /witness and /seal (they're seconds apart). <span style="color: var(--gold);">Wash.</span></li>
+      <li><strong>Skip risk</strong> — Mitigated by visual hierarchy (share CTA is gold primary, seal is muted). System SMS catches phone-number witnesses regardless. <span style="color: var(--gold);">Acceptable.</span></li>
+      <li><strong>Dead links</strong> — Current's biggest problem. A witness who bounces from a spinner will likely never return. This alone justifies the change. <span style="color: var(--success);">Decisive.</span></li>
+    </ul>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

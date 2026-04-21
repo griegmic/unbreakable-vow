@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard V2 — Final Mockups</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #111;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #e8e4dc;
+    padding: 40px 20px 80px;
+  }
+
+  h1.page-title { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  p.page-sub { text-align: center; font-size: 13px; color: #8a8578; margin-bottom: 40px; }
+
+  .section-divider {
+    text-align: center; font-size: 16px; font-weight: 600; color: #d4a24f;
+    margin: 50px 0 6px; padding-top: 36px; border-top: 1px solid #1a1c22;
+  }
+  .section-note { text-align: center; font-size: 12px; color: #8a8578; margin-bottom: 28px; }
+
+  .row {
+    display: flex; justify-content: center; gap: 36px; flex-wrap: wrap;
+    max-width: 1100px; margin: 0 auto;
+  }
+
+  .col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .label { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #d4a24f; }
+  .sublabel { font-size: 11px; color: #8a8578; text-align: center; max-width: 300px; }
+
+  /* Phone */
+  .phone {
+    width: 320px; min-height: 660px; border-radius: 40px; border: 3px solid #2a2520;
+    background: #0B0D11; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .notch { width: 120px; height: 28px; background: #0B0D11; border-radius: 0 0 16px 16px; margin: 0 auto; }
+  .screen { padding: 4px 22px 24px; display: flex; flex-direction: column; gap: 14px; }
+
+  /* Components */
+  .hdr { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+  .hdr-left { display: flex; align-items: center; gap: 8px; }
+  .hamburger { width: 32px; height: 32px; border-radius: 10px; background: #14161c; border: 1px solid #2a2520; display: flex; align-items: center; justify-content: center; }
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 100px; background: rgba(212,162,79,0.08); border: 1px solid rgba(212,162,79,0.15); }
+  .badge span { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #d4a24f; }
+  .gear { width: 34px; height: 34px; border-radius: 50%; background: #14161c; border: 1px solid #2a2520; display: flex; align-items: center; justify-content: center; }
+  .gear-icon { width: 16px; height: 16px; stroke: #5a5650; fill: none; stroke-width: 2; }
+
+  .hero-vow { font-size: 24px; font-family: Georgia, 'Times New Roman', serif; font-weight: 600; line-height: 1.32; color: #e8e4dc; }
+  .hero-vow-sm { font-size: 20px; }
+
+  .bar { width: 100%; height: 6px; border-radius: 6px; background: #1a1c22; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 6px; }
+  .bar-gold { background: linear-gradient(90deg, #d4a24f, #e8c36a); }
+  .bar-danger { background: linear-gradient(90deg, #F59E0B, #EF4444); }
+
+  .cd-row { display: flex; justify-content: space-between; align-items: baseline; }
+  .cd-main { font-size: 14px; font-weight: 600; color: #e8e4dc; }
+  .cd-sub { font-size: 13px; color: #5a5650; }
+
+  .wb {
+    display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 14px;
+    background: #14161c; border: 1px solid #2a2520;
+  }
+  .wb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .wb-name { font-size: 14px; font-weight: 600; color: #e8e4dc; }
+  .wb-meta { font-size: 12px; color: #5a5650; }
+
+  .wi { display: flex; align-items: center; gap: 8px; }
+  .wi-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .wi-text { font-size: 14px; color: #8a8578; }
+  .wi-text strong { color: #e8e4dc; font-weight: 600; }
+
+  .gbtn {
+    width: 100%; min-height: 50px; border-radius: 18px; border: none;
+    background: linear-gradient(135deg, #e8c36a, #d4a24f, #b8882e);
+    box-shadow: 0 10px 20px rgba(212,162,79,0.25);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .gbtn span { font-size: 14px; font-weight: 800; color: #0B0D11; }
+  .gbtn-sm { min-height: 46px; }
+  .gbtn-sm span { font-size: 13px; }
+
+  .mlink { font-size: 13px; color: #5a5650; text-align: center; }
+
+  .spacer { flex: 1; min-height: 20px; }
+
+  /* Cards */
+  .card {
+    border-radius: 16px; padding: 13px 14px; display: flex; flex-direction: column; gap: 7px; cursor: pointer;
+  }
+  .card-active { background: rgba(212,162,79,0.05); border: 1.5px solid rgba(212,162,79,0.28); }
+  .card-urgent { background: rgba(245,158,11,0.07); border: 1.5px solid rgba(245,158,11,0.32); box-shadow: 0 0 16px rgba(245,158,11,0.08); }
+  .card-draft { background: #12141a; border: 1.5px dashed #252320; opacity: 0.65; }
+  .card-witness { background: rgba(96,165,250,0.05); border: 1.5px solid rgba(96,165,250,0.2); }
+  .card-done { background: #12141a; border: 1px solid #1a1c22; opacity: 0.5; }
+
+  .card-top { display: flex; align-items: center; justify-content: space-between; }
+  .card-status { display: flex; align-items: center; gap: 6px; }
+  .card-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .card-st { font-size: 11px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase; }
+  .card-cd { font-size: 12px; font-weight: 600; color: #8a8578; }
+  .card-text { font-size: 15px; font-family: Georgia, 'Times New Roman', serif; font-weight: 500; color: #e8e4dc; line-height: 1.4; }
+  .card-bar { width: 100%; height: 3px; border-radius: 3px; background: #1a1c22; overflow: hidden; }
+  .card-bar-fill { height: 100%; border-radius: 3px; }
+  .card-bottom { display: flex; justify-content: space-between; align-items: center; }
+  .card-meta { font-size: 12px; color: #5a5650; }
+  .card-stake { font-size: 12px; font-weight: 600; }
+  .card-role { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; }
+
+  .ann { margin-top: 10px; padding: 10px 14px; border-radius: 10px; background: rgba(212,162,79,0.05); border: 1px solid rgba(212,162,79,0.1); max-width: 320px; }
+  .ann p { font-size: 11px; color: #8a8578; line-height: 1.55; }
+  .ann strong { color: #d4a24f; }
+
+  .vs-badge {
+    display: inline-block; padding: 4px 12px; border-radius: 8px; font-size: 11px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+  }
+  .pick { background: rgba(82,214,154,0.1); color: #52d69a; border: 1px solid rgba(82,214,154,0.2); }
+  .alt { background: rgba(96,165,250,0.1); color: #60A5FA; border: 1px solid rgba(96,165,250,0.2); }
+
+  /* Stats */
+  .earned { display: flex; gap: 10px; }
+  .earned-s { font-size: 12px; font-weight: 600; color: #5a5650; }
+  .earned-s b { color: #52d69a; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  @media (max-width: 800px) {
+    .row { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Dashboard Redesign — Final Mockups</h1>
+<p class="page-sub">One-vow hero + two multi-vow options. Shreyas recommends.</p>
+
+<!-- ═══════ ONE VOW ═══════ -->
+<div class="section-divider">One Vow (80% of users)</div>
+<div class="section-note">The vow IS the page. No cards. No sections.</div>
+
+<div class="row">
+  <div class="col">
+    <div class="label">Active — Mid-Vow</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="hdr">
+          <div class="hdr-left">
+            <div class="hamburger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </div>
+            <div class="badge"><span>Unbreakable Vow</span></div>
+          </div>
+          <div class="gear">
+            <svg class="gear-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </div>
+        </div>
+
+        <div style="padding-top: 6px;">
+          <div class="hero-vow">&ldquo;Book France by Sunday.&rdquo;</div>
+        </div>
+
+        <div class="bar"><div class="bar-fill bar-gold" style="width:73%"></div></div>
+
+        <div class="cd-row">
+          <span class="cd-main">Day 22 of 30</span>
+          <span class="cd-sub">8 days left</span>
+        </div>
+
+        <div class="wb">
+          <div class="wb-dot" style="background:#52d69a"></div>
+          <div style="flex:1">
+            <div class="wb-name">Nick is watching</div>
+            <div class="wb-meta">$10 at stake &middot; Red Cross</div>
+          </div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a3530" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="gbtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B0D11" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Send Nick a message</span>
+        </div>
+        <div class="mlink">Make a vow &rarr;</div>
+      </div>
+    </div>
+    <div class="ann"><p><strong>Hero view.</strong> Vow text is the page title. 6px progress bar. "Nick is watching" — personal, not metadata. CTA = engagement. "Make a vow" is a footnote.</p></div>
+  </div>
+
+  <div class="col">
+    <div class="label">Verdict Due</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="hdr">
+          <div class="hdr-left">
+            <div class="hamburger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </div>
+            <div class="badge"><span>Unbreakable Vow</span></div>
+          </div>
+          <div class="gear">
+            <svg class="gear-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </div>
+        </div>
+
+        <div style="padding-top: 6px;">
+          <div class="hero-vow">&ldquo;Book France by Sunday.&rdquo;</div>
+        </div>
+
+        <div class="bar"><div class="bar-fill bar-danger" style="width:100%"></div></div>
+
+        <div class="cd-row">
+          <span class="cd-main" style="color:#F59E0B">Time's up</span>
+          <span class="cd-sub">Waiting for Nick's verdict</span>
+        </div>
+
+        <div class="wb" style="border-color:rgba(245,158,11,0.25); background:rgba(245,158,11,0.05)">
+          <div class="wb-dot" style="background:#F59E0B; animation: pulse 2s infinite"></div>
+          <div style="flex:1">
+            <div class="wb-name">Nick has the call</div>
+            <div class="wb-meta">$10 at stake &middot; Red Cross</div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="gbtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B0D11" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Nudge Nick</span>
+        </div>
+        <div class="mlink">Make a vow &rarr;</div>
+      </div>
+    </div>
+    <div class="ann"><p><strong>Verdict due.</strong> Bar turns red. "Time's up." Witness block pulses amber. "Nick has the call" — the gravity is on the witness now. CTA = "Nudge Nick."</p></div>
+  </div>
+
+  <div class="col">
+    <div class="label">No Stake / No Witness Yet</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen">
+        <div class="hdr">
+          <div class="hdr-left">
+            <div class="hamburger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </div>
+            <div class="badge"><span>Unbreakable Vow</span></div>
+          </div>
+          <div class="gear">
+            <svg class="gear-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </div>
+        </div>
+
+        <div style="padding-top: 6px;">
+          <div class="hero-vow">&ldquo;Wake up before 7 every weekday.&rdquo;</div>
+        </div>
+
+        <div class="bar"><div class="bar-fill bar-gold" style="width:40%"></div></div>
+
+        <div class="cd-row">
+          <span class="cd-main">Day 12 of 30</span>
+          <span class="cd-sub">18 days left</span>
+        </div>
+
+        <div class="wb" style="border-style: dashed; border-color: #2a2520;">
+          <div class="wb-dot" style="background:#F59E0B"></div>
+          <div style="flex:1">
+            <div class="wb-name" style="color: #8a8578;">Sarah hasn't accepted yet</div>
+            <div class="wb-meta">No stake &middot; their word on the line</div>
+          </div>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="gbtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B0D11" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+          <span>Resend witness invite</span>
+        </div>
+        <div class="mlink">Make a vow &rarr;</div>
+      </div>
+    </div>
+    <div class="ann"><p><strong>Edge case: witness pending.</strong> Dashed border on witness block. Amber dot. "Sarah hasn't accepted yet." CTA shifts to resend invite — the most useful action right now.</p></div>
+  </div>
+</div>
+
+<!-- ═══════ MULTI-VOW ═══════ -->
+<div class="section-divider">Multi-Vow (2+ vows)</div>
+<div class="section-note">Two options. Shreyas's pick is marked.</div>
+
+<div class="row">
+  <!-- OPTION A: Hero + Stack -->
+  <div class="col">
+    <div class="vs-badge alt">Option A — Hero + Stack</div>
+    <div class="label">Most urgent = hero, rest = cards</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen" style="gap: 11px;">
+        <div class="hdr">
+          <div class="hdr-left">
+            <div class="hamburger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </div>
+            <div class="badge"><span>Unbreakable Vow</span></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="earned">
+              <span class="earned-s"><b>2</b> kept</span>
+            </div>
+            <div class="gear">
+              <svg class="gear-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hero -->
+        <div style="padding-top: 2px;">
+          <div class="hero-vow hero-vow-sm">&ldquo;No takeout all week.&rdquo;</div>
+        </div>
+        <div class="bar" style="height:5px"><div class="bar-fill bar-danger" style="width:100%"></div></div>
+        <div class="cd-row">
+          <span class="cd-main" style="color:#F59E0B; font-size:13px;">Time's up</span>
+          <span class="cd-sub" style="font-size:12px;">Michael &middot; $10 stake</span>
+        </div>
+
+        <!-- Cards -->
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px;">
+          <div class="card card-active">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#52d69a"></div>
+                <span class="card-st" style="color:#52d69a">8 days left</span>
+              </div>
+              <span class="card-stake" style="color:#d4a24f">$10</span>
+            </div>
+            <div class="card-text">Book France by Sunday.</div>
+            <div class="card-bar"><div class="card-bar-fill" style="width:73%; background:#d4a24f"></div></div>
+            <div class="card-bottom">
+              <span class="card-meta">Nick &middot; watching</span>
+            </div>
+          </div>
+
+          <div class="card card-active">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#52d69a"></div>
+                <span class="card-st" style="color:#52d69a">8 days left</span>
+              </div>
+              <span class="card-stake" style="color:#5a5650">no stake</span>
+            </div>
+            <div class="card-text">Wake up before 7 every weekday.</div>
+            <div class="card-bar"><div class="card-bar-fill" style="width:73%; background:#d4a24f"></div></div>
+            <div class="card-bottom">
+              <span class="card-meta">Sarah &middot; watching</span>
+            </div>
+          </div>
+
+          <div class="card card-witness">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#60A5FA"></div>
+                <span class="card-st" style="color:#60A5FA">Witnessing</span>
+              </div>
+              <span class="card-cd">5 days left</span>
+            </div>
+            <div class="card-text">Run a 5K every Saturday.</div>
+            <div class="card-bottom">
+              <span class="card-meta">By Alex &middot; $20 stake</span>
+            </div>
+          </div>
+
+          <div class="card card-draft">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#5a5650"></div>
+                <span class="card-st" style="color:#5a5650">Draft</span>
+              </div>
+            </div>
+            <div class="card-text">Golden prompt shipped by Sunday.</div>
+            <div class="card-bottom">
+              <span class="card-meta" style="color:#d4a24f">Tap to seal &rarr;</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="gbtn gbtn-sm"><span>Make a vow</span></div>
+      </div>
+    </div>
+    <div class="ann"><p><strong>Hero + Stack.</strong> Most urgent vow stays hero (bigger text, progress bar, no card border). Rest are compact cards. Pro: emotional weight on the urgent thing. Con: visual mode-switch when going from 1→2 vows.</p></div>
+  </div>
+
+  <!-- OPTION B: Smart Stack (Shreyas pick) -->
+  <div class="col">
+    <div class="vs-badge pick">Shreyas's Pick — Smart Stack</div>
+    <div class="label">All cards, urgency-sorted, visual hierarchy</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="screen" style="gap: 11px;">
+        <div class="hdr">
+          <div class="hdr-left">
+            <div class="hamburger">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            </div>
+            <div class="badge"><span>Unbreakable Vow</span></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="earned">
+              <span class="earned-s"><b>2</b> kept</span>
+            </div>
+            <div class="gear">
+              <svg class="gear-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+          <!-- Urgent card -->
+          <div class="card card-urgent">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#F59E0B; animation: pulse 2s infinite"></div>
+                <span class="card-st" style="color:#F59E0B">Verdict due</span>
+              </div>
+              <span class="card-cd" style="color:#F59E0B">Time's up</span>
+            </div>
+            <div class="card-text" style="font-size: 16px;">No takeout all week.</div>
+            <div class="card-bar"><div class="card-bar-fill" style="width:100%; background: linear-gradient(90deg, #F59E0B, #EF4444)"></div></div>
+            <div class="card-bottom">
+              <span class="card-meta">Michael &middot; deciding</span>
+              <span class="card-stake" style="color:#d4a24f">$10</span>
+            </div>
+          </div>
+
+          <!-- Active 1 -->
+          <div class="card card-active">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#52d69a"></div>
+                <span class="card-st" style="color:#52d69a">Active</span>
+              </div>
+              <span class="card-cd">8 days left</span>
+            </div>
+            <div class="card-text">Book France by Sunday.</div>
+            <div class="card-bar"><div class="card-bar-fill" style="width:73%; background:#d4a24f"></div></div>
+            <div class="card-bottom">
+              <span class="card-meta">Nick &middot; watching</span>
+              <span class="card-stake" style="color:#d4a24f">$10</span>
+            </div>
+          </div>
+
+          <!-- Active 2 -->
+          <div class="card card-active">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#52d69a"></div>
+                <span class="card-st" style="color:#52d69a">Active</span>
+              </div>
+              <span class="card-cd">8 days left</span>
+            </div>
+            <div class="card-text">Wake up before 7 every weekday.</div>
+            <div class="card-bar"><div class="card-bar-fill" style="width:73%; background:#d4a24f"></div></div>
+            <div class="card-bottom">
+              <span class="card-meta">Sarah &middot; watching</span>
+              <span class="card-stake" style="color:#5a5650">no stake</span>
+            </div>
+          </div>
+
+          <!-- Witnessing -->
+          <div class="card card-witness">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#60A5FA"></div>
+                <span class="card-st" style="color:#60A5FA">Witnessing</span>
+              </div>
+              <span class="card-cd">5 days left</span>
+            </div>
+            <div class="card-text">Run a 5K every Saturday.</div>
+            <div class="card-bottom">
+              <span class="card-meta">By Alex &middot; $20 stake</span>
+              <span class="card-role" style="background:rgba(96,165,250,0.1); color:#60A5FA">
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                you judge
+              </span>
+            </div>
+          </div>
+
+          <!-- Draft -->
+          <div class="card card-draft">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#5a5650"></div>
+                <span class="card-st" style="color:#5a5650">Draft</span>
+              </div>
+            </div>
+            <div class="card-text">Golden prompt shipped by Sunday.</div>
+            <div class="card-bottom">
+              <span class="card-meta" style="color:#d4a24f">Tap to seal &rarr;</span>
+            </div>
+          </div>
+
+          <!-- Completed (muted) -->
+          <div class="card card-done">
+            <div class="card-top">
+              <div class="card-status">
+                <div class="card-dot" style="background:#52d69a"></div>
+                <span class="card-st" style="color:#52d69a">Kept</span>
+              </div>
+              <span class="card-cd" style="color:#3a3530">3 days ago</span>
+            </div>
+            <div class="card-text" style="opacity:0.6">Meditate 10 min daily for a week.</div>
+          </div>
+        </div>
+
+        <div class="gbtn gbtn-sm"><span>Make a vow</span></div>
+      </div>
+    </div>
+    <div class="ann"><p><strong>Smart Stack (recommended).</strong> All cards. Sorted: urgent (amber glow) → active (gold border) → witnessing (blue) → drafts (dashed) → completed (faded). No sections. Visual hierarchy does the work. Scales from 2 to 20 vows. No mode-switch from 1-vow hero.</p></div>
+  </div>
+</div>
+
+<!-- ═══════ DECISION ═══════ -->
+<div class="section-divider">Shreyas's Final Call</div>
+<div class="section-note" style="max-width: 600px; margin: 0 auto 30px;">
+  <strong style="color: #d4a24f;">1 vow = hero view (unanimous).</strong> The vow is the page.<br><br>
+  <strong style="color: #52d69a;">2+ vows = Smart Stack.</strong> The Hero+Stack creates a jarring mode-switch when going from 1→2 vows — the entire page layout changes. Smart Stack is the same visual language at any count. The urgent card's amber glow gives it the weight it needs without a separate layout mode.<br><br>
+  <strong style="color: #e8e4dc;">The transition:</strong> When a one-vow user makes their second vow, the hero gracefully becomes the top card in the stack. No layout shock.
+</div>
+
+</body>
+</html>

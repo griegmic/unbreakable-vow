@@ -809,7 +809,7 @@ export default function VowDashboard() {
     <View style={styles.headerArea}>
       <Pressable
         style={styles.backRow}
-        onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/'); }}
+        onPress={() => { router.replace('/'); }}
         hitSlop={8}
       >
         <ChevronLeft color={palette.textSecondary} size={20} />

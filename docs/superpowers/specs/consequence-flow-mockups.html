@@ -1,0 +1,1619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Consequence Flow Mockups — Unbreakable Vow</title>
+<style>
+  :root {
+    --bg: #0B0D11;
+    --surface: rgba(255,255,255,0.04);
+    --surface-elevated: rgba(255,255,255,0.07);
+    --gold: #D4A24F;
+    --gold-bright: #E8C468;
+    --gold-deep: #B8863A;
+    --text: #F5F0E8;
+    --text-secondary: rgba(245,240,232,0.7);
+    --text-muted: rgba(245,240,232,0.4);
+    --success: #52D69A;
+    --success-muted: rgba(82,214,154,0.08);
+    --danger: #DC2626;
+    --border: rgba(255,255,255,0.08);
+    --border-strong: rgba(255,255,255,0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #111318;
+    color: #ccc;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 40px 20px;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--gold-bright);
+    margin-bottom: 8px;
+    letter-spacing: -1px;
+  }
+
+  .page-subtitle {
+    text-align: center;
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-bottom: 60px;
+  }
+
+  .version-header {
+    text-align: center;
+    margin: 80px 0 12px;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .version-title {
+    text-align: center;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+  }
+
+  .version-desc {
+    text-align: center;
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 50px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+  }
+
+  .role-label {
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--gold-bright);
+    margin: 60px 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .role-label::before, .role-label::after {
+    content: '';
+    height: 1px;
+    width: 80px;
+    background: linear-gradient(90deg, transparent, var(--gold-deep), transparent);
+  }
+
+  .flow-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 32px;
+    margin-bottom: 20px;
+  }
+
+  .screen-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .screen-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .screen-sublabel {
+    font-size: 11px;
+    color: rgba(245,240,232,0.25);
+    margin-top: -6px;
+    font-style: italic;
+  }
+
+  .phone {
+    width: 320px;
+    min-height: 580px;
+    background: var(--bg);
+    border-radius: 32px;
+    border: 2px solid rgba(255,255,255,0.1);
+    padding: 20px 22px 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  .phone.compact { min-height: auto; }
+
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 24px;
+    background: #111318;
+    border-radius: 0 0 16px 16px;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 14px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--gold);
+  }
+
+  .badge::before {
+    content: '';
+    width: 8px; height: 8px;
+    background: var(--gold);
+    border-radius: 2px;
+    transform: rotate(45deg);
+  }
+
+  .screen-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    letter-spacing: -0.5px;
+    font-family: 'Georgia', serif;
+  }
+
+  .screen-title.centered { text-align: center; }
+
+  .screen-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .screen-subtitle.centered { text-align: center; }
+
+  .vow-quote {
+    font-size: 20px;
+    font-family: 'Georgia', serif;
+    font-weight: 500;
+    color: var(--text);
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  .amount-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .amount-btn {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 0;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .amount-btn.active {
+    background: rgba(212,162,79,0.12);
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(212,162,79,0.15);
+  }
+
+  .amount-btn .amount {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-muted);
+  }
+
+  .amount-btn.active .amount { color: var(--gold-bright); }
+
+  .amount-btn .hint {
+    font-size: 9px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .consequence-statement {
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 18px;
+    padding: 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .consequence-statement .emoji { font-size: 20px; }
+
+  .consequence-statement .text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .consequence-card {
+    background: var(--surface);
+    border: 1.5px solid var(--border);
+    border-radius: 18px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .consequence-card.active {
+    background: rgba(212,162,79,0.08);
+    border-color: var(--gold);
+  }
+
+  .radio {
+    width: 20px; height: 20px;
+    border-radius: 10px;
+    border: 2px solid var(--text-muted);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .radio.active {
+    border-color: var(--gold-bright);
+  }
+
+  .radio.active::after {
+    content: '';
+    width: 10px; height: 10px;
+    border-radius: 5px;
+    background: var(--gold-bright);
+  }
+
+  .consequence-card .icon-wrap {
+    width: 40px; height: 40px;
+    border-radius: 14px;
+    background: var(--surface-elevated);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .consequence-card.active .icon-wrap {
+    background: rgba(212,162,79,0.15);
+  }
+
+  .consequence-card .card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .consequence-card.active .card-title { color: var(--text); }
+
+  .consequence-card .card-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .deadline-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .chip {
+    padding: 8px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .chip.active {
+    border-color: var(--border-strong);
+    background: rgba(212,162,79,0.14);
+    color: var(--gold-bright);
+  }
+
+  .primary-btn {
+    width: 100%;
+    min-height: 54px;
+    border-radius: 18px;
+    border: none;
+    background: linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep));
+    box-shadow: 0 12px 24px rgba(212,162,79,0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  .primary-btn span {
+    font-size: 15px;
+    font-weight: 800;
+    color: #0B0D11;
+    letter-spacing: 0.2px;
+  }
+
+  .primary-btn.disabled {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    box-shadow: none;
+  }
+
+  .primary-btn.disabled span {
+    color: var(--text-muted);
+    opacity: 0.4;
+  }
+
+  .secondary-link {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    cursor: pointer;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    opacity: 0.6;
+  }
+
+  .deadline-display {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: -8px;
+  }
+
+  /* Witness-specific */
+  .oath-checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 16px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .oath-checkbox.checked {
+    background: rgba(212,162,79,0.08);
+    border-color: rgba(212,162,79,0.25);
+  }
+
+  .checkbox {
+    width: 24px; height: 24px;
+    border-radius: 7px;
+    border: 2px solid var(--text-muted);
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+
+  .checkbox.checked {
+    background: var(--gold-bright);
+    border-color: var(--gold-bright);
+  }
+
+  .checkbox.checked::after {
+    content: '✓';
+    font-size: 14px;
+    font-weight: 700;
+    color: #0B0D11;
+  }
+
+  .oath-text {
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Georgia', serif;
+    color: var(--gold-bright);
+  }
+
+  .oath-subtext {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .charity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .charity-btn {
+    padding: 14px 12px;
+    border-radius: 14px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    text-align: center;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .charity-btn.disabled {
+    opacity: 0.25;
+    pointer-events: none;
+  }
+
+  .charity-btn.enabled {
+    opacity: 1;
+    border-color: var(--border-strong);
+  }
+
+  .charity-btn.enabled:hover {
+    border-color: var(--gold);
+    background: rgba(212,162,79,0.06);
+  }
+
+  .charity-btn.hate {
+    border-color: rgba(220,80,60,0.2);
+  }
+
+  .charity-btn.hate.enabled {
+    border-color: rgba(220,80,60,0.35);
+    background: rgba(220,80,60,0.04);
+  }
+
+  .charity-btn.hate.enabled:hover {
+    border-color: rgba(220,80,60,0.6);
+    background: rgba(220,80,60,0.08);
+  }
+
+  .keep-it-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1.5px solid var(--border-strong);
+    background: rgba(212,162,79,0.06);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+  }
+
+  .keep-it-btn.disabled {
+    opacity: 0.25;
+    pointer-events: none;
+  }
+
+  .keep-it-btn.enabled:hover {
+    border-color: var(--gold);
+    background: rgba(212,162,79,0.12);
+  }
+
+  .keep-it-btn .keep-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--gold-bright);
+  }
+
+  .keep-it-btn .keep-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .divider {
+    border: none;
+    border-top: 1px dashed rgba(255,255,255,0.1);
+    margin: 4px 0;
+  }
+
+  .success-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-radius: 999px;
+    background: rgba(82,214,154,0.08);
+    border: 1px solid rgba(82,214,154,0.15);
+  }
+
+  .success-badge span {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--success);
+  }
+
+  .phone-input {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 18px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(212,162,79,0.2);
+  }
+
+  .phone-input .icon { color: var(--text-muted); font-size: 16px; }
+
+  .phone-input input {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 16px;
+    outline: none;
+    width: 100%;
+    font-family: inherit;
+  }
+
+  .phone-input input::placeholder { color: var(--text-muted); }
+
+  .vow-card {
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    overflow: hidden;
+    display: flex;
+  }
+
+  .vow-card .accent {
+    width: 3px;
+    background: var(--gold);
+    flex-shrink: 0;
+  }
+
+  .vow-card .content {
+    padding: 12px 14px;
+    flex: 1;
+  }
+
+  .vow-card .vow-text {
+    font-size: 15px;
+    font-family: 'Georgia', serif;
+    font-weight: 500;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .vow-card .vow-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .stat-pill {
+    flex: 1;
+    padding: 12px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    text-align: center;
+  }
+
+  .stat-pill .value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .stat-pill .label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    background: var(--success-muted);
+    border: 1px solid rgba(82,214,154,0.22);
+    margin: 0 auto;
+  }
+
+  .status-badge .dot {
+    width: 8px; height: 8px;
+    border-radius: 4px;
+    background: var(--success);
+  }
+
+  .status-badge span {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--success);
+  }
+
+  .waiting-card {
+    padding: 14px 16px;
+    border-radius: 14px;
+    border: 1px dashed rgba(212,162,79,0.3);
+    background: rgba(212,162,79,0.04);
+    text-align: center;
+  }
+
+  .waiting-card span {
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+
+  /* Reveal screen special */
+  .reveal-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    gap: 12px;
+    min-height: 540px;
+  }
+
+  .reveal-pre {
+    font-size: 18px;
+    font-family: 'Georgia', serif;
+    color: var(--text-secondary);
+  }
+
+  .reveal-sub {
+    font-size: 15px;
+    color: var(--text-muted);
+  }
+
+  .reveal-charity {
+    font-size: 36px;
+    font-weight: 700;
+    font-family: 'Georgia', serif;
+    color: var(--gold-bright);
+    letter-spacing: -1px;
+    text-shadow: 0 0 40px rgba(212,162,79,0.4);
+    margin: 16px 0;
+  }
+
+  .reveal-tagline {
+    font-size: 14px;
+    font-style: italic;
+    color: var(--text-muted);
+  }
+
+  .flow-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 20px;
+    opacity: 0.3;
+    margin: -8px 0;
+  }
+
+  .legal-text {
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.5;
+    text-align: center;
+    line-height: 1.5;
+  }
+
+  .new-badge {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(212,162,79,0.2);
+    color: var(--gold-bright);
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  .unchanged-note {
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+    opacity: 0.4;
+    font-style: italic;
+    padding: 8px 0;
+  }
+
+  .payout-card {
+    padding: 16px;
+    border-radius: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .payout-card .payout-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .payout-card .payout-icon { font-size: 20px; }
+
+  .payout-card .payout-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .payout-card .payout-status {
+    font-size: 13px;
+    color: var(--success);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: 30px;
+  }
+
+  .witness-action-btn {
+    width: 100%;
+    min-height: 54px;
+    border-radius: 18px;
+    border: none;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+
+  .witness-action-btn span {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--gold-bright);
+  }
+
+  .spacer { flex: 1; }
+
+  @media (max-width: 720px) {
+    .flow-row { flex-direction: column; align-items: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">Consequence Flow Mockups</div>
+<div class="page-subtitle">Unbreakable Vow &mdash; Screen-by-screen flows for Version 1 &amp; Version 1.5</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- VERSION 1                                                   -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<div class="version-header">VERSION 1</div>
+<div class="version-title">&ldquo;Ship Now&rdquo; &mdash; Witness Picks Charity</div>
+<div class="version-desc">
+  No maker consequence choice. Witness picks from love/hate charities at acceptance.<br>
+  Every staked vow gets a reveal. No payouts needed.
+</div>
+
+<!-- ─── MAKER FLOW ─── -->
+<div class="role-label">Maker Flow (Vower)</div>
+
+<div class="flow-row">
+  <!-- M1: Home -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M1: Home</div>
+    <div class="screen-sublabel">Unchanged</div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 16px"></div>
+      <div class="screen-title centered">What are you<br>committing to?</div>
+      <div style="height: 8px"></div>
+      <div style="background: var(--surface); border: 1px solid var(--border-strong); border-radius: 18px; padding: 16px;">
+        <div style="font-size: 16px; color: var(--text-muted);">I vow to...</div>
+        <div style="font-size: 16px; color: var(--text); margin-top: 4px;">go to the gym 3x this week</div>
+      </div>
+      <div style="font-size: 13px; color: var(--text-muted); line-height: 1.8;">
+        Examples:<br>
+        &ldquo;No phone after 10pm for a month&rdquo;<br>
+        &ldquo;Read 30 pages every day&rdquo;
+      </div>
+      <div class="spacer"></div>
+      <div class="primary-btn"><span>Make my vow</span></div>
+    </div>
+  </div>
+
+  <!-- M2: Refine -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M2: Refine</div>
+    <div class="screen-sublabel">Unchanged</div>
+    <div class="phone">
+      <div style="font-size: 13px; color: var(--text-muted); margin-top: 16px;">&larr; Back</div>
+      <div class="screen-title">Let&rsquo;s sharpen that.</div>
+      <div style="height: 4px"></div>
+      <div class="section-label">YOUR VOW</div>
+      <div style="background: var(--surface); border: 1px solid var(--border-strong); border-radius: 16px; padding: 16px;">
+        <div style="font-size: 17px; font-family: Georgia, serif; font-weight: 600; color: var(--text); line-height: 1.4;">
+          &ldquo;Go to the gym at least 3 times this week&rdquo;
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--success);">&#10003;</span>
+          <span style="font-size: 13px; color: var(--text-secondary);">Specific</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--success);">&#10003;</span>
+          <span style="font-size: 13px; color: var(--text-secondary);">Measurable</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span style="color: var(--success);">&#10003;</span>
+          <span style="font-size: 13px; color: var(--text-secondary);">Time-bound</span>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="primary-btn"><span>That&rsquo;s my vow</span></div>
+      <div class="secondary-link">Let me rephrase &rarr;</div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- M3: Stake (REDESIGNED) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M3: Stake <span class="new-badge">CHANGED</span></div>
+    <div class="screen-sublabel">Consequence section redesigned</div>
+    <div class="phone">
+      <div style="font-size: 13px; color: var(--text-muted); margin-top: 16px;">&larr; Back</div>
+      <div class="screen-title">Set the stakes.</div>
+      <div class="screen-subtitle">Pick an amount that&rsquo;ll keep you honest.</div>
+      <div class="amount-grid">
+        <div class="amount-btn">
+          <div class="amount">$10</div>
+          <div class="hint">A nudge</div>
+        </div>
+        <div class="amount-btn">
+          <div class="amount">$25</div>
+          <div class="hint">Enough<br>to sting</div>
+        </div>
+        <div class="amount-btn active">
+          <div class="amount">$50</div>
+          <div class="hint">You mean<br>business</div>
+        </div>
+        <div class="amount-btn">
+          <div class="amount">$100</div>
+          <div class="hint">Dead<br>serious</div>
+        </div>
+      </div>
+
+      <div class="consequence-statement">
+        <div class="emoji">&#127919;</div>
+        <div class="text">
+          <strong style="color: var(--text);">Your witness picks where the money goes if you fail.</strong><br>
+          You&rsquo;ll find out when they accept.
+        </div>
+      </div>
+
+      <div class="section-label">DEADLINE</div>
+      <div class="deadline-chips">
+        <div class="chip">This Fri</div>
+        <div class="chip active">End of wk</div>
+        <div class="chip">7 days</div>
+        <div class="chip">Pick date</div>
+      </div>
+      <div class="deadline-display">Ends Sun, Apr 20</div>
+
+      <div class="primary-btn"><span>Confirm $50 stake</span></div>
+      <div class="secondary-link">or make a free vow</div>
+    </div>
+  </div>
+
+  <!-- M4: Witness Selection -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M4: Witness</div>
+    <div class="screen-sublabel">Unchanged</div>
+    <div class="phone">
+      <div style="height: 20px;"></div>
+      <div class="screen-title centered">Who&rsquo;s holding<br>you to it?</div>
+      <div class="screen-subtitle centered">Pick someone who won&rsquo;t let you off the hook.</div>
+      <div style="height: 16px;"></div>
+      <div style="background: var(--surface); border: 1.5px solid var(--gold); border-radius: 22px; padding: 18px; display: flex; align-items: center; gap: 14px; box-shadow: 0 6px 14px rgba(212,162,79,0.12);">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: rgba(212,162,79,0.1); border: 1px solid var(--border-strong); display: flex; align-items: center; justify-content: center; font-size: 22px;">&#128101;</div>
+        <div style="flex: 1;">
+          <div style="font-size: 17px; font-weight: 700; font-family: Georgia, serif; color: var(--gold-bright);">Text a friend</div>
+          <div style="font-size: 13px; color: var(--text-secondary); margin-top: 2px;">They&rsquo;ll decide if you kept your word</div>
+        </div>
+        <div style="font-size: 18px; color: var(--gold-bright);">&rsaquo;</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="secondary-link">No witness &mdash; just my word</div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- M5: Seal -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M5: Seal</div>
+    <div class="screen-sublabel">Minor copy update</div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 12px;"></div>
+      <div class="screen-title centered">Your Unbreakable Vow</div>
+      <div class="screen-subtitle centered">No takebacks. No excuses.</div>
+      <div style="height: 8px;"></div>
+      <div class="section-label">THE VOW</div>
+      <div style="background: var(--surface); border: 1px solid var(--border-strong); border-radius: 16px; padding: 16px;">
+        <div style="font-size: 17px; font-family: Georgia, serif; font-weight: 600; color: var(--text); line-height: 1.4;">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 4px;">
+          <div style="font-size: 13px; color: var(--text-secondary);">$50 at stake</div>
+          <div style="font-size: 13px; color: var(--gold-bright);">Your witness picks the consequence &#127919;</div>
+          <div style="font-size: 13px; color: var(--text-muted);">Verdict: Sun, Apr 20</div>
+        </div>
+      </div>
+      <div style="height: 4px;"></div>
+      <div style="background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px;">
+        <div style="font-size: 12px; color: var(--text-muted);">&#128241; Sarah will get a text with your vow and a link to accept</div>
+      </div>
+      <div class="spacer"></div>
+      <div class="primary-btn"><span>Seal &amp; text Sarah</span></div>
+    </div>
+  </div>
+
+  <!-- M6: Live (waiting) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M6: Live</div>
+    <div class="screen-sublabel">New waiting indicator</div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 12px;"></div>
+      <div style="display: flex; justify-content: center;">
+        <div class="status-badge">
+          <div class="dot"></div>
+          <span>VOW ACTIVE</span>
+        </div>
+      </div>
+      <div class="screen-title centered" style="font-size: 20px;">Your vow is sealed.</div>
+      <div class="vow-card">
+        <div class="accent"></div>
+        <div class="content">
+          <div class="vow-text">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+          <div class="vow-meta">$50 at stake &middot; Verdict: Sun, Apr 20</div>
+        </div>
+      </div>
+      <div class="waiting-card">
+        <span>&#9203; Waiting for Sarah to accept<br>and pick your consequence...</span>
+      </div>
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="value">Day 1</div>
+          <div class="label">of 7</div>
+        </div>
+        <div class="stat-pill">
+          <div class="value">6 days left</div>
+          <div class="label">Verdict: Apr 20</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- M7: Reveal -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M7: Reveal <span class="new-badge">NEW</span></div>
+    <div class="screen-sublabel">Cinematic reveal when witness picks</div>
+    <div class="phone">
+      <div class="reveal-screen">
+        <div class="reveal-pre">Sarah made her choice.</div>
+        <div style="height: 8px;"></div>
+        <div class="reveal-sub">If you fail, $50 goes to...</div>
+        <div class="reveal-charity">NRA</div>
+        <div class="reveal-tagline">Better keep that vow.</div>
+        <div style="height: 24px;"></div>
+        <div class="primary-btn" style="width: 240px;"><span>Continue</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- M8/M9: Outcomes -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M8: Kept / M9: Broken</div>
+    <div class="screen-sublabel">Existing + updated destination text</div>
+    <div class="phone compact" style="gap: 20px;">
+      <div style="height: 16px;"></div>
+      <!-- Kept -->
+      <div style="text-align: center; padding: 24px 0; border-bottom: 1px solid var(--border);">
+        <div style="font-size: 28px; margin-bottom: 8px;">&#127881;</div>
+        <div class="screen-title centered" style="font-size: 22px;">Vow kept!</div>
+        <div class="screen-subtitle centered" style="margin-top: 6px;">You kept your word. $50 refunded.</div>
+        <div style="margin-top: 16px;">
+          <div class="primary-btn" style="width: 200px; margin: 0 auto;"><span>Share certificate</span></div>
+        </div>
+      </div>
+      <!-- Broken -->
+      <div style="text-align: center; padding: 24px 0;">
+        <div style="font-size: 28px; margin-bottom: 8px;">&#128148;</div>
+        <div class="screen-title centered" style="font-size: 22px; color: rgba(220,80,60,0.9);">Vow broken.</div>
+        <div class="screen-subtitle centered" style="margin-top: 6px;">You didn&rsquo;t keep your word.<br>$50 goes to NRA.</div>
+        <div style="margin-top: 16px;">
+          <div class="witness-action-btn" style="width: 200px; margin: 0 auto;"><span>Make a new vow</span></div>
+        </div>
+        <div style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">The best revenge is keeping your next one.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── WITNESS FLOW ─── -->
+<div class="role-label">Witness Flow</div>
+
+<div class="flow-row">
+  <!-- W1: Landing (REDESIGNED) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W1: Witness Landing <span class="new-badge">REDESIGNED</span></div>
+    <div class="screen-sublabel">Oath + love/hate charity grid</div>
+    <div class="phone" style="min-height: 780px;">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 8px;"></div>
+      <div class="screen-title centered" style="font-size: 24px;">Joey put $50<br>on the line.</div>
+      <div class="vow-quote">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+      <div class="screen-subtitle centered">You&rsquo;re the judge. Verdict day: Sun, Apr 20.</div>
+
+      <div class="oath-checkbox checked">
+        <div class="checkbox checked"></div>
+        <div>
+          <div class="oath-text">I solemnly swear</div>
+          <div class="oath-subtext">to hold Joey accountable</div>
+        </div>
+      </div>
+
+      <div style="font-size: 14px; color: var(--text-secondary);">If they fail, the money goes to...</div>
+
+      <div class="section-label">A CAUSE THEY'LL LOVE</div>
+      <div class="charity-grid">
+        <div class="charity-btn enabled">Red Cross</div>
+        <div class="charity-btn enabled">Ronald McDonald Hse</div>
+        <div class="charity-btn enabled">St. Jude</div>
+        <div class="charity-btn enabled">ASPCA</div>
+      </div>
+
+      <div class="section-label">...OR ONE THEY'LL HATE</div>
+      <div class="charity-grid">
+        <div class="charity-btn hate enabled">NRA</div>
+        <div class="charity-btn hate enabled">Planned Parenthood</div>
+        <div class="charity-btn hate enabled">Trump Campaign</div>
+        <div class="charity-btn hate enabled">Kamala Harris</div>
+      </div>
+
+      <div style="text-align: right;">
+        <div class="secondary-link">Not now &rarr;</div>
+      </div>
+      <div class="legal-text">By accepting, you agree to receive a text on verdict day. Msg &amp; data rates may apply.</div>
+    </div>
+  </div>
+
+  <!-- W1 alt: before oath checked -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W1: Before Oath</div>
+    <div class="screen-sublabel">Charities greyed out until checked</div>
+    <div class="phone" style="min-height: 780px;">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 8px;"></div>
+      <div class="screen-title centered" style="font-size: 24px;">Joey put $50<br>on the line.</div>
+      <div class="vow-quote">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+      <div class="screen-subtitle centered">You&rsquo;re the judge. Verdict day: Sun, Apr 20.</div>
+
+      <div class="oath-checkbox">
+        <div class="checkbox"></div>
+        <div>
+          <div class="oath-text" style="color: var(--text-muted);">I solemnly swear</div>
+          <div class="oath-subtext">to hold Joey accountable</div>
+        </div>
+      </div>
+
+      <div style="font-size: 14px; color: var(--text-muted); opacity: 0.4;">If they fail, the money goes to...</div>
+
+      <div class="section-label" style="opacity: 0.3;">A CAUSE THEY'LL LOVE</div>
+      <div class="charity-grid">
+        <div class="charity-btn disabled">Red Cross</div>
+        <div class="charity-btn disabled">Ronald McDonald Hse</div>
+        <div class="charity-btn disabled">St. Jude</div>
+        <div class="charity-btn disabled">ASPCA</div>
+      </div>
+
+      <div class="section-label" style="opacity: 0.3;">...OR ONE THEY'LL HATE</div>
+      <div class="charity-grid">
+        <div class="charity-btn hate disabled">NRA</div>
+        <div class="charity-btn hate disabled">Planned Parenthood</div>
+        <div class="charity-btn hate disabled">Trump Campaign</div>
+        <div class="charity-btn hate disabled">Kamala Harris</div>
+      </div>
+
+      <div style="text-align: center; margin-top: -4px;">
+        <div style="font-size: 11px; color: var(--text-muted); opacity: 0.35; font-style: italic;">they picked you for a reason</div>
+      </div>
+
+      <div style="text-align: right;">
+        <div class="secondary-link">Not now &rarr;</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- W2: Confirmation -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W2: Confirmation + Phone <span class="new-badge">REDESIGNED</span></div>
+    <div class="screen-sublabel">Post-ceremony phone capture</div>
+    <div class="phone">
+      <div style="height: 30px;"></div>
+      <div class="success-badge">
+        <span>&#10003; Sealed.</span>
+      </div>
+      <div style="height: 12px;"></div>
+      <div class="screen-title centered" style="font-size: 20px;">Joey finds out<br>what you chose.</div>
+      <div style="height: 8px;"></div>
+      <div class="screen-subtitle centered">We&rsquo;ll remind you when it&rsquo;s verdict day.</div>
+      <div style="height: 16px;"></div>
+      <div class="phone-input">
+        <div class="icon">&#128241;</div>
+        <input type="text" placeholder="Your number" disabled>
+      </div>
+      <div class="primary-btn disabled"><span>Done</span></div>
+      <div class="secondary-link">Skip &rarr;</div>
+      <div class="spacer"></div>
+    </div>
+  </div>
+
+  <!-- W3: Dashboard -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W3: Watching</div>
+    <div class="screen-sublabel">Witness dashboard state</div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 12px;"></div>
+      <div style="display: flex; justify-content: center;">
+        <div class="status-badge">
+          <div class="dot"></div>
+          <span>VOW ACTIVE</span>
+        </div>
+      </div>
+      <div class="screen-title centered" style="font-size: 20px;">You&rsquo;re watching.</div>
+      <div class="screen-subtitle centered">Joey is counting on your honesty.</div>
+      <div class="vow-card">
+        <div class="accent"></div>
+        <div class="content">
+          <div class="vow-text">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+          <div class="vow-meta">$50 at stake &middot; NRA if broken</div>
+        </div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-pill">
+          <div class="value">Day 3</div>
+          <div class="label">of 7</div>
+        </div>
+        <div class="stat-pill">
+          <div class="value">4 days left</div>
+          <div class="label">Verdict: Apr 20</div>
+        </div>
+      </div>
+      <div class="primary-btn"><span>&#128172; Check in on Joey</span></div>
+      <div class="secondary-link">Make your own vow &rarr;</div>
+    </div>
+  </div>
+
+  <!-- W4: Verdict -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W4: Verdict Day</div>
+    <div class="screen-sublabel">Witness delivers judgment</div>
+    <div class="phone">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 12px;"></div>
+      <div style="display: flex; justify-content: center;">
+        <div class="status-badge" style="background: rgba(212,162,79,0.12); border-color: rgba(212,162,79,0.25);">
+          <div class="dot" style="background: var(--gold-bright);"></div>
+          <span style="color: var(--gold-bright);">VERDICT DUE</span>
+        </div>
+      </div>
+      <div class="screen-title centered" style="font-size: 22px;">Time&rsquo;s up.</div>
+      <div class="screen-subtitle centered">Did Joey keep the vow? Your call.</div>
+      <div class="vow-card">
+        <div class="accent"></div>
+        <div class="content">
+          <div class="vow-text">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+          <div class="vow-meta">$50 at stake &middot; NRA if broken</div>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="primary-btn"><span>Deliver your verdict</span></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<!-- VERSION 1.5 / 2                                             -->
+<!-- ═══════════════════════════════════════════════════════════ -->
+
+<div style="height: 40px;"></div>
+<hr style="border: none; border-top: 2px solid rgba(212,162,79,0.2); max-width: 400px; margin: 0 auto;">
+
+<div class="version-header">VERSION 1.5</div>
+<div class="version-title">&ldquo;Full Experience&rdquo; &mdash; Adds &ldquo;I Keep It&rdquo;</div>
+<div class="version-desc">
+  Same as V1, but the witness gets one more option: &ldquo;I keep it.&rdquo;<br>
+  Requires PayPal Payouts for real money movement. Maker flow is identical to V1.
+</div>
+
+<!-- ─── MAKER FLOW ─── -->
+<div class="role-label">Maker Flow (Vower)</div>
+
+<div class="flow-row">
+  <div class="screen-wrapper">
+    <div class="screen-label">M1&ndash;M6: Identical to V1</div>
+    <div class="screen-sublabel">Same stake screen, same witness selection, same seal</div>
+    <div class="phone compact" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+      <div style="text-align: center; padding: 40px 20px;">
+        <div style="font-size: 40px; margin-bottom: 16px;">&#9745;</div>
+        <div style="font-size: 16px; color: var(--text-secondary); line-height: 1.6;">
+          Maker flow is identical to Version 1.<br>
+          The maker does <strong style="color: var(--text);">not know</strong> that<br>
+          &ldquo;I keep it&rdquo; is an option for the witness.<br><br>
+          <span style="color: var(--gold-bright);">This adds to the surprise.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-row">
+  <!-- M7: Reveal (charity) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M7a: Reveal (Charity)</div>
+    <div class="screen-sublabel">Same as V1</div>
+    <div class="phone">
+      <div class="reveal-screen">
+        <div class="reveal-pre">Sarah made her choice.</div>
+        <div style="height: 8px;"></div>
+        <div class="reveal-sub">If you fail, $50 goes to...</div>
+        <div class="reveal-charity">NRA</div>
+        <div class="reveal-tagline">Better keep that vow.</div>
+        <div style="height: 24px;"></div>
+        <div class="primary-btn" style="width: 240px;"><span>Continue</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- M7: Reveal (I keep it) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M7b: Reveal (&ldquo;I keep it&rdquo;) <span class="new-badge">NEW</span></div>
+    <div class="screen-sublabel">Witness chose to keep the money</div>
+    <div class="phone">
+      <div class="reveal-screen">
+        <div class="reveal-pre">Sarah made her choice.</div>
+        <div style="height: 8px;"></div>
+        <div class="reveal-sub">If you fail, $50 goes to...</div>
+        <div class="reveal-charity">Sarah.</div>
+        <div class="reveal-tagline">She&rsquo;s coming for your money.</div>
+        <div style="height: 24px;"></div>
+        <div class="primary-btn" style="width: 240px;"><span>Continue</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- M9: Broken + Payout -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M9a: Broken (Charity)</div>
+    <div class="screen-sublabel">Same as V1 &mdash; money stays captured</div>
+    <div class="phone compact">
+      <div style="height: 20px;"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 28px; margin-bottom: 8px;">&#128148;</div>
+        <div class="screen-title centered" style="font-size: 22px; color: rgba(220,80,60,0.9);">Vow broken.</div>
+        <div class="screen-subtitle centered" style="margin-top: 6px;">You didn&rsquo;t keep your word.<br>$50 goes to NRA.</div>
+      </div>
+      <div style="height: 16px;"></div>
+      <div class="witness-action-btn"><span>Make a new vow</span></div>
+      <div style="text-align: center; font-size: 13px; color: var(--text-muted); font-style: italic;">The best revenge is keeping your next one.</div>
+      <div style="height: 16px;"></div>
+    </div>
+  </div>
+
+  <!-- M9b: Broken + Payout (witness keeps) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">M9b: Broken + Payout <span class="new-badge">NEW</span></div>
+    <div class="screen-sublabel">Witness gets paid via PayPal</div>
+    <div class="phone compact">
+      <div style="height: 20px;"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 28px; margin-bottom: 8px;">&#128148;</div>
+        <div class="screen-title centered" style="font-size: 22px; color: rgba(220,80,60,0.9);">Vow broken.</div>
+        <div class="screen-subtitle centered" style="margin-top: 6px;">You didn&rsquo;t keep your word.<br>Sarah gets $50.</div>
+      </div>
+      <div class="payout-card">
+        <div class="payout-header">
+          <div class="payout-icon">&#128184;</div>
+          <div class="payout-text">Sending $50 to Sarah via PayPal</div>
+        </div>
+        <div class="payout-status">&#10003; Payment sent</div>
+      </div>
+      <div style="height: 8px;"></div>
+      <div class="witness-action-btn"><span>Make a new vow</span></div>
+      <div style="text-align: center; font-size: 13px; color: var(--text-muted); font-style: italic;">The best revenge is keeping your next one.</div>
+      <div style="height: 16px;"></div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ─── WITNESS FLOW v1.5 ─── -->
+<div class="role-label">Witness Flow (V1.5)</div>
+
+<div class="flow-row">
+  <!-- W1: Landing with "I keep it" -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W1: Before Oath <span class="new-badge">+I KEEP IT</span></div>
+    <div class="screen-sublabel">Everything greyed out</div>
+    <div class="phone" style="min-height: 880px;">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 8px;"></div>
+      <div class="screen-title centered" style="font-size: 24px;">Joey put $50<br>on the line.</div>
+      <div class="vow-quote">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+      <div class="screen-subtitle centered">You&rsquo;re the judge. Verdict day: Sun, Apr 20.</div>
+
+      <div class="oath-checkbox">
+        <div class="checkbox"></div>
+        <div>
+          <div class="oath-text" style="color: var(--text-muted);">I solemnly swear</div>
+          <div class="oath-subtext">to hold Joey accountable</div>
+        </div>
+      </div>
+
+      <div style="font-size: 14px; color: var(--text-muted); opacity: 0.4;">If they fail, the money goes to...</div>
+
+      <div class="section-label" style="opacity: 0.3;">A CAUSE THEY'LL LOVE</div>
+      <div class="charity-grid">
+        <div class="charity-btn disabled">Red Cross</div>
+        <div class="charity-btn disabled">Ronald McDonald Hse</div>
+        <div class="charity-btn disabled">St. Jude</div>
+        <div class="charity-btn disabled">ASPCA</div>
+      </div>
+
+      <div class="section-label" style="opacity: 0.3;">...OR ONE THEY'LL HATE</div>
+      <div class="charity-grid">
+        <div class="charity-btn hate disabled">NRA</div>
+        <div class="charity-btn hate disabled">Planned Parenthood</div>
+        <div class="charity-btn hate disabled">Trump Campaign</div>
+        <div class="charity-btn hate disabled">Kamala Harris</div>
+      </div>
+
+      <hr class="divider" style="opacity: 0.3;">
+
+      <div class="section-label" style="opacity: 0.3;">...OR KEEP IT YOURSELF</div>
+      <div class="keep-it-btn disabled">
+        <div style="font-size: 20px;">&#128176;</div>
+        <div>
+          <div class="keep-title" style="color: var(--text-muted);">I keep it</div>
+          <div class="keep-desc" style="opacity: 0.5;">You get $50 if they fail.</div>
+        </div>
+      </div>
+
+      <div style="text-align: right;">
+        <div class="secondary-link">Not now &rarr;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- W1b: After oath (enabled) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W1: After Oath <span class="new-badge">+I KEEP IT</span></div>
+    <div class="screen-sublabel">All options enabled</div>
+    <div class="phone" style="min-height: 880px;">
+      <div class="badge">Unbreakable Vow</div>
+      <div style="height: 8px;"></div>
+      <div class="screen-title centered" style="font-size: 24px;">Joey put $50<br>on the line.</div>
+      <div class="vow-quote">&ldquo;Go to the gym at least 3 times this week&rdquo;</div>
+      <div class="screen-subtitle centered">You&rsquo;re the judge. Verdict day: Sun, Apr 20.</div>
+
+      <div class="oath-checkbox checked">
+        <div class="checkbox checked"></div>
+        <div>
+          <div class="oath-text">I solemnly swear</div>
+          <div class="oath-subtext">to hold Joey accountable</div>
+        </div>
+      </div>
+
+      <div style="font-size: 14px; color: var(--text-secondary);">If they fail, the money goes to...</div>
+
+      <div class="section-label">A CAUSE THEY'LL LOVE</div>
+      <div class="charity-grid">
+        <div class="charity-btn enabled">Red Cross</div>
+        <div class="charity-btn enabled">Ronald McDonald Hse</div>
+        <div class="charity-btn enabled">St. Jude</div>
+        <div class="charity-btn enabled">ASPCA</div>
+      </div>
+
+      <div class="section-label">...OR ONE THEY'LL HATE</div>
+      <div class="charity-grid">
+        <div class="charity-btn hate enabled">NRA</div>
+        <div class="charity-btn hate enabled">Planned Parenthood</div>
+        <div class="charity-btn hate enabled">Trump Campaign</div>
+        <div class="charity-btn hate enabled">Kamala Harris</div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="section-label">...OR KEEP IT YOURSELF</div>
+      <div class="keep-it-btn enabled">
+        <div style="font-size: 20px;">&#128176;</div>
+        <div>
+          <div class="keep-title">I keep it</div>
+          <div class="keep-desc">You get $50 if they fail.</div>
+        </div>
+      </div>
+
+      <div style="text-align: right;">
+        <div class="secondary-link">Not now &rarr;</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- W2: Confirmation (charity) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W2a: Confirmation (Charity)</div>
+    <div class="screen-sublabel">Same as V1</div>
+    <div class="phone compact">
+      <div style="height: 30px;"></div>
+      <div class="success-badge">
+        <span>&#10003; Sealed.</span>
+      </div>
+      <div style="height: 12px;"></div>
+      <div class="screen-title centered" style="font-size: 20px;">Joey finds out<br>what you chose.</div>
+      <div style="height: 8px;"></div>
+      <div class="screen-subtitle centered">We&rsquo;ll remind you when it&rsquo;s verdict day.</div>
+      <div style="height: 16px;"></div>
+      <div class="phone-input">
+        <div class="icon">&#128241;</div>
+        <input type="text" placeholder="Your number" disabled>
+      </div>
+      <div class="primary-btn disabled"><span>Done</span></div>
+      <div class="secondary-link">Skip &rarr;</div>
+      <div style="height: 20px;"></div>
+    </div>
+  </div>
+
+  <!-- W2b: Confirmation (I keep it) -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W2b: Confirmation (&ldquo;I keep it&rdquo;) <span class="new-badge">NEW</span></div>
+    <div class="screen-sublabel">Witness chose to keep the money</div>
+    <div class="phone compact">
+      <div style="height: 30px;"></div>
+      <div class="success-badge">
+        <span>&#10003; Sealed.</span>
+      </div>
+      <div style="height: 12px;"></div>
+      <div class="screen-title centered" style="font-size: 20px;">Joey finds out<br>what you chose.</div>
+      <div style="height: 4px;"></div>
+      <div class="screen-subtitle centered">If Joey fails, you get $50 via PayPal.</div>
+      <div style="height: 16px;"></div>
+      <div class="screen-subtitle centered">We&rsquo;ll remind you when it&rsquo;s verdict day.</div>
+      <div style="height: 12px;"></div>
+      <div class="phone-input">
+        <div class="icon">&#128241;</div>
+        <input type="text" placeholder="Your number" disabled>
+      </div>
+      <div class="primary-btn disabled"><span>Done</span></div>
+      <div class="secondary-link">Skip &rarr;</div>
+      <div style="height: 20px;"></div>
+    </div>
+  </div>
+</div>
+
+<div class="flow-arrow">&darr;</div>
+
+<div class="flow-row">
+  <!-- W3/W4 same as V1 -->
+  <div class="screen-wrapper">
+    <div class="screen-label">W3 &amp; W4: Dashboard + Verdict</div>
+    <div class="screen-sublabel">Same as V1</div>
+    <div class="phone compact" style="min-height: 180px; display: flex; align-items: center; justify-content: center;">
+      <div style="text-align: center; padding: 30px 20px;">
+        <div style="font-size: 14px; color: var(--text-muted); line-height: 1.8;">
+          Watching state &amp; verdict submission<br>are identical to Version 1.<br><br>
+          <span style="color: var(--text-secondary);">Vow card shows &ldquo;Sarah keeps $50 if broken&rdquo; for the &ldquo;I keep it&rdquo; path.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Witness payout notification -->
+  <div class="screen-wrapper">
+    <div class="screen-label">Witness Payout Claim <span class="new-badge">NEW</span></div>
+    <div class="screen-sublabel">When vow is broken, witness gets paid</div>
+    <div class="phone compact">
+      <div style="height: 30px;"></div>
+      <div style="text-align: center;">
+        <div style="font-size: 36px; margin-bottom: 12px;">&#127881;</div>
+        <div class="screen-title centered" style="font-size: 22px;">You won!</div>
+        <div style="height: 8px;"></div>
+        <div class="screen-subtitle centered">
+          Joey broke their vow.<br>
+          $50 is yours.
+        </div>
+      </div>
+      <div style="height: 16px;"></div>
+      <div class="payout-card">
+        <div class="payout-header">
+          <div class="payout-icon">&#128184;</div>
+          <div class="payout-text">$50 sent to your PayPal</div>
+        </div>
+        <div class="payout-status">&#10003; Check your PayPal or Venmo</div>
+      </div>
+      <div style="height: 16px;"></div>
+      <div class="primary-btn"><span>Make your own vow</span></div>
+      <div style="height: 20px;"></div>
+    </div>
+  </div>
+</div>
+
+<div style="height: 80px;"></div>
+<div style="text-align: center; font-size: 12px; color: var(--text-muted); opacity: 0.3;">
+  Unbreakable Vow &mdash; Consequence Flow Mockups &mdash; Apr 15, 2026
+</div>
+<div style="height: 40px;"></div>
+
+</body>
+</html>

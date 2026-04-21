@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Witness Accept Flow — Redesign Mocks</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0B0D11;
+    color: #E8E4DC;
+    font-family: 'Inter', -apple-system, sans-serif;
+    padding: 40px 20px 80px;
+  }
+
+  .page-title {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 700;
+    font-family: 'Playfair Display', serif;
+    color: #E8E4DC;
+    margin-bottom: 8px;
+  }
+
+  .page-subtitle {
+    text-align: center;
+    font-size: 14px;
+    color: #6B6459;
+    margin-bottom: 48px;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .section-label {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #D4A24F;
+    padding: 6px 14px;
+    border-radius: 20px;
+    background: rgba(212,162,79,0.08);
+    border: 1px solid rgba(212,162,79,0.15);
+    margin-bottom: 8px;
+  }
+
+  .section-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #E8E4DC;
+    margin-top: 8px;
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: #6B6459;
+    margin-top: 4px;
+    max-width: 500px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .mock-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-bottom: 72px;
+  }
+
+  .mock-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .mock-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #6B6459;
+  }
+
+  .mock-label.current { color: #6B6459; }
+  .mock-label.proposed { color: #52D69A; }
+
+  .badge-changed {
+    display: inline-block;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #0B0D11;
+    background: #52D69A;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-left: 8px;
+  }
+
+  /* Phone frame */
+  .phone {
+    width: 375px;
+    min-height: 700px;
+    border-radius: 40px;
+    overflow: hidden;
+    position: relative;
+    background: linear-gradient(170deg, #151A14 0%, #0B0D11 35%, #0F1117 100%);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: 0 24px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  .phone-inner {
+    padding: 60px 24px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-height: 700px;
+  }
+
+  /* Header badge */
+  .header-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .header-badge .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #D4A24F, #B8862D);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .header-badge .name {
+    font-size: 14px;
+    font-weight: 600;
+    color: #9B9488;
+  }
+
+  /* Success badge */
+  .success-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(82,214,154,0.08);
+    border: 1px solid rgba(82,214,154,0.15);
+  }
+  .success-badge .check {
+    width: 16px;
+    height: 16px;
+    color: #52D69A;
+  }
+  .success-badge span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #52D69A;
+  }
+
+  /* Title */
+  h1.screen-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #E8E4DC;
+    letter-spacing: -0.5px;
+  }
+  h1.screen-title.center { text-align: center; }
+
+  .screen-subtitle {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #9B9488;
+  }
+  .screen-subtitle.center { text-align: center; }
+
+  /* Vow quote */
+  .vow-quote {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    font-weight: 500;
+    line-height: 1.35;
+    color: #E8E4DC;
+    text-align: center;
+  }
+
+  .vow-context {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .vow-context p {
+    font-size: 15px;
+    line-height: 1.5;
+    color: #9B9488;
+    text-align: center;
+  }
+
+  /* Small vow reminder */
+  .vow-reminder {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+  .vow-reminder .label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #4A453E;
+    white-space: nowrap;
+  }
+  .vow-reminder .text {
+    font-size: 13px;
+    color: #6B6459;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+  }
+
+  /* Oath checkbox */
+  .oath-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 16px;
+    border: 1px solid rgba(212,162,79,0.25);
+    background: rgba(212,162,79,0.08);
+    cursor: pointer;
+  }
+  .oath-row.unchecked {
+    border-color: rgba(255,255,255,0.08);
+    background: transparent;
+  }
+  .oath-check {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .oath-check.checked {
+    background: #D4A24F;
+    border: 2px solid #D4A24F;
+    color: #0B0D11;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .oath-check.unchecked {
+    background: transparent;
+    border: 2px solid #6B6459;
+  }
+  .oath-label {
+    font-size: 15px;
+    font-weight: 700;
+    font-family: 'Playfair Display', serif;
+    color: #D4A24F;
+  }
+  .oath-sublabel {
+    font-size: 13px;
+    color: #9B9488;
+    margin-top: 2px;
+  }
+
+  /* Nudge text */
+  .nudge {
+    font-size: 11px;
+    color: #4A453E;
+    text-align: center;
+  }
+
+  /* Phone input - current */
+  .phone-input-current {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .phone-input-current .icon {
+    color: #4A453E;
+    font-size: 18px;
+  }
+  .phone-input-current .placeholder {
+    font-size: 15px;
+    color: #4A453E;
+  }
+
+  /* Phone input - proposed */
+  .phone-input-proposed {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    border-radius: 18px;
+    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(212,162,79,0.2);
+    box-shadow: 0 0 20px rgba(212,162,79,0.04);
+    transition: border-color 0.2s;
+  }
+  .phone-input-proposed .icon {
+    color: #6B6459;
+    font-size: 18px;
+  }
+  .phone-input-proposed .placeholder {
+    font-size: 16px;
+    color: #4A453E;
+  }
+
+  /* CTA button */
+  .cta-primary {
+    width: 100%;
+    min-height: 56px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    font-weight: 800;
+    letter-spacing: 0.2px;
+    border: none;
+    cursor: pointer;
+  }
+  .cta-primary.gold {
+    background: linear-gradient(135deg, #E8C468, #D4A24F, #B8862D);
+    color: #0B0D11;
+    box-shadow: 0 12px 24px rgba(212,162,79,0.28);
+  }
+  .cta-primary.disabled {
+    background: rgba(255,255,255,0.04);
+    color: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.06);
+    box-shadow: none;
+  }
+
+  /* Skip / decline links */
+  .skip-link {
+    font-size: 12px;
+    color: #4A453E;
+    text-align: center;
+    cursor: pointer;
+    text-transform: lowercase;
+    opacity: 0.4;
+  }
+  .skip-link.upgraded {
+    font-size: 13px;
+    opacity: 0.5;
+    text-transform: none;
+    color: #6B6459;
+  }
+
+  .decline-link {
+    font-size: 12px;
+    color: #4A453E;
+    text-align: center;
+    cursor: pointer;
+    opacity: 0.5;
+  }
+
+  /* Legal text */
+  .legal {
+    font-size: 11px;
+    color: #4A453E;
+    text-align: center;
+    opacity: 0.5;
+  }
+
+  /* Spacer */
+  .spacer { flex: 1; }
+
+  /* Divider */
+  .divider {
+    width: 100%;
+    height: 1px;
+    background: rgba(255,255,255,0.04);
+    margin: 8px 0;
+  }
+
+  /* Change callout */
+  .change-callout {
+    margin-top: 16px;
+    padding: 16px 20px;
+    border-radius: 16px;
+    background: rgba(82,214,154,0.04);
+    border: 1px solid rgba(82,214,154,0.1);
+    max-width: 375px;
+  }
+  .change-callout h4 {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #52D69A;
+    margin-bottom: 8px;
+  }
+  .change-callout ul {
+    list-style: none;
+    padding: 0;
+  }
+  .change-callout li {
+    font-size: 13px;
+    color: #9B9488;
+    line-height: 1.6;
+    padding-left: 16px;
+    position: relative;
+  }
+  .change-callout li::before {
+    content: '>';
+    position: absolute;
+    left: 0;
+    color: #52D69A;
+    font-weight: 600;
+  }
+
+  /* Annotation */
+  .annotation {
+    position: absolute;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    color: #52D69A;
+    background: rgba(82,214,154,0.1);
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid rgba(82,214,154,0.2);
+    white-space: nowrap;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<h1 class="page-title">Witness Accept Flow</h1>
+<p class="page-subtitle">Current vs. Proposed &mdash; Screens A &amp; B</p>
+
+<!-- ============================================ -->
+<!-- SCREEN A: PENDING / ACCEPT                    -->
+<!-- ============================================ -->
+
+<div class="section-header">
+  <div class="section-label">Screen A</div>
+  <div class="section-title">Witness Invite (Pending)</div>
+  <div class="section-desc">The witness opens their SMS link and sees the vow for the first time.</div>
+</div>
+
+<div class="mock-row">
+  <!-- CURRENT -->
+  <div class="mock-col">
+    <span class="mock-label current">CURRENT</span>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="header-badge">
+          <div class="icon">&#10022;</div>
+          <span class="name">Unbreakable Vow</span>
+        </div>
+
+        <h1 class="screen-title center">Alex made a vow.</h1>
+
+        <p class="vow-quote">&ldquo;Run 3 miles, 3 times this week.&rdquo;</p>
+
+        <div class="vow-context">
+          <p>If Alex breaks it, $25 goes to Red Cross.</p>
+          <p>You decide on Tue, Apr 21.</p>
+        </div>
+
+        <div class="oath-row">
+          <div class="oath-check checked">&#10003;</div>
+          <div>
+            <div class="oath-label">I do solemnly swear</div>
+            <div class="oath-sublabel">to keep Alex accountable</div>
+          </div>
+        </div>
+
+        <p class="nudge" style="opacity: 0;">.</p>
+
+        <div class="spacer"></div>
+
+        <p class="legal">By accepting, you agree to receive a text on verdict day. Msg &amp; data rates may apply.</p>
+
+        <div class="cta-primary gold">I'll hold them to it</div>
+
+        <!-- No decline option visible -->
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPOSED -->
+  <div class="mock-col">
+    <span class="mock-label proposed">PROPOSED <span class="badge-changed">CHANGED</span></span>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="header-badge">
+          <div class="icon">&#10022;</div>
+          <span class="name">Unbreakable Vow</span>
+        </div>
+
+        <h1 class="screen-title center">Alex made a vow.</h1>
+
+        <p class="vow-quote">&ldquo;Run 3 miles, 3 times this week.&rdquo;</p>
+
+        <div class="vow-context">
+          <p>If Alex breaks it, $25 goes to Red Cross.</p>
+          <p>You decide on Tue, Apr 21.</p>
+        </div>
+
+        <div class="oath-row">
+          <div class="oath-check checked">&#10003;</div>
+          <div>
+            <div class="oath-label">I do solemnly swear</div>
+            <div class="oath-sublabel">to keep Alex accountable</div>
+          </div>
+        </div>
+
+        <p class="nudge" style="opacity: 0;">.</p>
+
+        <div class="spacer"></div>
+
+        <p class="legal">By accepting, you agree to receive a text on verdict day. Msg &amp; data rates may apply.</p>
+
+        <div class="cta-primary gold">I'll hold them to it</div>
+
+        <!-- NEW: Decline path -->
+        <p class="decline-link" style="margin-top: 12px;">I can't do this</p>
+      </div>
+    </div>
+    <div class="change-callout">
+      <h4>What changed</h4>
+      <ul>
+        <li>Added "I can't do this" decline link &mdash; honest exit path for a trust-based product</li>
+        <li>Everything else untouched &mdash; Screen A is already strong</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SCREEN B: PHONE CAPTURE                       -->
+<!-- ============================================ -->
+
+<div class="section-header">
+  <div class="section-label">Screen B</div>
+  <div class="section-title">Phone Capture (Post-Accept)</div>
+  <div class="section-desc">Immediately after accepting. Only shown when the maker shared a link (not SMS), so we don't have the witness's number.</div>
+</div>
+
+<div class="mock-row">
+  <!-- CURRENT -->
+  <div class="mock-col">
+    <span class="mock-label current">CURRENT</span>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="header-badge">
+          <div class="icon">&#10022;</div>
+          <span class="name">Unbreakable Vow</span>
+        </div>
+
+        <div class="success-badge">
+          <span class="check">&#10003;</span>
+          <span>You're locked in.</span>
+        </div>
+
+        <div>
+          <h1 class="screen-title" style="font-size: 26px; line-height: 1.25;">Where should we reach you on verdict day?</h1>
+          <p class="screen-subtitle" style="margin-top: 8px;">One text on Tue, Apr 21. That's it.</p>
+        </div>
+
+        <!-- No vow reminder -->
+
+        <div class="phone-input-current">
+          <span class="icon">&#9742;</span>
+          <span class="placeholder">Phone number</span>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="cta-primary disabled">Done</div>
+
+        <p class="skip-link">skip</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPOSED -->
+  <div class="mock-col">
+    <span class="mock-label proposed">PROPOSED <span class="badge-changed">CHANGED</span></span>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="header-badge">
+          <div class="icon">&#10022;</div>
+          <span class="name">Unbreakable Vow</span>
+        </div>
+
+        <div class="success-badge">
+          <span class="check">&#10003;</span>
+          <span>You're locked in.</span>
+        </div>
+
+        <!-- NEW: Vow reminder for context continuity -->
+        <div class="vow-reminder">
+          <span class="label">The vow</span>
+          <span class="text">&ldquo;Run 3 miles, 3 times this week&rdquo;</span>
+        </div>
+
+        <!-- NEW: Reframed headline -->
+        <div>
+          <h1 class="screen-title" style="font-size: 28px; line-height: 1.2;">You're the judge.</h1>
+          <p class="screen-subtitle" style="margin-top: 8px;">We'll text you on Tue, Apr 21 when it's time to deliver your verdict.</p>
+        </div>
+
+        <!-- UPGRADED: Warmer phone input -->
+        <div class="phone-input-proposed">
+          <span class="icon">&#9742;</span>
+          <span class="placeholder">Phone number</span>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="cta-primary disabled">Done</div>
+
+        <!-- UPGRADED: "not now" instead of "skip" -->
+        <p class="skip-link upgraded">Not now</p>
+      </div>
+    </div>
+    <div class="change-callout">
+      <h4>What changed</h4>
+      <ul>
+        <li>Added vow reminder below success badge &mdash; maintains narrative thread</li>
+        <li>Headline: "Where should we reach you..." &rarr; "You're the judge." &mdash; empowers the witness</li>
+        <li>Subtitle reframed around their role, not our need</li>
+        <li>Phone input: warmer surface, subtle gold border accent, larger radius</li>
+        <li>"skip" &rarr; "Not now" &mdash; implies they can return, feels more honest</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================ -->
+<!-- SCREEN B ACTIVE STATE: Phone entered          -->
+<!-- ============================================ -->
+
+<div class="section-header">
+  <div class="section-label">Screen B &mdash; Active</div>
+  <div class="section-title">Phone Entered State</div>
+  <div class="section-desc">What the "Done" button looks like once a number is typed in.</div>
+</div>
+
+<div class="mock-row">
+  <!-- CURRENT -->
+  <div class="mock-col">
+    <span class="mock-label current">CURRENT</span>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="header-badge">
+          <div class="icon">&#10022;</div>
+          <span class="name">Unbreakable Vow</span>
+        </div>
+
+        <div class="success-badge">
+          <span class="check">&#10003;</span>
+          <span>You're locked in.</span>
+        </div>
+
+        <div>
+          <h1 class="screen-title" style="font-size: 26px; line-height: 1.25;">Where should we reach you on verdict day?</h1>
+          <p class="screen-subtitle" style="margin-top: 8px;">One text on Tue, Apr 21. That's it.</p>
+        </div>
+
+        <div class="phone-input-current" style="border-color: rgba(212,162,79,0.3);">
+          <span class="icon" style="color: #6B6459;">&#9742;</span>
+          <span style="font-size: 15px; color: #E8E4DC;">(555) 867-5309</span>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="cta-primary gold">Done</div>
+
+        <p class="skip-link">skip</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPOSED -->
+  <div class="mock-col">
+    <span class="mock-label proposed">PROPOSED <span class="badge-changed">CHANGED</span></span>
+    <div class="phone">
+      <div class="phone-inner">
+        <div class="header-badge">
+          <div class="icon">&#10022;</div>
+          <span class="name">Unbreakable Vow</span>
+        </div>
+
+        <div class="success-badge">
+          <span class="check">&#10003;</span>
+          <span>You're locked in.</span>
+        </div>
+
+        <div class="vow-reminder">
+          <span class="label">The vow</span>
+          <span class="text">&ldquo;Run 3 miles, 3 times this week&rdquo;</span>
+        </div>
+
+        <div>
+          <h1 class="screen-title" style="font-size: 28px; line-height: 1.2;">You're the judge.</h1>
+          <p class="screen-subtitle" style="margin-top: 8px;">We'll text you on Tue, Apr 21 when it's time to deliver your verdict.</p>
+        </div>
+
+        <div class="phone-input-proposed" style="border-color: rgba(212,162,79,0.35); box-shadow: 0 0 20px rgba(212,162,79,0.06);">
+          <span class="icon" style="color: #9B9488;">&#9742;</span>
+          <span style="font-size: 16px; color: #E8E4DC;">(555) 867-5309</span>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="cta-primary gold">Done</div>
+
+        <p class="skip-link upgraded">Not now</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

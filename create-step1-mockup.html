@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Step 1 — Mockup Comparison</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0c10;
+    color: #F6F7FB;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    text-align: center;
+    padding: 40px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 40px;
+  }
+  .page-header h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #F6F7FB;
+    margin-bottom: 8px;
+  }
+  .page-header p {
+    font-size: 14px;
+    color: #5a5650;
+  }
+
+  .comparison {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    padding: 0 20px 60px;
+    flex-wrap: wrap;
+  }
+
+  .mock-column {
+    flex: 0 0 375px;
+    max-width: 375px;
+  }
+
+  .mock-label {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding: 8px 16px;
+    border-radius: 8px;
+  }
+  .mock-label.before {
+    color: #EF4444;
+    background: rgba(239,68,68,0.08);
+    border: 1px solid rgba(239,68,68,0.15);
+  }
+  .mock-label.after {
+    color: #52d69a;
+    background: rgba(82,214,154,0.08);
+    border: 1px solid rgba(82,214,154,0.15);
+  }
+  .mock-label.variant {
+    color: #60A5FA;
+    background: rgba(96,165,250,0.08);
+    border: 1px solid rgba(96,165,250,0.15);
+  }
+
+  /* Phone frame */
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: #05070B;
+    border-radius: 40px;
+    border: 3px solid #1a1d24;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  /* Decorative orbs (same as app) */
+  .orb-gold {
+    position: absolute;
+    top: -40px;
+    right: -20px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(212,162,79,0.18);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .orb-blue {
+    position: absolute;
+    top: 240px;
+    left: -60px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: rgba(94,124,250,0.10);
+    filter: blur(30px);
+    pointer-events: none;
+  }
+
+  .screen-content {
+    position: relative;
+    z-index: 1;
+    padding: 60px 20px 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ——— BEFORE (current) ——— */
+
+  .before-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .before-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #F6F7FB;
+    letter-spacing: -0.5px;
+  }
+  .hamburger {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #10141C;
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hamburger span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: #A7B0C0;
+    position: relative;
+  }
+  .hamburger span::before, .hamburger span::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 2px;
+    background: #A7B0C0;
+  }
+  .hamburger span::before { top: -5px; }
+  .hamburger span::after { top: 5px; }
+
+  .before-card {
+    background: #10141C;
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px;
+    padding: 18px;
+  }
+  .before-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: #5a5650;
+    margin-bottom: 10px;
+  }
+  .before-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #F6F7FB;
+    font-size: 16px;
+    line-height: 24px;
+    resize: none;
+    outline: none;
+    min-height: 80px;
+    font-family: inherit;
+  }
+  .before-textarea::placeholder {
+    color: rgba(246,247,251,0.25);
+  }
+
+  .before-footer {
+    margin-top: auto;
+    padding: 20px 0 40px;
+  }
+  .btn-muted {
+    width: 100%;
+    min-height: 56px;
+    border-radius: 16px;
+    background: #1a1d24;
+    border: 1px solid rgba(255,255,255,0.06);
+    color: #5a5650;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* ——— AFTER (proposed) ——— */
+
+  .after-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .after-back {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    color: #A7B0C0;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .after-back svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .after-hero-area {
+    padding-top: 40px;
+    flex: 1;
+  }
+
+  .vow-prompt {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 32px;
+    font-weight: 500;
+    line-height: 1.2;
+    color: rgba(212,162,79,0.5);
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+
+  .after-textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: #F6F7FB;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 1.35;
+    resize: none;
+    outline: none;
+    min-height: 100px;
+    letter-spacing: -0.3px;
+  }
+  .after-textarea::placeholder {
+    color: rgba(246,247,251,0.18);
+    font-style: italic;
+  }
+
+  /* Subtle divider */
+  .after-divider {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(212,162,79,0.2) 0%, rgba(212,162,79,0.05) 100%);
+    margin: 20px 0 16px;
+  }
+
+  /* Smart defaults preview */
+  .defaults-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .default-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 12px;
+    border-radius: 10px;
+    background: rgba(212,162,79,0.05);
+    border: 1px solid rgba(212,162,79,0.12);
+  }
+  .default-pill-icon {
+    font-size: 11px;
+    opacity: 0.5;
+  }
+  .default-pill-text {
+    font-size: 13px;
+    font-weight: 500;
+    color: #8a8578;
+  }
+  .defaults-label {
+    font-size: 11px;
+    color: #3a3530;
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  /* Dare link */
+  .dare-link {
+    text-align: center;
+    padding: 16px 0 0;
+  }
+  .dare-link a {
+    font-size: 13px;
+    font-weight: 600;
+    color: #5a5650;
+    text-decoration: none;
+  }
+  .dare-link a span {
+    color: #D4A24F;
+    text-decoration: underline;
+  }
+
+  /* Gold CTA */
+  .after-footer {
+    margin-top: auto;
+    padding: 16px 0 40px;
+  }
+  .btn-gold {
+    width: 100%;
+    min-height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #F0C86E 0%, #D4A24F 50%, #8C6423 100%);
+    border: none;
+    color: #0B0D11;
+    font-size: 15px;
+    font-weight: 800;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.2px;
+    box-shadow: 0 12px 32px rgba(212,162,79,0.25);
+  }
+  .btn-gold.disabled {
+    opacity: 0.35;
+    box-shadow: none;
+  }
+
+  /* ——— VARIANT: With text entered ——— */
+  .typed-text {
+    color: #F6F7FB;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 26px;
+    font-weight: 400;
+    line-height: 1.35;
+    letter-spacing: -0.3px;
+  }
+
+  /* AI suggestion chip */
+  .ai-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: rgba(212,162,79,0.08);
+    border: 1px solid rgba(212,162,79,0.2);
+    margin-top: 12px;
+    cursor: pointer;
+  }
+  .ai-chip-icon {
+    font-size: 12px;
+  }
+  .ai-chip-text {
+    font-size: 13px;
+    color: #D4A24F;
+  }
+
+  /* Section headers for page */
+  .section-divider {
+    text-align: center;
+    padding: 60px 20px 30px;
+    color: #3a3530;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Annotation callouts */
+  .annotation {
+    position: absolute;
+    font-size: 11px;
+    color: #FB923C;
+    font-weight: 600;
+    pointer-events: none;
+    white-space: nowrap;
+  }
+  .annotation-line {
+    position: absolute;
+    background: rgba(251,146,60,0.3);
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Create Step 1 — Redesign</h1>
+  <p>Returning user flow: Dashboard → Make a Vow → this screen</p>
+</div>
+
+<div class="comparison">
+
+  <!-- BEFORE -->
+  <div class="mock-column">
+    <div class="mock-label before">Current (Image 39)</div>
+    <div class="phone-frame">
+      <div class="orb-gold"></div>
+      <div class="orb-blue"></div>
+      <div class="screen-content">
+        <div class="before-nav">
+          <div class="before-title">New Vow</div>
+          <div class="hamburger"><span></span></div>
+        </div>
+
+        <div class="before-card">
+          <div class="before-label">I WILL...</div>
+          <textarea class="before-textarea" placeholder="cook every dinner at home this week" disabled></textarea>
+        </div>
+
+        <div class="before-footer">
+          <button class="btn-muted" disabled>Next</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AFTER: Empty state -->
+  <div class="mock-column">
+    <div class="mock-label after">Proposed — Empty State</div>
+    <div class="phone-frame">
+      <div class="orb-gold"></div>
+      <div class="orb-blue"></div>
+      <div class="screen-content">
+        <div class="after-nav">
+          <div class="after-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            Dashboard
+          </div>
+          <div class="hamburger"><span></span></div>
+        </div>
+
+        <div class="after-hero-area">
+          <div class="vow-prompt">I vow to...</div>
+          <textarea class="after-textarea" placeholder="run every morning this week" disabled style="min-height: 80px;"></textarea>
+
+          <div class="after-divider"></div>
+
+          <div class="defaults-label">YOUR LAST SETTINGS</div>
+          <div class="defaults-row">
+            <div class="default-pill">
+              <span class="default-pill-icon">📅</span>
+              <span class="default-pill-text">7 days</span>
+            </div>
+            <div class="default-pill">
+              <span class="default-pill-icon">👁</span>
+              <span class="default-pill-text">Joe Rosenfield</span>
+            </div>
+            <div class="default-pill">
+              <span class="default-pill-icon">💰</span>
+              <span class="default-pill-text">$10</span>
+            </div>
+          </div>
+
+          <div class="dare-link">
+            <a href="#">or <span>dare a friend →</span></a>
+          </div>
+        </div>
+
+        <div class="after-footer">
+          <button class="btn-gold disabled">Set the terms →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AFTER: With text entered -->
+  <div class="mock-column">
+    <div class="mock-label variant">Proposed — Text Entered</div>
+    <div class="phone-frame">
+      <div class="orb-gold"></div>
+      <div class="orb-blue"></div>
+      <div class="screen-content">
+        <div class="after-nav">
+          <div class="after-back">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+            Dashboard
+          </div>
+          <div class="hamburger"><span></span></div>
+        </div>
+
+        <div class="after-hero-area">
+          <div class="vow-prompt">I vow to...</div>
+          <div class="typed-text">cook every dinner at home this week</div>
+
+          <!-- AI suggestion -->
+          <div class="ai-chip">
+            <span class="ai-chip-icon">✨</span>
+            <span class="ai-chip-text">Cook dinner at home every night, Mon–Sun</span>
+          </div>
+
+          <div class="after-divider"></div>
+
+          <div class="defaults-label">YOUR LAST SETTINGS</div>
+          <div class="defaults-row">
+            <div class="default-pill">
+              <span class="default-pill-icon">📅</span>
+              <span class="default-pill-text">7 days</span>
+            </div>
+            <div class="default-pill">
+              <span class="default-pill-icon">👁</span>
+              <span class="default-pill-text">Joe Rosenfield</span>
+            </div>
+            <div class="default-pill">
+              <span class="default-pill-icon">💰</span>
+              <span class="default-pill-text">$10</span>
+            </div>
+          </div>
+
+          <div class="dare-link">
+            <a href="#">or <span>dare a friend →</span></a>
+          </div>
+        </div>
+
+        <div class="after-footer">
+          <button class="btn-gold">Set the terms →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section-divider">— DESIGN RATIONALE —</div>
+
+<div style="max-width: 700px; margin: 0 auto; padding: 0 20px 80px; line-height: 1.7;">
+  <div style="background: #10141C; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 24px; margin-bottom: 20px;">
+    <h3 style="font-family: 'Playfair Display', serif; font-size: 18px; color: #D4A24F; margin-bottom: 12px;">What changed</h3>
+    <ul style="font-size: 14px; color: #A7B0C0; list-style: none; display: flex; flex-direction: column; gap: 10px;">
+      <li><strong style="color: #F6F7FB;">Title → Prompt:</strong> "New Vow" replaced with "I vow to..." — the label IS the ceremony. Same font as input, flows as one statement.</li>
+      <li><strong style="color: #F6F7FB;">Card wrapper → Free text:</strong> Input freed from the card. Larger serif font (26px). Reads like a declaration, not a form field.</li>
+      <li><strong style="color: #F6F7FB;">The void → Smart defaults:</strong> Below the input, returning users see their last settings (deadline, witness, stake) as subtle pills. Fills the space with purpose. Communicates "we remember you" and "this is going somewhere real."</li>
+      <li><strong style="color: #F6F7FB;">"Next" → "Set the terms →":</strong> CTA tells you exactly what Step 2 is. Gold gradient when active. Muted when empty.</li>
+      <li><strong style="color: #F6F7FB;">Back → Dashboard:</strong> Explicit back navigation instead of orphaned page.</li>
+    </ul>
+  </div>
+
+  <div style="background: #10141C; border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 24px;">
+    <h3 style="font-family: 'Playfair Display', serif; font-size: 18px; color: #D4A24F; margin-bottom: 12px;">The Rork lesson</h3>
+    <p style="font-size: 14px; color: #A7B0C0;">
+      Rork's homepage works because the headline gives the empty space purpose. "Build real mobile apps, fast." fills the viewport with intention.
+      The same principle applies here: <strong style="color: #F6F7FB;">"I vow to..."</strong> in large serif text gives the page a gravitational center.
+      The space around it becomes contemplative, not empty. The input flows from the prompt naturally — type and you're writing a vow, not filling out a form.
+    </p>
+  </div>
+</div>
+
+</body>
+</html>

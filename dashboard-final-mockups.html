@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Final — All States</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #111; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: #e8e4dc; padding: 40px 20px 80px; }
+
+  h1 { text-align: center; font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+  .sub { text-align: center; font-size: 13px; color: #8a8578; margin-bottom: 40px; }
+  .divider { text-align: center; font-size: 15px; font-weight: 600; color: #d4a24f; margin: 50px 0 6px; padding-top: 36px; border-top: 1px solid #1a1c22; }
+  .note { text-align: center; font-size: 12px; color: #8a8578; margin-bottom: 28px; }
+
+  .row { display: flex; justify-content: center; gap: 36px; flex-wrap: wrap; max-width: 1200px; margin: 0 auto; }
+  .col { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .tag { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: #d4a24f; }
+  .stag { font-size: 11px; color: #8a8578; text-align: center; max-width: 310px; }
+
+  .phone { width: 320px; min-height: 660px; border-radius: 40px; border: 3px solid #2a2520; background: #0B0D11; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+  .notch { width: 120px; height: 28px; background: #0B0D11; border-radius: 0 0 16px 16px; margin: 0 auto; }
+  .scr { padding: 4px 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+
+  /* Header */
+  .hdr { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+  .hdr-l { display: flex; align-items: center; gap: 8px; }
+  .ham { width: 32px; height: 32px; border-radius: 10px; background: #14161c; border: 1px solid #2a2520; display: flex; align-items: center; justify-content: center; }
+  .bdg { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border-radius: 100px; background: rgba(212,162,79,0.08); border: 1px solid rgba(212,162,79,0.15); }
+  .bdg span { font-size: 10px; font-weight: 700; letter-spacing: 0.8px; text-transform: uppercase; color: #d4a24f; }
+  .gear { width: 34px; height: 34px; border-radius: 50%; background: #14161c; border: 1px solid #2a2520; display: flex; align-items: center; justify-content: center; }
+  .stats { display: flex; gap: 10px; align-items: center; }
+  .stat { font-size: 12px; font-weight: 600; color: #5a5650; }
+  .stat b { color: #52d69a; }
+
+  /* Hero (single vow) */
+  .hero { font-size: 24px; font-family: Georgia, 'Times New Roman', serif; font-weight: 600; line-height: 1.32; color: #e8e4dc; padding-top: 6px; }
+
+  .bar { width: 100%; height: 6px; border-radius: 6px; background: #1a1c22; overflow: hidden; }
+  .bar-f { height: 100%; border-radius: 6px; }
+  .bg { background: linear-gradient(90deg, #d4a24f, #e8c36a); }
+  .br { background: linear-gradient(90deg, #F59E0B, #EF4444); }
+
+  .cd { display: flex; justify-content: space-between; align-items: baseline; }
+  .cd-m { font-size: 14px; font-weight: 600; color: #e8e4dc; }
+  .cd-s { font-size: 13px; color: #5a5650; }
+
+  .wb { display: flex; align-items: center; gap: 10px; padding: 14px; border-radius: 14px; background: #14161c; border: 1px solid #2a2520; }
+  .wb-d { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .wb-n { font-size: 14px; font-weight: 600; color: #e8e4dc; }
+  .wb-m { font-size: 12px; color: #5a5650; }
+
+  .gbtn { width: 100%; min-height: 50px; border-radius: 18px; border: none; background: linear-gradient(135deg, #e8c36a, #d4a24f, #b8882e); box-shadow: 0 10px 20px rgba(212,162,79,0.25); display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .gbtn span { font-size: 14px; font-weight: 800; color: #0B0D11; }
+  .gbtn-s { min-height: 46px; }
+  .gbtn-s span { font-size: 13px; }
+  .ml { font-size: 13px; color: #5a5650; text-align: center; }
+  .spacer { flex: 1; min-height: 16px; }
+
+  /* Cards */
+  .c { border-radius: 16px; padding: 13px 14px; display: flex; flex-direction: column; gap: 7px; cursor: pointer; transition: transform 0.1s; }
+  .c:active { transform: scale(0.98); }
+
+  .c-urgent { background: rgba(245,158,11,0.07); border: 1.5px solid rgba(245,158,11,0.32); box-shadow: 0 0 16px rgba(245,158,11,0.08); }
+  .c-action-blue { background: rgba(96,165,250,0.07); border: 1.5px solid rgba(96,165,250,0.3); box-shadow: 0 0 16px rgba(96,165,250,0.08); }
+  .c-waiting { background: rgba(245,158,11,0.04); border: 1.5px solid rgba(245,158,11,0.2); }
+  .c-active { background: rgba(212,162,79,0.05); border: 1.5px solid rgba(212,162,79,0.28); }
+  .c-witness { background: rgba(96,165,250,0.04); border: 1.5px solid rgba(96,165,250,0.18); }
+  .c-pending { background: rgba(212,162,79,0.03); border: 1.5px solid rgba(212,162,79,0.15); opacity: 0.75; }
+  .c-draft { background: #12141a; border: 1.5px dashed #252320; opacity: 0.6; }
+
+  .c-top { display: flex; align-items: center; justify-content: space-between; }
+  .c-st { display: flex; align-items: center; gap: 6px; }
+  .c-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .c-sl { font-size: 11px; font-weight: 700; letter-spacing: 0.7px; text-transform: uppercase; }
+  .c-time { font-size: 12px; font-weight: 600; color: #8a8578; }
+
+  .c-txt { font-size: 15px; font-family: Georgia, 'Times New Roman', serif; font-weight: 500; color: #e8e4dc; line-height: 1.4; }
+
+  .c-bar { width: 100%; height: 3px; border-radius: 3px; background: #1a1c22; overflow: hidden; }
+  .c-bf { height: 100%; border-radius: 3px; }
+
+  .c-bot { display: flex; justify-content: space-between; align-items: center; }
+  .c-meta { font-size: 12px; color: #5a5650; }
+  .c-stake { font-size: 12px; font-weight: 600; }
+
+  /* Action buttons inside cards */
+  .c-actions { display: flex; gap: 8px; margin-top: 2px; }
+  .c-btn { flex: 1; min-height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: none; cursor: pointer; }
+  .c-btn-gold { background: linear-gradient(135deg, #e8c36a, #d4a24f, #b8882e); color: #0B0D11; }
+  .c-btn-muted { background: #14161c; border: 1px solid #2a2520; color: #8a8578; }
+  .c-btn-green { background: rgba(82,214,154,0.15); border: 1px solid rgba(82,214,154,0.3); color: #52d69a; }
+  .c-btn-red { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); color: #EF4444; }
+  .c-btn-blue { background: linear-gradient(135deg, #60A5FA, #3B82F6); color: #fff; }
+  .c-btn-full { width: 100%; min-height: 40px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; border: none; cursor: pointer; margin-top: 2px; }
+
+  .ann { margin-top: 10px; padding: 10px 14px; border-radius: 10px; background: rgba(212,162,79,0.05); border: 1px solid rgba(212,162,79,0.1); max-width: 320px; }
+  .ann p { font-size: 11px; color: #8a8578; line-height: 1.55; }
+  .ann strong { color: #d4a24f; }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  @media (max-width: 800px) { .row { flex-direction: column; align-items: center; } }
+</style>
+</head>
+<body>
+
+<h1>Dashboard — Final Design</h1>
+<p class="sub">Single-vow hero + multi-vow smart stack. Every state mapped.</p>
+
+<!-- ═══════════════════════════════ -->
+<!-- SINGLE VOW HERO -->
+<!-- ═══════════════════════════════ -->
+<div class="divider">Single Vow (80% of users)</div>
+<div class="note">The vow IS the page. Three key states.</div>
+
+<div class="row">
+  <!-- Active -->
+  <div class="col">
+    <div class="tag">Active — Normal</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="scr">
+        <div class="hdr">
+          <div class="hdr-l">
+            <div class="ham"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            <div class="bdg"><span>Unbreakable Vow</span></div>
+          </div>
+          <div class="gear"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
+        </div>
+        <div class="hero">&ldquo;Book France by Sunday.&rdquo;</div>
+        <div class="bar"><div class="bar-f bg" style="width:73%"></div></div>
+        <div class="cd"><span class="cd-m">Day 22 of 30</span><span class="cd-s">8 days left</span></div>
+        <div class="wb">
+          <div class="wb-d" style="background:#52d69a"></div>
+          <div style="flex:1"><div class="wb-n">Nick is watching</div><div class="wb-m">$10 at stake &middot; Red Cross</div></div>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3a3530" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <div class="spacer"></div>
+        <div class="gbtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B0D11" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Send Nick a message</span>
+        </div>
+        <div class="ml">Make a vow &rarr;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Verdict due -->
+  <div class="col">
+    <div class="tag">Verdict Due</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="scr">
+        <div class="hdr">
+          <div class="hdr-l">
+            <div class="ham"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            <div class="bdg"><span>Unbreakable Vow</span></div>
+          </div>
+          <div class="gear"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
+        </div>
+        <div class="hero">&ldquo;Book France by Sunday.&rdquo;</div>
+        <div class="bar"><div class="bar-f br" style="width:100%"></div></div>
+        <div class="cd"><span class="cd-m" style="color:#F59E0B">Time's up</span><span class="cd-s">Waiting for Nick's verdict</span></div>
+        <div class="wb" style="border-color:rgba(245,158,11,0.25); background:rgba(245,158,11,0.05)">
+          <div class="wb-d" style="background:#F59E0B; animation: pulse 2s infinite"></div>
+          <div style="flex:1"><div class="wb-n">Nick has the call</div><div class="wb-m">$10 at stake &middot; Red Cross</div></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="gbtn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0B0D11" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          <span>Nudge Nick</span>
+        </div>
+        <div class="ml">Make a vow &rarr;</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Self-vow, self-resolve needed -->
+  <div class="col">
+    <div class="tag">Self-Vow — Your Call</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="scr">
+        <div class="hdr">
+          <div class="hdr-l">
+            <div class="ham"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            <div class="bdg"><span>Unbreakable Vow</span></div>
+          </div>
+          <div class="gear"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
+        </div>
+        <div class="hero">&ldquo;Meditate 10 minutes every day.&rdquo;</div>
+        <div class="bar"><div class="bar-f br" style="width:100%"></div></div>
+        <div class="cd"><span class="cd-m" style="color:#F59E0B">Time's up — your call</span><span class="cd-s">Just you · no stake</span></div>
+        <div style="height: 12px"></div>
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1; min-height:52px; border-radius:16px; background:rgba(82,214,154,0.12); border:1.5px solid rgba(82,214,154,0.3); display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#52d69a" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            <span style="font-size:14px; font-weight:700; color:#52d69a">I kept it</span>
+          </div>
+          <div style="flex:1; min-height:52px; border-radius:16px; background:rgba(239,68,68,0.08); border:1.5px solid rgba(239,68,68,0.2); display:flex; align-items:center; justify-content:center; gap:6px; cursor:pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#EF4444" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <span style="font-size:14px; font-weight:700; color:#EF4444">I broke it</span>
+          </div>
+        </div>
+        <div class="spacer"></div>
+        <div class="ml">Make a vow &rarr;</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════ -->
+<!-- MULTI-VOW SMART STACK -->
+<!-- ═══════════════════════════════ -->
+<div class="divider">Multi-Vow — Smart Stack</div>
+<div class="note">Urgency-sorted. Buttons = action needed. No sections. No completed vows.</div>
+
+<div class="row">
+  <!-- Full stack example -->
+  <div class="col">
+    <div class="tag">Typical User — 3 Active</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="scr" style="gap:10px">
+        <div class="hdr">
+          <div class="hdr-l">
+            <div class="ham"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            <div class="bdg"><span>Unbreakable Vow</span></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="stats"><span class="stat"><b>2</b> kept</span></div>
+            <div class="gear"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+
+          <!-- Awaiting verdict — I'm waiting -->
+          <div class="c c-waiting">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#F59E0B; animation:pulse 2s infinite"></div><span class="c-sl" style="color:#F59E0B">Awaiting verdict</span></div>
+              <span class="c-time" style="color:#F59E0B">Time's up</span>
+            </div>
+            <div class="c-txt">No takeout all week.</div>
+            <div class="c-bar"><div class="c-bf" style="width:100%; background:linear-gradient(90deg,#F59E0B,#EF4444)"></div></div>
+            <div class="c-bot"><span class="c-meta">Michael deciding</span><span class="c-stake" style="color:#d4a24f">$10</span></div>
+          </div>
+
+          <!-- Active vow 1 -->
+          <div class="c c-active">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#52d69a"></div><span class="c-sl" style="color:#52d69a">Active</span></div>
+              <span class="c-time">8 days left</span>
+            </div>
+            <div class="c-txt">Book France by Sunday.</div>
+            <div class="c-bar"><div class="c-bf" style="width:73%; background:#d4a24f"></div></div>
+            <div class="c-bot"><span class="c-meta">Nick &middot; watching</span><span class="c-stake" style="color:#d4a24f">$10</span></div>
+          </div>
+
+          <!-- Active vow 2 — witness pending -->
+          <div class="c c-active">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#52d69a"></div><span class="c-sl" style="color:#52d69a">Active</span></div>
+              <span class="c-time">12 days left</span>
+            </div>
+            <div class="c-txt">Wake up before 7 every weekday.</div>
+            <div class="c-bar"><div class="c-bf" style="width:40%; background:#d4a24f"></div></div>
+            <div class="c-bot"><span class="c-meta" style="color:#F59E0B">Sarah &middot; hasn't accepted</span><span class="c-stake" style="color:#5a5650">no stake</span></div>
+          </div>
+
+        </div>
+
+        <div class="spacer"></div>
+        <div class="gbtn gbtn-s"><span>Make a vow</span></div>
+      </div>
+    </div>
+    <div class="ann"><p><strong>Clean 3-vow stack.</strong> Awaiting verdict (amber) floats to top. Active sorted by deadline. Witness-pending flagged in amber text. No sections needed — visual hierarchy does the work.</p></div>
+  </div>
+
+  <!-- Stack with all action states -->
+  <div class="col">
+    <div class="tag">Power User — Action States</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="scr" style="gap:10px">
+        <div class="hdr">
+          <div class="hdr-l">
+            <div class="ham"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            <div class="bdg"><span>Unbreakable Vow</span></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="stats"><span class="stat"><b>5</b> kept</span><span class="stat"><b>3</b> streak</span></div>
+            <div class="gear"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+
+          <!-- TIER 1: I need to act -->
+
+          <!-- Self-resolve needed -->
+          <div class="c c-urgent">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#F59E0B; animation:pulse 2s infinite"></div><span class="c-sl" style="color:#F59E0B">Your call</span></div>
+              <span class="c-time" style="color:#F59E0B">Time's up</span>
+            </div>
+            <div class="c-txt">Meditate 10 min daily for a week.</div>
+            <div class="c-actions">
+              <div class="c-btn c-btn-green">Kept ✓</div>
+              <div class="c-btn c-btn-red">Broken ✗</div>
+            </div>
+          </div>
+
+          <!-- I need to deliver verdict -->
+          <div class="c c-action-blue">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#60A5FA; animation:pulse 2s infinite"></div><span class="c-sl" style="color:#60A5FA">You judge</span></div>
+              <span class="c-time" style="color:#60A5FA">Time's up</span>
+            </div>
+            <div class="c-txt">Run a 5K every Saturday.</div>
+            <div class="c-bot"><span class="c-meta">By Alex &middot; $20 stake</span></div>
+            <div class="c-btn-full c-btn-blue">Deliver your verdict &rarr;</div>
+          </div>
+
+          <!-- Challenge received -->
+          <div class="c c-urgent">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#F59E0B"></div><span class="c-sl" style="color:#F59E0B">Dare from Sam</span></div>
+            </div>
+            <div class="c-txt">Cold plunge every morning for 2 weeks.</div>
+            <div class="c-actions">
+              <div class="c-btn c-btn-gold">Accept</div>
+              <div class="c-btn c-btn-muted">Decline</div>
+            </div>
+          </div>
+
+          <!-- TIER 2: Waiting on others -->
+
+          <!-- Awaiting witness verdict -->
+          <div class="c c-waiting">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#F59E0B; animation:pulse 2s infinite"></div><span class="c-sl" style="color:#F59E0B">Awaiting verdict</span></div>
+              <span class="c-time" style="color:#F59E0B">Time's up</span>
+            </div>
+            <div class="c-txt">No takeout all week.</div>
+            <div class="c-bot"><span class="c-meta">Michael deciding</span><span class="c-stake" style="color:#d4a24f">$10</span></div>
+          </div>
+
+          <!-- TIER 3: Active -->
+
+          <div class="c c-active">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#52d69a"></div><span class="c-sl" style="color:#52d69a">Active</span></div>
+              <span class="c-time">8 days left</span>
+            </div>
+            <div class="c-txt">Book France by Sunday.</div>
+            <div class="c-bar"><div class="c-bf" style="width:73%; background:#d4a24f"></div></div>
+            <div class="c-bot"><span class="c-meta">Nick &middot; watching</span><span class="c-stake" style="color:#d4a24f">$10</span></div>
+          </div>
+
+          <!-- Witnessing, active -->
+          <div class="c c-witness">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#60A5FA"></div><span class="c-sl" style="color:#60A5FA">Witnessing</span></div>
+              <span class="c-time">14 days left</span>
+            </div>
+            <div class="c-txt">No alcohol for Dry January.</div>
+            <div class="c-bot"><span class="c-meta">By Jordan &middot; $50 stake</span></div>
+          </div>
+
+          <!-- Dare sent -->
+          <div class="c c-pending">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#8a8578"></div><span class="c-sl" style="color:#8a8578">Dare sent</span></div>
+              <span class="c-time" style="color:#5a5650">Waiting on Sam</span>
+            </div>
+            <div class="c-txt">100 pushups every day for a month.</div>
+          </div>
+
+          <!-- TIER 4: Drafts -->
+
+          <div class="c c-draft">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#5a5650"></div><span class="c-sl" style="color:#5a5650">Draft</span></div>
+            </div>
+            <div class="c-txt">Golden prompt shipped by Sunday.</div>
+            <div class="c-bot"><span class="c-meta" style="color:#d4a24f">Tap to seal &rarr;</span></div>
+          </div>
+
+        </div>
+
+        <div class="gbtn gbtn-s"><span>Make a vow</span></div>
+      </div>
+    </div>
+    <div class="ann"><p><strong>Every state.</strong> Top: cards with buttons (self-resolve, deliver verdict, accept challenge). Middle: waiting + active, sorted by deadline. Bottom: witnessing, pending dares, drafts. No sections — color and buttons do the hierarchy.</p></div>
+  </div>
+
+  <!-- Daily vow maker — clean -->
+  <div class="col">
+    <div class="tag">Daily Vow Maker</div>
+    <div class="stag">Makes a vow every day. 30 completed vows. None shown here — all in History.</div>
+    <div class="phone">
+      <div class="notch"></div>
+      <div class="scr" style="gap:10px">
+        <div class="hdr">
+          <div class="hdr-l">
+            <div class="ham"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></div>
+            <div class="bdg"><span>Unbreakable Vow</span></div>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <div class="stats"><span class="stat"><b>28</b> kept</span><span class="stat"><b>12</b> streak</span></div>
+            <div class="gear"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5a5650" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg></div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:8px;">
+
+          <!-- Self-resolve -->
+          <div class="c c-urgent">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#F59E0B; animation:pulse 2s infinite"></div><span class="c-sl" style="color:#F59E0B">Your call</span></div>
+              <span class="c-time" style="color:#F59E0B">Time's up</span>
+            </div>
+            <div class="c-txt">Write 500 words today.</div>
+            <div class="c-actions">
+              <div class="c-btn c-btn-green">Kept ✓</div>
+              <div class="c-btn c-btn-red">Broken ✗</div>
+            </div>
+          </div>
+
+          <!-- Today's active -->
+          <div class="c c-active">
+            <div class="c-top">
+              <div class="c-st"><div class="c-dot" style="background:#52d69a"></div><span class="c-sl" style="color:#52d69a">Active</span></div>
+              <span class="c-time">Due tonight</span>
+            </div>
+            <div class="c-txt">No phone after 9pm.</div>
+            <div class="c-bar"><div class="c-bf" style="width:65%; background:#d4a24f"></div></div>
+            <div class="c-bot"><span class="c-meta">Just you &middot; no stake</span></div>
+          </div>
+
+        </div>
+
+        <div class="spacer"></div>
+        <div class="spacer"></div>
+
+        <!-- The page is clean even with 30 past vows -->
+        <div style="text-align:center; padding: 16px 0;">
+          <div style="font-size:11px; color:#3a3530; margin-bottom: 4px;">30 vows completed</div>
+          <div style="font-size:12px; color:#5a5650;">View history &rarr;</div>
+        </div>
+
+        <div class="gbtn gbtn-s"><span>Make a vow</span></div>
+      </div>
+    </div>
+    <div class="ann"><p><strong>Power user, clean page.</strong> 28 kept vows live in History, not here. Dashboard only shows today's 2 vows. "28 kept · 12 streak" in header is the trophy. Small "View history" link at bottom for those who want to browse. The page never gets clunky.</p></div>
+  </div>
+</div>
+
+</body>
+</html>

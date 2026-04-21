@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>First-Time User Flow — Mockup</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0c10;
+    color: #F6F7FB;
+    min-height: 100vh;
+  }
+
+  .page-header {
+    text-align: center;
+    padding: 40px 20px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    margin-bottom: 40px;
+  }
+  .page-header h1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 28px;
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .page-header p {
+    font-size: 14px;
+    color: #5a5650;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .expert-verdict {
+    max-width: 700px;
+    margin: 0 auto 40px;
+    padding: 0 20px;
+  }
+  .expert-card {
+    background: #10141C;
+    border: 1px solid rgba(82,214,154,0.15);
+    border-radius: 16px;
+    padding: 24px;
+  }
+  .expert-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: #52d69a;
+    margin-bottom: 12px;
+  }
+  .expert-card p {
+    font-size: 14px;
+    color: #A7B0C0;
+    line-height: 1.7;
+  }
+  .expert-card strong { color: #F6F7FB; }
+
+  .comparison {
+    display: flex;
+    gap: 40px;
+    justify-content: center;
+    padding: 0 20px 60px;
+    flex-wrap: wrap;
+  }
+  .mock-column {
+    flex: 0 0 375px;
+    max-width: 375px;
+  }
+  .mock-label {
+    text-align: center;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding: 8px 16px;
+    border-radius: 8px;
+  }
+  .mock-label.current {
+    color: #A7B0C0;
+    background: rgba(167,176,192,0.08);
+    border: 1px solid rgba(167,176,192,0.15);
+  }
+  .mock-label.proposed {
+    color: #52d69a;
+    background: rgba(82,214,154,0.08);
+    border: 1px solid rgba(82,214,154,0.15);
+  }
+
+  /* Phone frame */
+  .phone-frame {
+    width: 375px;
+    height: 812px;
+    background: #05070B;
+    border-radius: 40px;
+    border: 3px solid #1a1d24;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .orb-gold {
+    position: absolute;
+    top: -40px;
+    right: -20px;
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: rgba(212,162,79,0.18);
+    filter: blur(40px);
+    pointer-events: none;
+  }
+  .orb-blue {
+    position: absolute;
+    top: 280px;
+    left: -60px;
+    width: 140px;
+    height: 140px;
+    border-radius: 50%;
+    background: rgba(94,124,250,0.10);
+    filter: blur(30px);
+    pointer-events: none;
+  }
+  .screen-content {
+    position: relative;
+    z-index: 1;
+    padding: 60px 20px 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Shared styles */
+  .nav-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .badge {
+    width: 32px;
+    height: 32px;
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(212,162,79,0.2), rgba(212,162,79,0.08));
+    border: 1px solid rgba(212,162,79,0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .hamburger {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: #10141C;
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .hamburger span {
+    display: block;
+    width: 16px;
+    height: 2px;
+    background: #A7B0C0;
+    position: relative;
+  }
+  .hamburger span::before, .hamburger span::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 2px;
+    background: #A7B0C0;
+  }
+  .hamburger span::before { top: -5px; }
+  .hamburger span::after { top: 5px; }
+
+  /* Hero */
+  .hero { margin-bottom: 24px; }
+  .hero-line1 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 40px;
+    font-weight: 700;
+    color: #F6F7FB;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+  }
+  .hero-line2 {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 40px;
+    font-weight: 700;
+    color: #D4A24F;
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    text-shadow: 0 0 40px rgba(212,162,79,0.3);
+  }
+  .hero-sub {
+    font-size: 15px;
+    color: #5a5650;
+    line-height: 1.5;
+    margin-top: 10px;
+  }
+
+  /* Input card */
+  .input-card {
+    border-radius: 22px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .input-card.current-style {
+    background: #10141C;
+    border: 1px solid rgba(212,162,79,0.18);
+    box-shadow: 0 6px 20px rgba(212,162,79,0.06);
+  }
+  .input-card.proposed-style {
+    background: #10141C;
+    border: 1px solid rgba(212,162,79,0.22);
+    box-shadow: 0 8px 24px rgba(212,162,79,0.08);
+  }
+  .input-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .input-label.old { color: #5a5650; }
+  .input-label.new { color: rgba(212,162,79,0.5); font-family: 'Playfair Display', serif; font-size: 13px; font-weight: 500; letter-spacing: 0; text-transform: none; }
+
+  .input-area {
+    width: 100%;
+    background: transparent;
+    border: none;
+    color: rgba(246,247,251,0.25);
+    font-size: 16px;
+    line-height: 24px;
+    resize: none;
+    outline: none;
+    min-height: 40px;
+    font-family: inherit;
+  }
+
+  /* Example chips */
+  .chips-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .chip {
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 500;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: #8a8578;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip.active {
+    background: rgba(212,162,79,0.12);
+    border-color: rgba(212,162,79,0.3);
+    color: #F0C86E;
+  }
+
+  /* Footer CTA */
+  .footer-area {
+    margin-top: auto;
+    padding: 16px 0 40px;
+  }
+  .btn-old {
+    width: 100%;
+    min-height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #F0C86E 0%, #D4A24F 50%, #8C6423 100%);
+    border: none;
+    color: #0B0D11;
+    font-size: 16px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-new {
+    width: 100%;
+    min-height: 56px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, #F0C86E 0%, #D4A24F 50%, #8C6423 100%);
+    border: none;
+    color: #0B0D11;
+    font-size: 16px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    box-shadow: 0 12px 32px rgba(212,162,79,0.25);
+  }
+
+  /* Change callout */
+  .change-marker {
+    position: relative;
+  }
+  .change-marker::after {
+    content: 'CHANGED';
+    position: absolute;
+    right: -8px;
+    top: -8px;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 0.8px;
+    color: #52d69a;
+    background: rgba(82,214,154,0.1);
+    border: 1px solid rgba(82,214,154,0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .section-divider {
+    text-align: center;
+    padding: 40px 20px 30px;
+    color: #3a3530;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  /* Surface labels */
+  .surface-label {
+    text-align: center;
+    font-size: 11px;
+    color: #5a5650;
+    margin-bottom: 8px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  .rationale {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 0 20px 80px;
+  }
+  .rationale-card {
+    background: #10141C;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 16px;
+  }
+  .rationale-card h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    color: #D4A24F;
+    margin-bottom: 12px;
+  }
+  .rationale-card ul {
+    font-size: 14px;
+    color: #A7B0C0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    line-height: 1.6;
+  }
+  .rationale-card ul strong { color: #F6F7FB; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>First-Time User Flow — Assessment</h1>
+  <p>Expert panel evaluation of whether the "I vow to..." pattern should apply to first-time users. Conclusion: the first-time flow is already strong. Only minor consistency tweaks recommended.</p>
+</div>
+
+<div class="expert-verdict">
+  <div class="expert-card">
+    <h3>Panel Verdict: Don't redesign — refine</h3>
+    <p>
+      The first-time flow has something the old returning-user flow lacked: <strong>a bold headline that fills the viewport with purpose</strong>,
+      <strong>example chips that solve the blank-page problem</strong>, and <strong>a CTA with ritual language</strong>.
+      Applying the "I vow to..." pattern here would remove the product education and examples that first-timers need.
+      <br><br>
+      <strong>Two consistency tweaks only:</strong> (1) Rename "I WILL..." to "I vow to..." to match the product's ceremonial language.
+      (2) Add the gold glow shadow to the CTA button for visual consistency with the new returning-user flow.
+    </p>
+  </div>
+</div>
+
+<div class="comparison">
+
+  <!-- CURRENT: Web/Mobile Web -->
+  <div class="mock-column">
+    <div class="surface-label">WEB + MOBILE WEB</div>
+    <div class="mock-label current">Current</div>
+    <div class="phone-frame">
+      <div class="orb-gold"></div>
+      <div class="orb-blue"></div>
+      <div class="screen-content">
+        <div class="nav-row">
+          <div class="badge">&#10024;</div>
+          <div class="hamburger"><span></span></div>
+        </div>
+        <div class="hero">
+          <div class="hero-line1">Make a vow.</div>
+          <div class="hero-line2">Mean it.</div>
+          <div class="hero-sub">Make a vow to a friend. Put money on it. Break it, it goes to charity.</div>
+        </div>
+        <div class="input-card current-style">
+          <div class="input-label old">I WILL...</div>
+          <div class="input-area" style="color: rgba(246,247,251,0.25);">No phone in bed all week</div>
+          <div class="chips-row">
+            <div class="chip">Wake up before 7</div>
+            <div class="chip active">Gym 3x this week</div>
+            <div class="chip">Read every night</div>
+            <div class="chip">No takeout all week</div>
+            <div class="chip">No texting my ex</div>
+          </div>
+        </div>
+        <div class="footer-area">
+          <button class="btn-old">I vow it</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPOSED: Web/Mobile Web -->
+  <div class="mock-column">
+    <div class="surface-label">WEB + MOBILE WEB</div>
+    <div class="mock-label proposed">Proposed (minor tweaks only)</div>
+    <div class="phone-frame">
+      <div class="orb-gold"></div>
+      <div class="orb-blue"></div>
+      <div class="screen-content">
+        <div class="nav-row">
+          <div class="badge">&#10024;</div>
+          <div class="hamburger"><span></span></div>
+        </div>
+        <div class="hero">
+          <div class="hero-line1">Make a vow.</div>
+          <div class="hero-line2">Mean it.</div>
+          <div class="hero-sub">Make a vow to a friend. Put money on it. Break it, it goes to charity.</div>
+        </div>
+        <div class="input-card proposed-style change-marker">
+          <div class="input-label new">I vow to...</div>
+          <div class="input-area" style="color: rgba(246,247,251,0.25);">No phone in bed all week</div>
+          <div class="chips-row">
+            <div class="chip">Wake up before 7</div>
+            <div class="chip active">Gym 3x this week</div>
+            <div class="chip">Read every night</div>
+            <div class="chip">No takeout all week</div>
+            <div class="chip">No texting my ex</div>
+          </div>
+        </div>
+        <div class="footer-area">
+          <button class="btn-new" style="position: relative;">I vow it
+            <span style="position: absolute; right: -8px; top: -8px; font-size: 8px; font-weight: 800; letter-spacing: 0.8px; color: #52d69a; background: rgba(82,214,154,0.1); border: 1px solid rgba(82,214,154,0.2); padding: 2px 6px; border-radius: 4px;">CHANGED</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROPOSED: Expo -->
+  <div class="mock-column">
+    <div class="surface-label">EXPO (NATIVE APP)</div>
+    <div class="mock-label proposed">Proposed (same minor tweaks)</div>
+    <div class="phone-frame">
+      <div class="orb-gold"></div>
+      <div class="orb-blue"></div>
+      <div class="screen-content">
+        <div class="nav-row">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="badge">&#10024;</div>
+            <span style="font-size: 13px; color: #5a5650; font-weight: 500;">Unbreakable Vow</span>
+          </div>
+          <div class="hamburger"><span></span></div>
+        </div>
+        <div class="hero">
+          <div class="hero-line1">Make a vow.</div>
+          <div class="hero-line2">Mean it.</div>
+          <div class="hero-sub">Make a vow to a friend. Put money on it. Break it, it goes to charity.</div>
+        </div>
+        <div class="input-card proposed-style change-marker">
+          <div class="input-label new">I vow to...</div>
+          <div class="input-area" style="color: rgba(246,247,251,0.25);">No phone in bed all week</div>
+          <div class="chips-row">
+            <div class="chip">Wake up before 7</div>
+            <div class="chip active">Gym 3x this week</div>
+            <div class="chip">Read every night</div>
+            <div class="chip">No takeout all week</div>
+            <div class="chip">No texting my ex</div>
+          </div>
+        </div>
+        <div class="footer-area">
+          <button class="btn-new">
+            I vow it&nbsp;&nbsp;→
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="section-divider">— WHAT CHANGES AND WHY —</div>
+
+<div class="rationale">
+  <div class="rationale-card">
+    <h3>Only two changes</h3>
+    <ul>
+      <li><strong>"I WILL..." → "I vow to..."</strong> — Matches the returning-user flow language. "I will" is generic productivity-app copy. "I vow to" is ceremonial and distinct to this product. The label becomes italic, slightly larger, gold-tinted — consistent with the returning-user prompt.</li>
+      <li><strong>CTA glow shadow</strong> — The gold gradient button gets the same `box-shadow: 0 12px 32px rgba(212,162,79,0.25)` as the returning-user "Set the terms →" button. Subtle visual lift that makes it feel more premium.</li>
+    </ul>
+  </div>
+
+  <div class="rationale-card">
+    <h3>What stays the same (and why)</h3>
+    <ul>
+      <li><strong>"Make a vow. Mean it."</strong> — This headline IS the product pitch. First-timers need it. Removing it for "I vow to..." would lose the hook.</li>
+      <li><strong>Example chips</strong> — These solve the blank-page problem for first-timers. Returning users don't need them (they know what to type). First-timers do.</li>
+      <li><strong>"Put money on it. Break it, it goes to charity."</strong> — One-line product education. Returning users know this. First-timers don't.</li>
+      <li><strong>"I vow it" CTA text</strong> — This is stronger than "Next" or "Continue" for first-timers. It's the first commitment moment.</li>
+      <li><strong>Card wrapper around input</strong> — First-timers need the visual boundary. The free-flowing textarea works for returning users who know the context.</li>
+      <li><strong>All routing, auth, and data logic</strong> — Zero changes. The flow still goes to /refine or /stake based on vow quality.</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>
