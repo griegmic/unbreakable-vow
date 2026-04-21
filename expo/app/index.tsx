@@ -119,17 +119,15 @@ export default function HomeScreen() {
 
   const canContinue = useMemo(() => input.trim().length > 0, [input]);
 
-  // Deadline modal state
+  // Deadline modal state — default is end of this week (auto-populated, editable)
   const [deadlineOpen, setDeadlineOpen] = useState<boolean>(false);
-  const [selectedPreset, setSelectedPreset] = useState<DeadlinePreset>('in_7_days');
+  const [selectedPreset, setSelectedPreset] = useState<DeadlinePreset>('end_of_week');
   const deadlineTranslate = useRef(new Animated.Value(600)).current;
   const deadlineBackdrop = useRef(new Animated.Value(0)).current;
 
   const openDeadline = () => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
-    console.log('[HomeScreen] open deadline modal for:', trimmed);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log('[HomeScreen] open deadline picker sheet');
+    void Haptics.selectionAsync();
     Keyboard.dismiss();
     setDeadlineOpen(true);
     Animated.parallel([
@@ -141,6 +139,23 @@ export default function HomeScreen() {
         useNativeDriver: true,
       }),
     ]).start();
+  };
+
+  const submitVow = () => {
+    const trimmed = input.trim();
+    if (!trimmed) return;
+    const deadlineDate = getPresetDate(selectedPreset);
+    console.log('[HomeScreen] submit with deadline:', selectedPreset, deadlineDate.toISOString());
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    Keyboard.dismiss();
+    setRawInput(trimmed);
+    setDeadline(deadlineDate.toISOString());
+    if (shouldSkipRefine(trimmed)) {
+      setRefinedText(trimmed);
+      router.push('/stake');
+    } else {
+      router.push('/refine');
+    }
   };
 
   const closeDeadline = () => {
@@ -156,14 +171,8 @@ export default function HomeScreen() {
   };
 
   const confirmDeadline = () => {
-    const trimmed = input.trim();
-    if (!trimmed) return;
-    const deadlineDate = getPresetDate(selectedPreset);
-    console.log('[HomeScreen] confirm deadline:', selectedPreset, deadlineDate.toISOString());
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    setRawInput(trimmed);
-    setDeadline(deadlineDate.toISOString());
-
+    console.log('[HomeScreen] confirm deadline picker:', selectedPreset);
+    void Haptics.selectionAsync();
     Animated.parallel([
       Animated.timing(deadlineBackdrop, { toValue: 0, duration: 220, useNativeDriver: true }),
       Animated.timing(deadlineTranslate, {
@@ -172,17 +181,7 @@ export default function HomeScreen() {
         easing: Easing.in(Easing.cubic),
         useNativeDriver: true,
       }),
-    ]).start(() => {
-      setDeadlineOpen(false);
-      if (shouldSkipRefine(trimmed)) {
-        console.log('[HomeScreen] vow is already sharp, skipping refine');
-        setRefinedText(trimmed);
-        router.push('/stake');
-      } else {
-        console.log('[HomeScreen] vow needs sharpening, going to refine');
-        router.push('/refine');
-      }
-    });
+    ]).start(() => setDeadlineOpen(false));
   };
 
   const handleChip = (example: string) => {
@@ -281,11 +280,25 @@ export default function HomeScreen() {
               onChangeText={setInput}
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
-              onSubmitEditing={openDeadline}
+              onSubmitEditing={submitVow}
               returnKeyType="go"
               testID="vow-input"
+              multiline
             />
             <View style={[styles.inputLine, focused && styles.inputLineFocused]} />
+
+            {/* Auto-populated deadline chip — tap to change */}
+            <Pressable
+              onPress={openDeadline}
+              style={styles.deadlineChip}
+              hitSlop={6}
+              testID="deadline-chip"
+            >
+              <View style={styles.deadlineChipDot} />
+              <Text style={styles.deadlineChipLabel}>Verdict </Text>
+              <Text style={styles.deadlineChipValue}>{formatDeadline(selectedDate)}</Text>
+              <Text style={styles.deadlineChipEdit}>  change</Text>
+            </Pressable>
             <View style={styles.chipsRow}>
               {vowExamples.map((example) => (
                 <Pressable
@@ -305,13 +318,13 @@ export default function HomeScreen() {
             <Animated.View style={{ transform: [{ scale: btnScale }] }}>
               <Pressable
                 disabled={!canContinue}
-                onPress={openDeadline}
+                onPress={submitVow}
                 onPressIn={handlePressIn}
                 onPressOut={handlePressOut}
                 style={[styles.ctaWrap, canContinue && styles.ctaWrapGold]}
                 testID="home-continue"
               >
-                <Text style={[styles.ctaText, canContinue && styles.ctaTextGold]}>Make my vow</Text>
+                <Text style={[styles.ctaText, canContinue && styles.ctaTextGold]}>Make my vow  {'\u2192'}</Text>
               </Pressable>
             </Animated.View>
           </Animated.View>
@@ -388,7 +401,7 @@ export default function HomeScreen() {
               style={styles.confirmBtn}
               testID="deadline-confirm"
             >
-              <Text style={styles.confirmBtnText}>Lock it in</Text>
+              <Text style={styles.confirmBtnText}>Set deadline</Text>
             </Pressable>
 
             <Pressable onPress={closeDeadline} hitSlop={10} style={styles.cancelBtn}>
@@ -570,21 +583,59 @@ const styles = StyleSheet.create({
   },
   input: {
     color: CREAM,
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: serifFont,
     minHeight: 30,
     paddingVertical: 0,
     marginBottom: 0,
+    fontWeight: '600' as const,
   },
   inputLine: {
     height: 1,
     backgroundColor: 'rgba(217,178,74,0.25)',
     marginTop: 14,
-    marginBottom: 18,
+    marginBottom: 14,
   },
   inputLineFocused: {
     backgroundColor: GOLD,
     height: 1.5,
+  },
+  deadlineChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(217,178,74,0.28)',
+    backgroundColor: 'rgba(217,178,74,0.08)',
+    marginBottom: 18,
+  },
+  deadlineChipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: GOLD_BRIGHT,
+    marginRight: 8,
+  },
+  deadlineChipLabel: {
+    fontFamily: serifFont,
+    color: 'rgba(244,235,216,0.6)',
+    fontSize: 13,
+    fontStyle: 'italic',
+  },
+  deadlineChipValue: {
+    fontFamily: serifFont,
+    color: GOLD_BRIGHT,
+    fontSize: 13,
+    fontWeight: '700' as const,
+  },
+  deadlineChipEdit: {
+    fontFamily: serifFont,
+    color: 'rgba(217,178,74,0.55)',
+    fontSize: 12,
+    fontStyle: 'italic',
   },
   // Chips
   chipsRow: {
