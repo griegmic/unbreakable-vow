@@ -92,7 +92,7 @@ export function AppMenuButton({ style }: AppMenuProps) {
       icon: <Sparkles color={palette.goldBright} size={18} />,
       label: 'Guided Flow',
       description: 'Step-by-step vow creation',
-      route: '/',
+      route: '/?guided=1',
     },
     {
       icon: <BookOpen color={palette.textSecondary} size={18} />,
