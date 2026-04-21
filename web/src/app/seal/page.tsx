@@ -50,7 +50,7 @@ export default function SealPage() {
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
   const witnessName = isSelfWitness ? 'Just me' : (vow.witnessName || 'Witness');
-  const sealLabel = isAuthenticated ? 'Seal this vow' : 'Seal this vow';
+  const sealLabel = `Seal my vow — $${vow.stake.amount}`;
 
   useEffect(() => {
     const isLocal = typeof window !== 'undefined' && (
@@ -511,13 +511,13 @@ export default function SealPage() {
             fontFamily: 'var(--uv-font-sans)', fontSize: 26, fontWeight: 600,
             color: 'var(--uv-text)', margin: '0 0 6px', textAlign: 'center',
           }}>
-            Almost done.
+            This is it.
           </h1>
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 14,
             color: 'var(--uv-text-muted)', margin: '0 0 24px', textAlign: 'center',
           }}>
-            Enter your number to seal.
+            Enter your number. No turning back.
           </p>
 
           {/* Review card */}
@@ -670,10 +670,10 @@ export default function SealPage() {
         {/* Hero */}
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-text)', margin: 0, marginBottom: 6 }}>
-            Almost done.
+            This is it.
           </h1>
           <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text-muted)', margin: 0 }}>
-            One tap to seal.
+            One tap. No turning back.
           </p>
         </div>
 

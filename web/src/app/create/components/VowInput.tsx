@@ -178,17 +178,17 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
         <Progress step={1} total={3} />
 
         <h1 style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 24, fontWeight: 500,
-          color: 'var(--uv-text)', margin: '0 0 8px', lineHeight: 1.2,
+          fontFamily: 'var(--uv-font-sans)', fontSize: 24, fontWeight: 600,
+          color: 'var(--uv-text)', margin: '0 0 4px', lineHeight: 1.15,
         }}>
           What are you swearing to?
         </h1>
 
         <p style={{
           fontFamily: 'var(--uv-font-sans)', fontSize: 14,
-          color: 'var(--uv-text-dim)', margin: '0 0 24px',
+          color: 'var(--uv-text-dim)', margin: '0 0 20px',
         }}>
-          One vow. One sentence. Make it count.
+          Say it out loud. One sentence. No wiggle room.
         </p>
 
         <Input
@@ -209,10 +209,19 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
 
         {/* Preset chips when empty */}
         {isEmpty && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 16 }}>
-            {PRESET_CHIPS.map((chip) => (
-              <Chip key={chip} label={chip} onClick={() => setVowText(chip)} />
-            ))}
+          <div style={{ marginTop: 20 }}>
+            <p style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+              color: 'var(--uv-text-faint)', marginBottom: 10,
+              fontStyle: 'italic',
+            }}>
+              Most popular right now:
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {PRESET_CHIPS.map((chip) => (
+                <Chip key={chip} label={chip} onClick={() => setVowText(chip)} />
+              ))}
+            </div>
           </div>
         )}
 
@@ -364,7 +373,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
 
         <div style={{ paddingTop: 24, paddingBottom: 16 }}>
           <PrimaryButton onClick={handleContinue} disabled={!canContinue}>
-            Continue →
+            {isValid && !needsDeadline ? 'Next — pick your stakes →' : canContinue ? 'Next →' : 'Continue →'}
           </PrimaryButton>
         </div>
       </div>
