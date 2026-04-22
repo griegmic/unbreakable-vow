@@ -115,11 +115,15 @@ export async function notifyMaker(
   if (!user) return;
 
   // Channel selection: push if healthy, else SMS
+  // Cold-start: new users have push_token but no prior receipt — treat as healthy-on-first-attempt
+  const pushNeverTried = user.push_token != null && user.last_push_receipt_ok_at == null;
+  const pushRecentlyHealthy =
+    user.last_push_receipt_ok_at != null &&
+    Date.now() - new Date(user.last_push_receipt_ok_at).getTime() < 7 * 24 * 60 * 60 * 1000;
   const pushIsHealthy =
     user.push_token != null &&
     !user.sms_only_preference &&
-    user.last_push_receipt_ok_at != null &&
-    Date.now() - new Date(user.last_push_receipt_ok_at).getTime() < 7 * 24 * 60 * 60 * 1000;
+    (pushNeverTried || pushRecentlyHealthy);
 
   let channel: 'push' | 'sms' = 'sms';
 
@@ -147,13 +151,14 @@ export async function notifyMaker(
     }
   }
 
-  // Audit
-  await createAuditEvent(supabase, vowId || '', 'notification_sent', 'system', null, {
-    channel,
-    payload_type: push.type,
-    user_id: userId,
-  });
-}
+  // Audit — skip if no vowId (account-level notifications not tied to a vow)
+  if (vowId) {
+    await createAuditEvent(supabase, vowId, 'notification_sent', 'system', null, {
+      channel,
+      payload_type: push.type,
+      user_id: userId,
+    });
+  }
 
 // ── SMS with retry queue wrapper ──
 

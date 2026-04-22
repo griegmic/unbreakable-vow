@@ -62,7 +62,11 @@ Deno.serve(async (req) => {
 
     // 2. Void each active vow and refund where applicable
     for (const vow of (activeVows || [])) {
-      // Refund if staked and has a PI
+      // SetupIntent-only vows (stripe_setup_intent_id populated, no PI): no money is held.
+      // SetupIntents authorize a card for future charges but don't capture funds.
+      // Orphaned SIs on Stripe are acceptable — they expire automatically (per Stripe docs)
+      // and cannot be used to charge after account deletion since we don't store the PM.
+      // Only PaymentIntents require active refund/cancellation.
       if (vow.stripe_payment_intent_id && vow.stripe_payment_intent_id.startsWith('pi_')) {
         try {
           const pi = await stripeGet(`payment_intents/${vow.stripe_payment_intent_id}`);
