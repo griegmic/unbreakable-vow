@@ -410,7 +410,7 @@ Use `expo-haptics`. Map every interaction:
 
 **Haptics are subtle on web** — there's no equivalent. On web we lean harder on micro-animations (button scale-down on press, etc.) to fill the sensory gap.
 
-`PrimaryButton` and `SecondaryButton` in `/expo/components/` already wrap haptics. **Audit them to confirm every press path actually fires.** Today some routes use raw `Pressable` and skip haptics — those need to be fixed.
+**Haptics enforcement is structural via primitives; no legacy button wrappers exist.** The pre-V6 `PrimaryButton` and `SecondaryButton` referenced here were never built. V6 primitives (`GoldCTA`, `OutlinedGoldCTA`, `StakeTile`, `RadioCard`, `ContactPicker`) wrap typed haptics from `expo/lib/haptics.ts` internally — screens never call `expo-haptics` directly. The "no raw Pressable outside primitives" rule in CLAUDE.md enforces this structurally.
 
 ## 2.6 Pixel fidelity QA checklist (for every screen PR)
 
