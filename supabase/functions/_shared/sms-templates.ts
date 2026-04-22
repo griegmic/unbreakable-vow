@@ -28,20 +28,20 @@ export function witness24hMessage(makerName: string): string {
 }
 
 export function verdictRequestMessage(makerName: string, verdictUrl: string): string {
-  return `Time to judge: did ${makerName} keep his word? One tap: ${verdictUrl}`;
+  return `Time to judge: did ${makerName} keep the vow? One tap: ${verdictUrl}`;
 }
 
 export function outcomeMessage(makerName: string, verdict: 'kept' | 'broken', stake: number, destination: string): string {
   if (verdict === 'kept') {
     if (stake === 0) {
-      return `${makerName} kept his vow. Word honored.`;
+      return `${makerName} kept the vow. Word honored.`;
     }
-    return `${makerName} kept his vow. Your $${stake} is being refunded.`;
+    return `${makerName} kept the vow. $${stake} is being refunded.`;
   }
   if (stake === 0) {
-    return `${makerName} broke his vow. The record stands.`;
+    return `${makerName} broke the vow. The record stands.`;
   }
-  return `${makerName} broke his vow. $${stake} is going to ${destination}.`;
+  return `${makerName} broke the vow. $${stake} is going to ${destination}.`;
 }
 
 // ─── MAKER-FACING ───
