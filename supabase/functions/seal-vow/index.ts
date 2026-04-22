@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
     if (vow.vow_type === 'challenge' && vow.target_phone) {
       // Challenge vow: send challenge SMS to target
       const acceptUrl = `https://unbreakablevow.app/c/${vow.challenge_invite_token}`;
-      const messageBody = challengeMessage(ownerName, vow.refined_text, vow.stake_amount, endDateStr, acceptUrl);
+      const messageBody = challengeMessage(ownerName, amountDollars, acceptUrl);
       let smsSent = false;
 
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -243,7 +243,7 @@ Deno.serve(async (req) => {
     } else if (vow.witness_phone && !vow.witness_accepted_at) {
       // Standard vow: send witness SMS (skip if witness already accepted during draft)
       const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
-      const messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDateStr, witnessUrl);
+      const messageBody = sealMessage(amountDollars, witnessUrl);
       let smsSent = false;
 
       for (let attempt = 0; attempt < 2; attempt++) {
@@ -292,7 +292,7 @@ Deno.serve(async (req) => {
         .eq('id', user.id)
         .single();
       if (makerUser?.phone) {
-        const sealConfirmBody = makerSealConfirmMessage();
+        const sealConfirmBody = makerSealConfirmMessage(amountDollars);
         const sid = await sendSMS(makerUser.phone, sealConfirmBody);
         await supabase.from('sms_log').insert({
           vow_id,
