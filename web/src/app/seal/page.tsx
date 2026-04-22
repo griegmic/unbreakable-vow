@@ -118,8 +118,14 @@ export default function SealPage() {
 
     const doCreate = async (): Promise<{ id: string; error?: string } | null> => {
       try {
-        const { data: { session: s }, error: sessErr } = await supabase.auth.refreshSession();
-        if (sessErr || !s) return { id: '', error: 'Not signed in. Please sign in and try again.' };
+        // Try getSession first (works for freshly-created sessions like phone OTP),
+        // fall back to refreshSession if the token might be stale.
+        let s = (await supabase.auth.getSession()).data.session;
+        if (!s) {
+          const { data, error: sessErr } = await supabase.auth.refreshSession();
+          s = data.session;
+          if (sessErr || !s) return { id: '', error: 'Not signed in. Please sign in and try again.' };
+        }
 
         await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
 
