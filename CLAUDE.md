@@ -152,41 +152,54 @@ Challenge: challenge_status: pending → accepted | declined
 
 ## Files That Must Not Be Modified
 
-### Web (keep existing behavior):
+> **Updated Apr 22, 2026 for V6.** The V6 spec (`design-alignment/v1v2/IMPLEMENTATION-V6.md`) is the single source of truth. Files listed below are frozen; everything else may be modified per the V6 spec.
+
+### FROZEN — do not modify under any circumstances:
+
+**Expo:**
+- `expo/components/vow-ui.tsx` — NEVER MODIFY (permanently frozen)
+- `expo/lib/supabase.ts`
+
+**Web:**
 - `/refine/page.tsx`, `/stake/page.tsx`, `/witness/page.tsx` (first-time flow)
 - `/live/page.tsx`, `/self-resolve/page.tsx` (existing single-vow tracking)
-- `/vow-kept/page.tsx`, `/vow-broken/page.tsx` (outcome pages)
-- `/history/page.tsx`, `/settings/page.tsx`
-- `/w/[token]/page.tsx` (witness invite — server component)
-- `/outcome/[vowId]/page.tsx` (public outcome)
 - `/auth/callback/page.tsx`
-- `components/ui.tsx`, `components/auth-modal.tsx`, `components/share-button.tsx`
+- `components/auth-modal.tsx`, `components/share-button.tsx`
 - `providers/auth-provider.tsx`
 - `lib/supabase.ts`, `lib/vow-logic.ts`
-- `middleware.ts`, `layout.tsx`, `globals.css`
 
-### Expo (entire app except listed changes):
-- `components/vow-ui.tsx` — NEVER MODIFY
-- All existing screen files
-- All existing providers
-- `lib/supabase.ts`
-
-### Supabase:
-- Existing migration files
+**Supabase:**
+- All existing migration files (never modify, only add new ones)
 - `create-payment-intent/index.ts`
 - `send-sms/index.ts`
 - `verdict-page/index.ts`
 
+### MODIFIABLE per V6 spec (previously frozen, now unlocked):
+- `globals.css` — token reconciliation per §1.5
+- `layout.tsx` — font loading changes per §2.2
+- `middleware.ts` — auth route changes for new routes
+- `/w/[token]/page.tsx` — S19 status-aware router per §3.2
+- `/vow-kept/page.tsx` — M11/M11B outcome flows per §5.1-5.2
+- `/vow-broken/page.tsx` — broken-vow variants per §5.3-5.4
+- `/settings/page.tsx` — new settings design per §6.1
+- `/history/page.tsx` — new history design per §6.2
+- `/outcome/[vowId]/page.tsx` — public outcome design pass per §5.6
+- `components/ui.tsx` — may add new primitives or update to V6 tokens; do NOT remove existing exports
+
 ## Web App Routes
 
-### Existing (do not modify behavior):
+### Existing (may be modified per V6 spec):
 `/`, `/refine`, `/stake`, `/witness`, `/seal`, `/sent`, `/live`, `/self-resolve`,
 `/vow-kept`, `/vow-broken`, `/history`, `/settings`, `/auth/callback`,
 `/w/[token]`, `/w/[token]/verdict`, `/outcome/[vowId]`
 
-### New routes (this build):
+### New routes (V6 build):
 - `/dashboard` — Authenticated home, concurrent vow tracking
-- `/create` — Power-user single-page vow creation
+- `/create` — Power-user single-page vow creation (redirects to `/refine` for V6)
 - `/vow/[id]` — Vow detail with timeline
 - `/c/[token]` — Challenge accept/decline page
 - `/certificate/[vowId]` — Shareable certificate page
+- `/witnessing` — All vows you're witnessing (overflow from dashboard)
+- `/cast` — Dare creation page
+- `/quick-vow` — Returning-user power flow
+- `/_dev/primitives` — Primitives storybook (dev only)
