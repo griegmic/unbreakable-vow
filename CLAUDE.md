@@ -203,3 +203,23 @@ Challenge: challenge_status: pending → accepted | declined
 - `/cast` — Dare creation page
 - `/quick-vow` — Returning-user power flow
 - `/_dev/primitives` — Primitives storybook (dev only)
+
+## Permanent Project Rules
+
+### No raw Pressable outside primitives (Expo)
+- No `Pressable`, `TouchableOpacity`, or `TouchableHighlight` may appear in `/expo/app/` screen files.
+- All interactive elements in screens must use primitive components from `/expo/components/primitives/` which wrap haptics internally.
+- Exception list (must be justified in code comments): none currently.
+- CI enforcement: `grep -r "Pressable\|TouchableOpacity\|TouchableHighlight" expo/app/` must return zero hits outside of comments.
+- If a screen needs a custom interactive element, build it as a primitive first.
+
+### Haptics go through typed wrappers only (Expo)
+- No file outside `/expo/lib/haptics.ts` may import `expo-haptics` directly.
+- All haptic feedback uses the typed wrappers in `expo/lib/haptics.ts`.
+- CI enforcement: `grep -r "from 'expo-haptics'" expo/ --include="*.ts" --include="*.tsx" | grep -v "lib/haptics.ts"` must return zero hits.
+
+### Token values live in exactly two places
+- Web: `/web/src/app/globals.css` (CSS custom properties)
+- Expo: `/expo/lib/uv-tokens.ts` (TypeScript constants)
+- No hardcoded hex values anywhere else. `grep -rE "#[0-9a-fA-F]{6}" expo/app/ expo/components/ web/src/app/ web/src/components/ --include="*.ts" --include="*.tsx"` should return zero hits outside token files, test files, and SVG markup.
+- Run `node scripts/verify-token-parity.js` to verify web/expo parity.
