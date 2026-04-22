@@ -87,7 +87,7 @@ export async function setupPaymentSheetForSetup(clientSecret: string): Promise<v
     setupIntentClientSecret: clientSecret, // SetupIntent, not PaymentIntent
     merchantDisplayName: 'Unbreakable Vow',
     style: 'alwaysDark',
-    applePay: { merchantCountryCode: 'US' },
+    primaryButtonLabel: 'Save card',
     googlePay: { merchantCountryCode: 'US', testEnv: false },
     defaultBillingDetails: { address: { country: 'US' } },
   });

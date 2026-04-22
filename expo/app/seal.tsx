@@ -76,10 +76,10 @@ export default function SealScreen() {
   }, [hasWitnessPhone, displayName, vow.stake.amount, activeVowText]);
 
   const sealLabel = loading
-    ? 'Processing...'
-    : hasWitnessPhone
-      ? `Seal & text ${vow.witnessName}`
-      : 'Seal this vow';
+    ? 'Sealing...'
+    : vow.stake.amount > 0
+      ? `Seal my vow — $${vow.stake.amount}`
+      : 'Seal my vow';
 
   const registerPush = useCallback(async () => {
     try {
@@ -405,7 +405,7 @@ export default function SealScreen() {
         <View style={styles.smsPreviewCard}>
           <Pressable onPress={() => setSmsExpanded(!smsExpanded)} style={styles.smsPreviewRow}>
             <Text style={styles.smsPreviewSummary}>
-              {vow.witnessName} will get a text with your vow and a link to accept
+              We'll text {vow.witnessName} your vow and a link to accept
             </Text>
             <Text style={styles.smsExpandToggle}>{smsExpanded ? 'Hide' : 'Preview'}</Text>
           </Pressable>
@@ -424,7 +424,8 @@ export default function SealScreen() {
 
       {!sealed && vow.stake.amount > 0 ? (
         <View style={styles.oathPassive}>
-          <Text style={styles.paymentNote}>You'll authorize a hold — released if you keep your vow.</Text>
+          <Text style={styles.paymentReassure}>Keep your word, get every cent back</Text>
+          <Text style={styles.paymentNote}>No charge unless you break your vow</Text>
         </View>
       ) : null}
 
@@ -521,9 +522,15 @@ const styles = StyleSheet.create({
     fontFamily: serifFont,
     fontStyle: 'italic' as const,
   },
+  paymentReassure: {
+    color: palette.success,
+    fontSize: 13,
+    fontWeight: '600' as const,
+    textAlign: 'center' as const,
+  },
   paymentNote: {
     color: palette.textMuted,
-    fontSize: 12,
+    fontSize: 11,
     textAlign: 'center' as const,
   },
   verdictNote: {
