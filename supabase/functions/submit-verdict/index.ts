@@ -1,6 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
-import { outcomeMessage } from '../_shared/sms-templates.ts';
+import { outcomeMessage, makerOutcomeMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
@@ -262,6 +262,27 @@ Deno.serve(async (req) => {
       } catch (smsErr) {
         console.error('Outcome SMS failed:', smsErr);
       }
+    }
+
+    // SMS to maker: outcome notification
+    try {
+      const { data: makerUser } = await supabase
+        .from('users')
+        .select('phone')
+        .eq('id', keeperId)
+        .single();
+      if (makerUser?.phone) {
+        const amtDollars = Math.round(vow.stake_amount / 100);
+        const makerBody = makerOutcomeMessage(verdict, amtDollars, vow.destination);
+        const sid = await sendSMS(makerUser.phone, makerBody);
+        await supabase.from('sms_log').insert({
+          vow_id: vow.id,
+          message_type: 'maker_outcome',
+          twilio_sid: sid,
+        });
+      }
+    } catch (smsErr) {
+      console.error('[submit-verdict] Maker outcome SMS failed:', smsErr);
     }
 
     // Queue push notification to challenger/maker

@@ -1,6 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
-import { sealMessage, challengeMessage } from '../_shared/sms-templates.ts';
+import { sealMessage, challengeMessage, makerSealConfirmMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
@@ -283,6 +283,27 @@ Deno.serve(async (req) => {
       data: { route: '/live', vow_id, event: 'vow_sealed' },
       send_after: now,
     });
+
+    // SMS to maker confirming vow is sealed
+    try {
+      const { data: makerUser } = await supabase
+        .from('users')
+        .select('phone')
+        .eq('id', user.id)
+        .single();
+      if (makerUser?.phone) {
+        const sealConfirmBody = makerSealConfirmMessage();
+        const sid = await sendSMS(makerUser.phone, sealConfirmBody);
+        await supabase.from('sms_log').insert({
+          vow_id,
+          message_type: 'maker_seal_confirm',
+          twilio_sid: sid,
+        });
+      }
+    } catch (smsErr) {
+      console.error('[seal-vow] maker seal confirm SMS failed:', smsErr);
+      // Non-critical — don't block the seal response
+    }
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

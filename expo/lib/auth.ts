@@ -189,9 +189,9 @@ export async function verifyPhoneOtp(phone: string, code: string): Promise<AuthR
       return { success: false, error: 'No user returned' };
     }
 
-    // Upsert user profile
+    // Upsert user profile — save phone number for SMS notifications
     const { error: upsertError } = await supabase.from('users').upsert(
-      { id: user.id, display_name: e164 },
+      { id: user.id, display_name: e164, phone: e164 },
       { onConflict: 'id' }
     );
     if (upsertError) {

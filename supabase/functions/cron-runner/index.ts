@@ -1,6 +1,11 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
-import { sealMessage, witnessReminderMessage, warmupMessage, verdictRequestMessage, outcomeMessage, challengeMessage } from '../_shared/sms-templates.ts';
+import {
+  sealMessage, witnessReminderMessage, warmupMessage, verdictRequestMessage,
+  outcomeMessage, challengeMessage,
+  witnessMidpointMessage, witness24hMessage,
+  makerMidpointMessage, maker24hMessage, makerVerdictTimeMessage, makerOutcomeMessage,
+} from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
@@ -38,7 +43,7 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const now = new Date();
-  const results: Record<string, unknown> = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, sms_retry: 0, refund_retry: 0, vow_lifecycle: 0, challenge_expire: 0, push: 0, errors: [] as string[] };
+  const results: Record<string, unknown> = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, sms_retry: 0, refund_retry: 0, vow_lifecycle: 0, challenge_expire: 0, push: 0, maker_sms: 0, witness_lifecycle_sms: 0, errors: [] as string[] };
 
   // For challenge vows, the "vow keeper" is target_user_id, not user_id
   const getVowKeeperId = (vow: { vow_type?: string; target_user_id?: string; user_id: string }) =>
@@ -539,6 +544,110 @@ Deno.serve(async (req) => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       results.errors.push(`vow_lifecycle: ${msg}`);
+    }
+
+    // === TASK 9: Maker + Witness lifecycle SMS ===
+    // Send SMS at key vow milestones to both maker and witness
+    try {
+      const { data: smsLifecycleVows } = await supabase
+        .from('vows')
+        .select('*')
+        .in('status', ['active', 'awaiting_verdict'])
+        .not('starts_at', 'is', null)
+        .not('ends_at', 'is', null);
+
+      for (const vow of smsLifecycleVows || []) {
+        const startsAt = new Date(vow.starts_at);
+        const endsAt = new Date(vow.ends_at);
+        const vowDurationMs = endsAt.getTime() - startsAt.getTime();
+        const midpoint = new Date((startsAt.getTime() + endsAt.getTime()) / 2);
+        const twentyFourBefore = new Date(endsAt.getTime() - 24 * 60 * 60 * 1000);
+
+        // Helper: check SMS already sent
+        async function smsAlreadySent(messageType: string): Promise<boolean> {
+          const { data: existing } = await supabase
+            .from('sms_log')
+            .select('id')
+            .eq('vow_id', vow.id)
+            .eq('message_type', messageType)
+            .limit(1)
+            .maybeSingle();
+          return !!existing;
+        }
+
+        const keeperId = getVowKeeperId(vow);
+
+        try {
+          // --- Maker midpoint SMS ---
+          if (vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
+            if (!(await smsAlreadySent('maker_midpoint'))) {
+              const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
+              if (makerUser?.phone) {
+                const body = makerMidpointMessage(vow.witness_name || null);
+                const sid = await sendSMS(makerUser.phone, body);
+                await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_midpoint', twilio_sid: sid });
+                results.maker_sms = (results.maker_sms as number) + 1;
+              }
+            }
+          }
+
+          // --- Maker 24h before SMS ---
+          if (twentyFourBefore > midpoint && now >= twentyFourBefore) {
+            if (!(await smsAlreadySent('maker_24h'))) {
+              const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
+              if (makerUser?.phone) {
+                const body = maker24hMessage();
+                const sid = await sendSMS(makerUser.phone, body);
+                await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_24h', twilio_sid: sid });
+                results.maker_sms = (results.maker_sms as number) + 1;
+              }
+            }
+          }
+
+          // --- Maker verdict time SMS ---
+          if (now >= endsAt) {
+            if (!(await smsAlreadySent('maker_verdict_time'))) {
+              const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
+              if (makerUser?.phone) {
+                const body = makerVerdictTimeMessage(vow.witness_name || null);
+                const sid = await sendSMS(makerUser.phone, body);
+                await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_verdict_time', twilio_sid: sid });
+                results.maker_sms = (results.maker_sms as number) + 1;
+              }
+            }
+          }
+
+          // --- Witness midpoint SMS ---
+          if (vow.witness_phone && vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
+            if (!(await smsAlreadySent('witness_midpoint'))) {
+              const { data: keeperProfile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
+              const keeperName = keeperProfile?.display_name || 'your friend';
+              const body = witnessMidpointMessage(keeperName);
+              const sid = await sendSMS(vow.witness_phone, body);
+              await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_midpoint', twilio_sid: sid });
+              results.witness_lifecycle_sms = (results.witness_lifecycle_sms as number) + 1;
+            }
+          }
+
+          // --- Witness 24h before SMS ---
+          if (vow.witness_phone && twentyFourBefore > midpoint && now >= twentyFourBefore) {
+            if (!(await smsAlreadySent('witness_24h'))) {
+              const { data: keeperProfile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
+              const keeperName = keeperProfile?.display_name || 'your friend';
+              const verdictUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}/verdict`;
+              const body = witness24hMessage(keeperName, verdictUrl);
+              const sid = await sendSMS(vow.witness_phone, body);
+              await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_24h', twilio_sid: sid });
+              results.witness_lifecycle_sms = (results.witness_lifecycle_sms as number) + 1;
+            }
+          }
+        } catch (err) {
+          results.errors.push(`sms_lifecycle ${vow.id}: ${err}`);
+        }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.errors.push(`sms_lifecycle: ${msg}`);
     }
 
     // === TASK 8: Expire unanswered challenge dares after 48h ===

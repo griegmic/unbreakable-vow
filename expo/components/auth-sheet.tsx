@@ -24,9 +24,9 @@ import {
   verifyPhoneOtp,
 } from '@/lib/auth';
 
-type AuthStep = 'pick' | 'phone' | 'phone-otp' | 'email' | 'email-otp';
+type AuthStep = 'pick' | 'phone-otp' | 'email' | 'email-otp';
 
-const SHEET_HEIGHT = 420;
+const SHEET_HEIGHT = 440;
 
 interface AuthSheetProps {
   visible: boolean;
@@ -44,10 +44,10 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
   const [cooldown, setCooldown] = useState(0);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const otpRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
   const fade = useRef(new Animated.Value(0)).current;
   const kbOffset = useRef(new Animated.Value(0)).current;
 
-  // Reset all state and animate in when becoming visible
   useEffect(() => {
     if (visible) {
       setStep('pick');
@@ -58,17 +58,17 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
       setEmail('');
       setCooldown(0);
       Animated.timing(fade, { toValue: 1, duration: 250, useNativeDriver: true }).start();
+      // Auto-focus phone input after animation
+      setTimeout(() => phoneRef.current?.focus(), 350);
     }
   }, [visible, fade]);
 
-  // Clean up cooldown interval on unmount
   useEffect(() => {
     return () => {
       if (cooldownRef.current) clearInterval(cooldownRef.current);
     };
   }, []);
 
-  // Track keyboard to shift sheet up
   useEffect(() => {
     const showEvt = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hideEvt = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
@@ -189,7 +189,6 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
     }
   }, [email, busy, startCooldownTimer]);
 
-  // Pass OTP value directly — no setTimeout needed, no stale state
   const verifyCode = useCallback(
     async (code: string) => {
       if (code.length < 6 || busy) return;
@@ -215,6 +214,7 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
   );
 
   const renderContent = () => {
+    // ─── OTP verification (phone or email) ───
     if (step === 'phone-otp' || step === 'email-otp') {
       const isPhone = step === 'phone-otp';
       const masked = isPhone
@@ -229,7 +229,7 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
         <View style={s.sheetInner}>
           <Pressable
             onPress={() => {
-              setStep(isPhone ? 'phone' : 'email');
+              setStep('pick');
               setOtp('');
               setError('');
             }}
@@ -237,8 +237,10 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
           >
             <ArrowLeft color={palette.textSecondary} size={16} />
           </Pressable>
-          <Text style={s.sheetTitle}>Enter the code</Text>
-          <Text style={s.sheetSubtitle}>Sent to {masked}</Text>
+          <Text style={s.sheetTitle}>Enter the code.</Text>
+          <Text style={s.sheetSubtitle}>
+            {isPhone ? `We texted a 6-digit code to ${masked}` : `Sent to ${masked}`}
+          </Text>
 
           <View style={s.otpContainer}>
             <TextInput
@@ -267,6 +269,10 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
             </View>
           </View>
 
+          {isPhone ? (
+            <Text style={s.autofillHint}>Auto-fills from your texts on iOS.</Text>
+          ) : null}
+
           {error ? <Text style={s.sheetError}>{error}</Text> : null}
 
           <Pressable
@@ -280,55 +286,14 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
             style={[s.resendBtn, cooldown > 0 && { opacity: 0.5 }]}
           >
             <Text style={s.resendText}>
-              {cooldown > 0 ? `Resend in ${cooldown}s` : "Didn't get the code? Resend"}
+              {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend code'}
             </Text>
           </Pressable>
         </View>
       );
     }
 
-    if (step === 'phone') {
-      return (
-        <View style={s.sheetInner}>
-          <Pressable onPress={() => { setStep('pick'); setError(''); }} style={s.sheetBackBtn}>
-            <ArrowLeft color={palette.textSecondary} size={16} />
-          </Pressable>
-          <Text style={s.sheetTitle}>Enter your number</Text>
-          <Text style={s.sheetSubtitle}>We'll text you a code.</Text>
-
-          <View style={s.phoneInputShell}>
-            <Text style={s.phonePrefix}>+1</Text>
-            <TextInput
-              style={s.phoneInput}
-              placeholder="(555) 123-4567"
-              placeholderTextColor={palette.textMuted}
-              keyboardType="phone-pad"
-              value={phone}
-              onChangeText={setPhone}
-              autoFocus
-              testID="seal-auth-phone-input"
-            />
-          </View>
-
-          {error ? <Text style={s.sheetError}>{error}</Text> : null}
-
-          <Pressable
-            onPress={handleSendPhone}
-            disabled={phone.replace(/\D/g, '').length < 10 || busy === 'phone'}
-            style={[
-              s.sheetPrimaryBtn,
-              (phone.replace(/\D/g, '').length < 10 || busy === 'phone') && s.sheetPrimaryBtnDisabled,
-            ]}
-            testID="seal-auth-send-otp"
-          >
-            <Text style={s.sheetPrimaryBtnText}>
-              {busy === 'phone' ? 'Sending...' : 'Send code'}
-            </Text>
-          </Pressable>
-        </View>
-      );
-    }
-
+    // ─── Email entry ───
     if (step === 'email') {
       return (
         <View style={s.sheetInner}>
@@ -373,39 +338,66 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
       );
     }
 
-    // pick step
+    // ─── Pick step — PHONE FIRST ───
     return (
       <View style={s.sheetInner}>
-        <Text style={s.sheetTitle}>Quick sign-in</Text>
-        <Text style={s.sheetSubtitle}>Verify your identity before money goes on the line.</Text>
+        <Text style={s.sheetTitle}>Almost done.</Text>
+        <Text style={s.sheetSubtitle}>Enter your number to seal.</Text>
 
-        <Pressable onPress={() => { setStep('email'); setError(''); }} style={s.authRow} testID="seal-auth-email">
-          <View style={s.authIcon}>
-            <Mail color={palette.text} size={16} />
-          </View>
-          <Text style={s.authRowLabel}>Continue with email</Text>
-          <MoveRight color={palette.textMuted} size={14} />
+        {/* Phone hero input */}
+        <View style={s.phoneHeroShell}>
+          <Text style={s.flagPrefix}>🇺🇸 +1</Text>
+          <TextInput
+            ref={phoneRef}
+            style={s.phoneHeroInput}
+            placeholder="(555) 867-5309"
+            placeholderTextColor={palette.textMuted}
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            testID="seal-auth-phone-input"
+          />
+        </View>
+
+        {/* Primary CTA */}
+        <Pressable
+          onPress={handleSendPhone}
+          disabled={phone.replace(/\D/g, '').length < 10 || busy === 'phone'}
+          style={[
+            s.sheetPrimaryBtn,
+            (phone.replace(/\D/g, '').length < 10 || busy === 'phone') && s.sheetPrimaryBtnDisabled,
+          ]}
+          testID="seal-auth-continue"
+        >
+          <Text style={s.sheetPrimaryBtnText}>
+            {busy === 'phone' ? 'Sending...' : 'Continue →'}
+          </Text>
         </Pressable>
 
-        <Pressable onPress={handleGoogle} style={s.authRow} testID="seal-auth-google">
-          <View style={s.authIcon}>
-            {busy === 'google' ? (
-              <ActivityIndicator size="small" color={palette.text} />
-            ) : (
-              <Text style={s.googleMark}>G</Text>
-            )}
-          </View>
-          <Text style={s.authRowLabel}>Continue with Google</Text>
-          <MoveRight color={palette.textMuted} size={14} />
-        </Pressable>
+        <Text style={s.reassurance}>We'll text you a code. No password ever.</Text>
 
-        <Pressable onPress={() => { setStep('phone'); setError(''); }} style={s.authRow} testID="seal-auth-phone">
-          <View style={s.authIcon}>
-            <Phone color={palette.text} size={16} />
-          </View>
-          <Text style={s.authRowLabel}>Continue with phone</Text>
-          <MoveRight color={palette.textMuted} size={14} />
-        </Pressable>
+        {/* Secondary options */}
+        <View style={s.secondaryDivider}>
+          <View style={s.secondaryDividerLine} />
+          <Text style={s.secondaryDividerText}>or</Text>
+          <View style={s.secondaryDividerLine} />
+        </View>
+
+        <View style={s.secondaryRow}>
+          {GOOGLE_SIGN_IN_AVAILABLE ? (
+            <Pressable onPress={handleGoogle} style={s.secondaryChip} testID="seal-auth-google">
+              {busy === 'google' ? (
+                <ActivityIndicator size="small" color={palette.text} />
+              ) : (
+                <Text style={s.secondaryChipLabel}>G  Google</Text>
+              )}
+            </Pressable>
+          ) : null}
+          <Pressable onPress={() => { setStep('email'); setError(''); }} style={s.secondaryChip} testID="seal-auth-email">
+            <Mail color={palette.textSecondary} size={13} />
+            <Text style={s.secondaryChipLabel}>Email</Text>
+          </Pressable>
+        </View>
 
         {error ? <Text style={s.sheetError}>{error}</Text> : null}
       </View>
@@ -470,7 +462,7 @@ const s = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 20,
-    gap: 14,
+    gap: 12,
   },
   sheetBackBtn: {
     width: 32,
@@ -485,8 +477,8 @@ const s = StyleSheet.create({
   },
   sheetTitle: {
     color: palette.text,
-    fontSize: 20,
-    fontWeight: '700' as const,
+    fontSize: 22,
+    fontWeight: '700',
     fontFamily: serifFont,
     letterSpacing: -0.3,
   },
@@ -494,43 +486,114 @@ const s = StyleSheet.create({
     color: palette.textSecondary,
     fontSize: 14,
     lineHeight: 20,
-    marginTop: -8,
+    marginTop: -6,
   },
   sheetError: {
     color: '#FF7B7B',
     fontSize: 13,
-    fontWeight: '500' as const,
-    textAlign: 'center' as const,
+    fontWeight: '500',
+    textAlign: 'center',
   },
-  authRow: {
+
+  // Phone hero input
+  phoneHeroShell: {
     flexDirection: 'row',
-    gap: 12,
     alignItems: 'center',
-    borderRadius: 14,
     backgroundColor: palette.surface,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: palette.border,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: palette.borderStrong,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    gap: 8,
   },
-  authIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: palette.surfaceStrong,
+  phoneHeroInput: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 18,
+    fontWeight: '600',
+    paddingVertical: 0,
+    letterSpacing: 0.3,
+  },
+  flagPrefix: {
+    color: palette.textSecondary,
+    fontSize: 15,
+    fontWeight: '600',
+  },
+
+  // Primary button
+  sheetPrimaryBtn: {
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: palette.goldBright,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  authRowLabel: {
+  sheetPrimaryBtnDisabled: {
+    backgroundColor: palette.surfaceStrong,
+  },
+  sheetPrimaryBtnText: {
+    color: '#0B0D11',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+
+  // Reassurance
+  reassurance: {
+    color: palette.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
+    marginTop: -4,
+  },
+
+  // Secondary divider
+  secondaryDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  secondaryDividerLine: {
     flex: 1,
-    color: palette.text,
-    fontSize: 14,
-    fontWeight: '600' as const,
+    height: 1,
+    backgroundColor: palette.border,
   },
-  googleMark: {
-    color: palette.text,
-    fontSize: 16,
-    fontWeight: '800' as const,
+  secondaryDividerText: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '500',
   },
+
+  // Secondary chips
+  secondaryRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  secondaryChip: {
+    flex: 1,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  secondaryChipLabel: {
+    color: palette.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Autofill hint
+  autofillHint: {
+    color: palette.textMuted,
+    fontSize: 11,
+    textAlign: 'center',
+  },
+
+  // Legacy styles kept for email/OTP screens
   phoneInputShell: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -542,32 +605,11 @@ const s = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
   },
-  phonePrefix: {
-    color: palette.textSecondary,
-    fontSize: 16,
-    fontWeight: '600' as const,
-  },
   phoneInput: {
     flex: 1,
     color: palette.text,
     fontSize: 16,
     paddingVertical: 0,
-  },
-  sheetPrimaryBtn: {
-    minHeight: 48,
-    borderRadius: 14,
-    backgroundColor: palette.goldBright,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 4,
-  },
-  sheetPrimaryBtnDisabled: {
-    backgroundColor: palette.surfaceStrong,
-  },
-  sheetPrimaryBtnText: {
-    color: '#0B0D11',
-    fontSize: 15,
-    fontWeight: '700' as const,
   },
   otpContainer: {
     position: 'relative',
@@ -601,14 +643,15 @@ const s = StyleSheet.create({
   otpDigit: {
     color: palette.text,
     fontSize: 22,
-    fontWeight: '700' as const,
+    fontWeight: '700',
   },
   resendBtn: {
     alignItems: 'center',
     paddingVertical: 6,
   },
   resendText: {
-    color: palette.textMuted,
+    color: palette.goldBright,
     fontSize: 12,
+    fontWeight: '600',
   },
 });

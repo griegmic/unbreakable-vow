@@ -1,12 +1,12 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Mail, MoveRight, Phone, SkipForward } from 'lucide-react-native';
+import { ArrowLeft, Mail, MoveRight, SkipForward } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
-import { BackButton, PrimaryButton, RitualScreen, TitleBlock, VowPreview } from '@/components/vow-ui';
-import { palette } from '@/constants/unbreakable';
+import { BackButton, PrimaryButton, RitualScreen, TitleBlock } from '@/components/vow-ui';
+import { palette, serifFont } from '@/constants/unbreakable';
 import { type AuthResult, GOOGLE_SIGN_IN_AVAILABLE, sendEmailOtp, sendPhoneOtp, signInWithGoogle, verifyEmailOtp, verifyPhoneOtp } from '@/lib/auth';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -16,7 +16,7 @@ const IS_EXPO_GO = Constants.appOwnership === 'expo';
 type AuthMode = 'pick' | 'phone' | 'otp' | 'email' | 'email-otp';
 
 export default function AuthScreen() {
-  const { activeVowText } = useVowFlow();
+  const { activeVowText, vow } = useVowFlow();
   const [loading, setLoading] = useState<string | null>(null);
   const [mode, setMode] = useState<AuthMode>('pick');
   const [phone, setPhone] = useState('');
@@ -61,7 +61,7 @@ export default function AuthScreen() {
     if (!GOOGLE_SIGN_IN_AVAILABLE) {
       Alert.alert(
         'Not available here',
-        'Google Sign-In is not available in this environment. Use email or phone to sign in.',
+        'Google Sign-In is not available in this environment. Use phone or email to sign in.',
       );
       return;
     }
@@ -80,11 +80,6 @@ export default function AuthScreen() {
     }
 
     setLoading(null);
-  };
-
-  const handleApple = () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    Alert.alert('Coming soon', 'Apple Sign-In will be available shortly.');
   };
 
   const handleSendOtp = async () => {
@@ -167,6 +162,17 @@ export default function AuthScreen() {
     }
   };
 
+  // Build vow context string for preview
+  const vowContext = (() => {
+    const text = activeVowText || vow?.rawInput || '';
+    if (!text) return '';
+    const truncated = text.length > 40 ? text.slice(0, 37) + '...' : text;
+    const witness = vow?.witnessName && vow.witnessName !== 'Just me'
+      ? ` · ${vow.witnessName} is watching`
+      : '';
+    return `"${truncated}"${witness}`;
+  })();
+
   // ─── Email OTP entry screen ───
   if (mode === 'email-otp') {
     const maskedEmail = email.length > 5
@@ -192,7 +198,7 @@ export default function AuthScreen() {
           <ArrowLeft color={palette.textSecondary} size={18} />
         </Pressable>
         <TitleBlock
-          title="Enter the code"
+          title="Enter the code."
           subtitle={`We sent a 6-digit code to ${maskedEmail}`}
         />
 
@@ -223,7 +229,7 @@ export default function AuthScreen() {
           </View>
         </View>
 
-        <Text style={styles.phoneDisclaimer}>
+        <Text style={styles.autofillHint}>
           Check your inbox (and spam folder) for the code.
         </Text>
 
@@ -238,16 +244,20 @@ export default function AuthScreen() {
           testID="auth-resend-email-otp"
         >
           <Text style={styles.resendText}>
-            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Didn't get the code? Resend"}
+            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
           </Text>
+        </Pressable>
+
+        <Pressable onPress={() => { setMode('pick'); setOtp(''); setEmail(''); }} style={styles.switchLink}>
+          <Text style={styles.switchLinkText}>Use a different method</Text>
         </Pressable>
       </RitualScreen>
     );
   }
 
-  // ─── OTP entry screen ───
+  // ─── Phone OTP entry screen ───
   if (mode === 'otp') {
-    const maskedPhone = phone.length >= 4 ? `···${phone.slice(-4)}` : phone;
+    const maskedPhone = phone.length >= 4 ? `(${phone.slice(-4).slice(0, 3)}) ···-${phone.slice(-4)}` : phone;
     return (
       <RitualScreen
         footer={
@@ -261,15 +271,15 @@ export default function AuthScreen() {
       >
         <Stack.Screen options={{ headerShown: false }} />
         <Pressable
-          onPress={() => { setMode('phone'); setOtp(''); }}
+          onPress={() => { setMode('pick'); setOtp(''); }}
           style={styles.backBtn}
           testID="auth-otp-back"
         >
           <ArrowLeft color={palette.textSecondary} size={18} />
         </Pressable>
         <TitleBlock
-          title="Enter the code"
-          subtitle={`We sent a 6-digit code to ${maskedPhone}`}
+          title="Enter the code."
+          subtitle={`We texted a 6-digit code to ${maskedPhone}`}
         />
 
         <View style={styles.otpContainer}>
@@ -281,7 +291,6 @@ export default function AuthScreen() {
               const cleaned = text.replace(/\D/g, '').slice(0, 6);
               setOtp(cleaned);
               if (cleaned.length === 6) {
-                // Auto-submit
                 setTimeout(() => handleVerifyOtp(), 100);
               }
             }}
@@ -300,6 +309,10 @@ export default function AuthScreen() {
           </View>
         </View>
 
+        <Text style={styles.autofillHint}>
+          Auto-fills from your texts on iOS.
+        </Text>
+
         <Pressable
           onPress={() => {
             if (resendCooldown > 0) return;
@@ -311,56 +324,13 @@ export default function AuthScreen() {
           testID="auth-resend-otp"
         >
           <Text style={styles.resendText}>
-            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : "Didn't get the code? Resend"}
+            {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
           </Text>
         </Pressable>
-      </RitualScreen>
-    );
-  }
 
-  // ─── Phone number entry screen ───
-  if (mode === 'phone') {
-    return (
-      <RitualScreen
-        footer={
-          <PrimaryButton
-            label={loading === 'phone' ? 'Sending...' : 'Send code'}
-            onPress={handleSendOtp}
-            disabled={phone.replace(/\D/g, '').length < 10 || loading === 'phone'}
-            testID="auth-send-otp"
-          />
-        }
-      >
-        <Stack.Screen options={{ headerShown: false }} />
-        <Pressable
-          onPress={() => setMode('pick')}
-          style={styles.backBtn}
-          testID="auth-phone-back"
-        >
-          <ArrowLeft color={palette.textSecondary} size={18} />
+        <Pressable onPress={() => { setMode('pick'); setOtp(''); }} style={styles.switchLink}>
+          <Text style={styles.switchLinkText}>Use a different number</Text>
         </Pressable>
-        <TitleBlock
-          title="Enter your number"
-          subtitle="We'll text you a code to verify it's you."
-        />
-
-        <View style={styles.phoneInputShell}>
-          <Text style={styles.phonePrefix}>+1</Text>
-          <TextInput
-            style={styles.phoneInput}
-            placeholder="(555) 123-4567"
-            placeholderTextColor={palette.textMuted}
-            keyboardType="phone-pad"
-            value={phone}
-            onChangeText={setPhone}
-            autoFocus
-            testID="auth-phone-input"
-          />
-        </View>
-
-        <Text style={styles.phoneDisclaimer}>
-          Standard message rates may apply. We'll only use this to verify your identity.
-        </Text>
       </RitualScreen>
     );
   }
@@ -388,7 +358,7 @@ export default function AuthScreen() {
         </Pressable>
         <TitleBlock
           title="Enter your email"
-          subtitle="We'll send you a 6-digit code to verify it's you."
+          subtitle="We'll send you a 6-digit code."
         />
 
         <View style={styles.phoneInputShell}>
@@ -408,59 +378,135 @@ export default function AuthScreen() {
           />
         </View>
 
-        <Text style={styles.phoneDisclaimer}>
+        <Text style={styles.autofillHint}>
           We'll only use this to verify your identity.
         </Text>
       </RitualScreen>
     );
   }
 
-  // ─── Auth method picker (default) ───
+  // ─── Phone entry screen (separate mode, accessed from "phone" mode) ───
+  if (mode === 'phone') {
+    return (
+      <RitualScreen
+        footer={
+          <PrimaryButton
+            label={loading === 'phone' ? 'Sending...' : 'Send code'}
+            onPress={handleSendOtp}
+            disabled={phone.replace(/\D/g, '').length < 10 || loading === 'phone'}
+            testID="auth-send-otp"
+          />
+        }
+      >
+        <Stack.Screen options={{ headerShown: false }} />
+        <Pressable
+          onPress={() => setMode('pick')}
+          style={styles.backBtn}
+          testID="auth-phone-back"
+        >
+          <ArrowLeft color={palette.textSecondary} size={18} />
+        </Pressable>
+        <TitleBlock
+          title="Enter your number"
+          subtitle="We'll text you a code. No password ever."
+        />
+
+        <View style={styles.phoneInputShell}>
+          <Text style={styles.flagPrefix}>🇺🇸 +1</Text>
+          <TextInput
+            style={styles.phoneInput}
+            placeholder="(555) 867-5309"
+            placeholderTextColor={palette.textMuted}
+            keyboardType="phone-pad"
+            value={phone}
+            onChangeText={setPhone}
+            autoFocus
+            testID="auth-phone-input"
+          />
+        </View>
+
+        <Text style={styles.autofillHint}>
+          We'll text you a code. No password ever.
+        </Text>
+      </RitualScreen>
+    );
+  }
+
+  // ─── Auth method picker (default) — PHONE FIRST ───
   return (
     <RitualScreen>
       <Stack.Screen options={{ headerShown: false }} />
       <BackButton />
+
       <TitleBlock
-        title="Sign in to seal your vow"
-        subtitle="Quick verification before your money goes on the line."
+        title="Almost done."
+        subtitle="Enter your number to seal your vow."
       />
-      <VowPreview text={activeVowText} compact />
 
-      <Pressable onPress={() => setMode('email')} style={styles.authRow} testID="auth-email">
-        <View style={styles.authIcon}>
-          <Mail color={palette.text} size={18} />
+      {/* Vow context preview */}
+      {vowContext ? (
+        <View style={styles.vowPreviewCard}>
+          <View style={styles.vowPreviewAccent} />
+          <Text style={styles.vowPreviewText}>{vowContext}</Text>
         </View>
-        <Text style={styles.authTitle}>Continue with email</Text>
-        <MoveRight color={palette.textMuted} size={16} />
-      </Pressable>
+      ) : null}
 
-      <Pressable onPress={handleGoogle} style={styles.authRow} testID="auth-google">
-        <View style={styles.authIcon}>
-          {loading === 'google' ? (
-            <ActivityIndicator size="small" color={palette.text} />
-          ) : (
-            <Text style={styles.googleMark}>G</Text>
-          )}
-        </View>
-        <Text style={styles.authTitle}>Continue with Google</Text>
-        <MoveRight color={palette.textMuted} size={16} />
-      </Pressable>
+      {/* Phone number — hero input */}
+      <View style={styles.phoneHeroShell}>
+        <Text style={styles.flagPrefix}>🇺🇸 +1</Text>
+        <TextInput
+          style={styles.phoneHeroInput}
+          placeholder="(555) 867-5309"
+          placeholderTextColor={palette.textMuted}
+          keyboardType="phone-pad"
+          value={phone}
+          onChangeText={setPhone}
+          autoFocus
+          testID="auth-phone-input-hero"
+        />
+      </View>
 
-      <Pressable onPress={() => setMode('phone')} style={styles.authRow} testID="auth-phone">
-        <View style={styles.authIcon}>
-          <Phone color={palette.text} size={18} />
-        </View>
-        <Text style={styles.authTitle}>Continue with phone</Text>
-        <MoveRight color={palette.textMuted} size={16} />
-      </Pressable>
+      {/* Primary CTA */}
+      <PrimaryButton
+        label={loading === 'phone' ? 'Sending...' : 'Continue →'}
+        onPress={handleSendOtp}
+        disabled={phone.replace(/\D/g, '').length < 10 || loading === 'phone'}
+        testID="auth-continue"
+      />
 
-      <Pressable onPress={handleApple} style={[styles.authRow, styles.authRowDisabled]} testID="auth-apple">
-        <View style={styles.authIcon}>
-          <Text style={styles.appleMark}>{"\uF8FF"}</Text>
-        </View>
-        <Text style={styles.authTitle}>Continue with Apple</Text>
-        <Text style={styles.soonBadge}>SOON</Text>
-      </Pressable>
+      <Text style={styles.reassurance}>
+        We'll text you a code. No password ever.
+      </Text>
+
+      {/* Divider */}
+      <View style={styles.divider}>
+        <View style={styles.dividerLine} />
+        <Text style={styles.dividerText}>other ways to sign in</Text>
+        <View style={styles.dividerLine} />
+      </View>
+
+      {/* Secondary auth options — compact row */}
+      <View style={styles.secondaryRow}>
+        {GOOGLE_SIGN_IN_AVAILABLE ? (
+          <Pressable onPress={handleGoogle} style={styles.secondaryBtn} testID="auth-google">
+            {loading === 'google' ? (
+              <ActivityIndicator size="small" color={palette.text} />
+            ) : (
+              <Text style={styles.secondaryBtnLabel}>G  Google</Text>
+            )}
+          </Pressable>
+        ) : null}
+
+        <Pressable onPress={() => setMode('email')} style={styles.secondaryBtn} testID="auth-email">
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Mail color={palette.textSecondary} size={14} />
+            <Text style={styles.secondaryBtnLabel}>Email</Text>
+          </View>
+        </Pressable>
+      </View>
+
+      {/* Social proof */}
+      <Text style={styles.socialProof}>✦ 847 vows sealed this month</Text>
 
       {IS_EXPO_GO ? (
         <Pressable
@@ -468,16 +514,13 @@ export default function AuthScreen() {
             void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             router.push('/seal');
           }}
-          style={[styles.authRow, styles.devSkipRow]}
+          style={[styles.devSkipRow]}
           testID="auth-dev-skip"
         >
-          <View style={[styles.authIcon, styles.devSkipIcon]}>
-            <SkipForward color={palette.goldBright} size={18} />
+          <View style={styles.devSkipIcon}>
+            <SkipForward color={palette.goldBright} size={14} />
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.authTitle}>Skip auth (Expo Go)</Text>
-            <Text style={styles.devSkipHint}>Dev only — bypasses sign-in to test the rest of the flow</Text>
-          </View>
+          <Text style={styles.devSkipText}>Skip auth (Expo Go)</Text>
         </Pressable>
       ) : null}
     </RitualScreen>
@@ -485,67 +528,7 @@ export default function AuthScreen() {
 }
 
 const styles = StyleSheet.create({
-  authRow: {
-    flexDirection: 'row',
-    gap: 14,
-    alignItems: 'center',
-    borderRadius: 16,
-    backgroundColor: palette.surface,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: palette.border,
-  },
-  authRowDisabled: {
-    opacity: 0.45,
-  },
-  devSkipRow: {
-    borderColor: 'rgba(212,162,79,0.25)',
-    borderStyle: 'dashed' as const,
-  },
-  devSkipIcon: {
-    backgroundColor: 'rgba(212,162,79,0.12)',
-  },
-  devSkipHint: {
-    color: palette.textMuted,
-    fontSize: 12,
-    marginTop: 2,
-  },
-  authIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 14,
-    backgroundColor: palette.surfaceStrong,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  authTitle: {
-    flex: 1,
-    color: palette.text,
-    fontSize: 15,
-    fontWeight: '600' as const,
-  },
-  googleMark: {
-    color: palette.text,
-    fontSize: 18,
-    fontWeight: '800' as const,
-  },
-  appleMark: {
-    color: palette.text,
-    fontSize: 20,
-  },
-  soonBadge: {
-    color: palette.goldBright,
-    fontSize: 9,
-    fontWeight: '700' as const,
-    letterSpacing: 0.6,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-    borderRadius: 5,
-    backgroundColor: 'rgba(212,162,79,0.12)',
-    borderWidth: 1,
-    borderColor: 'rgba(212,162,79,0.18)',
-    overflow: 'hidden',
-  },
+  // Back button
   backBtn: {
     width: 36,
     height: 36,
@@ -557,7 +540,144 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'flex-start',
   },
-  // Phone input
+
+  // Vow context preview
+  vowPreviewCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: 14,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  vowPreviewAccent: {
+    width: 3,
+    height: 20,
+    borderRadius: 2,
+    backgroundColor: palette.gold,
+  },
+  vowPreviewText: {
+    flex: 1,
+    color: palette.textSecondary,
+    fontSize: 14,
+    fontFamily: serifFont,
+    fontStyle: 'italic',
+    lineHeight: 20,
+  },
+
+  // Phone hero input (main picker screen)
+  phoneHeroShell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: palette.surface,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: palette.borderStrong,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    gap: 10,
+  },
+  phoneHeroInput: {
+    flex: 1,
+    color: palette.text,
+    fontSize: 20,
+    fontWeight: '600',
+    paddingVertical: 0,
+    letterSpacing: 0.5,
+  },
+  flagPrefix: {
+    color: palette.textSecondary,
+    fontSize: 16,
+    fontWeight: '600',
+  },
+
+  // Reassurance copy
+  reassurance: {
+    color: palette.textMuted,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: -4,
+  },
+
+  // Divider
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginVertical: 4,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: palette.border,
+  },
+  dividerText: {
+    color: palette.textMuted,
+    fontSize: 11,
+    fontWeight: '500',
+    letterSpacing: 0.3,
+  },
+
+  // Secondary auth row
+  secondaryRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  secondaryBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: palette.surface,
+    borderWidth: 1,
+    borderColor: palette.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  secondaryBtnLabel: {
+    color: palette.textSecondary,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Social proof
+  socialProof: {
+    color: palette.textMuted,
+    fontSize: 12,
+    textAlign: 'center',
+    opacity: 0.7,
+    letterSpacing: 0.2,
+  },
+
+  // Dev skip
+  devSkipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212,162,79,0.25)',
+    borderStyle: 'dashed',
+  },
+  devSkipIcon: {
+    width: 28,
+    height: 28,
+    borderRadius: 8,
+    backgroundColor: 'rgba(212,162,79,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  devSkipText: {
+    color: palette.textMuted,
+    fontSize: 12,
+  },
+
+  // Phone input (secondary screens)
   phoneInputShell: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -569,24 +689,22 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     gap: 8,
   },
-  phonePrefix: {
-    color: palette.textSecondary,
-    fontSize: 17,
-    fontWeight: '600' as const,
-  },
   phoneInput: {
     flex: 1,
     color: palette.text,
     fontSize: 17,
     paddingVertical: 0,
   },
-  phoneDisclaimer: {
+
+  // Hint text
+  autofillHint: {
     color: palette.textMuted,
     fontSize: 12,
-    textAlign: 'center' as const,
+    textAlign: 'center',
     lineHeight: 18,
     paddingHorizontal: 20,
   },
+
   // OTP input
   otpContainer: {
     position: 'relative',
@@ -620,14 +738,27 @@ const styles = StyleSheet.create({
   otpDigit: {
     color: palette.text,
     fontSize: 24,
-    fontWeight: '700' as const,
+    fontWeight: '700',
   },
+
+  // Resend
   resendBtn: {
     alignItems: 'center',
     paddingVertical: 8,
   },
   resendText: {
-    color: palette.textMuted,
+    color: palette.goldBright,
     fontSize: 13,
+    fontWeight: '600',
+  },
+
+  // Switch link
+  switchLink: {
+    alignItems: 'center',
+    paddingVertical: 4,
+  },
+  switchLinkText: {
+    color: palette.textMuted,
+    fontSize: 12,
   },
 });

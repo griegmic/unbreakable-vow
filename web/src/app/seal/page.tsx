@@ -47,6 +47,11 @@ export default function SealPage() {
   const [phone, setPhone] = useState('');
   const [phoneBusy, setPhoneBusy] = useState(false);
   const [phoneError, setPhoneError] = useState('');
+  const [phoneStep, setPhoneStep] = useState<'input' | 'otp'>('input');
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+  const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
@@ -388,7 +393,29 @@ export default function SealPage() {
     }
   }, []);
 
-  // ── Phone "Continue" handler ──
+  // ── Cooldown timer for OTP resend ──
+  const startCooldown = useCallback(() => {
+    setOtpCooldown(60);
+    if (cooldownRef.current) clearInterval(cooldownRef.current);
+    cooldownRef.current = setInterval(() => {
+      setOtpCooldown((c) => {
+        if (c <= 1) {
+          if (cooldownRef.current) clearInterval(cooldownRef.current);
+          return 0;
+        }
+        return c - 1;
+      });
+    }, 1000);
+  }, []);
+
+  // Clean up cooldown on unmount
+  useEffect(() => {
+    return () => {
+      if (cooldownRef.current) clearInterval(cooldownRef.current);
+    };
+  }, []);
+
+  // ── Phone "Continue" handler — send OTP ──
   const handlePhoneContinue = useCallback(async () => {
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 10) {
@@ -401,34 +428,125 @@ export default function SealPage() {
     // Check if already authenticated (auth may have loaded late)
     const { data: { session: existingSession } } = await supabase.auth.getSession();
     if (existingSession) {
-      // Already signed in — just reload the page to trigger the authenticated flow
       window.location.reload();
       return;
     }
 
-    const isLocal = typeof window !== 'undefined' && (
-      window.location.hostname === 'localhost' ||
-      window.location.hostname === '127.0.0.1'
-    );
+    const formattedPhone = `+1${digits}`;
+    const { error: otpError } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
+    setPhoneBusy(false);
 
-    if (isLocal) {
-      // Dev mode: show "sending code..." briefly, then trigger Google OAuth
-      await new Promise(r => setTimeout(r, 800));
-      triggerGoogleOAuth();
-    } else {
-      // Production: attempt phone OTP first, fall back to Google OAuth
-      const formattedPhone = `+1${digits}`;
-      const { error: otpError } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
-      if (otpError) {
-        console.warn('Phone OTP failed, falling back to Google OAuth:', otpError.message);
-        triggerGoogleOAuth();
+    if (otpError) {
+      console.warn('Phone OTP failed:', otpError.message);
+      if (otpError.message?.toLowerCase().includes('rate')) {
+        setPhoneError('Too many attempts. Please wait a minute and try again.');
       } else {
-        // OTP sent successfully — for now, fall through to Google OAuth
-        // (OTP verification UI can be added later)
-        triggerGoogleOAuth();
+        setPhoneError(otpError.message || 'Failed to send code. Please try again.');
       }
+      return;
     }
-  }, [phone, triggerGoogleOAuth]);
+
+    // OTP sent — show verification UI
+    startCooldown();
+    setOtp(['', '', '', '', '', '']);
+    setPhoneStep('otp');
+    setTimeout(() => otpRefs.current[0]?.focus(), 100);
+  }, [phone, startCooldown]);
+
+  // ── OTP verification ──
+  const handleVerifyOtp = useCallback(async (code?: string) => {
+    const codeStr = code || otp.join('');
+    if (codeStr.length !== 6 || phoneBusy) return;
+    setPhoneBusy(true);
+    setPhoneError('');
+
+    const digits = phone.replace(/\D/g, '');
+    const formattedPhone = `+1${digits}`;
+    const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      phone: formattedPhone,
+      token: codeStr,
+      type: 'sms',
+    });
+    setPhoneBusy(false);
+
+    if (verifyError) {
+      setPhoneError(verifyError.message?.includes('expired')
+        ? 'Code expired. Please request a new one.'
+        : 'Invalid code. Please try again.');
+      setOtp(['', '', '', '', '', '']);
+      return;
+    }
+
+    // Save phone to public.users
+    if (data.user) {
+      await supabase.from('users').upsert(
+        { id: data.user.id, display_name: formattedPhone, phone: formattedPhone },
+        { onConflict: 'id' },
+      );
+    }
+
+    // Auth success — trigger the seal flow
+    handleAuthSuccess();
+  }, [otp, phone, phoneBusy]);
+
+  // ── OTP input handlers ──
+  const handleOtpChange = useCallback((index: number, value: string) => {
+    const digit = value.replace(/\D/g, '').slice(-1);
+    setOtp((prev) => {
+      const next = [...prev];
+      next[index] = digit;
+      // Auto-submit when all 6 digits entered
+      if (digit && next.every(d => d !== '')) {
+        setTimeout(() => handleVerifyOtp(next.join('')), 50);
+      }
+      return next;
+    });
+    setPhoneError('');
+    if (digit && index < 5) {
+      otpRefs.current[index + 1]?.focus();
+    }
+  }, [handleVerifyOtp]);
+
+  const handleOtpKeyDown = useCallback((index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  }, [otp]);
+
+  const handleOtpPaste = useCallback((e: React.ClipboardEvent) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const digits = pasted.split('');
+    setOtp((prev) => {
+      const next = [...prev];
+      digits.forEach((d, i) => { next[i] = d; });
+      if (next.every(d => d !== '')) {
+        setTimeout(() => handleVerifyOtp(next.join('')), 50);
+      }
+      return next;
+    });
+    const focusIndex = Math.min(digits.length, 5);
+    otpRefs.current[focusIndex]?.focus();
+  }, [handleVerifyOtp]);
+
+  const handleResendOtp = useCallback(async () => {
+    if (otpCooldown > 0 || phoneBusy) return;
+    setPhoneBusy(true);
+    setPhoneError('');
+    const digits = phone.replace(/\D/g, '');
+    const { error } = await supabase.auth.signInWithOtp({ phone: `+1${digits}` });
+    setPhoneBusy(false);
+    if (error) {
+      setPhoneError(error.message?.toLowerCase().includes('rate')
+        ? 'Too many attempts. Please wait a minute.'
+        : error.message);
+      return;
+    }
+    startCooldown();
+    setOtp(['', '', '', '', '', '']);
+    setTimeout(() => otpRefs.current[0]?.focus(), 100);
+  }, [otpCooldown, phoneBusy, phone, startCooldown]);
 
   // ── Phone input handler with formatting ──
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -506,148 +624,240 @@ export default function SealPage() {
   if (!isAuthenticated && !authLoading) {
     return (
       <RitualScreen>
+        <style>{`
+          input:-webkit-autofill,
+          input:-webkit-autofill:hover,
+          input:-webkit-autofill:focus {
+            -webkit-box-shadow: 0 0 0 30px var(--uv-bg-input, #10141C) inset !important;
+            -webkit-text-fill-color: var(--uv-text, #F6F7FB) !important;
+            caret-color: var(--uv-text, #F6F7FB);
+          }
+        `}</style>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {/* Hero */}
           <h1 style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 26, fontWeight: 600,
             color: 'var(--uv-text)', margin: '0 0 6px', textAlign: 'center',
           }}>
-            Almost done.
+            {phoneStep === 'otp' ? 'Enter the code.' : 'Almost done.'}
           </h1>
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 14,
             color: 'var(--uv-text-muted)', margin: '0 0 24px', textAlign: 'center',
           }}>
-            Enter your number to seal.
+            {phoneStep === 'otp'
+              ? `We texted a 6-digit code to (${phone.slice(0,3)}) ${phone.slice(3,6)}-${phone.slice(6)}`
+              : 'Enter your number to seal.'}
           </p>
 
-          {/* Review card */}
-          <div style={{
-            background: 'var(--uv-bg-elev)',
-            border: '1px solid var(--uv-border-strong)',
-            borderRadius: 14,
-            padding: '16px 18px',
-            marginBottom: 20,
-          }}>
-            <span style={{
-              fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500,
-              letterSpacing: '2px', textTransform: 'uppercase',
-              color: 'var(--uv-text-faint)',
-            }}>
-              I VOW TO
-            </span>
-            <p style={{
-              fontFamily: 'var(--uv-font-serif)', fontSize: 18,
-              fontStyle: 'italic', color: 'var(--uv-text)',
-              margin: '6px 0 12px', lineHeight: 1.3,
-            }}>
-              {activeVowText}
-            </p>
-            <div style={{ height: 1, background: 'var(--uv-border-strong)', margin: '0 0 12px' }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <div>
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>STAKE</span>
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--uv-gold)' }}>${vow.stake.amount}</span>
+          {phoneStep === 'otp' ? (
+            /* ── OTP VERIFICATION ── */
+            <>
+              {/* 6-digit OTP input */}
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: 8 }} onPaste={handleOtpPaste}>
+                {otp.map((digit, i) => (
+                  <input
+                    key={i}
+                    ref={(el) => { otpRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={digit}
+                    onChange={(e) => handleOtpChange(i, e.target.value)}
+                    onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                    autoFocus={i === 0}
+                    style={{
+                      width: 48, height: 56, borderRadius: 12,
+                      textAlign: 'center', fontSize: 22, fontWeight: 700,
+                      backgroundColor: 'var(--uv-bg-input, #10141C)',
+                      border: `1.5px solid ${otp.filter(d => d).length === i ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
+                      color: 'var(--uv-text)',
+                      outline: 'none',
+                      caretColor: 'var(--uv-gold)',
+                    }}
+                  />
+                ))}
               </div>
-              <div>
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>JUDGE</span>
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{witnessName === 'TBD' || witnessName === 'Witness' ? 'You decide' : witnessName}</span>
-              </div>
-              <div>
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>BY</span>
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{deadlineLabel}</span>
-              </div>
-            </div>
-          </div>
 
-          {/* Phone input */}
-          <div
-            style={{
-              display: 'flex', alignItems: 'center',
-              background: 'var(--uv-bg-input)',
-              border: '1px solid var(--uv-border-strong)',
-              borderRadius: 14, padding: '0 16px',
-              transition: 'border-color 200ms',
-              marginBottom: 6,
-            }}
-          >
-            <span style={{
-              display: 'inline-flex', alignItems: 'center', gap: 4,
-              fontSize: 15, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-muted)',
-              paddingRight: 10, borderRight: '1px solid var(--uv-border-strong)',
-              marginRight: 10, whiteSpace: 'nowrap', userSelect: 'none',
-            }}>
-              <span role="img" aria-label="US flag">&#x1F1FA;&#x1F1F8;</span>
-              <span>+1</span>
-            </span>
-            <input
-              type="tel" inputMode="numeric" autoComplete="tel-national"
-              placeholder="(555) 867-5309"
-              value={formatPhoneDisplay(phone)}
-              onChange={handlePhoneChange}
-              onFocus={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-gold)'; }}
-              onBlur={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-border-strong)'; }}
-              style={{
-                flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                fontSize: 16, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
-                padding: '14px 0', WebkitAppearance: 'none',
-              }}
-            />
-          </div>
+              <p style={{
+                fontSize: 12, fontFamily: 'var(--uv-font-sans)',
+                color: 'var(--uv-text-faint)', textAlign: 'center', margin: '4px 0 16px',
+              }}>
+                Auto-fills from your texts on iOS.
+              </p>
 
-          {phoneError && (
-            <p style={{ fontSize: 13, color: 'var(--uv-danger)', margin: '4px 0 0', fontFamily: 'var(--uv-font-sans)' }}>{phoneError}</p>
+              {phoneError && (
+                <p style={{ fontSize: 13, color: 'var(--uv-danger)', margin: '0 0 8px', textAlign: 'center', fontFamily: 'var(--uv-font-sans)' }}>{phoneError}</p>
+              )}
+
+              {phoneBusy && (
+                <div style={{ display: 'flex', justifyContent: 'center', margin: '8px 0' }}>
+                  <div style={{ width: 20, height: 20, border: '2px solid var(--uv-gold)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                </div>
+              )}
+
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 16, margin: '8px 0' }}>
+                <button
+                  onClick={handleResendOtp}
+                  disabled={otpCooldown > 0 || phoneBusy}
+                  style={{
+                    background: 'none', border: 'none', cursor: otpCooldown > 0 ? 'default' : 'pointer',
+                    fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 600,
+                    color: otpCooldown > 0 ? 'var(--uv-text-faint)' : 'var(--uv-gold)',
+                    padding: '8px 0',
+                  }}
+                >
+                  {otpCooldown > 0 ? `Resend in ${otpCooldown}s` : 'Resend code'}
+                </button>
+              </div>
+
+              <button
+                onClick={() => { setPhoneStep('input'); setPhoneError(''); setOtp(['', '', '', '', '', '']); }}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+                  color: 'var(--uv-text-faint)', padding: '4px 0',
+                  textAlign: 'center',
+                }}
+              >
+                Use a different number
+              </button>
+
+              <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            </>
+          ) : (
+            /* ── PHONE INPUT ── */
+            <>
+              {/* Review card */}
+              <div style={{
+                background: 'var(--uv-bg-elev)',
+                border: '1px solid var(--uv-border-strong)',
+                borderRadius: 14,
+                padding: '16px 18px',
+                marginBottom: 20,
+              }}>
+                <span style={{
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500,
+                  letterSpacing: '2px', textTransform: 'uppercase',
+                  color: 'var(--uv-text-faint)',
+                }}>
+                  I VOW TO
+                </span>
+                <p style={{
+                  fontFamily: 'var(--uv-font-serif)', fontSize: 18,
+                  fontStyle: 'italic', color: 'var(--uv-text)',
+                  margin: '6px 0 12px', lineHeight: 1.3,
+                }}>
+                  {activeVowText}
+                </p>
+                <div style={{ height: 1, background: 'var(--uv-border-strong)', margin: '0 0 12px' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <div>
+                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>STAKE</span>
+                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--uv-gold)' }}>${vow.stake.amount}</span>
+                  </div>
+                  <div>
+                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>JUDGE</span>
+                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{witnessName === 'TBD' || witnessName === 'Witness' ? 'You decide' : witnessName}</span>
+                  </div>
+                  <div>
+                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>BY</span>
+                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{deadlineLabel}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Phone input */}
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  background: 'var(--uv-bg-input, #10141C)',
+                  border: '1px solid var(--uv-border-strong)',
+                  borderRadius: 14, padding: '0 16px',
+                  transition: 'border-color 200ms',
+                  marginBottom: 6,
+                }}
+              >
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 4,
+                  fontSize: 15, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-muted)',
+                  paddingRight: 10, borderRight: '1px solid var(--uv-border-strong)',
+                  marginRight: 10, whiteSpace: 'nowrap', userSelect: 'none',
+                }}>
+                  <span role="img" aria-label="US flag">&#x1F1FA;&#x1F1F8;</span>
+                  <span>+1</span>
+                </span>
+                <input
+                  type="tel" inputMode="numeric" autoComplete="tel-national"
+                  placeholder="(555) 867-5309"
+                  value={formatPhoneDisplay(phone)}
+                  onChange={handlePhoneChange}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handlePhoneContinue(); }}
+                  onFocus={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-gold)'; }}
+                  onBlur={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-border-strong)'; }}
+                  style={{
+                    flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                    fontSize: 16, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
+                    padding: '14px 0', WebkitAppearance: 'none',
+                  }}
+                />
+              </div>
+
+              {phoneError && (
+                <p style={{ fontSize: 13, color: 'var(--uv-danger)', margin: '4px 0 0', fontFamily: 'var(--uv-font-sans)' }}>{phoneError}</p>
+              )}
+
+              <p style={{
+                fontSize: 12, fontFamily: 'var(--uv-font-sans)',
+                color: 'var(--uv-text-faint)', margin: '4px 0 0',
+              }}>
+                We&apos;ll text you a code. No password ever.
+              </p>
+
+              {error && (
+                <div style={{ borderRadius: 10, padding: 12, backgroundColor: 'var(--uv-danger-bg)', marginTop: 12 }}>
+                  <p style={{ fontSize: 13, color: 'var(--uv-danger)', margin: 0 }}>{error}</p>
+                </div>
+              )}
+
+              {/* Trust lines */}
+              <p style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                color: '#6ee7a0', textAlign: 'center',
+                margin: '24px 0 4px',
+              }}>
+                Keep your word, get every cent back
+              </p>
+              <p style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 11,
+                color: 'var(--uv-text-faint)', textAlign: 'center',
+                margin: '0 0 16px',
+              }}>
+                No charge unless you break your vow
+              </p>
+
+              {/* Seal CTA */}
+              <PrimaryButton onClick={handlePhoneContinue} loading={phoneBusy}>
+                Seal my vow {vow.stake.amount > 0 ? `— $${vow.stake.amount}` : ''}
+              </PrimaryButton>
+
+              {/* Google fallback */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
+                <button
+                  onClick={triggerGoogleOAuth}
+                  disabled={phoneBusy}
+                  style={{
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+                    color: 'var(--uv-text-faint)', padding: '8px 0',
+                    opacity: phoneBusy ? 0.3 : 0.5,
+                  }}
+                >
+                  or sign in with Google
+                </button>
+              </div>
+            </>
           )}
-
-          <p style={{
-            fontSize: 12, fontFamily: 'var(--uv-font-sans)',
-            color: 'var(--uv-text-faint)', margin: '4px 0 0',
-          }}>
-            We&apos;ll text you a code. No password ever.
-          </p>
-
-          {error && (
-            <div style={{ borderRadius: 10, padding: 12, backgroundColor: 'var(--uv-danger-bg)', marginTop: 12 }}>
-              <p style={{ fontSize: 13, color: 'var(--uv-danger)', margin: 0 }}>{error}</p>
-            </div>
-          )}
-
-          {/* Trust lines — ABOVE the CTA (reassurance before commitment) */}
-          <p style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 13,
-            color: '#6ee7a0', textAlign: 'center',
-            margin: '24px 0 4px',
-          }}>
-            Keep your word, get every cent back
-          </p>
-          <p style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 11,
-            color: 'var(--uv-text-faint)', textAlign: 'center',
-            margin: '0 0 16px',
-          }}>
-            No charge unless you break your vow
-          </p>
-
-          {/* Seal CTA — tight under trust lines */}
-          <PrimaryButton onClick={handlePhoneContinue} loading={phoneBusy}>
-            Seal my vow — ${vow.stake.amount}
-          </PrimaryButton>
-
-          {/* Google fallback — tiny */}
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <button
-              onClick={triggerGoogleOAuth}
-              disabled={phoneBusy}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontFamily: 'var(--uv-font-sans)', fontSize: 12,
-                color: 'var(--uv-text-faint)', padding: '8px 0',
-                opacity: phoneBusy ? 0.3 : 0.5,
-              }}
-            >
-              or sign in with Google
-            </button>
-          </div>
         </div>
       </RitualScreen>
     );
