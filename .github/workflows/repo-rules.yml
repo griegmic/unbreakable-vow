@@ -1,0 +1,31 @@
+name: Repo Rules Enforcement
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  enforce-rules:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No raw Pressable in Expo screens
+        run: |
+          echo "Checking for raw Pressable/TouchableOpacity/TouchableHighlight in expo/app/..."
+          if grep -rn "Pressable\|TouchableOpacity\|TouchableHighlight" expo/app/ --include="*.ts" --include="*.tsx" | grep -v "^.*//.*Pressable" | grep -v "^.*//.*Touchable"; then
+            echo "FAIL: Raw Pressable found in expo/app/. Use primitives from expo/components/primitives/ instead."
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: No direct expo-haptics imports outside lib/haptics.ts
+        run: |
+          echo "Checking for direct expo-haptics imports..."
+          if grep -rn "from 'expo-haptics'" expo/ --include="*.ts" --include="*.tsx" | grep -v "lib/haptics.ts"; then
+            echo "FAIL: Direct expo-haptics import found. Use typed wrappers from expo/lib/haptics.ts."
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Token parity check
+        run: node scripts/verify-token-parity.js
