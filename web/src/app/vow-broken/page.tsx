@@ -1,12 +1,65 @@
 'use client';
-import { Suspense, useState } from 'react';
+import { Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { Card } from '@/components/uv/Card';
-import { HamburgerMenu } from '@/components/hamburger-menu';
-import { useAuth } from '@/providers/auth-provider';
+import { FrauncesH1, FrauncesSub, GoldCTA, RitualCard, Stamp } from '@/components/primitives';
 import { antiCauses } from '@/lib/vow-logic';
+
+/**
+ * Outcome screens — Vow Broken
+ *
+ * §5.3: Charity destination — broken seal, "You broke it.", "Make a new vow →"
+ * §5.4: Cause-you-hate — broken seal + red shield, "Brutal. You broke it.",
+ *        "Make a new vow — let's make this back →"
+ *
+ * Bier-audit: ONE gold primary CTA. No secondary. Forward motion only.
+ * KILLED: "View your record" — redemption is the only path.
+ *
+ * Tone: honest, not punishing. "Friend who witnessed you miss, acknowledging it."
+ * The product respects the user's decision and offers immediate forward motion.
+ *
+ * Canonical mocks: vow-broken-charity.html, vow-broken-cause-you-hate.html
+ */
+
+// ── Bespoke hero glyphs (swap-ready) ──
+
+function BrokenSealGlyph() {
+  return (
+    <div style={{
+      width: 80, height: 80, borderRadius: '50%',
+      background: 'radial-gradient(circle at 35% 30%, var(--uv-gold), var(--uv-gold-deep) 70%)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      opacity: 0.6,
+      boxShadow: '0 0 16px rgba(200,155,60,0.15)',
+      position: 'relative',
+    }}>
+      {/* Crack line */}
+      <div style={{
+        position: 'absolute', width: 2, height: 50, background: 'var(--uv-bg)',
+        transform: 'rotate(25deg)', borderRadius: 1,
+      }} />
+      <span style={{ color: 'var(--uv-text-on-gold)', fontSize: 28, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', position: 'relative' }}>UV</span>
+    </div>
+  );
+}
+
+function BrokenSealWithShield() {
+  return (
+    <div style={{ position: 'relative', width: 80, height: 80 }}>
+      <BrokenSealGlyph />
+      {/* Red shield overlay — double sting */}
+      <div style={{
+        position: 'absolute', bottom: -4, right: -4,
+        width: 28, height: 28, borderRadius: '50%',
+        background: 'var(--uv-danger)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        border: '3px solid var(--uv-bg)',
+        fontSize: 14,
+      }}>
+        <span>🛡️</span>
+      </div>
+    </div>
+  );
+}
 
 function isAntiCause(destination: string): boolean {
   return antiCauses.some(c => destination.toLowerCase().includes(c.toLowerCase()));
@@ -14,202 +67,103 @@ function isAntiCause(destination: string): boolean {
 
 function VowBrokenContent() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
   const params = useSearchParams();
+
+  // Data from URL params (existing pattern preserved)
   const vowText = params.get('text') || 'Your vow';
   const amount = params.get('amount') || '0';
   const destination = params.get('destination') || 'charity';
-  const witness = params.get('witness') || '';
-  const selfWitness = params.get('self') === '1';
-  const isZeroStake = !amount || amount === '0';
-  const antiCause = isAntiCause(destination);
-  const [copied, setCopied] = useState(false);
-
-  // Two variants based on anti-cause
-  const title = antiCause && !isZeroStake ? 'You played yourself.' : 'It happens.';
-  const subtitle = (() => {
-    if (antiCause && !isZeroStake) {
-      return `$${amount} just went to ${destination}. Time for a redemption arc.`;
-    }
-    if (!isZeroStake) {
-      return `$${amount} goes to ${destination}. Honesty noted.`;
-    }
-    return 'Broken. But you told the truth.';
-  })();
-
-  const getShareText = () => {
-    if (isZeroStake) {
-      return `I couldn't even keep a free vow: "${vowText}" -- unbreakablevow.app`;
-    }
-    if (antiCause) {
-      return `I broke my vow and $${amount} just went to ${destination}. Don't be me. -> unbreakablevow.app`;
-    }
-    return `I broke my vow: "${vowText}" -- $${amount} went to ${destination}. Could you do better? -> unbreakablevow.app`;
-  };
-
-  const handleShare = () => {
-    const text = getShareText();
-    if (navigator.share) {
-      navigator.share({ text }).catch(() => {});
-    } else {
-      navigator.clipboard?.writeText(text).then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      });
-    }
-  };
+  const witnessName = params.get('witness') || 'Your witness';
+  const stakeDollars = parseInt(amount) || 0;
+  const isAnti = isAntiCause(destination);
+  const isZeroStake = stakeDollars === 0;
 
   return (
-    <>
-      {isAuthenticated && (
-        <div style={{ position: 'fixed', top: 16, right: 16, zIndex: 50 }}>
-          <HamburgerMenu />
-        </div>
-      )}
-      <RitualScreen variant={antiCause ? 'anti-cause-broken' : 'outcome-broken'}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 48 }}>
-        {/* Title */}
-        <h1
-          style={{
-            fontFamily: 'var(--uv-font-serif)',
-            fontSize: 40,
-            fontWeight: 500,
-            color: 'var(--uv-text)',
-            textAlign: 'center',
-            lineHeight: 1.1,
-          }}
-        >
-          {title}
-        </h1>
-        <p
-          style={{
-            fontFamily: 'var(--uv-font-sans)',
-            fontSize: 15,
-            color: 'var(--uv-text-muted)',
-            textAlign: 'center',
-            lineHeight: 1.5,
-            margin: 0,
-          }}
-        >
-          {subtitle}
-        </p>
+    <div style={{
+      minHeight: '100dvh',
+      background: 'var(--uv-bg)',
+      backgroundImage: 'radial-gradient(ellipse at 50% 30%, rgba(248,113,113,0.06), var(--uv-bg) 70%)',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      padding: '100px 36px 40px', textAlign: 'center',
+    }}>
+      {/* Hero glyph */}
+      <div style={{ marginBottom: 32 }}>
+        {isAnti ? <BrokenSealWithShield /> : <BrokenSealGlyph />}
+      </div>
 
-        {/* Receipt card */}
-        <Card variant="elevated">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', position: 'relative', overflow: 'hidden' }}>
-            {/* Watermark */}
-            <div
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%) rotate(-18deg)',
-                fontSize: 42,
-                fontWeight: 600,
-                letterSpacing: '6px',
-                color: 'rgba(248,113,113,0.06)',
-                textTransform: 'uppercase' as const,
-                pointerEvents: 'none',
-                userSelect: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              BROKEN
-            </div>
+      {/* Stamp */}
+      <div style={{ marginBottom: 24 }}>
+        <Stamp text="BROKEN" tone="muted-red" />
+      </div>
 
-            <span
-              style={{
-                fontSize: 10,
-                fontWeight: 600,
-                letterSpacing: '3px',
-                color: 'var(--uv-danger)',
-                textTransform: 'uppercase' as const,
-                fontFamily: 'var(--uv-font-sans)',
-              }}
-            >
-              VOW BROKEN
+      {/* H1 — honest, not mean */}
+      <div style={{ marginBottom: 16 }}>
+        <FrauncesH1 italic size="lg">
+          {isAnti ? 'Brutal. You broke it.' : 'You broke it.'}
+        </FrauncesH1>
+      </div>
+
+      {/* Sub */}
+      <div style={{ marginBottom: 32, maxWidth: 320 }}>
+        {isAnti && !isZeroStake ? (
+          <p style={{
+            fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500,
+            color: 'var(--uv-danger)', margin: 0,
+          }}>
+            ${stakeDollars} just went to <strong style={{ fontWeight: 600 }}>{destination}</strong>.
+          </p>
+        ) : (
+          <FrauncesSub>
+            {witnessName} confirmed. {isZeroStake
+              ? 'The record stands.'
+              : `The $${stakeDollars} is on its way to ${destination}.`
+            }
+          </FrauncesSub>
+        )}
+      </div>
+
+      {/* Receipt card */}
+      <div style={{ width: '100%', maxWidth: 340, marginBottom: 32 }}>
+        <RitualCard compact>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--uv-font-sans)', fontSize: 13 }}>
+            <span style={{ color: 'var(--uv-text-dim)' }}>Vow</span>
+            <span style={{ color: 'var(--uv-text)', fontStyle: 'italic', fontFamily: 'var(--uv-font-serif)' }}>
+              {vowText.length > 30 ? vowText.slice(0, 27) + '...' : vowText}
             </span>
-            <p
-              style={{
-                fontSize: 18,
-                fontFamily: 'var(--uv-font-serif)',
-                fontWeight: 500,
-                color: 'var(--uv-text)',
-                textAlign: 'center',
-                lineHeight: '28px',
-                margin: 0,
-                position: 'relative',
-              }}
-            >
-              &ldquo;{vowText}&rdquo;
-            </p>
-            <div style={{ width: '100%', height: 1, background: 'var(--uv-border-strong)' }} />
-
-            {witness && !selfWitness && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%' }}>
-                <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Witness</span>
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>{witness}</span>
-              </div>
-            )}
-
-            {!isZeroStake ? (
-              <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-danger)', fontFamily: 'var(--uv-font-sans)' }}>
-                  ${amount} &rarr; {destination}
-                </span>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', justifyContent: 'center', width: '100%' }}>
-                <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
-                  Accountability only
-                </span>
-              </div>
-            )}
           </div>
-        </Card>
+          {!isZeroStake && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--uv-font-sans)', fontSize: 13 }}>
+              <span style={{ color: 'var(--uv-text-dim)' }}>
+                {isAnti ? 'Went to' : 'Destination'}
+              </span>
+              <span style={{ color: isAnti ? 'var(--uv-danger)' : 'var(--uv-text)', fontWeight: 500 }}>
+                ${stakeDollars} → {destination}
+              </span>
+            </div>
+          )}
+        </RitualCard>
+      </div>
 
-        {/* Share */}
-        <button
-          onClick={handleShare}
-          style={{
-            width: '100%',
-            borderRadius: 'var(--uv-radius-md)',
-            minHeight: 52,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: 8,
-            background: antiCause && !isZeroStake ? 'rgba(248,113,113,0.12)' : 'rgba(212,162,79,0.12)',
-            border: `1px solid ${antiCause && !isZeroStake ? 'rgba(248,113,113,0.28)' : 'var(--uv-border-gold-soft)'}`,
-            cursor: 'pointer',
-            transition: 'transform 120ms',
-          }}
-        >
-          <span
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: antiCause && !isZeroStake ? 'var(--uv-danger)' : 'var(--uv-gold)',
-              fontFamily: 'var(--uv-font-sans)',
-            }}
-          >
-            {copied ? 'Copied!' : 'Share the damage'}
-          </span>
-        </button>
+      {/* Spacer */}
+      <div style={{ flex: 1 }} />
 
-        {/* CTA */}
-        <PrimaryButton onClick={() => router.push('/create')}>
-          + Try again
-        </PrimaryButton>
-        </div>
-      </RitualScreen>
-    </>
+      {/* Primary CTA — Bier-audit: one loud call, forward motion only */}
+      <div style={{ width: '100%', maxWidth: 340 }}>
+        <GoldCTA
+          label={isAnti ? "Make a new vow — let's make this back →" : "Make a new vow →"}
+          onPress={() => router.push('/')}
+        />
+      </div>
+      {/* No secondary CTA — per §5.3/5.4: forward motion only */}
+    </div>
   );
 }
 
 export default function VowBrokenPage() {
   return (
-    <Suspense>
+    <Suspense fallback={
+      <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)' }} />
+    }>
       <VowBrokenContent />
     </Suspense>
   );

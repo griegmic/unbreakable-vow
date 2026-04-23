@@ -1,9 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { Check, DollarSign, Share2, CheckCheck } from 'lucide-react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { Card } from '@/components/uv/Card';
+import { GoldCTA, FrauncesH1, FrauncesSub, Stamp } from '@/components/primitives';
 
 interface Vow {
   id: string;
@@ -38,7 +36,7 @@ export default function OutcomeClient({ vow }: { vow: Vow }) {
   };
 
   return (
-    <RitualScreen variant={isKept ? 'outcome-kept' : 'outcome-broken'}>
+    <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: isKept ? 'radial-gradient(ellipse at 50% 30%, rgba(74,222,128,0.06), var(--uv-bg) 70%)' : 'radial-gradient(ellipse at 50% 30%, rgba(248,113,113,0.06), var(--uv-bg) 70%)', padding: '80px 36px 40px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
           UNBREAKABLE VOW
@@ -109,7 +107,7 @@ export default function OutcomeClient({ vow }: { vow: Vow }) {
                 gap: 12,
                 padding: '12px 16px',
                 borderRadius: 12,
-                backgroundColor: 'var(--uv-bg-elev)',
+                backgroundColor: 'var(--uv-bg-elevated)',
                 border: '1px solid var(--uv-border-strong)',
               }}
             >
@@ -157,10 +155,8 @@ export default function OutcomeClient({ vow }: { vow: Vow }) {
         </button>
 
         {/* CTA */}
-        <a href="/" style={{ textDecoration: 'none' }}>
-          <PrimaryButton>Make your own vow &rarr;</PrimaryButton>
-        </a>
+        <GoldCTA label="Make your own vow →" onPress={() => { window.location.href = '/'; }} />
       </div>
-    </RitualScreen>
+    </div>
   );
 }
