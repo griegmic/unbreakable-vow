@@ -2,12 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Settings, ArrowLeft, Menu, X, Zap, Clock, LayoutGrid, Send } from 'lucide-react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { SecondaryButton } from '@/components/uv/SecondaryButton';
-import { SkeletonRow } from '@/components/uv/SkeletonRow';
-import DashboardCard from '@/components/dashboard-card';
-import DashboardHero from '@/components/dashboard-hero';
+import { FrauncesH1, WaxSeal, GoldCTA, EyebrowTag, RitualCard, WitnessChip, NeedsNowCard } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import {
@@ -57,8 +52,8 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
         className="fixed top-0 left-0 bottom-0 z-[51] w-[280px] flex flex-col transition-transform duration-200 safe-top safe-bottom"
         style={{
           transform: open ? 'translateX(0)' : 'translateX(-100%)',
-          backgroundColor: 'var(--uv-bg-elev)',
-          borderRight: '1px solid var(--uv-border-strong)',
+          backgroundColor: 'var(--uv-bg-elevated)',
+          borderRight: '1px solid var(--uv-border)',
         }}
       >
         <div className="flex items-center justify-between p-5 pb-3">
@@ -98,7 +93,7 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
                   style={{
                     fontSize: 15,
                     fontWeight: 500,
-                    color: item.path === '/create' ? 'var(--uv-gold-bright)' : 'var(--uv-text-primary)',
+                    color: item.path === '/create' ? 'var(--uv-gold-bright)' : 'var(--uv-text)',
                     fontFamily: 'var(--uv-font-sans)',
                   }}
                 >
@@ -153,7 +148,7 @@ function InProgressBanner() {
         <ArrowLeft className="w-5 h-5" style={{ color: 'var(--uv-gold-bright)' }} />
       </div>
       <div>
-        <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>
+        <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
           You have an unfinished vow
         </span>
         <span style={{ fontSize: 13, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
@@ -315,271 +310,292 @@ export default function DashboardPage() {
     ? 'One on the line.'
     : `You've got ${activeCount} on the line.`;
 
+  /*
+   * S20 Dashboard — V6 layout (§3.4)
+   *
+   * Dashboard vow cards are screen-local compositions (not VowDocCard) because
+   * they have dashboard-specific features: 2px gold left border (ownership),
+   * time-right-aligned, witness chip, tap-to-/vow/[id], 3 visual variants
+   * (active, awaiting-witness, awaiting-verdict). See clarification A in plan.
+   */
+
+  // Separate witnessing vows into urgent (Needs You Now) and regular
+  const urgentWitnessing = witnessingVows.filter(v =>
+    v.status === 'awaiting_verdict' && v.ends_at &&
+    (Date.now() - new Date(v.ends_at).getTime()) < 24 * 3600000
+  );
+  const regularWitnessing = witnessingVows.filter(v =>
+    !urgentWitnessing.some(u => u.id === v.id)
+  ).slice(0, 3); // Cap at 3 per §3.4
+
+  // Active vows for "Your Vows" section
+  const activeVows = myVows.filter(v =>
+    ['active', 'sealed', 'awaiting_verdict'].includes(v.status)
+  );
+
   // --- Loading state ---
   if (loading || authLoading) {
     return (
-      <RitualScreen>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 40 }}>
-          <SkeletonRow count={4} />
+      <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', padding: '24px 22px' }}>
+        <div style={{ maxWidth: 480, margin: '0 auto' }}>
+          {[1,2,3].map(i => (
+            <div key={i} style={{ height: 80, borderRadius: 18, background: 'var(--uv-bg-card)', marginBottom: 12, animation: 'shimmer 1.5s ease-in-out infinite', backgroundImage: 'linear-gradient(90deg, var(--uv-bg-card) 25%, var(--uv-bg-elevated) 50%, var(--uv-bg-card) 75%)', backgroundSize: '200% 100%' }} />
+          ))}
         </div>
-      </RitualScreen>
+      </div>
     );
   }
 
-  // --- Empty / redirect logic ---
+  // --- Empty state (S20-EMPTY per §3.4) ---
   const isEmpty = myVows.length === 0 && witnessingVows.length === 0 && challenges.length === 0;
 
   if (isEmpty) {
     return (
-      <RitualScreen>
+      <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 22px' }}>
         <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 48 }}>
-          <button onClick={() => setMenuOpen(true)} aria-label="Open menu" className="p-1 -ml-1">
-            <Menu className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
+        <div style={{ width: '100%', maxWidth: 480, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <button onClick={() => setMenuOpen(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+            <Menu className="w-5 h-5" style={{ color: 'var(--uv-text-muted)' }} />
           </button>
-          <button
-            onClick={() => router.push('/settings')}
-            aria-label="Settings"
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              backgroundColor: 'var(--uv-bg-card)',
-              border: '1px solid var(--uv-border-strong)',
-            }}
-          >
-            <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--uv-text-faint)' }} />
-          </button>
-        </div>
-
-        {/* Empty state */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 40 }}>
-          <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 15, color: 'var(--uv-text-muted)', textAlign: 'center' }}>
-            No promises yet.
-          </p>
-          <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-faint)', textAlign: 'center', maxWidth: 260, lineHeight: 1.5 }}>
-            Make one. Swear on it. See if you can keep it.
-          </p>
-          <div style={{ marginTop: 16, width: '100%', maxWidth: 280 }}>
-            <PrimaryButton onClick={() => router.push('/create')}>+ Make your first vow</PrimaryButton>
+          <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--uv-text)' }}>Unbreakable Vow</span>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-on-gold)' }}>
+            {firstName?.charAt(0) || '?'}
           </div>
         </div>
-      </RitualScreen>
+        {/* Empty content */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, textAlign: 'center', maxWidth: 300 }}>
+          <div style={{ opacity: 0.6 }}>
+            <WaxSeal size="sm" showHalo={false} />
+          </div>
+          <FrauncesH1 italic size="lg">No vows on the line.</FrauncesH1>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 15, color: 'var(--uv-text-muted)', margin: 0 }}>
+            Sealed commitments will show up here.
+          </p>
+          <div style={{ width: '100%', marginTop: 16 }}>
+            <GoldCTA label="Make your first vow →" onPress={() => router.push('/')} />
+          </div>
+        </div>
+      </div>
     );
   }
-
-  // Only redirect if no active own vows AND no witness vows
-  if (myDashboardVows.length === 0 && theirDashboardVows.length === 0) {
-    if (keptCount > 0) {
-      router.replace('/?new=1&returning=1');
-    } else {
-      router.replace('/?new=1');
-    }
-    return null;
-  }
-
-  const isHero = myDashboardVows.length === 1 && theirDashboardVows.length === 0;
 
   return (
     <>
       <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <RitualScreen>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button
-              onClick={() => setMenuOpen(true)}
-              aria-label="Open menu"
-              className="p-1 -ml-1"
-            >
-              <Menu className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
-            </button>
+      <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', paddingBottom: 80 }}>
+        <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 22px 0' }}>
+
+        {/* V6 Header per §3.4: hamburger + wordmark + avatar */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <button onClick={() => setMenuOpen(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+            <Menu className="w-5 h-5" style={{ color: 'var(--uv-text-muted)' }} />
+          </button>
+          <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--uv-text)' }}>Unbreakable Vow</span>
+          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-on-gold)' }}>
+            {firstName?.charAt(0) || '?'}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {keptCount > 0 && (
-              <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
-                <span style={{ color: 'var(--uv-status-active)' }}>{keptCount}</span> kept
-                {streak >= 2 && <> &middot; {streak} streak</>}
+        </div>
+
+        {/* Greeting per §3.4 */}
+        <div style={{ marginBottom: 24 }}>
+          <FrauncesH1 italic size="lg">Hey, {firstName}.</FrauncesH1>
+        </div>
+
+        <InProgressBanner />
+
+        {/* Section 1: YOUR VOWS */}
+        {activeVows.length > 0 && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--uv-gold-line)' }}>
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)' }}>
+                Your vows
               </span>
-            )}
-            <button
-              onClick={() => router.push('/settings')}
-              aria-label="Settings"
-              style={{
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: 'var(--uv-bg-card)',
-                border: '1px solid var(--uv-border-strong)',
-              }}
-            >
-              <Settings className="w-[18px] h-[18px]" style={{ color: 'var(--uv-text-faint)' }} />
-            </button>
-          </div>
-        </div>
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-muted)' }}>· {activeVows.length}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {activeVows.map(vow => {
+                const stakeDollars = Math.round(vow.stake_amount / 100);
+                const isAwaitingWitness = vow.status === 'sealed' && !vow.witness_accepted_at;
+                const isAwaitingVerdict = vow.status === 'awaiting_verdict';
+                const daysLeft = vow.ends_at ? Math.ceil((new Date(vow.ends_at).getTime() - Date.now()) / 86400000) : null;
+                const witnessFirst = vow.witness_name?.split(' ')[0] || 'Witness';
 
-        {/* Greeting */}
-        <div style={{ marginBottom: 20 }}>
-          <h1
-            style={{
-              fontFamily: 'var(--uv-font-serif)',
-              fontSize: 'clamp(24px, 6vw, 32px)',
-              fontWeight: 400,
-              fontStyle: 'italic',
-              color: 'var(--uv-gold)',
-              margin: 0,
-              lineHeight: 1.2,
-            }}
-          >
-            {firstName}.
-          </h1>
-          <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text-muted)', marginTop: 4 }}>
-            {subGreeting}
-          </p>
-        </div>
-
-        {/* + New vow button */}
-        {!isHero && (
-          <div style={{ marginBottom: 16 }}>
-            <button
-              onClick={() => router.push('/create')}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--uv-gold)',
-                fontSize: 13,
-                fontWeight: 500,
-                fontFamily: 'var(--uv-font-sans)',
-                padding: '6px 0',
-                cursor: 'pointer',
-              }}
-            >
-              + New vow
-            </button>
-          </div>
-        )}
-
-        {isHero ? (
-          // --- HERO VIEW (1 own vow, no witness vows) ---
-          <DashboardHero
-            item={myDashboardVows[0]}
-            keptCount={keptCount}
-            streak={streak}
-            onAcceptChallenge={
-              myDashboardVows[0].state === 'T1'
-                ? () => handleAcceptChallenge(myDashboardVows[0].vow.id)
-                : undefined
-            }
-            onDeclineChallenge={
-              myDashboardVows[0].state === 'T1'
-                ? () => handleDeclineChallenge(myDashboardVows[0].vow.id)
-                : undefined
-            }
-          />
-        ) : (
-          // --- SMART STACK ---
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <InProgressBanner />
-
-            {/* Your vows section */}
-            {myDashboardVows.length > 0 && (
-              <>
-                {theirDashboardVows.length > 0 && (
-                  <h2
+                return (
+                  <button
+                    key={vow.id}
+                    onClick={() => router.push(`/vow/${vow.id}`)}
                     style={{
-                      fontSize: 11,
-                      fontWeight: 600,
-                      letterSpacing: '1.2px',
-                      textTransform: 'uppercase',
-                      color: 'var(--uv-text-faint)',
-                      fontFamily: 'var(--uv-font-sans)',
-                      paddingBottom: 4,
-                      margin: 0,
+                      width: '100%',
+                      padding: '14px 16px',
+                      borderRadius: 14,
+                      borderLeft: `2px solid ${isAwaitingWitness ? 'var(--uv-gold-deep)' : 'var(--uv-gold)'}`,
+                      border: '1px solid var(--uv-border)',
+                      borderLeftWidth: 2,
+                      borderLeftColor: isAwaitingWitness ? 'var(--uv-gold-deep)' : 'var(--uv-gold)',
+                      background: isAwaitingWitness
+                        ? 'linear-gradient(180deg, var(--uv-bg-card), rgba(24,21,18,0.7))'
+                        : 'var(--uv-bg-card)',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 8,
                     }}
                   >
-                    Your vows
-                  </h2>
-                )}
-                <div className="flex flex-col gap-2">
-                  {myDashboardVows.map((item) => (
-                    <DashboardCard
-                      key={item.vow.id}
-                      item={item}
-                      onTap={() => router.push(getTapTarget(item))}
-                      onAcceptChallenge={
-                        item.state === 'T1'
-                          ? () => handleAcceptChallenge(item.vow.id)
-                          : undefined
-                      }
-                      onDeclineChallenge={
-                        item.state === 'T1'
-                          ? () => handleDeclineChallenge(item.vow.id)
-                          : undefined
-                      }
-                    />
-                  ))}
-                </div>
-              </>
-            )}
+                    {/* Top row: pill + time */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <EyebrowTag tone={isAwaitingWitness || isAwaitingVerdict ? 'amber' : 'gold'}>
+                        {isAwaitingWitness ? `Awaiting ${witnessFirst}` : isAwaitingVerdict ? 'Awaiting verdict' : `Active`}
+                      </EyebrowTag>
+                      <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--uv-text-muted)' }}>
+                        {isAwaitingWitness ? 'Sealed' : daysLeft !== null ? (daysLeft <= 0 ? "Time's up" : `${daysLeft}d left`) : ''}
+                      </span>
+                    </div>
+                    {/* Vow text */}
+                    <p style={{
+                      fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 17,
+                      lineHeight: 1.28, color: isAwaitingWitness ? 'var(--uv-text-muted)' : 'var(--uv-text)',
+                      margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    }}>
+                      {vow.refined_text}
+                    </p>
+                    {/* Meta row — 2-col per §3.4 mock with state-dependent right column */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                      <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-muted)' }}>
+                        {stakeDollars > 0 ? `On hold $${stakeDollars}` : 'No stake'}
+                        {' · '}
+                        {isAwaitingWitness
+                          ? <span style={{ color: 'var(--uv-warn)' }}>Starts when {witnessFirst} accepts</span>
+                          : isAwaitingVerdict
+                            ? `If broken → ${vow.destination}`
+                            : vow.ends_at ? `Until ${new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short' })} · 9pm` : ''
+                        }
+                      </span>
+                      <WitnessChip
+                        status={vow.witness_accepted_at ? 'accepted' : 'pending'}
+                        name={witnessFirst}
+                      />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-            {/* Their vows section */}
-            {theirDashboardVows.length > 0 && (
-              <>
-                <h2
+        {/* Section 2: NEEDS YOU NOW */}
+        {(urgentWitnessing.length > 0 || challenges.length > 0) && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--uv-gold-line)' }}>
+              <div className="animate-pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--uv-warn)' }} />
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)' }}>
+                Needs you now
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {urgentWitnessing.map(vow => {
+                const hoursAgo = Math.round((Date.now() - new Date(vow.ends_at!).getTime()) / 3600000);
+                return (
+                  <NeedsNowCard
+                    key={vow.id}
+                    kind="witness"
+                    makerName={(vow as any).maker_display_name || 'Someone'}
+                    vowText={vow.refined_text}
+                    stake={Math.round(vow.stake_amount / 100)}
+                    hoursLeft={Math.max(0, 24 - hoursAgo)}
+                    onPress={() => router.push(`/w/${vow.witness_invite_token}/verdict`)}
+                  />
+                );
+              })}
+              {challenges.map(vow => (
+                <NeedsNowCard
+                  key={vow.id}
+                  kind="dare"
+                  makerName={(vow as any).maker_display_name || 'Someone'}
+                  vowText={vow.refined_text}
+                  stake={Math.round(vow.stake_amount / 100)}
+                  onPress={() => router.push(`/c/${vow.challenge_invite_token}`)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Section 3: YOU'RE WITNESSING */}
+        {regularWitnessing.length > 0 && (
+          <div style={{ marginBottom: 32 }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--uv-gold-line)' }}>
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)' }}>
+                You&apos;re witnessing
+              </span>
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-muted)' }}>· {witnessingVows.length - urgentWitnessing.length}</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {regularWitnessing.map(vow => {
+                const makerName = (vow as any).maker_display_name || 'Someone';
+                const isUrgent = vow.status === 'awaiting_verdict';
+                return (
+                  <button
+                    key={vow.id}
+                    onClick={() => isUrgent ? router.push(`/w/${vow.witness_invite_token}/verdict`) : router.push(`/vow/${vow.id}?as=witness`)}
+                    style={{
+                      width: '100%', padding: '12px 14px', borderRadius: 12,
+                      background: 'var(--uv-bg-card)', border: '1px solid var(--uv-border)',
+                      cursor: 'pointer', textAlign: 'left',
+                      display: 'flex', alignItems: 'center', gap: 10,
+                    }}
+                  >
+                    {/* Avatar */}
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--uv-bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-muted)', flexShrink: 0 }}>
+                      {makerName.charAt(0)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--uv-text)' }}>{makerName}</div>
+                      <div style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 14, color: 'var(--uv-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {vow.refined_text}
+                      </div>
+                    </div>
+                    {vow.stake_amount > 0 && (
+                      <span style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 12, color: 'var(--uv-gold)', flexShrink: 0 }}>${Math.round(vow.stake_amount / 100)}</span>
+                    )}
+                  </button>
+                );
+              })}
+              {/* "All N you're witnessing →" overflow card */}
+              {witnessingVows.length - urgentWitnessing.length > 3 && (
+                <button
+                  onClick={() => router.push('/witnessing')}
                   style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    letterSpacing: '1.2px',
-                    textTransform: 'uppercase',
-                    color: 'var(--uv-status-verdict)',
-                    fontFamily: 'var(--uv-font-sans)',
-                    paddingTop: 16,
-                    paddingBottom: 4,
-                    margin: 0,
+                    width: '100%', padding: '12px 14px', borderRadius: 12,
+                    background: 'var(--uv-gold-bg)', border: '1px solid var(--uv-gold-line)',
+                    cursor: 'pointer', textAlign: 'left',
+                    fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500, color: 'var(--uv-gold-bright)',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   }}
                 >
-                  Their vows
-                </h2>
-                <div className="flex flex-col gap-2">
-                  {theirDashboardVows.map((item) => (
-                    <DashboardCard
-                      key={item.vow.id}
-                      item={item}
-                      onTap={() => router.push(getTapTarget(item))}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-
-            {/* History link */}
-            {completedCount > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, paddingTop: 8, paddingBottom: 16 }}>
-                <span style={{ fontSize: 11, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
-                  {completedCount} vow{completedCount !== 1 ? 's' : ''} completed
-                </span>
-                <SecondaryButton onClick={() => router.push('/history')}>
-                  View history
-                </SecondaryButton>
-              </div>
-            )}
+                  <span>All {witnessingVows.length - urgentWitnessing.length} you&apos;re witnessing</span>
+                  <span>→</span>
+                </button>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Footer CTA */}
-        {!isHero && (
-          <div style={{ marginTop: 'auto', paddingTop: 24 }}>
-            <PrimaryButton onClick={() => router.push('/create')}>Make a Vow</PrimaryButton>
+        </div>{/* end maxWidth container */}
+
+        {/* Sticky footer CTA */}
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
+          padding: '12px 22px env(safe-area-inset-bottom, 12px)',
+          background: 'linear-gradient(180deg, transparent, var(--uv-bg) 30%)',
+        }}>
+          <div style={{ maxWidth: 480, margin: '0 auto' }}>
+            <GoldCTA label="Make a vow →" onPress={() => router.push('/')} />
           </div>
-        )}
-      </RitualScreen>
+        </div>
+      </div>{/* end screen */}
     </>
   );
 }
+

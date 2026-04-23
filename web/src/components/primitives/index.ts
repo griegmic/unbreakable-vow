@@ -28,3 +28,5 @@ export { DatePickerSheet } from './DatePickerSheet';
 export { ChangeStakeSheet } from './ChangeStakeSheet';
 export { DismissDraftSheet } from './DismissDraftSheet';
 export { TimelineCard } from './TimelineCard';
+export { WitnessChip } from './WitnessChip';
+export { NeedsNowCard } from './NeedsNowCard';

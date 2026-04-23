@@ -298,7 +298,7 @@ export default function VowDetailPage() {
 
   const VowTitle = ({ text, sub }: { text: string; sub?: string }) => (
     <div style={{ marginBottom: 16 }}>
-      <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 22, fontWeight: 400, color: 'var(--uv-text-primary)', margin: 0, lineHeight: 1.3 }}>
+      <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 22, fontWeight: 400, color: 'var(--uv-text)', margin: 0, lineHeight: 1.3 }}>
         {text}
       </h1>
       {sub && (
@@ -315,7 +315,7 @@ export default function VowDetailPage() {
         <Countdown endsAt={vow.ends_at} startsAt={vow.starts_at || vow.sealed_at || undefined} />
       )}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 }}>
-        <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--uv-status-active)' }} />
+        <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--uv-success)' }} />
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
           {witnessLabel}
         </span>
@@ -411,7 +411,7 @@ export default function VowDetailPage() {
               opacity: verdictBusy ? 0.4 : 1,
             }}
           >
-            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--uv-status-active)' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--uv-success)' }}>
               {verdictBusy ? '...' : 'Mark Kept'}
             </span>
           </button>
@@ -469,7 +469,7 @@ export default function VowDetailPage() {
         {/* Witness declined */}
         {witnessDeclined && (
           <Card variant="warn">
-            <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>
+            <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
               {vow.witness_name} declined.
             </span>
             <p style={{ fontSize: 13, lineHeight: '19px', color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', marginTop: 8 }}>
@@ -489,7 +489,7 @@ export default function VowDetailPage() {
                 <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--uv-gold)' }} />
               </div>
               <div>
-                <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>
+                <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
                   Waiting on {vow.witness_name}.
                 </span>
                 <span style={{ fontSize: 12, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
@@ -503,7 +503,7 @@ export default function VowDetailPage() {
               buttonText={vow.witness_phone ? 'Nudge your witness' : 'Send the invite'}
             />
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              <div style={{ borderRadius: 10, padding: '8px 12px', flex: 1, minWidth: 0, backgroundColor: 'var(--uv-bg-elev)', border: '1px solid var(--uv-border-strong)' }}>
+              <div style={{ borderRadius: 10, padding: '8px 12px', flex: 1, minWidth: 0, backgroundColor: 'var(--uv-bg-elevated)', border: '1px solid var(--uv-border-strong)' }}>
                 <p style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--uv-text-faint)', margin: 0 }}>{witnessUrl}</p>
               </div>
               <CopyLinkButton url={witnessUrl} />
@@ -620,7 +620,7 @@ export default function VowDetailPage() {
         />
 
         <Card>
-          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, color: 'var(--uv-text-primary)', margin: 0 }}>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, color: 'var(--uv-text)', margin: 0 }}>
             {vow.refined_text}
           </p>
           <div style={{ height: 1, backgroundColor: 'var(--uv-border-strong)', margin: '12px 0' }} />
@@ -631,7 +631,7 @@ export default function VowDetailPage() {
           {vow.destination && vow.stake_amount > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
               <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>If broken</span>
-              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>{vow.destination}</span>
+              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>{vow.destination}</span>
             </div>
           )}
         </Card>
@@ -688,10 +688,10 @@ export default function VowDetailPage() {
         <Card>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(96,165,250,0.15)' }}>
-              <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--uv-status-verdict)' }} />
+              <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--uv-gold)' }} />
             </div>
             <div>
-              <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>Challenge pending</span>
+              <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>Challenge pending</span>
               <span style={{ fontSize: 12, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
                 They&apos;ll get a text with the dare. Nudge if they haven&apos;t responded.
               </span>
@@ -753,7 +753,7 @@ export default function VowDetailPage() {
         <VowTitle text="Time's up." sub={`Did ${targetName} keep their word?`} />
 
         <Card>
-          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, color: 'var(--uv-text-primary)', margin: 0 }}>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, color: 'var(--uv-text)', margin: 0 }}>
             {vow.refined_text}
           </p>
           <div style={{ height: 1, backgroundColor: 'var(--uv-border-strong)', margin: '12px 0' }} />
@@ -819,24 +819,24 @@ export default function VowDetailPage() {
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
           <StatusPill variant="kept">KEPT</StatusPill>
-          <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-status-active)', margin: 0 }}>
+          <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-success)', margin: 0 }}>
             You kept your word.
           </h1>
         </div>
 
         <Card>
-          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text-primary)', margin: 0 }}>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text)', margin: 0 }}>
             &ldquo;{vow.refined_text}&rdquo;
           </p>
           <div style={{ height: 1, backgroundColor: 'var(--uv-border-strong)', margin: '12px 0' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Witnessed by</span>
-            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>{vow.witness_name}</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>{vow.witness_name}</span>
           </div>
           {stakeLabel && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
               <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Stake</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-status-active)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel} protected</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel} protected</span>
             </div>
           )}
           {vow.verdict_at && (
@@ -884,13 +884,13 @@ export default function VowDetailPage() {
         </div>
 
         <Card>
-          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text-primary)', margin: 0 }}>
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text)', margin: 0 }}>
             &ldquo;{vow.refined_text}&rdquo;
           </p>
           <div style={{ height: 1, backgroundColor: 'var(--uv-border-strong)', margin: '12px 0' }} />
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Witnessed by</span>
-            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text-primary)', fontFamily: 'var(--uv-font-sans)' }}>{vow.witness_name}</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>{vow.witness_name}</span>
           </div>
           {stakeLabel && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
