@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'edge';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 /**
  * V6 OG Card Route — per-vow server-rendered Open Graph images
@@ -12,6 +12,11 @@ const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
  * Endpoint: GET /api/og/[token]
  * Returns: 1200×630 PNG
  * Used by: /w/[token] (witness invite), /c/[token] (challenge), /outcome/[vowId], /certificate/[vowId]
+ *
+ * Requires SUPABASE_SERVICE_ROLE_KEY in the environment to render personalized
+ * vow content. Without it, renders a generic fallback card. This is a compromise —
+ * the personalized render is the real product experience; the fallback prevents 500s
+ * in environments where the key isn't configured (local dev without service role).
  *
  * Canonical source: IMPLEMENTATION-V6.md §4.2
  */
@@ -21,39 +26,51 @@ export async function GET(
 ) {
   const { token } = await params;
 
-  // Fetch vow data by witness_invite_token or challenge_invite_token
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
-  const { data: vow } = await supabase
-    .from('vows')
-    .select('refined_text, stake_amount, ends_at, witness_name, user_id, verdict, status, consequence, destination')
-    .or(`witness_invite_token.eq.${token},challenge_invite_token.eq.${token}`)
-    .single();
-
-  // Fetch maker display name
+  // Attempt personalized render; fall back to generic if Supabase is unavailable
+  let vowText = 'Make an unbreakable vow.';
   let makerName = 'Someone';
-  if (vow?.user_id) {
-    const { data: user } = await supabase
-      .from('users')
-      .select('display_name')
-      .eq('id', vow.user_id)
-      .single();
-    if (user?.display_name) makerName = user.display_name;
-  }
+  let stake = 0;
+  let eyebrow = 'UNBREAKABLE VOW';
+  let metaLine = 'One sentence. One witness. One stake. One verdict.';
 
-  const vowText = vow?.refined_text || 'Make an unbreakable vow.';
-  const stake = vow?.stake_amount ? Math.round(vow.stake_amount / 100) : 0;
-  const isResolved = vow?.verdict != null;
-  const isKept = vow?.verdict === 'kept';
+  if (supabaseUrl && supabaseServiceKey) {
+    try {
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: vow } = await supabase
+        .from('vows')
+        .select('refined_text, stake_amount, ends_at, witness_name, user_id, verdict, status, consequence, destination')
+        .or(`witness_invite_token.eq.${token},challenge_invite_token.eq.${token}`)
+        .single();
 
-  // Select copy based on state
-  let eyebrow = `${makerName.toUpperCase()} · UNBREAKABLE VOW`;
-  let metaLine = stake > 0 ? `$${stake} on it · Be the witness` : 'Be the witness';
+      if (vow) {
+        vowText = vow.refined_text || vowText;
+        stake = vow.stake_amount ? Math.round(vow.stake_amount / 100) : 0;
 
-  if (isResolved) {
-    eyebrow = isKept ? 'VOW KEPT' : 'VOW BROKEN';
-    metaLine = isKept
-      ? `${makerName} kept the vow.`
-      : `${makerName} broke the vow. $${stake} → ${vow?.destination || 'charity'}`;
+        // Fetch maker display name
+        if (vow.user_id) {
+          const { data: user } = await supabase
+            .from('users')
+            .select('display_name')
+            .eq('id', vow.user_id)
+            .single();
+          if (user?.display_name) makerName = user.display_name;
+        }
+
+        // Select copy based on state
+        eyebrow = `${makerName.toUpperCase()} · UNBREAKABLE VOW`;
+        metaLine = stake > 0 ? `$${stake} on it · Be the witness` : 'Be the witness';
+
+        if (vow.verdict != null) {
+          const isKept = vow.verdict === 'kept';
+          eyebrow = isKept ? 'VOW KEPT' : 'VOW BROKEN';
+          metaLine = isKept
+            ? `${makerName} kept the vow.`
+            : `${makerName} broke the vow. $${stake} → ${vow.destination || 'charity'}`;
+        }
+      }
+    } catch {
+      // Supabase query failed — render generic fallback
+    }
   }
 
   return new ImageResponse(
