@@ -35,3 +35,5 @@ or uses values that differ from the shipped primitives.
 13. **S15 subcopy missing space**: "Wed, Apr 29when it's time..." — date concatenation is missing a space separator before "when". Fix in polish PR.
 
 14. **S19-VOIDED maker name**: renders as full "Joseph Rosenfield" because the fixture patch that normalized S14/S16/S17 maker name to "Joey" didn't update the voided fixture. Fix when re-running seed script.
+
+16. **S20 sticky CTA overlaps content**: "Make a vow →" footer CTA overlays the NEEDS YOU NOW section header and first card. Scrollable content needs padding-bottom equal to CTA height + margin so content scrolls clear. Fix in polish PR.
