@@ -1,10 +1,10 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
 import {
-  sealMessage, witnessReminderMessage, warmupMessage, verdictRequestMessage,
+  sealMessage, witnessReminderMessage, verdictRequestMessage,
   outcomeMessage, challengeMessage,
-  witnessMidpointMessage, witness24hMessage,
-  makerMidpointMessage, maker24hMessage, makerVerdictTimeMessage, makerOutcomeMessage,
+  witness24hMessage,
+  maker24hMessage, makerVerdictTimeMessage, makerOutcomeMessage,
 } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
@@ -80,7 +80,7 @@ Deno.serve(async (req) => {
         const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
         const ownerName = profile?.display_name || 'Someone';
         const acceptUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
-        const body = witnessReminderMessage(ownerName, vow.refined_text, acceptUrl);
+        const body = witnessReminderMessage(ownerName, acceptUrl);
         const sid = await sendSMS(vow.witness_phone!, body);
         await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_reminder', twilio_sid: sid });
 
@@ -100,44 +100,43 @@ Deno.serve(async (req) => {
     }
 
     // === TASK 1: Send warmup SMS (#2) ===
-    // Find active vows ending within 12-36 hours
-    const warmupStart = new Date(now);
-    warmupStart.setHours(warmupStart.getHours() + 12);
-    const warmupEnd = new Date(now);
-    warmupEnd.setHours(warmupEnd.getHours() + 36);
-
-    const { data: warmupVows } = await supabase
-      .from('vows')
-      .select('*')
-      .eq('status', 'active')
-      .not('witness_phone', 'is', null)
-      .gte('ends_at', warmupStart.toISOString())
-      .lte('ends_at', warmupEnd.toISOString());
-
-    for (const vow of warmupVows || []) {
-      // Idempotency check
-      const { data: existing } = await supabase
-        .from('sms_log')
-        .select('id')
-        .eq('vow_id', vow.id)
-        .eq('message_type', 'warmup')
-        .limit(1)
-        .maybeSingle();
-
-      if (existing) continue;
-
-      try {
-        const keeperId = getVowKeeperId(vow);
-        const { data: profile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
-        const ownerName = profile?.display_name || 'Someone';
-        const body = warmupMessage(ownerName, vow.refined_text);
-        const sid = await sendSMS(vow.witness_phone!, body);
-        await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'warmup', twilio_sid: sid });
-        results.warmup++;
-      } catch (err) {
-        results.errors.push(`warmup ${vow.id}: ${err}`);
-      }
-    }
+    // V6: warmup/midpoint dropped — replaced by 24h heads-up in TASK 9
+    // const warmupStart = new Date(now);
+    // warmupStart.setHours(warmupStart.getHours() + 12);
+    // const warmupEnd = new Date(now);
+    // warmupEnd.setHours(warmupEnd.getHours() + 36);
+    //
+    // const { data: warmupVows } = await supabase
+    //   .from('vows')
+    //   .select('*')
+    //   .eq('status', 'active')
+    //   .not('witness_phone', 'is', null)
+    //   .gte('ends_at', warmupStart.toISOString())
+    //   .lte('ends_at', warmupEnd.toISOString());
+    //
+    // for (const vow of warmupVows || []) {
+    //   const { data: existing } = await supabase
+    //     .from('sms_log')
+    //     .select('id')
+    //     .eq('vow_id', vow.id)
+    //     .eq('message_type', 'warmup')
+    //     .limit(1)
+    //     .maybeSingle();
+    //
+    //   if (existing) continue;
+    //
+    //   try {
+    //     const keeperId = getVowKeeperId(vow);
+    //     const { data: profile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
+    //     const ownerName = profile?.display_name || 'Someone';
+    //     const body = warmupMessage(ownerName, vow.refined_text);
+    //     const sid = await sendSMS(vow.witness_phone!, body);
+    //     await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'warmup', twilio_sid: sid });
+    //     results.warmup++;
+    //   } catch (err) {
+    //     results.errors.push(`warmup ${vow.id}: ${err}`);
+    //   }
+    // }
 
     // === TASK 2: Send verdict request SMS (#3) ===
     // Find active vows where ends_at has passed
@@ -169,7 +168,7 @@ Deno.serve(async (req) => {
           const { data: profile } = await supabase.from('users').select('display_name').eq('id', nameUserId).single();
           const ownerName = profile?.display_name || 'Someone';
           const verdictUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}/verdict`;
-          const body = verdictRequestMessage(ownerName, vow.refined_text, verdictUrl);
+          const body = verdictRequestMessage(ownerName, verdictUrl);
           const sid = await sendSMS(vow.witness_phone, body);
           await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'verdict_request', twilio_sid: sid });
         }
@@ -355,10 +354,10 @@ Deno.serve(async (req) => {
           let body: string;
           if (vow.vow_type === 'challenge' && vow.challenge_invite_token) {
             const challengeUrl = `https://unbreakablevow.app/c/${vow.challenge_invite_token}`;
-            body = challengeMessage(ownerName, vow.refined_text, vow.stake_amount, endDate, challengeUrl);
+            body = challengeMessage(ownerName, Math.round(vow.stake_amount / 100), challengeUrl);
           } else {
             const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
-            body = sealMessage(ownerName, vow.refined_text, amountDollars, endDate, witnessUrl);
+            body = sealMessage(amountDollars, witnessUrl);
           }
           const sid = await sendSMS(vow.witness_phone!, body);
           await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'seal', twilio_sid: sid });
@@ -579,24 +578,26 @@ Deno.serve(async (req) => {
 
         try {
           // --- Maker midpoint SMS ---
-          if (vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
-            if (!(await smsAlreadySent('maker_midpoint'))) {
-              const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
-              if (makerUser?.phone) {
-                const body = makerMidpointMessage(vow.witness_name || null);
-                const sid = await sendSMS(makerUser.phone, body);
-                await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_midpoint', twilio_sid: sid });
-                results.maker_sms = (results.maker_sms as number) + 1;
-              }
-            }
-          }
+          // V6: warmup/midpoint dropped — replaced by 24h heads-up in TASK 9
+          // if (vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
+          //   if (!(await smsAlreadySent('maker_midpoint'))) {
+          //     const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
+          //     if (makerUser?.phone) {
+          //       const body = makerMidpointMessage(vow.witness_name || null);
+          //       const sid = await sendSMS(makerUser.phone, body);
+          //       await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_midpoint', twilio_sid: sid });
+          //       results.maker_sms = (results.maker_sms as number) + 1;
+          //     }
+          //   }
+          // }
 
           // --- Maker 24h before SMS ---
           if (twentyFourBefore > midpoint && now >= twentyFourBefore) {
             if (!(await smsAlreadySent('maker_24h'))) {
               const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
               if (makerUser?.phone) {
-                const body = maker24hMessage();
+                const amountDollars = Math.round(vow.stake_amount / 100);
+                const body = maker24hMessage(amountDollars);
                 const sid = await sendSMS(makerUser.phone, body);
                 await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_24h', twilio_sid: sid });
                 results.maker_sms = (results.maker_sms as number) + 1;
@@ -609,7 +610,7 @@ Deno.serve(async (req) => {
             if (!(await smsAlreadySent('maker_verdict_time'))) {
               const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
               if (makerUser?.phone) {
-                const body = makerVerdictTimeMessage(vow.witness_name || null);
+                const body = makerVerdictTimeMessage(vow.witness_name || 'your witness');
                 const sid = await sendSMS(makerUser.phone, body);
                 await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_verdict_time', twilio_sid: sid });
                 results.maker_sms = (results.maker_sms as number) + 1;
@@ -618,24 +619,24 @@ Deno.serve(async (req) => {
           }
 
           // --- Witness midpoint SMS ---
-          if (vow.witness_phone && vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
-            if (!(await smsAlreadySent('witness_midpoint'))) {
-              const { data: keeperProfile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
-              const keeperName = keeperProfile?.display_name || 'your friend';
-              const body = witnessMidpointMessage(keeperName);
-              const sid = await sendSMS(vow.witness_phone, body);
-              await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_midpoint', twilio_sid: sid });
-              results.witness_lifecycle_sms = (results.witness_lifecycle_sms as number) + 1;
-            }
-          }
+          // V6: midpoint dropped — replaced by 24h heads-up
+          // if (vow.witness_phone && vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
+          //   if (!(await smsAlreadySent('witness_midpoint'))) {
+          //     const { data: keeperProfile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
+          //     const keeperName = keeperProfile?.display_name || 'your friend';
+          //     const body = witnessMidpointMessage(keeperName);
+          //     const sid = await sendSMS(vow.witness_phone, body);
+          //     await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_midpoint', twilio_sid: sid });
+          //     results.witness_lifecycle_sms = (results.witness_lifecycle_sms as number) + 1;
+          //   }
+          // }
 
           // --- Witness 24h before SMS ---
           if (vow.witness_phone && twentyFourBefore > midpoint && now >= twentyFourBefore) {
             if (!(await smsAlreadySent('witness_24h'))) {
               const { data: keeperProfile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
               const keeperName = keeperProfile?.display_name || 'your friend';
-              const verdictUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}/verdict`;
-              const body = witness24hMessage(keeperName, verdictUrl);
+              const body = witness24hMessage(keeperName);
               const sid = await sendSMS(vow.witness_phone, body);
               await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_24h', twilio_sid: sid });
               results.witness_lifecycle_sms = (results.witness_lifecycle_sms as number) + 1;

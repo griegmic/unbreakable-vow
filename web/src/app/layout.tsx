@@ -6,7 +6,6 @@ import { VowFlowProvider } from '@/providers/vow-flow';
 
 const fraunces = Fraunces({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
   style: ['normal', 'italic'],
   variable: '--font-serif',
   display: 'swap',
@@ -15,7 +14,6 @@ const fraunces = Fraunces({
 
 const interTight = Inter_Tight({
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
   variable: '--font-sans',
   display: 'swap',
 });

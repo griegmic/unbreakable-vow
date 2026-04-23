@@ -211,10 +211,7 @@ Deno.serve(async (req) => {
           .eq('id', vow.user_id)
           .single();
         const makerName = makerProfile?.display_name || 'your friend';
-        const endDate = vow.ends_at
-          ? new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-          : 'soon';
-        const confirmBody = witnessAcceptConfirmMessage(makerName, endDate);
+        const confirmBody = witnessAcceptConfirmMessage(makerName);
         const sid = await sendSMS(vow.witness_phone, confirmBody);
         await supabase.from('sms_log').insert({
           vow_id: vow.id,
