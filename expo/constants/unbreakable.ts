@@ -1,28 +1,32 @@
 import { Platform } from 'react-native';
 
+/**
+ * Legacy palette — V6 values applied. New code should import from lib/uv-tokens.ts instead.
+ * This object is kept for backward compatibility with existing screens.
+ */
 export const palette = {
-  bg: '#05070B',
-  bgSecondary: '#0A0D12',
-  surface: '#10141C',
-  surfaceElevated: '#161B25',
-  surfaceStrong: '#1B2230',
-  border: 'rgba(255,255,255,0.08)',
-  borderStrong: 'rgba(255,214,102,0.18)',
-  text: '#F6F7FB',
-  textSecondary: '#A7B0C0',
-  textMuted: '#667085',
-  gold: '#D4A24F',
-  goldBright: '#F0C86E',
-  goldDeep: '#8C6423',
-  goldGlow: 'rgba(212,162,79,0.28)',
-  success: '#52D69A',
-  successMuted: 'rgba(82,214,154,0.14)',
-  danger: '#FF7B7B',
-  dangerMuted: 'rgba(255,123,123,0.14)',
-  warmAmber: '#D4A24F',
-  warmAmberMuted: 'rgba(212,162,79,0.14)',
-  warmAmberBorder: 'rgba(212,162,79,0.24)',
-  whiteOverlay: 'rgba(255,255,255,0.04)',
+  bg: '#0F0D0A',
+  bgSecondary: '#181512',
+  surface: '#181512',
+  surfaceElevated: '#1F1B16',
+  surfaceStrong: '#2A2015',
+  border: '#322D24',
+  borderStrong: '#4A4036',
+  text: '#F0E9DB',
+  textSecondary: '#A49A85',
+  textMuted: '#726A5A',
+  gold: '#C89B3C',
+  goldBright: '#E8B656',
+  goldDeep: '#8B6820',
+  goldGlow: 'rgba(200,155,60,0.28)',
+  success: '#4ADE80',
+  successMuted: 'rgba(52,199,89,0.10)',
+  danger: '#F87171',
+  dangerMuted: 'rgba(248,113,113,0.10)',
+  warmAmber: '#C89B3C',
+  warmAmberMuted: 'rgba(200,155,60,0.10)',
+  warmAmberBorder: 'rgba(200,155,60,0.22)',
+  whiteOverlay: 'rgba(240,233,219,0.08)',
 } as const;
 
 export const vowExamples: string[] = [
@@ -122,9 +126,10 @@ export const witnessContacts: WitnessContact[] = [
   { id: 'josh', name: 'Josh', initials: 'J', accent: '#A5845E' },
 ];
 
+/** @deprecated Use uvFonts from lib/uv-tokens.ts for V6 screens */
 export const serifFont = Platform.select({
-  ios: 'Georgia',
-  web: 'Georgia, serif',
+  ios: 'Fraunces_400Regular',
+  web: 'Fraunces, Georgia, serif',
   default: undefined,
 });
 
