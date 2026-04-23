@@ -252,7 +252,7 @@ Deno.serve(async (req) => {
       const amountDollars = Math.round(vow.stake_amount / 100);
 
       try {
-        const body = outcomeMessage(keeperName, verdict, amountDollars, vow.destination);
+        const body = outcomeMessage(keeperName, verdict as 'kept' | 'broken', amountDollars, vow.destination);
         const twilioSid = await sendSMS(vow.witness_phone, body);
         await supabase.from('sms_log').insert({
           vow_id: vow.id,
@@ -273,7 +273,7 @@ Deno.serve(async (req) => {
         .single();
       if (makerUser?.phone) {
         const amtDollars = Math.round(vow.stake_amount / 100);
-        const makerBody = makerOutcomeMessage(verdict, amtDollars, vow.destination);
+        const makerBody = makerOutcomeMessage(verdict as 'kept' | 'broken', amtDollars, vow.destination);
         const sid = await sendSMS(makerUser.phone, makerBody);
         await supabase.from('sms_log').insert({
           vow_id: vow.id,

@@ -2260,6 +2260,12 @@ If `sms_only_preference = true`, push is skipped entirely for that user (set in 
 
 **Auditing this rule:** every `notifyMaker` call must emit an audit event `notification_sent` with `metadata = { channel: 'push'|'sms', payload_type, vow_id }`. The §4.9 observability dashboard counts daily channel distribution; if push share drops below 60% for users with `push_token != null`, alert (likely a push delivery regression).
 
+**Known simplification (V6):** `last_push_receipt_ok_at` is set based on Expo's HTTP 200 response to the push send request, NOT the actual Apple/Google delivery receipt. Tokens that go stale after a successful send will continue to look "healthy" for up to 7 days. **V7 followup:** add a cron job that calls Expo's `getReceipts` endpoint for recent push ticket IDs, then updates `last_push_receipt_ok_at` (on confirmed delivery) or `last_push_receipt_failed_at` (on `DeviceNotRegistered` / `InvalidCredentials`) to get accurate channel health.
+
+**Cold-start handling:** new users with `push_token != null` but `last_push_receipt_ok_at == null` (never received a push) are treated as healthy-on-first-attempt. The first push attempt will either succeed (setting `last_push_receipt_ok_at`) or fail (falling through to SMS).
+
+**Note on `send-sms` edge function:** the `send-sms/index.ts` file is FROZEN per CLAUDE.md. The `notifyMaker()` helper imports `sendSMS` directly from `_shared/twilio.ts`, bypassing `send-sms` entirely. All new notification paths use `notifyMaker()` or `sendSMSWithRetry()` from `_shared/notify.ts`.
+
 ## 4.5 Stripe edge cases (CTO checklist)
 
 1. **Refund failures.** Today: `submit-verdict` calls Stripe refund with idempotency key `refund-{vow_id}`. If the call fails (network, Stripe outage), `refund_failed=true` is set on the vow but no retry is scheduled. **Fix:** add a cron job that retries `refund_failed=true` vows every 30 min with exponential backoff, max 24 attempts (~2 days), then alerts Joe via push and email if still failing.
