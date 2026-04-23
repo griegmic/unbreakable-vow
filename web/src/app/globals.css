@@ -113,6 +113,8 @@ html {
     /* ── iMessage / system ── */
     --uv-imessage: #34C759;
     --uv-imessage-deep: #2AA84A;
+    --uv-imessage-bg: rgba(52, 199, 89, 0.10);
+    --uv-imessage-border: rgba(52, 199, 89, 0.28);
 
     /* ── Typography ── */
     --uv-font-serif: var(--font-serif), 'Fraunces', Georgia, serif;

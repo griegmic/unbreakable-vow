@@ -51,6 +51,8 @@ export const uvColors = {
   // iMessage / system
   imessage: '#34C759',
   imessageDeep: '#2AA84A',
+  imessageBg: 'rgba(52, 199, 89, 0.10)',
+  imessageBorder: 'rgba(52, 199, 89, 0.28)',
 } as const;
 
 export const uvSpacing = {

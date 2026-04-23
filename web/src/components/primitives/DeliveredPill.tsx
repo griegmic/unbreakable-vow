@@ -9,34 +9,21 @@ export function DeliveredPill({ timestamp }: DeliveredPillProps) {
       style={{
         display: 'inline-flex',
         alignItems: 'center',
-        gap: 6,
-        padding: '5px 12px',
+        gap: 8,
+        padding: '8px 14px',
         borderRadius: 9999,
-        background: 'var(--uv-bg-card)',
-        border: '1px solid var(--uv-border)',
+        background: 'var(--uv-imessage-bg)',
+        border: '1px solid var(--uv-imessage-border)',
+        color: 'var(--uv-imessage)',
+        fontFamily: 'var(--uv-font-sans)',
+        fontSize: 11,
+        fontWeight: 500,
+        letterSpacing: '0.18em',
+        textTransform: 'uppercase',
       }}
     >
-      <span
-        style={{
-          fontFamily: 'var(--uv-font-sans)',
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: '0.12em',
-          color: 'var(--uv-imessage)',
-          textTransform: 'uppercase',
-        }}
-      >
-        DELIVERED
-      </span>
-      <span
-        style={{
-          fontFamily: 'var(--uv-font-sans)',
-          fontSize: 11,
-          color: 'var(--uv-text-dim)',
-        }}
-      >
-        · {time}
-      </span>
+      <span style={{ fontSize: 12, fontWeight: 700 }}>✓</span>
+      Delivered · {time}
     </div>
   );
 }

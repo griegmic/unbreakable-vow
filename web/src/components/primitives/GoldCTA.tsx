@@ -26,12 +26,17 @@ export function GoldCTA({ label, onPress, disabled = false, variant = 'filled-go
         background: disabled ? 'var(--uv-bg-elevated)' : bg,
         color: disabled ? 'var(--uv-text-dim)' : textColor,
         fontFamily: 'var(--uv-font-serif)',
-        fontSize: 17,
+        fontSize: 18,
         fontWeight: 500,
+        letterSpacing: '0.005em',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         transition: 'transform 100ms ease, opacity 100ms ease',
-        boxShadow: disabled ? 'none' : '0 0 20px var(--uv-gold-glow), inset 0 1px 0 rgba(255,255,255,0.18)',
+        boxShadow: disabled
+          ? 'none'
+          : variant === 'filled-imsg-green'
+            ? 'inset 0 1px 0 rgba(255,255,255,0.22), 0 12px 32px rgba(52,199,89,0.26)'
+            : '0 0 20px var(--uv-gold-glow), inset 0 1px 0 rgba(255,255,255,0.18)',
       }}
       onMouseDown={(e) => { if (!disabled) (e.currentTarget.style.transform = 'scale(0.97)'); }}
       onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
