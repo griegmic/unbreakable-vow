@@ -1,11 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Check, DollarSign, Share2, CheckCheck, Undo2 } from 'lucide-react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { SecondaryButton } from '@/components/uv/SecondaryButton';
-import { OathCheckbox } from '@/components/uv/OathCheckbox';
-import { Card } from '@/components/uv/Card';
+import { RitualCard, GoldCTA, OutlinedGoldCTA, EyebrowTag, FrauncesH1, FrauncesSub, Stamp } from '@/components/primitives';
 
 interface Vow {
   id: string;
@@ -31,7 +27,8 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
   const [shared, setShared] = useState(false);
   const [pendingVerdict, setPendingVerdict] = useState<VerdictChoice>(null);
   const [toastProgress, setToastProgress] = useState(100);
-  const [truthSworn, setTruthSworn] = useState(false);
+  // Checkbox removed per V6 mock (no "I'll tell the truth" gate). Buttons always enabled.
+  const truthSworn = true;
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const handleConfirmRef = useRef<(v: VerdictChoice) => Promise<void>>(null!);
@@ -165,7 +162,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
     };
 
     return (
-      <RitualScreen variant={isKept ? 'outcome-kept' : 'outcome-broken'}>
+      <div style={{ minHeight: "100dvh", background: "var(--uv-bg)", backgroundImage: "radial-gradient(ellipse at 50% 30%, rgba(200,155,60,0.06), var(--uv-bg) 70%)", display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 36px 40px", textAlign: "center" }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
             UNBREAKABLE VOW
@@ -246,7 +243,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
           {/* Growth CTAs */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
             <a href="/create" style={{ textDecoration: 'none' }}>
-              <PrimaryButton>Make your own vow &rarr;</PrimaryButton>
+              <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
             </a>
             <div style={{ textAlign: 'center' }}>
               <a
@@ -258,14 +255,14 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
             </div>
           </div>
         </div>
-      </RitualScreen>
+      </div>
     );
   }
 
   // ─── CONFIRM (submitting) STATE ───
   if (view === 'confirm') {
     return (
-      <RitualScreen>
+      <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 30%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 36px 40px', textAlign: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
             UNBREAKABLE VOW
@@ -292,113 +289,130 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
             </div>
           </div>
         </div>
-      </RitualScreen>
+      </div>
     );
   }
 
   // ─── CHOOSE STATE ───
   return (
-    <RitualScreen variant="ceremony">
+    <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 36px 40px' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
-          VERDICT TIME
-        </span>
+        <EyebrowTag tone="gold">UNBREAKABLE VOW</EyebrowTag>
 
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0, lineHeight: 1.2 }}>
-            Did {judgeName} keep it?
-          </h1>
-          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-            {vow.stake_amount > 0 ? `$${vow.stake_amount / 100} rides on your honesty.` : "Be honest. That's the whole point."}
-          </p>
+        {/* "— VERDICT DAY —" stamp per mock */}
+        <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
+          — Verdict day —
         </div>
 
-        {/* Vow text in gold italic */}
-        <Card>
+        {/* H1 per mock: "Joey's vow / is up." with forced line break */}
+        <div style={{ textAlign: 'center' }}>
+          <FrauncesH1 italic size="lg">{judgeName}&apos;s vow<br/>is <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>up.</em></FrauncesH1>
+        </div>
+
+        {/* Vow card with stamp header + 2-col meta per mock */}
+        <RitualCard>
+          <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 8 }}>
+            — The Vow —
+          </div>
           <p style={{ fontSize: 18, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontWeight: 500, color: 'var(--uv-gold)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>
             &ldquo;{vow.refined_text}&rdquo;
           </p>
           {vow.stake_amount > 0 && (
-            <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--uv-border-strong)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 13, color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>At stake</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>${vow.stake_amount / 100}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, paddingTop: 14, borderTop: '1px dashed var(--uv-border-soft)' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>On the line</div>
+                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>${vow.stake_amount / 100}</div>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)' }}>to {vow.destination}, if broken</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>Vow ended</div>
+                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>2h ago</div>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)', fontStyle: 'italic' }}>Sun, 9:00 PM</div>
+              </div>
             </div>
           )}
-        </Card>
+        </RitualCard>
 
-        {/* Oath checkbox */}
-        <OathCheckbox
-          checked={truthSworn}
-          onChange={setTruthSworn}
-          label="I'll tell the truth."
-        />
+        {/* No "I'll tell the truth" checkbox — mock doesn't have it. Verdict buttons are unguarded. */}
 
-        {/* Verdict choice cards */}
-        <button
-          onClick={() => handleChoose('kept')}
-          disabled={busy || !truthSworn}
-          style={{
-            width: '100%',
-            borderRadius: 'var(--uv-radius-2xl)',
-            padding: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 16,
-            textAlign: 'left',
-            backgroundColor: 'var(--uv-bg-card)',
-            border: `1.5px solid var(--uv-success)`,
-            cursor: !truthSworn ? 'not-allowed' : 'pointer',
-            opacity: !truthSworn ? 0.5 : 1,
-            transition: 'transform 120ms, opacity 120ms',
-          }}
-        >
-          <div style={{ width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(82,214,154,0.12)' }}>
-            <Check style={{ width: 24, height: 24, color: 'var(--uv-success)' }} />
-          </div>
-          <div>
-            <span style={{ fontSize: 17, fontWeight: 600, display: 'block', color: 'var(--uv-success)', fontFamily: 'var(--uv-font-serif)' }}>Kept.</span>
-            <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
-              {vow.stake_amount === 0
-                ? 'They did it.'
-                : `They did it. Their $${vow.stake_amount / 100} comes back.`}
-            </span>
-          </div>
-        </button>
+        {/* "YOUR CALL" section header per mock */}
+        <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
+          Your call
+        </div>
 
-        <button
-          onClick={() => handleChoose('broken')}
-          disabled={busy || !truthSworn}
-          style={{
-            width: '100%',
-            borderRadius: 'var(--uv-radius-2xl)',
-            padding: 20,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 16,
-            textAlign: 'left',
-            backgroundColor: 'var(--uv-bg-card)',
-            border: `1.5px solid var(--uv-danger)`,
-            cursor: !truthSworn ? 'not-allowed' : 'pointer',
-            opacity: !truthSworn ? 0.5 : 1,
-            transition: 'transform 120ms, opacity 120ms',
-          }}
-        >
-          <div style={{ width: 48, height: 48, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(220,38,38,0.12)' }}>
-            <DollarSign style={{ width: 24, height: 24, color: 'var(--uv-danger)' }} />
-          </div>
-          <div>
-            <span style={{ fontSize: 17, fontWeight: 600, display: 'block', color: 'var(--uv-danger)', fontFamily: 'var(--uv-font-serif)' }}>Broken.</span>
-            <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
-              {vow.stake_amount === 0
-                ? "They didn't."
-                : `They didn't. Their $${vow.stake_amount / 100} goes to ${vow.destination}.`}
-            </span>
-          </div>
-        </button>
+        {/* TODO-MOCK-REFRESH: hardcoded "his" to match mock. Final impl needs pronoun derivation. */}
+        <div style={{ textAlign: 'center' }}>
+          <FrauncesH1 italic size="lg">Did {judgeName} keep <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>his word?</em></FrauncesH1>
+        </div>
 
-        <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-          Your verdict is final.
-        </p>
+        {/* Verdict buttons — side-by-side per mock (~120px tall each) */}
+        <div style={{ display: 'flex', gap: 12 }}>
+          <button
+            onClick={() => handleChoose('kept')}
+            disabled={busy || !truthSworn}
+            style={{
+              flex: 1,
+              minHeight: 120,
+              borderRadius: 18,
+              padding: 20,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              backgroundColor: 'var(--uv-bg-card)',
+              border: '1.5px solid var(--uv-success)',
+              cursor: !truthSworn ? 'not-allowed' : 'pointer',
+              opacity: !truthSworn ? 0.5 : 1,
+              transition: 'transform 120ms',
+            }}
+          >
+            <span style={{ fontSize: 22, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-serif)' }}>Yes</span>
+            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>Kept it</span>
+          </button>
+
+          <button
+            onClick={() => handleChoose('broken')}
+            disabled={busy || !truthSworn}
+            style={{
+              flex: 1,
+              minHeight: 120,
+              borderRadius: 18,
+              padding: 20,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 6,
+              backgroundColor: 'var(--uv-bg-card)',
+              border: '1.5px solid var(--uv-danger)',
+              cursor: !truthSworn ? 'not-allowed' : 'pointer',
+              opacity: !truthSworn ? 0.5 : 1,
+              transition: 'transform 120ms',
+            }}
+          >
+            <span style={{ fontSize: 22, fontWeight: 600, color: 'var(--uv-danger)', fontFamily: 'var(--uv-font-serif)' }}>No</span>
+            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>Broke it</span>
+          </button>
+        </div>
+
+        {/* Footer per mock: "Open Messages" link + "Be honest" */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
+          <button
+            onClick={() => {
+              if (makerName) {
+                const body = encodeURIComponent(`Hey — just checking before I submit my verdict. Did you keep it?`);
+                window.location.href = `sms:&body=${body}`;
+              }
+            }}
+            style={{ background: 'none', border: 'none', fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)', cursor: 'pointer', padding: 0 }}
+          >
+            Need to check? <span style={{ color: 'var(--uv-gold)', fontWeight: 500 }}>Open Messages with {judgeName}</span>
+          </button>
+          <p style={{ fontSize: 13, color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic' }}>
+            Be honest. They&apos;re counting on it.
+          </p>
+        </div>
       </div>
 
       {/* Undo toast */}
@@ -466,6 +480,6 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
           </div>
         </div>
       )}
-    </RitualScreen>
+    </div>
   );
 }

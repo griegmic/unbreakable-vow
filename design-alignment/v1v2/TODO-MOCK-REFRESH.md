@@ -21,3 +21,17 @@ or uses values that differ from the shipped primitives.
 7. **WaxSeal height mismatch**: primitive renders `lg`=112px, mock uses 110px. 2px delta cascades into stamp/H1 position (+5px at H1). Decision deferred from PR #3A: either the `lg` variant drops to 110 (primitive wins) or the mock updates to 112 (fidelity win).
 
 8. **Em-dash stamp height**: impl renders 15px, mock 12px. Plain-text "— Sealed —" reads taller in our rendering. 3px delta. Review whether the stamp span needs explicit `lineHeight: 1` to match. Deferred from PR #3A.
+
+## S14 (`flow/html/09-witness-landing.html`)
+
+9. **Oath checkbox**: impl includes "I swear to keep [name] accountable" checkbox + "they picked you for a reason" hint. These are code-carried additions from the existing build, not in the pre-V6 mock. Accepted as keepers — update mock to include them.
+
+10. **Reassurance footer**: impl includes "Zero cost to you. No account needed." footer from killed S14.5. Not in mock. Accepted per §3.2 S14 — update mock.
+
+11. **"First time? How this works →" link**: removed per §3.2 S14.5 kill note. Mock still shows it. Update mock to remove.
+
+12. **S14 "I'm in →" CTA contrast**: GoldCTA default variant appears lower-contrast over the dark S14 background compared to the iMessage-green CTAs on S16/S17. Audit visual weight — may be an opacity or gold-tone rendering issue. Fix in polish pass.
+
+13. **S15 subcopy missing space**: "Wed, Apr 29when it's time..." — date concatenation is missing a space separator before "when". Fix in polish PR.
+
+14. **S19-VOIDED maker name**: renders as full "Joseph Rosenfield" because the fixture patch that normalized S14/S16/S17 maker name to "Joey" didn't update the voided fixture. Fix when re-running seed script.

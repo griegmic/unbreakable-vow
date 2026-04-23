@@ -27,3 +27,4 @@ export { ContactPicker } from './ContactPicker';
 export { DatePickerSheet } from './DatePickerSheet';
 export { ChangeStakeSheet } from './ChangeStakeSheet';
 export { DismissDraftSheet } from './DismissDraftSheet';
+export { TimelineCard } from './TimelineCard';

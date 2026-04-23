@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import type { Metadata } from 'next';
 import WitnessInviteClient from './client';
+import WitnessTerminalClient from './terminal-client';
 import WitnessNotFound from './not-found-client';
 
 interface Props {
@@ -68,7 +69,7 @@ export default async function WitnessInvitePage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('id, refined_text, stake_amount, destination, witness_name, witness_phone, witness_accepted_at, witness_declined, starts_at, ends_at, status, user_id')
+    .select('id, refined_text, stake_amount, destination, witness_name, witness_phone, witness_accepted_at, witness_declined, starts_at, ends_at, status, verdict, verdict_at, user_id')
     .eq('witness_invite_token', token)
     .single();
 
@@ -98,5 +99,36 @@ export default async function WitnessInvitePage({ params }: Props) {
     }
   }
 
-  return <WitnessInviteClient vow={vow} token={token} makerName={makerName} makerPhone={makerPhone} />;
+  const stakeDollars = Math.round(vow.stake_amount / 100);
+
+  // ── S19 Status-aware router — priority order (§3.2): ──
+  // 1. witness_declined first: if the witness passed, that's their terminal state
+  //    regardless of what happened to the vow afterward (voided, verdict by someone else).
+  //    The witness's POV is "you sat this one out" — not the vow's outcome.
+  //    Declined wins over voided: witness's action is their terminal state.
+  //    Declined wins over verdict: witness didn't participate, so don't show an outcome they didn't author.
+  // 2. verdict: if a verdict was recorded (by another witness, self-resolve, or auto-resolve),
+  //    show the outcome. The witness arriving late should see what happened, not "expired."
+  // 3. voided: maker pulled the vow. Nothing left to judge.
+  // 4. active states: the witness can still act (accept or verdict).
+  // 5. else: data inconsistency — show expired as a safe fallback.
+
+  if (vow.witness_declined) {
+    return <WitnessTerminalClient variant="declined" makerName={makerName} makerPhone={makerPhone} vow={vow} stakeDollars={stakeDollars} />;
+  }
+
+  if (vow.verdict != null) {
+    return <WitnessTerminalClient variant="outcome-resolved" makerName={makerName} makerPhone={makerPhone} vow={vow} stakeDollars={stakeDollars} />;
+  }
+
+  if (vow.status === 'voided') {
+    return <WitnessTerminalClient variant="voided" makerName={makerName} makerPhone={makerPhone} vow={vow} stakeDollars={stakeDollars} />;
+  }
+
+  if (['draft', 'sealed', 'active', 'awaiting_verdict'].includes(vow.status)) {
+    return <WitnessInviteClient vow={vow} token={token} makerName={makerName} makerPhone={makerPhone} />;
+  }
+
+  // Data inconsistency / orphaned token — safe fallback
+  return <WitnessTerminalClient variant="expired" makerName={makerName} makerPhone={makerPhone} vow={vow} stakeDollars={stakeDollars} />;
 }

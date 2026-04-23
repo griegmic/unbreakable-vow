@@ -1,5 +1,7 @@
+import { type ReactNode } from 'react';
+
 interface FrauncesH1Props {
-  children: string;
+  children: ReactNode;
   italic?: boolean;
   size?: 'lg' | 'xl';
 }

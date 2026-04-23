@@ -1,15 +1,9 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Check, Phone, MessageCircle } from 'lucide-react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { SecondaryButton } from '@/components/uv/SecondaryButton';
-import { OathCheckbox } from '@/components/uv/OathCheckbox';
-import { Card } from '@/components/uv/Card';
-import { Input } from '@/components/uv/Input';
+import { WaxSeal, FrauncesH1, FrauncesSub, GoldCTA, EyebrowTag, VowDocCard, TimelineCard, RitualCard } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
-import { HamburgerMenu } from '@/components/hamburger-menu';
 
 interface Vow {
   id: string;
@@ -204,13 +198,12 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     };
     const msg = resolvedMessages[vow.status] || resolvedMessages.voided;
     return (
-      <RitualScreen>
+      <div style={{ minHeight: "100dvh", background: "var(--uv-bg)", backgroundImage: "radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)", display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 36px 40px" }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
               UNBREAKABLE VOW
             </span>
-            {isAuthenticated && <HamburgerMenu />}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'center' }}>
             <h1 style={{ fontSize: 28, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
@@ -221,10 +214,10 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </p>
           </div>
           <a href="/create" style={{ textDecoration: 'none' }}>
-            <PrimaryButton>Make your own vow &rarr;</PrimaryButton>
+            <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
           </a>
         </div>
-      </RitualScreen>
+      </div>
     );
   }
 
@@ -243,15 +236,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       : `${daysLeft} days left`;
 
     return (
-      <RitualScreen>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
-              UNBREAKABLE VOW
-            </span>
-            {isAuthenticated && <HamburgerMenu />}
-          </div>
-
+      <div style={{ minHeight: "100dvh", background: "var(--uv-bg)", backgroundImage: "radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)", display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 28px 32px" }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, width: '100%', maxWidth: 340, alignItems: 'center' }}>
           {acceptPhase === 'capturing' ? (
             /* ── POST-ACCEPT: Confirmation line + phone capture ── */
             <>
@@ -273,11 +259,11 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 </span>
               </div>
 
-              <Card>
+              <div style={{ borderRadius: 18, padding: "18px 22px", background: "var(--uv-bg-card)", border: "1px solid var(--uv-border)" }}>
                 <p style={{ fontSize: 13, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', color: 'var(--uv-gold)', margin: 0 }}>
                   &ldquo;{vow.refined_text}&rdquo;
                 </p>
-              </Card>
+              </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'center' }}>
                 <h2 style={{ fontSize: 24, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
@@ -288,12 +274,12 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 </p>
               </div>
 
-              <Input
+              <input
                 type="tel"
                 value={reminderPhone}
-                onChange={(val) => setReminderPhone(val)}
+                onChange={(e) => setReminderPhone(e.target.value)}
                 placeholder="Phone number"
-                label="Phone number"
+                style={{ width: '100%', height: 48, padding: '0 16px', borderRadius: 14, border: '1px solid var(--uv-border)', background: 'var(--uv-bg-input)', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', fontSize: 16, outline: 'none' }}
               />
 
               {error && (
@@ -305,225 +291,107 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               <div style={{ flex: 1 }} />
 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                <PrimaryButton
+                <button
                   onClick={async () => {
                     const digits = reminderPhone.replace(/\D/g, '');
                     if (digits.length < 7) return;
                     await handleSaveReminder();
                     setAcceptPhase(null);
                   }}
-                  disabled={!reminderPhone.trim()}
-                  loading={reminderSaving}
+                  disabled={!reminderPhone.trim() || reminderSaving}
+                  style={{ width: '100%', height: 52, borderRadius: 14, border: 'none', background: !reminderPhone.trim() ? 'var(--uv-bg-elevated)' : 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))', color: !reminderPhone.trim() ? 'var(--uv-text-dim)' : 'var(--uv-text-on-gold)', fontFamily: 'var(--uv-font-serif)', fontSize: 16, fontWeight: 500, cursor: !reminderPhone.trim() ? 'not-allowed' : 'pointer' }}
                 >
                   Done
-                </PrimaryButton>
-                <SecondaryButton onClick={() => { setReminderSkipped(true); setAcceptPhase(null); }}>
+                </button>
+                <button onClick={() => { setReminderSkipped(true); setAcceptPhase(null); }} style={{ background: "none", border: "none", color: "var(--uv-text-dim)", fontFamily: "var(--uv-font-sans)", fontSize: 13, lineHeight: 1.2, cursor: "pointer", padding: 0 }}>
                   Not now
-                </SecondaryButton>
+                </button>
               </div>
             </>
           ) : (
-            /* ── DASHBOARD ── */
+            /* ── S16: WITNESS ACCEPTED (V6 mock: 10-witness-accepted.html) ── */
+            /* Rewritten from pre-V6 dashboard tracker to V6 accepted state. */
+            /* Handlers (handleTextMaker, handleSaveReminder) preserved in scope. */
             <>
-              {/* Status badge */}
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    padding: '8px 14px',
-                    borderRadius: 999,
-                    backgroundColor: isVerdictDue ? 'rgba(212,162,79,0.12)' : 'rgba(82,214,154,0.08)',
-                    border: isVerdictDue ? '1px solid var(--uv-border-strong)' : '1px solid rgba(82,214,154,0.22)',
-                  }}
-                >
-                  <div
-                    style={{
-                      width: 8,
-                      height: 8,
-                      borderRadius: '50%',
-                      backgroundColor: isVerdictDue ? 'var(--uv-gold-bright)' : 'var(--uv-success)',
-                    }}
-                  />
-                  <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '1px', textTransform: 'uppercase', color: isVerdictDue ? 'var(--uv-gold-bright)' : 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>
-                    {isVerdictDue ? 'VERDICT DUE' : 'VOW ACTIVE'}
-                  </span>
+              {/* Gold checkmark circle — matches mock's 78px checkmark, not the full WaxSeal */}
+              {/* TODO-MOCK-REFRESH: mock uses a 78px gold circle with check, not the WaxSeal primitive (96px md). */}
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+                <div style={{ position: 'relative', width: 78, height: 78 }}>
+                  <div style={{
+                    width: 78, height: 78, borderRadius: '50%',
+                    background: 'radial-gradient(circle at 35% 35%, rgba(200,155,60,0.25), transparent 70%)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    <div style={{
+                      width: 52, height: 52, borderRadius: '50%',
+                      background: 'linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold))',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      boxShadow: '0 0 20px var(--uv-gold-glow)',
+                    }}>
+                      <span style={{ color: 'var(--uv-text-on-gold)', fontSize: 24, fontWeight: 700 }}>✓</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Title */}
-              <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                <h1 style={{ fontSize: 26, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
-                  {isVerdictDue ? "Time's up." : "You're watching."}
-                </h1>
-                <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-                  {isVerdictDue
-                    ? `Did ${makerFirstName} keep the vow? Your call.`
-                    : `${makerFirstName} is counting on your honesty.`
-                  }
-                </p>
+              {/* "— YOU'RE IN —" stamp */}
+              <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
+                — You&apos;re in —
               </div>
 
-              {/* Vow quote */}
-              <Card>
-                <div style={{ display: 'flex', alignItems: 'stretch', gap: 12 }}>
-                  <div style={{ width: 3, borderRadius: 2, backgroundColor: 'var(--uv-gold)', flexShrink: 0 }} />
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <p style={{ fontSize: 16, lineHeight: '23px', fontFamily: 'var(--uv-font-serif)', fontWeight: 500, color: 'var(--uv-text)', margin: 0 }}>
-                      &ldquo;{vow.refined_text}&rdquo;
-                    </p>
-                    <p style={{ fontSize: 12, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-                      {vow.stake_amount > 0
-                        ? `$${vow.stake_amount / 100} at stake \u00B7 ${vow.destination} if broken`
-                        : 'Their word is on the line'}
-                    </p>
-                  </div>
-                </div>
-              </Card>
+              {/* H1 per §3.2 S16 */}
+              <div style={{ textAlign: 'center' }}>
+                {/* TODO-MOCK-REFRESH: hardcoded "him" to match mock. Final impl needs pronoun derivation from schema. */}
+                <FrauncesH1 italic size="lg">{makerFirstName} knows<br/>you&apos;ve got <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>him.</em></FrauncesH1>
+              </div>
 
-              {/* Stats row */}
-              {!isVerdictDue && (
-                <div style={{ display: 'flex', gap: 12 }}>
-                  <div style={{ flex: 1, padding: '12px 16px', borderRadius: 'var(--uv-radius-md)', backgroundColor: 'var(--uv-bg-card)', border: '1px solid var(--uv-border-strong)', textAlign: 'center' }}>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', display: 'block' }}>
-                      {dayNumber !== null ? `Day ${Math.min(dayNumber, totalDays)}` : '\u2014'}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>
-                      of {totalDays}
-                    </span>
-                  </div>
-                  <div style={{ flex: 1, padding: '12px 16px', borderRadius: 'var(--uv-radius-md)', backgroundColor: 'var(--uv-bg-card)', border: '1px solid var(--uv-border-strong)', textAlign: 'center' }}>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', display: 'block' }}>
-                      {countdownLabel || '\u2014'}
-                    </span>
-                    <span style={{ fontSize: 11, color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>
-                      Verdict: {endDate}
-                    </span>
-                  </div>
-                </div>
-              )}
+              {/* Sub per §3.2 S16 */}
+              <div style={{ textAlign: 'center', maxWidth: 290 }}>
+                <FrauncesSub>
+                  <strong style={{ color: 'var(--uv-text)', fontWeight: 500, fontStyle: 'normal' }}>That&apos;s it for now.</strong>{' '}
+                  We&apos;ll text you {vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'long' }) : 'verdict day'} at 9pm.
+                </FrauncesSub>
+              </div>
 
-              {/* Primary CTA: Text the maker */}
-              {!isVerdictDue && (() => {
-                const elapsed = getElapsed();
-                const nudgeLabel = elapsed < 0.15
-                  ? `Send ${makerLabel} a message`
-                  : elapsed < 0.85
-                    ? `Check in on ${makerLabel}`
-                    : `The clock is ticking \u2014 message ${makerLabel}`;
-                return (
-                  <PrimaryButton onClick={handleTextMaker}>
-                    <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                      <MessageCircle style={{ width: 16, height: 16 }} />
-                      {nudgeLabel}
-                    </span>
-                  </PrimaryButton>
-                );
-              })()}
+              {/* Timeline card per V6 mock — static labels, PATH A */}
+              <TimelineCard
+                steps={[
+                  { label: 'Now', desc: `${makerFirstName} gets the green light.`, state: 'now' },
+                  { label: `${daysLeft !== null && daysLeft > 1 ? 'Sat' : 'Tomorrow'} — 24h before`, desc: "We'll text you a heads-up.", state: 'future' },
+                  { label: vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short' }) + ', 9pm' : 'Verdict day', desc: 'One tap: did he keep it?', state: 'future' },
+                ]}
+              />
 
-              {/* Verdict due CTA */}
-              {isVerdictDue && (
-                <PrimaryButton onClick={() => window.location.href = `/w/${token}/verdict`}>
-                  Deliver your verdict
-                </PrimaryButton>
-              )}
+              {/* Spacer */}
+              <div style={{ flex: 1 }} />
 
-              {/* Phone capture — only if skipped on screen 2 */}
-              {!isVerdictDue && !reminderSaved && reminderSkipped && (
-                <>
-                  {reminderExpanded ? (
-                    <Card>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <Phone style={{ width: 16, height: 16, color: 'var(--uv-gold-bright)' }} />
-                          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
-                            We&apos;ll text you on verdict day
-                          </span>
-                        </div>
-                        {needsWitnessName && (
-                          <Input
-                            type="text"
-                            value={reminderName}
-                            onChange={(val) => setReminderName(val)}
-                            placeholder="Your first name"
-                          />
-                        )}
-                        <Input
-                          type="tel"
-                          value={reminderPhone}
-                          onChange={(val) => setReminderPhone(val)}
-                          placeholder="Phone number"
-                        />
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                          <PrimaryButton
-                            onClick={handleSaveReminder}
-                            disabled={!reminderPhone.trim()}
-                            loading={reminderSaving}
-                          >
-                            Done
-                          </PrimaryButton>
-                          <SecondaryButton onClick={() => setReminderExpanded(false)}>
-                            Not now
-                          </SecondaryButton>
-                        </div>
-                      </div>
-                    </Card>
-                  ) : (
-                    <SecondaryButton onClick={() => setReminderExpanded(true)}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Phone style={{ width: 14, height: 14 }} />
-                        Get a verdict-day reminder
-                      </span>
-                    </SecondaryButton>
-                  )}
-                </>
-              )}
+              {/* iMessage-green CTA per V6 mock */}
+              <GoldCTA
+                label={`Text ${makerFirstName}: I've got you`}
+                onPress={handleTextMaker}
+                variant="filled-imsg-green"
+              />
 
-              {/* Saved confirmation */}
-              {!isVerdictDue && reminderSaved && (
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 8,
-                    padding: '14px 16px',
-                    borderRadius: 'var(--uv-radius-md)',
-                    backgroundColor: 'rgba(82,214,154,0.08)',
-                    border: '1px solid rgba(82,214,154,0.2)',
-                  }}
-                >
-                  <Check style={{ width: 16, height: 16, color: 'var(--uv-success)' }} />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>
-                    We&apos;ll text you on {endDate}
-                  </span>
-                </div>
-              )}
-
-              {/* Growth CTAs */}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, paddingTop: 8 }}>
-                <a href="/create" style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}>
-                  Make your own vow &rarr;
-                </a>
+              {/* Footer per mock: preview text + micro */}
+              <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 12, lineHeight: 1.4, color: 'var(--uv-text-dim)' }}>
+                Opens Messages with: <em style={{ color: 'var(--uv-text-muted)', fontStyle: 'italic' }}>&ldquo;I&apos;ve got you. See you Sunday.&rdquo;</em>
               </div>
             </>
           )}
         </div>
-      </RitualScreen>
+      </div>
     );
   }
 
   // ─── DECLINED STATE ───
   if (status === 'declined') {
     return (
-      <RitualScreen>
+      <div style={{ minHeight: "100dvh", background: "var(--uv-bg)", backgroundImage: "radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)", display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 36px 40px" }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
               UNBREAKABLE VOW
             </span>
-            {isAuthenticated && <HamburgerMenu />}
           </div>
           <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
             <h1 style={{ fontSize: 28, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
@@ -535,7 +403,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <a href="/create" style={{ textDecoration: 'none' }}>
-              <PrimaryButton>Make your own vow &rarr;</PrimaryButton>
+              <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
             </a>
             <div style={{ textAlign: 'center' }}>
               <a href={`/?ref=witness&dare=${encodeURIComponent(makerFirstName)}`} style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}>
@@ -544,7 +412,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </div>
           </div>
         </div>
-      </RitualScreen>
+      </div>
     );
   }
 
@@ -552,46 +420,59 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   const stakeDisplay = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : null;
 
   return (
-    <RitualScreen variant="ceremony">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
-            UNBREAKABLE VOW
-          </span>
-          {isAuthenticated && <HamburgerMenu />}
-        </div>
+    <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '100px 36px 40px', textAlign: 'center' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%', maxWidth: 380 }}>
+        <EyebrowTag tone="gold">UNBREAKABLE VOW</EyebrowTag>
 
-        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <h1 style={{ fontSize: 28, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0, lineHeight: 1.2 }}>
-            {makerFirstName} made an Unbreakable Vow.
-          </h1>
-          <p style={{ fontSize: 16, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-            They&apos;re asking you to judge.
-          </p>
-        </div>
+        <FrauncesH1 italic size="lg">{makerFirstName} needs you to witness this.</FrauncesH1>
 
-        <Card variant="elevated">
-          <p style={{ fontSize: 20, fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontStyle: 'italic', color: 'var(--uv-gold)', margin: 0, textAlign: 'center', lineHeight: 1.4 }}>
+        {/* Sub line per mock */}
+        <FrauncesSub>
+          {stakeDisplay
+            ? <>They put {stakeDisplay} on it. If they break their word, <strong style={{ color: 'var(--uv-text)', fontWeight: 500, fontStyle: 'normal' }}>you call it.</strong></>
+            : <>If they break their word, <strong style={{ color: 'var(--uv-text)', fontWeight: 500, fontStyle: 'normal' }}>you call it.</strong></>
+          }
+        </FrauncesSub>
+
+        {/* Vow card with "— THE VOW —" stamp + 2-column meta per mock */}
+        <RitualCard>
+          {/* Stamp header */}
+          <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 8 }}>
+            — The Vow —
+          </div>
+          {/* Vow text */}
+          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, fontStyle: 'italic', color: 'var(--uv-gold)', margin: 0, textAlign: 'center', lineHeight: 1.4 }}>
             &ldquo;{vow.refined_text}&rdquo;
           </p>
-        </Card>
+          {/* 2-column meta: ON THE LINE / YOU DECIDE */}
+          {stakeDisplay && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, paddingTop: 14, borderTop: '1px dashed var(--uv-border-soft)' }}>
+              <div>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>On the line</div>
+                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>{stakeDisplay}</div>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)' }}>to {vow.destination}, if broken</div>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>You decide</div>
+                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>{endDate?.split(',')[0] || 'TBD'}</div>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)' }}>at 9:00 PM</div>
+              </div>
+            </div>
+          )}
+        </RitualCard>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>
-          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, textAlign: 'center', fontFamily: 'var(--uv-font-sans)' }}>
-            {stakeDisplay
-              ? `If ${makerFirstName} breaks it, ${stakeDisplay} goes to ${vow.destination}.`
-              : `No money at stake \u2014 just their word.`}
-          </p>
-          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, textAlign: 'center', fontFamily: 'var(--uv-font-sans)' }}>
-            You decide on {endDate}.
-          </p>
-        </div>
+        {/* Reassurance line per mock */}
+        <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text-muted)', margin: 0, textAlign: 'center' }}>
+          All you do: <strong style={{ color: 'var(--uv-text)', fontWeight: 500 }}>say if they kept it or broke it.</strong>
+        </p>
 
-        <OathCheckbox
-          checked={sworn}
-          onChange={setSworn}
-          label={`I swear to keep ${makerLabel} accountable`}
-        />
+        {/* Oath checkbox — inline, matching V6 pattern */}
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 0' }}>
+          <input type="checkbox" checked={sworn} onChange={(e) => setSworn(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--uv-gold)' }} />
+          <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 15, color: 'var(--uv-text-muted)' }}>
+            I swear to keep {makerLabel} accountable
+          </span>
+        </label>
 
         {!sworn && (
           <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
@@ -599,23 +480,19 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
           </p>
         )}
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <PrimaryButton
-            onClick={handleAccept}
-            loading={busy}
-            disabled={!sworn}
-          >
-            I&apos;ll judge &rarr;
-          </PrimaryButton>
-          <div style={{ textAlign: 'center' }}>
-            <SecondaryButton onClick={handleDecline}>
-              I can&apos;t
-            </SecondaryButton>
-          </div>
-        </div>
+        <GoldCTA label="I'm in →" onPress={handleAccept} disabled={!sworn || busy} />
 
-        <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-          By accepting, you agree to receive a text on verdict day. Msg &amp; data rates may apply.
+        <button
+          onClick={handleDecline}
+          disabled={busy}
+          style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)', fontSize: 13, lineHeight: 1.2, cursor: 'pointer', padding: 0 }}
+        >
+          Pass — I can&apos;t
+        </button>
+
+        {/* Reassurance footer — moved from killed S14.5 (§3.2 S14) */}
+        <p style={{ marginTop: 16, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: 'var(--uv-text-dim)', textAlign: 'center' }}>
+          Zero cost to you. No account needed. {makerFirstName}&apos;s your only connection.
         </p>
 
         {error && (
@@ -624,6 +501,6 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
           </div>
         )}
       </div>
-    </RitualScreen>
+    </div>
   );
 }
