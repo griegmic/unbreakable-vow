@@ -53,6 +53,10 @@ export const uvColors = {
   imessageDeep: '#2AA84A',
   imessageBg: 'rgba(52, 199, 89, 0.10)',
   imessageBorder: 'rgba(52, 199, 89, 0.28)',
+
+  // Certificate
+  certPaper: '#14110D',
+  certStampText: '#1A1205',
 } as const;
 
 export const uvSpacing = {
