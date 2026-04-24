@@ -21,7 +21,7 @@ export function FrauncesH1({ children, italic = false, size = 'page' }: Fraunces
         fontSize: s.fontSize,
         fontWeight: 400,
         fontStyle: italic ? 'italic' : 'normal',
-        fontVariationSettings: '"opsz" 144, "SOFT" 30',
+        fontVariationSettings: `"opsz" ${s.fontSize > 30 ? 144 : s.fontSize}, "SOFT" 30`,
         letterSpacing: s.letterSpacing,
         lineHeight: s.lineHeight,
         color: 'var(--uv-text)',

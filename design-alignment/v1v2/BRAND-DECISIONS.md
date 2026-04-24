@@ -118,3 +118,14 @@ Added to both `globals.css` and `expo/lib/uv-tokens.ts` for parity.
 ### CSS class
 
 `.ritual-card-ceremony::before` added to globals.css — renders the `linear-gradient(90deg, transparent, var(--uv-gold), transparent)` top border decoration. Source: 03-pitch.html `.vow-card::before`.
+
+---
+
+## FrauncesH1 opsz scaling (PR #3S)
+
+**opsz now scales with font size for card variant.** Previous behavior: `"opsz" 144` at all sizes. New behavior: `"opsz" 144` for hero/page sizes (fontSize > 30), `"opsz" {fontSize}` for card size (24px). This is a deliberate deviation from the HTML mocks (which use `opsz 144` universally) — at 24px, opsz 144 produces overly delicate strokes that hurt readability on dark backgrounds. The OpenType `opsz` axis is designed to match optical size to rendered size; using the actual font size at small scales follows the axis's intent.
+
+- **Source:** Readability observation during /stake layout rebuild
+- **Deviation from mock:** Yes — mock uses `opsz 144` at all sizes
+- **Rationale:** Readability at 24px on dark backgrounds; follows OpenType opsz axis design intent
+- **File:** `web/src/components/primitives/FrauncesH1.tsx`
