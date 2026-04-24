@@ -3,7 +3,10 @@ import { useState, useCallback, useEffect } from 'react';
 import { Calendar, Check, MessageCircle, Phone } from 'lucide-react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { RitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, ChoiceChip } from '@/components/ui';
+// V6 primitives for pre-payment steps (dare, back-down-confirm, backed-down, stakes)
+import { RitualScreen, RitualCard, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, EyebrowTag } from '@/components/primitives';
+// Pre-V6 imports — retained for payment + sealed steps (swapped in PR #3H-2b)
+import { RitualScreen as LegacyRitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, ChoiceChip } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -32,6 +35,26 @@ const CHARITIES = [
   'Feeding America',
   'Local food bank',
 ];
+
+// Screen-local chip for stakes/charity selection (replaces pre-V6 ChoiceChip)
+function StakeChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      style={{
+        fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 500,
+        padding: '8px 16px', borderRadius: 9999,
+        background: active ? 'var(--uv-gold-bg)' : 'transparent',
+        border: `1.5px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
+        color: active ? 'var(--uv-gold)' : 'var(--uv-text-muted)',
+        cursor: 'pointer', transition: 'background 100ms, border-color 100ms',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
 
 function getCountdownTint(days: number | null) {
   if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
@@ -465,79 +488,73 @@ export default function ChallengeInviteClient({
   // ─── STEP 1: THE DARE ───
   if (step === 'dare') {
     return (
-      <RitualScreen>
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[70dvh] gap-5 text-center px-4">
-          <FadeUp>
-            <HeaderBadge />
-          </FadeUp>
+      <RitualScreen variant="utility">
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', minHeight: '70dvh', gap: 20, textAlign: 'center',
+          padding: '0 16px',
+        }}>
+          <EyebrowTag>UNBREAKABLE VOW</EyebrowTag>
 
-          <FadeUp delay={0.08}>
-            <p className="text-[18px] leading-[26px]" style={{ color: 'var(--text-secondary)' }}>
-              {`${makerFirstName} doesn't think you can`}
-            </p>
-          </FadeUp>
+          <p style={{
+            fontFamily: 'var(--uv-font-sans)', fontSize: 18, lineHeight: '26px',
+            color: 'var(--uv-text-muted)', margin: 0,
+          }}>
+            {`${makerFirstName} doesn't think you can`}
+          </p>
 
-          <FadeUp delay={0.16}>
-            <div
-              className="flex items-stretch overflow-hidden rounded-[16px] max-w-[360px]"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-            >
-              <div className="w-[3px] shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
-              <div className="flex-1 py-5 px-5">
-                <p className="text-[22px] leading-[30px] font-serif font-medium tracking-[-0.3px]" style={{ color: 'var(--text)' }}>
+          <RitualCard>
+            <div style={{ display: 'flex', alignItems: 'stretch', overflow: 'hidden' }}>
+              <div style={{ width: 3, flexShrink: 0, background: 'var(--uv-gold)' }} />
+              <div style={{ flex: 1, padding: '20px 20px' }}>
+                <p style={{
+                  fontFamily: 'var(--uv-font-serif)', fontSize: 22, lineHeight: '30px',
+                  fontWeight: 500, letterSpacing: '-0.3px', color: 'var(--uv-text)', margin: 0,
+                }}>
                   &ldquo;{vow.refined_text}&rdquo;
                 </p>
               </div>
             </div>
-          </FadeUp>
+          </RitualCard>
 
           {endDate && (
-            <FadeUp delay={0.22}>
-              <p className="text-[14px]" style={{ color: 'var(--text-muted)' }}>
-                by {endDate}
-              </p>
-            </FadeUp>
+            <p style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+              color: 'var(--uv-text-muted)', margin: 0,
+            }}>
+              by {endDate}
+            </p>
           )}
 
-          <FadeUp delay={0.3}>
-            <div className="flex flex-col items-center gap-2 w-full max-w-[320px]">
-              <button
-                type="button"
-                onClick={() => setStep('stakes')}
-                className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
-                style={{
-                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
-                }}
-              >
-                <div className="min-h-[56px] flex items-center justify-center px-5">
-                  <span className="text-[16px] font-bold font-serif tracking-[-0.2px]" style={{ color: '#0B0D11' }}>
-                    I do solemnly swear
-                  </span>
-                </div>
-              </button>
-              <button
-                type="button"
-                onClick={() => setStep('back-down-confirm')}
-                className="py-2 transition-opacity hover:opacity-70"
-              >
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
-                  back down
-                </span>
-              </button>
-            </div>
-          </FadeUp>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%', maxWidth: 320 }}>
+            <GoldCTA label="I do solemnly swear" onPress={() => setStep('stakes')} />
+            <button
+              type="button"
+              onClick={() => setStep('back-down-confirm')}
+              style={{
+                background: 'none', border: 'none', padding: '8px 0',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                color: 'var(--uv-text-muted)', opacity: 0.6,
+              }}>
+                back down
+              </span>
+            </button>
+          </div>
         </div>
 
         {error && (
-          <FadeUp>
-            <div
-              className="rounded-[12px] px-4 py-3 text-[14px] mx-4"
-              style={{ backgroundColor: 'rgba(220,38,38,0.1)', color: 'var(--danger)', border: '1px solid var(--danger)' }}
-            >
-              {error}
-            </div>
-          </FadeUp>
+          <div style={{
+            borderRadius: 12, padding: '12px 16px', margin: '0 16px',
+            fontSize: 14, fontFamily: 'var(--uv-font-sans)',
+            background: 'var(--uv-danger-bg)', color: 'var(--uv-danger)',
+            border: '1px solid var(--uv-danger)',
+          }}>
+            {error}
+          </div>
         )}
       </RitualScreen>
     );
@@ -546,48 +563,56 @@ export default function ChallengeInviteClient({
   // ─── BACK DOWN CONFIRM MODAL ───
   if (step === 'back-down-confirm') {
     return (
-      <RitualScreen>
-        <div className="flex-1 flex items-center justify-center min-h-[70dvh]">
-          <FadeUp>
-            <div
-              className="rounded-[22px] p-7 flex flex-col items-center gap-5 text-center max-w-[360px] mx-auto"
-              style={{
-                backgroundColor: 'var(--surface)',
-                border: '1px solid var(--border)',
-                boxShadow: '0 16px 28px rgba(0,0,0,0.26)',
-              }}
-            >
-              <h2 className="text-[24px] font-bold font-serif" style={{ color: 'var(--text)' }}>
-                Are you sure?
-              </h2>
-              <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
-                {makerName} will know you backed down.
-              </p>
-              <div className="flex flex-col items-center gap-3 w-full">
-                <PrimaryButton
-                  label="Go back"
-                  onPress={() => { setError(null); setStep('dare'); }}
-                />
-                <button
-                  type="button"
-                  onClick={handleDecline}
-                  disabled={busy}
-                  className="py-2 transition-opacity hover:opacity-70"
-                >
-                  {busy ? (
-                    <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--text-muted)', borderTopColor: 'transparent' }} />
-                  ) : (
-                    <span className="text-[13px]" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
-                      I&apos;m backing down
-                    </span>
-                  )}
-                </button>
-              </div>
-              {error && (
-                <p className="text-[13px]" style={{ color: 'var(--danger)' }}>{error}</p>
-              )}
+      <RitualScreen variant="utility">
+        <div style={{
+          flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          minHeight: '70dvh',
+        }}>
+          <div style={{
+            borderRadius: 22, padding: 28,
+            display: 'flex', flexDirection: 'column', alignItems: 'center',
+            gap: 20, textAlign: 'center', maxWidth: 360, margin: '0 auto',
+            background: 'var(--uv-bg-card)', border: '1px solid var(--uv-border)',
+            boxShadow: '0 16px 28px rgba(0,0,0,0.26)',
+          }}>
+            <FrauncesH1 italic size="lg">Are you sure?</FrauncesH1>
+            <FrauncesSub>{makerName} will know you backed down.</FrauncesSub>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%' }}>
+              <GoldCTA
+                label="Go back"
+                onPress={() => { setError(null); setStep('dare'); }}
+              />
+              <button
+                type="button"
+                onClick={handleDecline}
+                disabled={busy}
+                style={{
+                  background: 'none', border: 'none', padding: '8px 0',
+                  cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.5 : 1,
+                }}
+              >
+                {busy ? (
+                  <div style={{
+                    width: 16, height: 16, border: '2px solid var(--uv-text-muted)',
+                    borderTopColor: 'transparent', borderRadius: '50%',
+                    animation: 'uv-spin 600ms linear infinite',
+                  }} />
+                ) : (
+                  <span style={{
+                    fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                    color: 'var(--uv-text-muted)', opacity: 0.6,
+                  }}>
+                    I&apos;m backing down
+                  </span>
+                )}
+              </button>
             </div>
-          </FadeUp>
+            {error && (
+              <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-danger)', margin: 0 }}>
+                {error}
+              </p>
+            )}
+          </div>
         </div>
       </RitualScreen>
     );
@@ -596,36 +621,34 @@ export default function ChallengeInviteClient({
   // ─── BACKED DOWN CONFIRMED ───
   if (step === 'backed-down') {
     return (
-      <RitualScreen>
-        <div className="flex-1 flex flex-col items-center justify-center min-h-[70dvh] gap-5 text-center px-4">
-          <FadeUp>
-            <h2 className="text-[28px] font-bold font-serif" style={{ color: 'var(--text)' }}>
-              You backed down.
-            </h2>
-          </FadeUp>
-          <FadeUp delay={0.1}>
-            <p className="text-[15px]" style={{ color: 'var(--text-secondary)' }}>
-              {makerName} has been notified.
-            </p>
-          </FadeUp>
-          <FadeUp delay={0.2}>
-            <div className="flex flex-col items-center gap-3">
-              <a
-                href="/cast"
-                className="text-[14px] font-semibold transition-opacity hover:opacity-80"
-                style={{ color: 'var(--gold-bright)' }}
-              >
-                Dare them back &rarr;
-              </a>
-              <a
-                href="/"
-                className="text-[13px] transition-opacity hover:opacity-80"
-                style={{ color: 'var(--text-muted)' }}
-              >
-                Make your own vow
-              </a>
-            </div>
-          </FadeUp>
+      <RitualScreen variant="utility">
+        <div style={{
+          flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+          justifyContent: 'center', minHeight: '70dvh', gap: 20, textAlign: 'center',
+          padding: '0 16px',
+        }}>
+          <FrauncesH1 italic size="lg">You backed down.</FrauncesH1>
+          <FrauncesSub>{makerName} has been notified.</FrauncesSub>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+            <a
+              href="/cast"
+              style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 600,
+                color: 'var(--uv-gold-bright)', textDecoration: 'none',
+              }}
+            >
+              Dare them back &rarr;
+            </a>
+            <a
+              href="/"
+              style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                color: 'var(--uv-text-muted)', textDecoration: 'none',
+              }}
+            >
+              Make your own vow
+            </a>
+          </div>
         </div>
       </RitualScreen>
     );
@@ -634,49 +657,25 @@ export default function ChallengeInviteClient({
   // ─── STEP 3: STAKES + CHARITY (combined) ───
   if (step === 'stakes') {
     return (
-      <RitualScreen
-        footer={
-          <div className="flex flex-col gap-2">
-            <PrimaryButton
-              label={stakeAmount > 0 ? `Stake $${stakeAmount / 100}` : 'Continue'}
-              onPress={() => setStep('payment')}
-            />
-            <button
-              type="button"
-              onClick={() => {
-                setStakeAmount(0);
-                setStep('payment');
-              }}
-              className="py-2 transition-opacity hover:opacity-70"
-            >
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-                skip — my word is enough
-              </span>
-            </button>
+      <RitualScreen variant="utility">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
+          <div style={{ textAlign: 'center' }}>
+            <FrauncesH1 italic size="lg">You&apos;re in.</FrauncesH1>
+            <FrauncesSub>Stake something. Fail and it goes to charity.</FrauncesSub>
           </div>
-        }
-      >
-        <FadeUp>
-          <div className="text-center">
-            <h2 className="text-[28px] font-bold font-serif" style={{ color: 'var(--text)' }}>
-              You&apos;re in.
-            </h2>
-            <p className="text-[15px] mt-1" style={{ color: 'var(--text-secondary)' }}>
-              Stake something. Fail and it goes to charity.
-            </p>
-          </div>
-        </FadeUp>
 
-        <FadeUp delay={0.08}>
-          <div className="flex flex-col gap-2 items-center">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
             {suggestedCents > 0 && (
-              <p className="text-[13px]" style={{ color: 'var(--gold)' }}>
+              <p style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                color: 'var(--uv-gold)', margin: 0,
+              }}>
                 {`${makerFirstName} suggested $${suggestedCents / 100}`}
               </p>
             )}
-            <div className="flex flex-wrap justify-center">
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
               {STAKE_OPTIONS.map((cents) => (
-                <ChoiceChip
+                <StakeChip
                   key={cents}
                   label={`$${cents / 100}`}
                   active={stakeAmount === cents}
@@ -685,17 +684,19 @@ export default function ChallengeInviteClient({
               ))}
             </div>
           </div>
-        </FadeUp>
 
-        {stakeAmount > 0 && (
-          <FadeUp delay={0.15}>
-            <div className="flex flex-col gap-2">
-              <p className="text-[11px] tracking-[1px] uppercase" style={{ color: 'var(--text-muted)' }}>
+          {stakeAmount > 0 && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <p style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
+                letterSpacing: '1px', textTransform: 'uppercase' as const,
+                color: 'var(--uv-text-muted)', margin: 0,
+              }}>
                 If you fail, it goes to
               </p>
-              <div className="flex flex-wrap gap-2">
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {CHARITIES.map((name) => (
-                  <ChoiceChip
+                  <StakeChip
                     key={name}
                     label={name}
                     active={charity === name}
@@ -704,8 +705,31 @@ export default function ChallengeInviteClient({
                 ))}
               </div>
             </div>
-          </FadeUp>
-        )}
+          )}
+
+          {/* Footer CTAs */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <GoldCTA
+              label={stakeAmount > 0 ? `Stake $${stakeAmount / 100}` : 'Continue'}
+              onPress={() => setStep('payment')}
+            />
+            <button
+              type="button"
+              onClick={() => { setStakeAmount(0); setStep('payment'); }}
+              style={{
+                background: 'none', border: 'none', padding: '8px 0',
+                cursor: 'pointer',
+              }}
+            >
+              <span style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                color: 'var(--uv-text-muted)',
+              }}>
+                skip — my word is enough
+              </span>
+            </button>
+          </div>
+        </div>
       </RitualScreen>
     );
   }
@@ -759,7 +783,7 @@ export default function ChallengeInviteClient({
     };
 
     return (
-      <RitualScreen>
+      <LegacyRitualScreen>
         <FadeUp><HeaderBadge /></FadeUp>
 
         <FadeUp delay={0.05}>
@@ -854,7 +878,7 @@ export default function ChallengeInviteClient({
             </p>
           </div>
         </FadeUp>
-      </RitualScreen>
+      </LegacyRitualScreen>
     );
   }
 
@@ -884,7 +908,7 @@ export default function ChallengeInviteClient({
     if (endDate) metaParts.push(`Verdict: ${endDate}`);
 
     return (
-      <RitualScreen>
+      <LegacyRitualScreen>
         <FadeUp><HeaderBadge /></FadeUp>
 
         {/* Status badge */}
@@ -1143,7 +1167,7 @@ export default function ChallengeInviteClient({
             <p className="text-[13px] text-center" style={{ color: 'var(--danger)' }}>{error}</p>
           </FadeUp>
         )}
-      </RitualScreen>
+      </LegacyRitualScreen>
     );
   }
 
