@@ -1,16 +1,18 @@
 'use client';
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen, GoldCTA, OutlinedGoldCTA, FrauncesH1, FrauncesSub } from '@/components/primitives';
+import { RitualScreen, GoldCTA, FrauncesH1, FrauncesSub } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
-import { supabase } from '@/lib/supabase';
+import { useVowFlow } from '@/providers/vow-flow';
+import { AuthModal } from '@/components/auth-modal';
+import { inferDeadline, analyzeVow } from '@/lib/vow-logic';
 
-const FEED_ROWS = [
-  { text: 'Gym 3x this week', amount: 50 },
-  { text: 'Out of bed by 8am, 7 days', amount: 10 },
-  { text: 'No alcohol, 2 weeks', amount: 25 },
-  { text: 'No texting my ex, 30 days', amount: 75 },
-  { text: 'Delete TikTok for a week', amount: 25 },
+const STARTER_CHIPS = [
+  'Gym 3x this week',
+  'Delete TikTok for a week',
+  'No texting my ex',
+  'No DoorDash this week',
+  'No alcohol, 2 weeks',
 ];
 
 // ─── Ceremony ───────────────────────────────────────────────────────────────
@@ -167,13 +169,108 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
   );
 }
 
+// ─── Helper: parse duration patterns inferDeadline doesn't handle ──────────
+function parseDuration(input: string): Date | null {
+  const lower = input.toLowerCase();
+  const now = new Date();
+
+  // "N week(s)" / "N day(s)" / "N month(s)"
+  const match = lower.match(/(\d+)\s*(week|day|month)s?/);
+  if (match) {
+    const n = parseInt(match[1], 10);
+    const unit = match[2];
+    const d = new Date(now);
+    if (unit === 'week') d.setDate(d.getDate() + n * 7);
+    else if (unit === 'day') d.setDate(d.getDate() + n);
+    else if (unit === 'month') d.setMonth(d.getMonth() + n);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  }
+
+  return null;
+}
+
+function getSmartDeadline(text: string): Date {
+  // Try inferDeadline from vow-logic first
+  const inferred = inferDeadline(text);
+  if (inferred) return inferred;
+
+  // Try duration patterns (e.g. "2 weeks", "30 days")
+  const duration = parseDuration(text);
+  if (duration) return duration;
+
+  // Default: 7 days from now
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  d.setHours(23, 59, 59, 0);
+  return d;
+}
+
+function isVagueVow(text: string): boolean {
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+  const wordCount = trimmed.split(/\s+/).length;
+  if (wordCount < 3) return true;
+  const analysis = analyzeVow(trimmed);
+  return analysis.type === 'vague';
+}
+
+function formatVerdictDate(date: Date): string {
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function getThisSunday(): Date {
+  const now = new Date();
+  const d = new Date(now);
+  const diff = 7 - d.getDay();
+  d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
+  d.setHours(23, 59, 59, 0);
+  return d;
+}
+
+// ─── Date preset pills ────────────────────────────────────────────────────
+type PresetKey = 'sunday' | '1week' | '30days' | 'pick';
+
+interface DatePreset {
+  key: PresetKey;
+  label: string;
+  getDate: () => Date;
+}
+
+const DATE_PRESETS: DatePreset[] = [
+  { key: 'sunday', label: 'This Sunday', getDate: getThisSunday },
+  { key: '1week', label: '1 week', getDate: () => { const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(23, 59, 59, 0); return d; } },
+  { key: '30days', label: '30 days', getDate: () => { const d = new Date(); d.setDate(d.getDate() + 30); d.setHours(23, 59, 59, 0); return d; } },
+];
+
 // ─── Landing ────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
   const router = useRouter();
   const { isAuthenticated, loading, session } = useAuth();
+  const { setRawInput, setDeadline, shouldSkipRefine } = useVowFlow();
   const [showCeremony, setShowCeremony] = useState(false);
   const [checked, setChecked] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+
+  // Input state
+  const [inputText, setInputText] = useState('');
+  const [deadlineDate, setDeadlineDate] = useState<Date>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    d.setHours(23, 59, 59, 0);
+    return d;
+  });
+  const [showDatePresets, setShowDatePresets] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Update deadline when input text changes
+  useEffect(() => {
+    if (!inputText.trim()) return;
+    const smart = getSmartDeadline(inputText);
+    setDeadlineDate(smart);
+  }, [inputText]);
 
   // Check ceremony on mount
   useEffect(() => {
@@ -246,6 +343,19 @@ export default function HomePage() {
     router.replace('/dashboard');
   }, [isAuthenticated, loading, router, session]);
 
+  const handleSubmit = () => {
+    if (!inputText.trim()) return;
+    setRawInput(inputText.trim());
+    setDeadline(deadlineDate.toISOString());
+    const vague = isVagueVow(inputText.trim());
+    router.push(vague ? '/refine' : '/stake');
+  };
+
+  const handleChipTap = (chip: string) => {
+    setInputText(chip);
+    inputRef.current?.focus();
+  };
+
   // Show spinner while redirecting authenticated users
   if (!loading && isAuthenticated) {
     return (
@@ -273,87 +383,253 @@ export default function HomePage() {
 
   return (
     <RitualScreen>
-      {/* Logo */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-        <div style={{
-          width: 18, height: 18, background: 'var(--uv-gold)', borderRadius: 4,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
+      {/* ─── Brand header ─── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 44, marginTop: 8,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          {/* Diamond seal */}
           <div style={{
-            width: 7, height: 7, background: 'var(--uv-bg)', transform: 'rotate(45deg)',
-          }} />
+            width: 24, height: 24,
+            border: '1px solid var(--uv-gold)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            transform: 'rotate(45deg)',
+          }}>
+            <div style={{
+              width: 6, height: 6,
+              background: 'var(--uv-gold)',
+            }} />
+          </div>
+          {/* Wordmark */}
+          <span style={{
+            fontFamily: 'var(--uv-font-serif)', fontSize: 15, fontWeight: 500,
+            letterSpacing: '0.01em', color: 'var(--uv-text)',
+          }}>
+            Unbreakable{' '}
+            <em style={{ color: 'var(--uv-gold)', fontStyle: 'italic', fontWeight: 400 }}>Vow</em>
+          </span>
         </div>
-        <span style={{
-          fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 500,
-          letterSpacing: '1.5px', color: 'var(--uv-gold)', textTransform: 'uppercase' as const,
-        }}>
-          UNBREAKABLE VOW
-        </span>
+        {/* Sign in */}
+        <button
+          onClick={() => setShowAuth(true)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            fontSize: 11, letterSpacing: '0.22em', textTransform: 'uppercase' as const,
+            color: 'var(--uv-text-dim)', fontWeight: 500,
+            fontFamily: 'var(--uv-font-sans)', padding: 0,
+          }}
+        >
+          Sign in
+        </button>
       </div>
 
-      {/* Hero */}
-      <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 0 }}>
-        <FrauncesH1 size="hero">You say a lot.</FrauncesH1>
-        <div style={{ marginTop: 4 }}>
-          <FrauncesH1 size="hero" italic>
-            <span style={{ color: 'var(--uv-gold)' }}>This time vow it.</span>
-          </FrauncesH1>
-        </div>
+      {/* ─── Hero label ─── */}
+      <div style={{
+        fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase' as const,
+        color: 'var(--uv-gold)', fontWeight: 500, marginBottom: 12,
+        fontFamily: 'var(--uv-font-sans)',
+      }}>
+        Yesterday, you said tomorrow.
+      </div>
+
+      {/* ─── H1 ─── */}
+      <FrauncesH1 size="hero">
+        Make a vow.
+        <br />
+        <span style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>Mean it.</span>
+      </FrauncesH1>
+
+      {/* ─── Subtitle ─── */}
+      <div style={{ marginTop: 18 }}>
         <FrauncesSub>
-          <span style={{ marginTop: 20, display: 'block', maxWidth: 340 }}>
-            Put $$ on a goal. A friend decides if you pulled it off.
+          <span style={{ maxWidth: 320, display: 'block' }}>
+            Tell a friend. Put money on it. Keep your word, win it back — or lose it somewhere it hurts.
           </span>
         </FrauncesSub>
       </div>
 
-      {/* Live feed */}
-      <div style={{ marginTop: 32 }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{
-            fontSize: 11, fontWeight: 500, letterSpacing: '1.5px',
-            textTransform: 'uppercase' as const, color: 'var(--uv-text-faint)',
-            fontFamily: 'var(--uv-font-sans)',
-          }}>
-            THIS WEEK
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%', background: 'var(--uv-success)',
-              display: 'inline-block', animation: 'goldDotPulse 2s infinite',
-            }} />
-            <span style={{
-              fontSize: 11, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)',
-              fontWeight: 500,
-            }}>
-              Live
-            </span>
-          </div>
-        </div>
-        <div style={{ marginTop: 12 }}>
-          {FEED_ROWS.map((row, i) => (
-            <div key={i} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '12px 0',
-              borderBottom: i < FEED_ROWS.length - 1 ? '1px solid var(--uv-border)' : 'none',
-            }}>
-              <span style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
-                {row.text}
-              </span>
-              <span style={{ fontSize: 15, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)', fontWeight: 500 }}>
-                ${row.amount}
-              </span>
-            </div>
+      {/* ─── Input label ─── */}
+      <div style={{
+        fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 13,
+        color: 'var(--uv-gold)', marginTop: 28, marginBottom: 8,
+        letterSpacing: '0.01em',
+      }}>
+        I vow to&hellip;
+      </div>
+
+      {/* ─── Input field ─── */}
+      <input
+        ref={inputRef}
+        type="text"
+        value={inputText}
+        onChange={(e) => setInputText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
+        placeholder="ship the thing by Friday"
+        style={{
+          fontFamily: 'var(--uv-font-serif)', fontSize: 21, fontWeight: 400,
+          color: 'var(--uv-text)',
+          background: 'transparent',
+          border: 'none', borderBottom: '1px solid var(--uv-gold-line)',
+          padding: '4px 0 12px', width: '100%', outline: 'none',
+          letterSpacing: '-0.005em',
+        }}
+      />
+
+      {/* ─── Verdict date pill ─── */}
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 10,
+        marginTop: 16,
+        padding: '8px 14px 8px 12px',
+        border: '1px solid var(--uv-gold-line)',
+        background: 'var(--uv-gold-soft)',
+        borderRadius: 9999,
+        fontFamily: 'var(--uv-font-serif)', fontSize: 13,
+        color: 'var(--uv-text)',
+        letterSpacing: '-0.005em',
+      }}>
+        {/* Gold dot with glow */}
+        <span style={{
+          width: 6, height: 6, borderRadius: '50%',
+          background: 'var(--uv-gold)',
+          boxShadow: '0 0 6px var(--uv-gold)',
+          flexShrink: 0,
+        }} />
+        <span style={{
+          color: 'var(--uv-text-muted)', fontStyle: 'italic', fontWeight: 400,
+        }}>
+          Verdict by
+        </span>
+        <span style={{
+          color: 'var(--uv-text)', fontWeight: 500,
+        }}>
+          {formatVerdictDate(deadlineDate)}
+        </span>
+        <button
+          onClick={() => setShowDatePresets(!showDatePresets)}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            color: 'var(--uv-text-dim)', fontStyle: 'italic', fontSize: 11.5,
+            borderLeft: '1px solid var(--uv-border-soft)',
+            paddingLeft: 10, marginLeft: 2,
+            fontFamily: 'var(--uv-font-serif)',
+          }}
+        >
+          change
+        </button>
+      </div>
+
+      {/* ─── Date preset pills (toggled by "change") ─── */}
+      {showDatePresets && (
+        <div style={{
+          display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 10,
+        }}>
+          {DATE_PRESETS.map((preset) => (
+            <button
+              key={preset.key}
+              onClick={() => {
+                setDeadlineDate(preset.getDate());
+                setShowDatePresets(false);
+                setShowDatePicker(false);
+              }}
+              style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 400,
+                color: 'var(--uv-text)', background: 'var(--uv-bg-card)',
+                border: '1px solid var(--uv-border-soft)', borderRadius: 9999,
+                padding: '9px 13px', letterSpacing: '-0.005em',
+                cursor: 'pointer',
+              }}
+            >
+              {preset.label}
+            </button>
           ))}
+          <button
+            onClick={() => setShowDatePicker(!showDatePicker)}
+            style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 400,
+              color: 'var(--uv-text)', background: 'var(--uv-bg-card)',
+              border: '1px solid var(--uv-border-soft)', borderRadius: 9999,
+              padding: '9px 13px', letterSpacing: '-0.005em',
+              cursor: 'pointer',
+            }}
+          >
+            Pick date
+          </button>
+        </div>
+      )}
+
+      {/* Native date picker (shown when "Pick date" is tapped) */}
+      {showDatePicker && showDatePresets && (
+        <input
+          type="date"
+          value={deadlineDate.toISOString().split('T')[0]}
+          min={new Date().toISOString().split('T')[0]}
+          onChange={(e) => {
+            const d = new Date(e.target.value + 'T23:59:59');
+            if (!isNaN(d.getTime())) {
+              setDeadlineDate(d);
+              setShowDatePresets(false);
+              setShowDatePicker(false);
+            }
+          }}
+          style={{
+            marginTop: 8,
+            fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+            color: 'var(--uv-text)', background: 'var(--uv-bg-card)',
+            border: '1px solid var(--uv-border-soft)', borderRadius: 8,
+            padding: '10px 12px', outline: 'none',
+            colorScheme: 'dark',
+          }}
+        />
+      )}
+
+      {/* ─── Starter chips ─── */}
+      <div style={{
+        fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase' as const,
+        color: 'var(--uv-text-dim)', marginTop: 24, marginBottom: 10, fontWeight: 500,
+        fontFamily: 'var(--uv-font-sans)',
+      }}>
+        Or start with
+      </div>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
+        {STARTER_CHIPS.map((chip) => (
+          <button
+            key={chip}
+            onClick={() => handleChipTap(chip)}
+            style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 400,
+              color: 'var(--uv-text)', background: 'var(--uv-bg-card)',
+              border: '1px solid var(--uv-border-soft)', borderRadius: 9999,
+              padding: '9px 13px', letterSpacing: '-0.005em',
+              cursor: 'pointer',
+            }}
+          >
+            {chip}
+          </button>
+        ))}
+      </div>
+
+      {/* ─── Footer ─── */}
+      <div style={{ marginTop: 'auto' }}>
+        <GoldCTA
+          label="Make my vow →"
+          onPress={handleSubmit}
+          disabled={!inputText.trim()}
+        />
+        <div style={{
+          textAlign: 'center', fontSize: 11, color: 'var(--uv-text-dim)',
+          marginTop: 14, fontFamily: 'var(--uv-font-sans)',
+        }}>
+          <em style={{ fontStyle: 'italic', color: 'var(--uv-text-muted)' }}>60 seconds.</em>{' '}
+          No account needed yet.
         </div>
       </div>
 
-      <div style={{ flex: 1 }} />
-
-      {/* CTAs — no auth gate, /create handles it at /seal */}
-      <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', paddingBottom: 16 }}>
-        <GoldCTA label="Make your vow →" onPress={() => router.push('/create')} />
-        <OutlinedGoldCTA label="Dare a friend →" onPress={() => router.push('/cast')} />
-      </div>
+      <AuthModal
+        visible={showAuth}
+        onDismiss={() => setShowAuth(false)}
+        onSuccess={() => setShowAuth(false)}
+      />
     </RitualScreen>
   );
 }

@@ -64,7 +64,7 @@ export default function RefinePage() {
         </button>
 
         {/* H1 — kept as-is per FLAG 1 */}
-        <FrauncesH1 italic size="page">Sharpen your vow.</FrauncesH1>
+        <FrauncesH1 italic size="page">Is this specific enough?</FrauncesH1>
 
         {/* Raw input — italic Fraunces subject line per FLAG 3 */}
         <div style={{
