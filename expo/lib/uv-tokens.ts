@@ -45,8 +45,11 @@ export const uvColors = {
   danger: '#F87171',
   dangerDeep: '#C84A4A',
   dangerBg: 'rgba(248, 113, 113, 0.10)',
+  dangerBorder: 'rgba(248, 113, 113, 0.25)',
   warn: '#FB923C',
   warnBg: 'rgba(251, 146, 60, 0.10)',
+  info: '#60A5FA',
+  infoBg: 'rgba(96, 165, 250, 0.15)',
 
   // iMessage / system
   imessage: '#34C759',

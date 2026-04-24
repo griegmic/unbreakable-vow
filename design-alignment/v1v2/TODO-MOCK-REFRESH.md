@@ -48,6 +48,10 @@ or uses values that differ from the shipped primitives.
 
 25. **/witness contacts-picker divergence**: V6 mock (04-witness-pick.html) specifies a full contact-picker with recent contacts (Nick, Maya, Dad), "Pick from contacts" native API card, and "Or send a link instead" fallback. Current web implementation is a simpler 2-option binary choice (Text a friend / No witness). The native Browser Contact Picker API is not widely supported and the recent-contacts feature requires backend tracking. Deferred post-V6-ship.
 
+28. **StatusPill promotion candidate**: Screen-local in /vow/[id]. Promote to /components/primitives if used elsewhere. 7 variants: active/pending/verdict/kept/broken/voided.
+
+29. **Countdown promotion candidate**: Screen-local in /vow/[id]. Promote to /components/primitives if used elsewhere. Day-format + HH:MM:SS timer with color coding by urgency.
+
 27. **/stake content pass — eyebrow + vow recap + cheeky labels per 03b mock**: V6 mock (03b-pitch-cheeky.html) specifies "SET THE WEIGHT" eyebrow, vow recap card with verdict/judge meta, cheeky stake labels ("a week of thinking about this"), and "Pick your judge — $50" combined CTA. Current /stake implementation uses simpler copy ("Set the stakes", hint labels "A nudge" / "Enough to sting" etc.) and separate witness/stake steps. Content pass deferred post-V6-ship.
 
 26. **Witness send-confirmation detection**: Current flow trusts the user to actually send the invite after clicking "Text a friend" (mobile) or "Copy invite link" (desktop). If they abandon after the share sheet / clipboard copy, the vow gets sealed but the witness never receives the link. Detecting actual send is hard on both platforms (share sheet is a black box on iOS; clipboard paste happens outside the app on desktop). Could be mitigated by witness-pending polling on /seal or a "did you send it? [Yes / Resend]" confirmation on the dashboard. Deferred post-V6-ship for product discussion.
