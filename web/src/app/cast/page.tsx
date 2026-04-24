@@ -1,18 +1,86 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { SecondaryButton } from '@/components/uv/SecondaryButton';
-import { Card } from '@/components/uv/Card';
-import { Input } from '@/components/uv/Input';
-import { Textarea } from '@/components/uv/Textarea';
-import { RadioCard } from '@/components/uv/RadioCard';
+import { RitualScreen, RitualCard, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, RadioCard } from '@/components/primitives';
 import { AuthModal } from '@/components/auth-modal';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
-import { analyzeVow, generateSuggestion } from '@/lib/vow-logic';
+
+/**
+ * Cast / Dare — §3.10 / §6.6
+ *
+ * Darer (maker) creates a challenge vow targeting a friend.
+ * Maker = witness, target = vow-keeper. No money from maker.
+ * Target receives link via share sheet, decides stakes on accept.
+ *
+ * States: form → sent (share fallback) → waiting (polling) → accepted
+ */
+
+// ── Screen-local form helpers ──
+// TODO: promote to primitive if reused in 3+ screens
+
+function DareInput({ value, onChange, placeholder, label, type = 'text' }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; label?: string; type?: string;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {label && (
+        <label style={{
+          fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500,
+          color: 'var(--uv-text-muted)',
+        }}>
+          {label}
+        </label>
+      )}
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={{
+          width: '100%', padding: '12px 14px',
+          fontFamily: 'var(--uv-font-sans)', fontSize: 15,
+          color: 'var(--uv-text)', background: 'var(--uv-bg-input)',
+          border: '1px solid var(--uv-border)', borderRadius: 12,
+          outline: 'none', boxSizing: 'border-box',
+        }}
+      />
+    </div>
+  );
+}
+
+function DareTextarea({ value, onChange, placeholder, label, rows = 3 }: {
+  value: string; onChange: (v: string) => void; placeholder?: string; label?: string; rows?: number;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      {label && (
+        <label style={{
+          fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500,
+          color: 'var(--uv-text-muted)',
+        }}>
+          {label}
+        </label>
+      )}
+      <textarea
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={rows}
+        style={{
+          width: '100%', padding: '12px 14px',
+          fontFamily: 'var(--uv-font-sans)', fontSize: 15,
+          color: 'var(--uv-text)', background: 'var(--uv-bg-input)',
+          border: '1px solid var(--uv-border)', borderRadius: 12,
+          outline: 'none', resize: 'vertical', boxSizing: 'border-box',
+        }}
+      />
+    </div>
+  );
+}
+
+// ── Constants ──
 
 async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, email?: string) {
   await supabase.from('users').upsert(
@@ -116,6 +184,8 @@ export default function CastPage() {
   })();
 
   // Create the dare
+  // TODO-POST-V6: create-challenge edge function to send SMS to target.
+  // Currently relies on share sheet / link copy. See §3.10.3 C6.
   const handleSendDare = useCallback(async () => {
     if (sending || !dareText.trim() || !targetName.trim()) return;
     setError('');
@@ -234,41 +304,33 @@ export default function CastPage() {
   // === ACCEPTED STATE ===
   if (shared && challengeAccepted) {
     return (
-      <RitualScreen>
+      <RitualScreen variant="utility">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 40, textAlign: 'center' }}>
-          <h1
-            style={{
-              fontFamily: 'var(--uv-font-serif)',
-              fontSize: 28,
-              fontWeight: 500,
-              color: 'var(--uv-text)',
-            }}
-          >
-            {targetName} accepted!
-          </h1>
-          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
-            You&apos;ll decide the verdict at the deadline.
-          </p>
+          <FrauncesH1 italic size="lg">{targetName} accepted!</FrauncesH1>
+          <FrauncesSub>You&apos;ll decide the verdict at the deadline.</FrauncesSub>
 
-          <Card variant="elevated">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <p style={{ fontSize: 15, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
-                &ldquo;{formattedText}&rdquo;
-              </p>
-              <div style={{ height: 1, background: 'var(--uv-border-strong)' }} />
-              {acceptedVowDetails && acceptedVowDetails.stakeAmount > 0 && (
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Stakes</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
+          <RitualCard>
+            <p style={{
+              fontSize: 15, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic',
+              color: 'var(--uv-text)', margin: 0,
+            }}>
+              &ldquo;{formattedText}&rdquo;
+            </p>
+            {acceptedVowDetails && acceptedVowDetails.stakeAmount > 0 && (
+              <>
+                <div style={{ height: 1, background: 'var(--uv-border-strong)' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--uv-font-sans)', fontSize: 13 }}>
+                  <span style={{ color: 'var(--uv-text-muted)' }}>Stakes</span>
+                  <span style={{ color: 'var(--uv-gold)', fontWeight: 600, fontSize: 14 }}>
                     ${Math.round(acceptedVowDetails.stakeAmount / 100)}
                   </span>
                 </div>
-              )}
-            </div>
-          </Card>
+              </>
+            )}
+          </RitualCard>
 
-          <PrimaryButton onClick={() => router.push('/dashboard')}>Go to dashboard</PrimaryButton>
-          <SecondaryButton onClick={resetForm}>Dare someone else</SecondaryButton>
+          <GoldCTA label="Go to dashboard" onPress={() => router.push('/dashboard')} />
+          <OutlinedGoldCTA label="Dare someone else" onPress={resetForm} />
         </div>
       </RitualScreen>
     );
@@ -277,101 +339,71 @@ export default function CastPage() {
   // === WAITING STATE ===
   if (shared) {
     return (
-      <RitualScreen>
+      <RitualScreen variant="utility">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 40, textAlign: 'center' }}>
-          <h1
-            style={{
-              fontFamily: 'var(--uv-font-serif)',
-              fontSize: 28,
-              fontWeight: 500,
-              color: 'var(--uv-text)',
-            }}
-          >
-            Waiting for {targetName}...
-          </h1>
-          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
-            No reply? Send it again or copy the link below.
-          </p>
-          <PrimaryButton onClick={handleShare}>Send again</PrimaryButton>
+          <FrauncesH1 italic size="lg">Waiting for {targetName}...</FrauncesH1>
+          <FrauncesSub>No reply? Send it again or copy the link below.</FrauncesSub>
+
+          <GoldCTA label="Send again" onPress={handleShare} />
           <button
             onClick={handleCopyLink}
             style={{
-              background: 'none',
-              border: 'none',
-              color: copied ? 'var(--uv-status-active)' : 'var(--uv-text-muted)',
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'var(--uv-font-sans)',
-              padding: '8px 0',
+              background: 'none', border: 'none',
+              color: copied ? 'var(--uv-success)' : 'var(--uv-text-muted)',
+              fontSize: 14, fontWeight: 500, cursor: 'pointer',
+              fontFamily: 'var(--uv-font-sans)', padding: '8px 0',
             }}
           >
             {copied ? 'Copied!' : 'Or copy the link'}
           </button>
-          <SecondaryButton onClick={() => router.push('/dashboard')}>Dashboard</SecondaryButton>
+          <OutlinedGoldCTA label="Dashboard" onPress={() => router.push('/dashboard')} />
         </div>
       </RitualScreen>
     );
   }
 
-  // === SHARE SCREEN (fallback) ===
+  // === SHARE SCREEN (fallback — share sheet wasn't available) ===
   if (dareSent) {
     return (
-      <RitualScreen>
+      <RitualScreen variant="utility">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 40, textAlign: 'center' }}>
-          <h1
-            style={{
-              fontFamily: 'var(--uv-font-serif)',
-              fontSize: 28,
-              fontWeight: 500,
-              color: 'var(--uv-text)',
-            }}
-          >
-            Send it to {targetName}.
-          </h1>
-          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
-            {targetName} has 48 hours to accept or back down.
-          </p>
-          <PrimaryButton onClick={handleShare}>Send to {targetName} &rarr;</PrimaryButton>
+          <FrauncesH1 italic size="lg">Send it to {targetName}.</FrauncesH1>
+          <FrauncesSub>{targetName} has 48 hours to accept or back down.</FrauncesSub>
+
+          <GoldCTA label={`Send to ${targetName} \u2192`} onPress={handleShare} />
           <button
             onClick={handleCopyLink}
             style={{
-              background: 'none',
-              border: 'none',
-              color: copied ? 'var(--uv-status-active)' : 'var(--uv-text-muted)',
-              fontSize: 14,
-              fontWeight: 500,
-              cursor: 'pointer',
-              fontFamily: 'var(--uv-font-sans)',
-              padding: '8px 0',
+              background: 'none', border: 'none',
+              color: copied ? 'var(--uv-success)' : 'var(--uv-text-muted)',
+              fontSize: 14, fontWeight: 500, cursor: 'pointer',
+              fontFamily: 'var(--uv-font-sans)', padding: '8px 0',
             }}
           >
             {copied ? 'Copied!' : 'Or copy the link'}
           </button>
-          <SecondaryButton onClick={resetForm}>Dare someone else</SecondaryButton>
+          <OutlinedGoldCTA label="Dare someone else" onPress={resetForm} />
         </div>
       </RitualScreen>
     );
   }
 
   // === CREATION FORM ===
+  const isFormValid = dareText.trim().length > 0 && targetName.trim().length > 0;
+
   return (
     <>
-      <RitualScreen>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 16 }}>
-          {/* Header with back + hamburger */}
+      <RitualScreen variant="utility">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 16, paddingBottom: 40 }}>
+          {/* Header — back + wordmark */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <button
               onClick={() => router.push('/dashboard')}
+              aria-label="Back to dashboard"
               style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--uv-text-muted)',
-                fontSize: 14,
-                fontWeight: 500,
-                cursor: 'pointer',
-                fontFamily: 'var(--uv-font-sans)',
-                textAlign: 'left',
+                background: 'none', border: 'none',
+                color: 'var(--uv-text-muted)', fontSize: 14, fontWeight: 500,
+                cursor: 'pointer', fontFamily: 'var(--uv-font-sans)',
                 padding: '4px 0',
               }}
             >
@@ -382,33 +414,19 @@ export default function CastPage() {
 
           {/* Hero */}
           <div>
-            <h1
-              style={{
-                fontFamily: 'var(--uv-font-serif)',
-                fontSize: 32,
-                fontWeight: 500,
-                color: 'var(--uv-text)',
-                lineHeight: 1.2,
-              }}
-            >
-              Dare{' '}
-              <span style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>a friend.</span>
-            </h1>
-            <p
-              style={{
-                fontFamily: 'var(--uv-font-sans)',
-                fontSize: 15,
-                color: 'var(--uv-text-muted)',
-                marginTop: 8,
-                lineHeight: 1.5,
-              }}
-            >
+            <FrauncesH1 italic size="lg">
+              Dare a friend.
+            </FrauncesH1>
+            <p style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 15,
+              color: 'var(--uv-text-muted)', marginTop: 8, lineHeight: 1.5,
+            }}>
               Put them on the spot. They decide the stakes.
             </p>
           </div>
 
           {/* Target name */}
-          <Input
+          <DareInput
             value={targetName}
             onChange={setTargetName}
             placeholder="Their first name"
@@ -416,7 +434,7 @@ export default function CastPage() {
           />
 
           {/* Dare text */}
-          <Textarea
+          <DareTextarea
             value={dareText}
             onChange={setDareText}
             placeholder="e.g. No phone for a week"
@@ -426,13 +444,10 @@ export default function CastPage() {
 
           {/* Deadline */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span
-              style={{
-                fontSize: 13,
-                color: 'var(--uv-text-muted)',
-                fontFamily: 'var(--uv-font-sans)',
-              }}
-            >
+            <span style={{
+              fontSize: 13, color: 'var(--uv-text-muted)',
+              fontFamily: 'var(--uv-font-sans)',
+            }}>
               Deadline
             </span>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -441,24 +456,20 @@ export default function CastPage() {
                   key={opt.label}
                   label={opt.label}
                   selected={deadlineLabel === opt.label}
-                  onClick={() => setDeadlineLabel(opt.label)}
+                  onPress={() => setDeadlineLabel(opt.label)}
                 />
               ))}
             </div>
-            <p
-              style={{
-                fontSize: 12,
-                color: 'var(--uv-text-muted)',
-                fontFamily: 'var(--uv-font-sans)',
-                margin: 0,
-              }}
-            >
+            <p style={{
+              fontSize: 12, color: 'var(--uv-text-muted)',
+              fontFamily: 'var(--uv-font-sans)', margin: 0,
+            }}>
               Ends {endDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </p>
           </div>
 
           {/* Taunt (optional) */}
-          <Textarea
+          <DareTextarea
             value={taunt}
             onChange={setTaunt}
             placeholder="Optional taunt message..."
@@ -473,14 +484,15 @@ export default function CastPage() {
             </div>
           )}
 
-          {/* CTA */}
-          <PrimaryButton
-            onClick={handleSendDare}
-            disabled={!dareText.trim() || !targetName.trim()}
-            loading={sending}
-          >
-            Send dare &mdash; {targetName || 'they'} decide{targetName ? 's' : ''} stakes &rarr;
-          </PrimaryButton>
+          {/* CTA — disabled during send AND when form incomplete */}
+          <GoldCTA
+            label={sending
+              ? 'Sending...'
+              : `Send dare \u2014 ${targetName || 'they'} decide${targetName ? 's' : ''} stakes \u2192`
+            }
+            onPress={handleSendDare}
+            disabled={!isFormValid || sending}
+          />
         </div>
       </RitualScreen>
 

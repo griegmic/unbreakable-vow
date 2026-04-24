@@ -175,7 +175,6 @@ export default function CertificateClient({ vow, makerName }: { vow: CertVow; ma
             '0 0 0 4px rgba(200,155,60,0.05)',
             '0 24px 60px rgba(0,0,0,0.55)',
           ].join(', '),
-          textAlign: 'center',
         }}
       >
         {/* Inner frame border — museum placard */}
