@@ -43,3 +43,5 @@ or uses values that differ from the shipped primitives.
 18. **Broken seal glyph missing crack treatment**: M11 trophy and M11B shield are bespoke. Both broken screens reuse default UV wax seal — no crack/split treatment per spec. BROKEN stamp carries the state OK. Deferred from PR #3E.
 
 19. **Cast (/cast) SMS gap**: §3.10.3 C6 specifies Twilio SMS sent to target on dare creation. Current /cast page creates the vow row client-side but does NOT trigger SMS — relies on share sheet / link copy. Needs a `create-challenge` edge function that writes the vow + sends SMS atomically. Post-V6.
+
+20. **/cast waiting screen dead-ends on declined dare**: When the target declines, polling detects `'declined'` and clears the interval, but the darer stays on the waiting screen with no state transition. Acceptable for V6 ship, but a follow-up should surface a "dare declined" state on /cast rather than requiring the darer to navigate to dashboard to see the void. See state machine walk in PR #3H-1.
