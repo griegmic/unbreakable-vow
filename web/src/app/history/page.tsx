@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen, RitualCard, FrauncesH1, FrauncesSub, Stamp, WaxSeal } from '@/components/primitives';
+import { RitualScreen, RitualCard, FrauncesH1, FrauncesSub, Stamp, WaxSeal, ChoicePill } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 
@@ -46,25 +46,6 @@ function relativeDate(iso: string): string {
   return `${years} year${years > 1 ? 's' : ''} ago`;
 }
 
-// ── Filter chip ──
-function FilterChip({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      aria-pressed={active}
-      style={{
-        fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 600,
-        padding: '6px 14px', borderRadius: 9999,
-        background: active ? 'var(--uv-gold-bg)' : 'transparent',
-        border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
-        color: active ? 'var(--uv-gold)' : 'var(--uv-text-dim)',
-        cursor: 'pointer', transition: 'background 100ms, border-color 100ms',
-      }}
-    >
-      {label}
-    </button>
-  );
-}
 
 // ── Mini stamp for row verdict ──
 function MiniStamp({ verdict }: { verdict: 'kept' | 'broken' | 'voided' }) {
@@ -215,10 +196,10 @@ export default function HistoryPage() {
 
             {/* Filter chips */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }} role="group" aria-label="Filter vows">
-              <FilterChip label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
-              <FilterChip label="Kept" active={filter === 'kept'} onClick={() => setFilter('kept')} />
-              <FilterChip label="Broken" active={filter === 'broken'} onClick={() => setFilter('broken')} />
-              <FilterChip label="Voided" active={filter === 'voided'} onClick={() => setFilter('voided')} />
+              <ChoicePill label="All" active={filter === 'all'} onPress={() => setFilter('all')} size="sm" />
+              <ChoicePill label="Kept" active={filter === 'kept'} onPress={() => setFilter('kept')} size="sm" />
+              <ChoicePill label="Broken" active={filter === 'broken'} onPress={() => setFilter('broken')} size="sm" />
+              <ChoicePill label="Voided" active={filter === 'voided'} onPress={() => setFilter('voided')} size="sm" />
             </div>
 
             {/* Vow list */}

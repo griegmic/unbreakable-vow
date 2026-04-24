@@ -3,7 +3,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { Calendar, Check, MessageCircle, Phone } from 'lucide-react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { RitualScreen, RitualCard, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, EyebrowTag } from '@/components/primitives';
+import { RitualScreen, RitualCard, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, EyebrowTag, ChoicePill } from '@/components/primitives';
 import { supabase } from '@/lib/supabase';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -49,25 +49,6 @@ const CHARITIES = [
   'Local food bank',
 ];
 
-// Screen-local chip for stakes/charity selection (replaces pre-V6 ChoiceChip)
-function StakeChip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={onPress}
-      style={{
-        fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 500,
-        padding: '8px 16px', borderRadius: 9999,
-        background: active ? 'var(--uv-gold-bg)' : 'transparent',
-        border: `1.5px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
-        color: active ? 'var(--uv-gold)' : 'var(--uv-text-muted)',
-        cursor: 'pointer', transition: 'background 100ms, border-color 100ms',
-      }}
-    >
-      {label}
-    </button>
-  );
-}
 
 function getCountdownTint(days: number | null) {
   if (days === null) return { bg: 'rgba(82,214,154,0.06)', border: 'rgba(82,214,154,0.18)' };
@@ -696,7 +677,7 @@ export default function ChallengeInviteClient({
             )}
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8 }}>
               {STAKE_OPTIONS.map((cents) => (
-                <StakeChip
+                <ChoicePill
                   key={cents}
                   label={`$${cents / 100}`}
                   active={stakeAmount === cents}
@@ -717,7 +698,7 @@ export default function ChallengeInviteClient({
               </p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                 {CHARITIES.map((name) => (
-                  <StakeChip
+                  <ChoicePill
                     key={name}
                     label={name}
                     active={charity === name}
