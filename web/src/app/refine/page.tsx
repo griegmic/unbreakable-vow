@@ -1,10 +1,24 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles, Lightbulb } from 'lucide-react';
-import { RitualScreen, BackButton, PrimaryButton, FadeUp } from '@/components/ui';
+import { Sparkles } from 'lucide-react';
+import { RitualScreen, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, RadioCard } from '@/components/primitives';
 import { useVowFlow } from '@/providers/vow-flow';
 import { generateSuggestion, getContextualSuggestions } from '@/lib/vow-logic';
+
+/**
+ * S2 · Refine nudge — §3.3
+ *
+ * Shown when analyzeVow() flags vagueness. Layout per V6 spec:
+ *   H1: "Sharpen your vow" (kept per FLAG 1 — spec copy requires witness name)
+ *   Raw input as italic Fraunces subject line
+ *   Editable sharpened-vow textarea
+ *   RadioCards for alternative suggestions
+ *   GoldCTA "Use this vow →" / OutlinedGoldCTA "Keep my original"
+ *
+ * State machine: mount → populate suggestions → user edits/selects → push /stake
+ * All handlers preserved from pre-V6 implementation.
+ */
 
 export default function RefinePage() {
   const router = useRouter();
@@ -33,108 +47,110 @@ export default function RefinePage() {
   };
 
   return (
-    <RitualScreen
-      footer={
-        <PrimaryButton label="Use this vow →" onPress={handleSubmit} disabled={!input.trim()} />
-      }
-    >
-      <FadeUp>
-        <BackButton />
-      </FadeUp>
-
-      <FadeUp delay={0.05}>
-        <div className="flex flex-col gap-1">
-          <h1 className="text-[32px] font-bold font-serif leading-[36px] tracking-[-0.5px]" style={{ color: 'var(--text)' }}>
-            Sharpen your vow
-          </h1>
-          <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
-            We tightened the wording so your witness knows exactly what to judge.
-          </p>
-        </div>
-      </FadeUp>
-
-      {/* "Before" — small muted reference to what they typed */}
-      <FadeUp delay={0.08}>
-        <div className="flex items-baseline gap-2">
-          <span className="text-[11px] font-semibold tracking-[0.5px] uppercase shrink-0" style={{ color: 'var(--text-muted)' }}>
-            You wrote
-          </span>
-          <span className="text-[14px]" style={{ color: 'var(--text-muted)' }}>
-            &ldquo;{vow.rawInput}&rdquo;
-          </span>
-        </div>
-      </FadeUp>
-
-      {/* Hero: the editable sharpened vow */}
-      <FadeUp delay={0.14}>
-        <div
-          className="rounded-[22px] p-5 flex flex-col gap-2.5"
+    <RitualScreen variant="utility">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
+        {/* Back */}
+        <button
+          onClick={() => router.back()}
+          aria-label="Go back"
           style={{
-            backgroundColor: 'var(--surface)',
-            border: '1.5px solid rgba(212,162,79,0.35)',
-            boxShadow: '0 0 24px rgba(212,162,79,0.06)',
+            background: 'none', border: 'none',
+            color: 'var(--uv-text-muted)', fontSize: 14, fontWeight: 500,
+            cursor: 'pointer', fontFamily: 'var(--uv-font-sans)',
+            padding: '4px 0', alignSelf: 'flex-start',
           }}
         >
-          <div className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5" style={{ color: 'var(--gold)' }} />
-            <label className="text-[11px] font-bold tracking-[1.3px] uppercase" style={{ color: 'var(--gold)' }}>
-              SHARPENED VOW
-            </label>
+          &larr; Back
+        </button>
+
+        {/* H1 — kept as-is per FLAG 1 */}
+        <FrauncesH1 italic size="lg">Sharpen your vow.</FrauncesH1>
+
+        {/* Raw input — italic Fraunces subject line per FLAG 3 */}
+        <div style={{
+          background: 'var(--uv-bg-elevated)',
+          borderLeft: '2px solid var(--uv-gold)',
+          borderRadius: 2,
+          padding: '12px 14px',
+        }}>
+          <span style={{
+            fontFamily: 'var(--uv-font-sans)', fontStyle: 'normal',
+            fontSize: 9.5, letterSpacing: '0.24em', textTransform: 'uppercase' as const,
+            color: 'var(--uv-gold)', fontWeight: 500,
+            display: 'block', marginBottom: 6,
+          }}>
+            Your vow
+          </span>
+          <FrauncesSub>&ldquo;{vow.rawInput}&rdquo;</FrauncesSub>
+        </div>
+
+        {/* Editable sharpened vow */}
+        <div style={{
+          borderRadius: 18, padding: 20,
+          display: 'flex', flexDirection: 'column', gap: 10,
+          background: 'var(--uv-bg-card)',
+          border: '1.5px solid var(--uv-gold-line)',
+          boxShadow: '0 0 24px var(--uv-gold-glow)',
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Sparkles style={{ width: 14, height: 14, color: 'var(--uv-gold)' }} />
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 700,
+              letterSpacing: '1.3px', textTransform: 'uppercase' as const,
+              color: 'var(--uv-gold)',
+            }}>
+              Sharpened vow
+            </span>
           </div>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             rows={3}
             autoFocus
-            className="bg-transparent text-[18px] font-serif outline-none resize-none leading-[26px]"
-            style={{ color: 'var(--text)' }}
+            style={{
+              width: '100%', boxSizing: 'border-box',
+              background: 'transparent', border: 'none', outline: 'none',
+              resize: 'vertical',
+              fontFamily: 'var(--uv-font-serif)', fontSize: 18,
+              lineHeight: '26px', color: 'var(--uv-text)',
+            }}
           />
         </div>
-      </FadeUp>
 
-      {/* Alternative suggestions as compact chips */}
-      {suggestions.length > 0 && (
-        <FadeUp delay={0.2}>
-          <div className="flex flex-col gap-2.5">
-            <div className="flex items-center gap-2">
-              <Lightbulb className="w-3.5 h-3.5" style={{ color: 'var(--text-muted)' }} />
-              <span className="text-[12px] font-medium" style={{ color: 'var(--text-muted)' }}>Or try one of these</span>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {suggestions.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setInput(s)}
-                  className="text-left px-3.5 py-2.5 rounded-full transition-colors"
-                  style={{
-                    backgroundColor: input === s ? 'rgba(212,162,79,0.10)' : 'var(--surface)',
-                    border: `1px solid ${input === s ? 'rgba(212,162,79,0.30)' : 'var(--border)'}`,
-                  }}
-                >
-                  <span
-                    className="text-[13px]"
-                    style={{ color: input === s ? 'var(--gold-bright)' : 'var(--text-secondary)' }}
-                  >
-                    {s}
-                  </span>
-                </button>
-              ))}
-            </div>
+        {/* Alternative suggestions as RadioCards per FLAG 2 */}
+        {suggestions.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 500,
+              color: 'var(--uv-text-muted)',
+            }}>
+              Or try one of these
+            </span>
+            {suggestions.map((s) => (
+              <RadioCard
+                key={s}
+                label={s}
+                selected={input === s}
+                onPress={() => setInput(s)}
+              />
+            ))}
           </div>
-        </FadeUp>
-      )}
+        )}
 
-      {/* Escape hatch — text link, not a button */}
-      <FadeUp delay={0.25}>
-        <button
-          onClick={handleKeepOriginal}
-          className="text-center w-full py-2"
-        >
-          <span className="text-[13px] underline decoration-dotted underline-offset-4" style={{ color: 'var(--text-muted)' }}>
-            Keep my original
-          </span>
-        </button>
-      </FadeUp>
+        {/* Spacer */}
+        <div style={{ flex: 1, minHeight: 12 }} />
+
+        {/* CTAs */}
+        <GoldCTA
+          label="Use this vow →"
+          onPress={handleSubmit}
+          disabled={!input.trim()}
+        />
+        <OutlinedGoldCTA
+          label="Keep my original"
+          onPress={handleKeepOriginal}
+        />
+      </div>
     </RitualScreen>
   );
 }
