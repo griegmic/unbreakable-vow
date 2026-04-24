@@ -173,6 +173,8 @@ export default function SealPage() {
     let lastError = '';
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
+        // Proactively refresh session before each seal attempt to prevent token expiry
+        await supabase.auth.refreshSession();
         const { data: { session: s } } = await supabase.auth.getSession();
         if (!s) return { ok: false, error: 'Session expired. Please sign in again.' };
         const { error: sealError } = await supabase.functions.invoke('seal-vow', {
@@ -206,6 +208,8 @@ export default function SealPage() {
     try {
       setError('');
 
+      // Proactively refresh session before payment flow to prevent token expiry
+      await supabase.auth.refreshSession();
       const { data: { session: currentSession } } = await supabase.auth.getSession();
       if (!currentSession) {
         setStep('auth');
