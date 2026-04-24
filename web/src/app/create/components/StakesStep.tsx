@@ -1,8 +1,7 @@
 'use client';
 
 import React from 'react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { RitualScreen, GoldCTA } from '@/components/primitives';
 import { ChevronLeft } from 'lucide-react';
 
 interface StakesStepProps {
@@ -157,7 +156,7 @@ export function StakesStep({
                   border: `1.5px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
                   borderRadius: 12, cursor: 'pointer',
                   transition: 'all 150ms',
-                  boxShadow: active ? '0 0 12px rgba(212,168,74,0.15)' : 'none',
+                  boxShadow: active ? '0 0 12px var(--uv-gold-selected-shadow)' : 'none',
                 }}
               >
                 <span style={{
@@ -175,7 +174,7 @@ export function StakesStep({
         <div style={{ marginBottom: 0 }}>
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 14,
-            fontStyle: 'italic', color: '#6ee7a0',
+            fontStyle: 'italic', color: 'var(--uv-success)',
             margin: '0 0 8px', lineHeight: 1.4,
           }}>
             Keep it and every cent stays yours.
@@ -219,9 +218,7 @@ export function StakesStep({
         </p>
 
         {/* CTA */}
-        <PrimaryButton onClick={onNext}>
-          Seal my vow — ${stakeAmount} →
-        </PrimaryButton>
+        <GoldCTA label={`Seal my vow — $${stakeAmount} →`} onPress={onNext} />
       </div>
     </RitualScreen>
   );

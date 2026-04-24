@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useRef, useCallback } from 'react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { RitualScreen, GoldCTA } from '@/components/primitives';
 import { analyzeVow, getContextualSuggestions, inferDeadline } from '@/lib/vow-logic';
 
 interface VowInputProps {
@@ -154,7 +153,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
           {/* Hero — sans for readability */}
           <h1 style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 28, fontWeight: 600,
-            color: '#f5f0e4', margin: 0, lineHeight: 1.15, letterSpacing: '-0.5px',
+            color: 'var(--uv-text)', margin: 0, lineHeight: 1.15, letterSpacing: '-0.5px',
           }}>
             What&apos;s your vow?
           </h1>
@@ -175,7 +174,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
               style={{
                 width: '100%', boxSizing: 'border-box',
                 background: 'var(--uv-bg-input)',
-                border: `1px solid ${isValid ? 'var(--uv-gold)' : touched && isVague && !isEmpty ? '#c89840' : 'var(--uv-border-strong)'}`,
+                border: `1px solid ${isValid ? 'var(--uv-gold)' : touched && isVague && !isEmpty ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
                 borderRadius: isValid && verdictDate ? '12px 12px 0 0' : 12,
                 padding: '14px 16px',
                 fontFamily: 'var(--uv-font-sans)', fontSize: 16,
@@ -194,7 +193,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
               padding: '10px 16px',
               background: 'var(--uv-bg-input)',
               border: '1px solid var(--uv-gold)',
-              borderTop: '1px solid rgba(212,168,74,0.15)',
+              borderTop: '1px solid var(--uv-gold-selected-shadow)',
               borderRadius: '0 0 12px 12px',
               marginTop: -1,
             }}>
@@ -221,8 +220,8 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
                 padding: '3px 8px', borderRadius: 20,
                 background: 'rgba(74,222,128,0.08)',
               }}>
-                <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ade80' }} />
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: '#4ade80', fontWeight: 500 }}>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--uv-success)' }} />
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-success)', fontWeight: 500 }}>
                   Ready
                 </span>
               </div>
@@ -238,7 +237,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 width: '100%', padding: '10px 16px',
                 background: 'var(--uv-bg-input)',
-                border: '1px solid #c89840',
+                border: '1px solid var(--uv-gold)',
                 borderTop: '1px solid rgba(200,152,64,0.15)',
                 borderRadius: '0 0 12px 12px',
                 marginTop: -1, cursor: 'pointer', textAlign: 'left',
@@ -246,11 +245,11 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12, color: 'var(--uv-text-faint)' }}>By</span>
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: '#e8a040' }}>Set a deadline →</span>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-warn)' }}>Set a deadline →</span>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '3px 8px', borderRadius: 20, background: 'rgba(232,160,64,0.08)' }}>
-                <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#e8a040' }} />
-                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: '#e8a040', fontWeight: 500 }}>Needs date</span>
+                <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--uv-warn)' }} />
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-warn)', fontWeight: 500 }}>Needs date</span>
               </div>
             </button>
           )}
@@ -294,7 +293,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
                     type="button"
                     onClick={() => handleChipTap(chip)}
                     style={{
-                      background: active ? 'rgba(212,168,74,0.08)' : 'var(--uv-bg-card)',
+                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-card)',
                       border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
                       borderRadius: 10,
                       padding: '12px 14px',
@@ -327,9 +326,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
           </p>
 
           {/* CTA */}
-          <PrimaryButton onClick={handleContinue} disabled={!canContinue}>
-            Next →
-          </PrimaryButton>
+          <GoldCTA label="Next →" onPress={handleContinue} disabled={!canContinue} />
         </div>
       </RitualScreen>
 
@@ -353,7 +350,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
               animation: 'slideUp 240ms ease-out',
             }}
           >
-            <div style={{ width: 32, height: 3, borderRadius: 9999, background: '#2a231b', margin: '0 auto 20px' }} />
+            <div style={{ width: 32, height: 3, borderRadius: 9999, background: 'var(--uv-border-strong)', margin: '0 auto 20px' }} />
 
             <h2 style={{
               fontFamily: 'var(--uv-font-sans)', fontSize: 20, fontWeight: 600,
@@ -418,9 +415,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
             </div>
 
             <div style={{ marginTop: 16 }}>
-              <PrimaryButton onClick={() => setShowByWhen(false)}>
-                Set deadline →
-              </PrimaryButton>
+              <GoldCTA label="Set deadline →" onPress={() => setShowByWhen(false)} />
             </div>
           </div>
         </div>

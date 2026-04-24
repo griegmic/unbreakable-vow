@@ -1,9 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { Input } from '@/components/uv/Input';
+import { RitualScreen, GoldCTA } from '@/components/primitives';
 
 interface WitnessStepProps {
   witnessName: string;
@@ -110,12 +108,10 @@ export function WitnessStep({
           One friend who&apos;ll hold you to it. They decide if you kept your word.
         </p>
 
-        <Input
-          label="Their first name"
-          value={witnessName}
-          onChange={setWitnessName}
-          placeholder="e.g. Sarah"
-        />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500, color: 'var(--uv-text-muted)' }}>Their first name</label>
+          <input type="text" value={witnessName} onChange={(e) => setWitnessName(e.target.value)} placeholder="e.g. Sarah" style={{ width: '100%', padding: '12px 14px', fontFamily: 'var(--uv-font-sans)', fontSize: 15, color: 'var(--uv-text)', background: 'var(--uv-bg-input)', border: '1px solid var(--uv-border)', borderRadius: 12, outline: 'none', boxSizing: 'border-box' }} />
+        </div>
 
         {!showPhone && (
           <button
@@ -138,13 +134,10 @@ export function WitnessStep({
 
         {showPhone && (
           <div style={{ marginTop: 12 }}>
-            <Input
-              label="Phone number"
-              value={witnessPhone}
-              onChange={setWitnessPhone}
-              placeholder="+1 555 123 4567"
-              type="tel"
-            />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <label style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500, color: 'var(--uv-text-muted)' }}>Phone number</label>
+              <input type="tel" value={witnessPhone} onChange={(e) => setWitnessPhone(e.target.value)} placeholder="+1 555 123 4567" style={{ width: '100%', padding: '12px 14px', fontFamily: 'var(--uv-font-sans)', fontSize: 15, color: 'var(--uv-text)', background: 'var(--uv-bg-input)', border: '1px solid var(--uv-border)', borderRadius: 12, outline: 'none', boxSizing: 'border-box' }} />
+            </div>
           </div>
         )}
 
@@ -162,9 +155,7 @@ export function WitnessStep({
         <div style={{ flex: 1 }} />
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, paddingTop: 24, paddingBottom: 16 }}>
-          <PrimaryButton onClick={onNext} disabled={!isValid}>
-            Continue &rarr;
-          </PrimaryButton>
+          <GoldCTA label="Continue →" onPress={onNext} disabled={!isValid} />
           <button
             type="button"
             onClick={() => {
