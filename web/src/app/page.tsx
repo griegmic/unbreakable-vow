@@ -1,9 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { SecondaryButton } from '@/components/uv/SecondaryButton';
+import { RitualScreen, GoldCTA, OutlinedGoldCTA } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 
@@ -16,6 +14,9 @@ const FEED_ROWS = [
 ];
 
 // ─── Ceremony ───────────────────────────────────────────────────────────────
+// Ceremony uses raw hex (#050403) — intentionally darker than --uv-bg for
+// cinematic effect. rgba(212,168,74,...) glow values tuned for that specific
+// black. Not tokenized — one-shot overlay with no reuse path.
 
 function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
   // 0=dark, 1=page1 (accusation + "it was free"), 2=page2 (logo), 3=exit
@@ -358,8 +359,8 @@ export default function HomePage() {
 
       {/* CTAs — no auth gate, /create handles it at /seal */}
       <div style={{ marginTop: 32, display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'center', paddingBottom: 16 }}>
-        <PrimaryButton onClick={() => router.push('/create')}>Make your vow →</PrimaryButton>
-        <SecondaryButton onClick={() => router.push('/cast')}>Dare a friend →</SecondaryButton>
+        <GoldCTA label="Make your vow →" onPress={() => router.push('/create')} />
+        <OutlinedGoldCTA label="Dare a friend →" onPress={() => router.push('/cast')} />
       </div>
     </RitualScreen>
   );
