@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { Heart, Users, Flame } from 'lucide-react';
-import { RitualScreen, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, RitualCard, ChoicePill } from '@/components/primitives';
+import { RitualScreen, FrauncesH1, FrauncesSub, GoldCTA, MutedSecondary, RitualCard, ChoicePill } from '@/components/primitives';
 import { useVowFlow } from '@/providers/vow-flow';
 import { stakeAmounts, charities, antiCauses, consequenceOptions, inferDeadline } from '@/lib/vow-logic';
 
@@ -127,7 +127,7 @@ export default function StakePage() {
           &larr; Back
         </button>
 
-        <FrauncesH1 italic size="lg">Set the stakes.</FrauncesH1>
+        <FrauncesH1 italic size="page">Set the stakes.</FrauncesH1>
         <FrauncesSub>Pick an amount that&apos;ll keep you honest.</FrauncesSub>
 
         {/* Stake amount grid */}
@@ -307,7 +307,7 @@ export default function StakePage() {
           label={vow.stake.amount > 0 ? `Confirm $${vow.stake.amount} stake` : 'Continue'}
           onPress={() => router.push('/witness')}
         />
-        <OutlinedGoldCTA label="Back" onPress={() => router.back()} />
+        <MutedSecondary label="Back" onPress={() => router.back()} />
       </div>
     </RitualScreen>
   );

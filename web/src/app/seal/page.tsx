@@ -2,7 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Star, Check } from 'lucide-react';
-import { RitualScreen, GoldCTA, OutlinedGoldCTA } from '@/components/primitives';
+import { RitualScreen, GoldCTA, MutedSecondary } from '@/components/primitives';
 import { PaymentModal } from '@/components/payment-form';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -957,7 +957,7 @@ export default function SealPage() {
             onPress={handleSealTap}
             disabled={sealing}
           />
-          <OutlinedGoldCTA label="Back" onPress={() => router.push('/create')} />
+          <MutedSecondary label="Back" onPress={() => router.push('/create')} />
 
           {isDevBypass && (
             <button

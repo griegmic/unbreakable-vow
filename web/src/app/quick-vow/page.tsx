@@ -146,7 +146,7 @@ export default function QuickVowPage() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <FrauncesH1 italic size="lg">Quick vow.</FrauncesH1>
+            <FrauncesH1 italic size="page">Quick vow.</FrauncesH1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <a
                 href="/create"

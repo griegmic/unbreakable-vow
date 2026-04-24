@@ -123,7 +123,7 @@ export default function WitnessPage() {
           &larr; Back
         </button>
 
-        <FrauncesH1 italic size="lg">Who&apos;s holding you to it?</FrauncesH1>
+        <FrauncesH1 italic size="page">Who&apos;s holding you to it?</FrauncesH1>
         <FrauncesSub>Pick someone who won&apos;t let you off the hook.</FrauncesSub>
 
         {/* Primary option — device-aware */}

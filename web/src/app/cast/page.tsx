@@ -306,7 +306,7 @@ export default function CastPage() {
     return (
       <RitualScreen variant="utility">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 40, textAlign: 'center' }}>
-          <FrauncesH1 italic size="lg">{targetName} accepted!</FrauncesH1>
+          <FrauncesH1 italic size="page">{targetName} accepted!</FrauncesH1>
           <FrauncesSub>You&apos;ll decide the verdict at the deadline.</FrauncesSub>
 
           <RitualCard>
@@ -341,7 +341,7 @@ export default function CastPage() {
     return (
       <RitualScreen variant="utility">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 40, textAlign: 'center' }}>
-          <FrauncesH1 italic size="lg">Waiting for {targetName}...</FrauncesH1>
+          <FrauncesH1 italic size="page">Waiting for {targetName}...</FrauncesH1>
           <FrauncesSub>No reply? Send it again or copy the link below.</FrauncesSub>
 
           <GoldCTA label="Send again" onPress={handleShare} />
@@ -367,7 +367,7 @@ export default function CastPage() {
     return (
       <RitualScreen variant="utility">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingTop: 40, textAlign: 'center' }}>
-          <FrauncesH1 italic size="lg">Send it to {targetName}.</FrauncesH1>
+          <FrauncesH1 italic size="page">Send it to {targetName}.</FrauncesH1>
           <FrauncesSub>{targetName} has 48 hours to accept or back down.</FrauncesSub>
 
           <GoldCTA label={`Send to ${targetName} \u2192`} onPress={handleShare} />
@@ -414,7 +414,7 @@ export default function CastPage() {
 
           {/* Hero */}
           <div>
-            <FrauncesH1 italic size="lg">
+            <FrauncesH1 italic size="page">
               Dare a friend.
             </FrauncesH1>
             <p style={{

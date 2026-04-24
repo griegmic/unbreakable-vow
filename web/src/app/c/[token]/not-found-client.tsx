@@ -11,7 +11,7 @@ export default function ChallengeNotFound({ token }: { token: string }) {
         textAlign: 'center', padding: '0 24px',
         display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16,
       }}>
-        <FrauncesH1 italic size="lg">Challenge not found</FrauncesH1>
+        <FrauncesH1 italic size="page">Challenge not found</FrauncesH1>
         <FrauncesSub>
           This link may have expired or is invalid. Ask the person who sent it to share it again.
         </FrauncesSub>

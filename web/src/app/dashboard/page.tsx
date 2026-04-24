@@ -368,7 +368,7 @@ export default function DashboardPage() {
           <div style={{ opacity: 0.6 }}>
             <WaxSeal size="sm" showHalo={false} />
           </div>
-          <FrauncesH1 italic size="lg">No vows on the line.</FrauncesH1>
+          <FrauncesH1 italic size="page">No vows on the line.</FrauncesH1>
           <p style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 15, color: 'var(--uv-text-muted)', margin: 0 }}>
             Sealed commitments will show up here.
           </p>
@@ -399,7 +399,7 @@ export default function DashboardPage() {
 
         {/* Greeting per §3.4 */}
         <div style={{ marginBottom: 24 }}>
-          <FrauncesH1 italic size="lg">Hey, {firstName}.</FrauncesH1>
+          <FrauncesH1 italic size="page">Hey, {firstName}.</FrauncesH1>
         </div>
 
         <InProgressBanner />

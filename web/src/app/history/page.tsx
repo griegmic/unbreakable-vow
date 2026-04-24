@@ -166,7 +166,7 @@ export default function HistoryPage() {
         </div>
 
         {/* H1 */}
-        <FrauncesH1 italic size="lg">Your record.</FrauncesH1>
+        <FrauncesH1 italic size="page">Your record.</FrauncesH1>
 
         {vows.length === 0 ? (
           /* ── Empty state — matches S20-EMPTY ── */
@@ -177,7 +177,7 @@ export default function HistoryPage() {
             <div style={{ opacity: 0.6 }}>
               <WaxSeal size="lg" showHalo={false} />
             </div>
-            <FrauncesH1 italic size="lg">No verdicts yet.</FrauncesH1>
+            <FrauncesH1 italic size="page">No verdicts yet.</FrauncesH1>
             <FrauncesSub>Your record will live here.</FrauncesSub>
           </div>
         ) : (
@@ -220,7 +220,7 @@ export default function HistoryPage() {
                       cursor: 'pointer', textAlign: 'left', width: '100%',
                     }}
                   >
-                    <RitualCard compact>
+                    <RitualCard variant="dashboard">
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <p style={{

@@ -36,6 +36,7 @@ export const uvColors = {
   goldBg: '#2A2015',
   goldGlow: 'rgba(200, 155, 60, 0.28)',
   goldLine: 'rgba(200, 155, 60, 0.22)',
+  goldSoft: 'rgba(200, 155, 60, 0.10)',
 
   // Status
   success: '#4ADE80',

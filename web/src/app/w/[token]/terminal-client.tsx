@@ -75,13 +75,13 @@ export default function WitnessTerminalClient({ variant, makerName, makerPhone, 
       {/* H1 — per §3.2 S19 variants, neutral pronouns per ambiguity #5 */}
       <div style={{ marginBottom: 16 }}>
         {variant === 'outcome-resolved' && (
-          <FrauncesH1 italic size="lg">
+          <FrauncesH1 italic size="page">
             {isKept ? `${makerName}\u2019s word held.` : `${makerName} broke it.`}
           </FrauncesH1>
         )}
-        {variant === 'declined' && <FrauncesH1 italic size="lg">You sat this one out.</FrauncesH1>}
-        {variant === 'voided' && <FrauncesH1 italic size="lg">{makerName} called it off.</FrauncesH1>}
-        {variant === 'expired' && <FrauncesH1 italic size="lg">That vow ended quietly.</FrauncesH1>}
+        {variant === 'declined' && <FrauncesH1 italic size="page">You sat this one out.</FrauncesH1>}
+        {variant === 'voided' && <FrauncesH1 italic size="page">{makerName} called it off.</FrauncesH1>}
+        {variant === 'expired' && <FrauncesH1 italic size="page">That vow ended quietly.</FrauncesH1>}
       </div>
 
       {/* Sub */}

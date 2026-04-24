@@ -98,7 +98,7 @@ function VowBrokenContent() {
 
       {/* H1 — honest, not mean */}
       <div style={{ marginBottom: 16 }}>
-        <FrauncesH1 italic size="lg">
+        <FrauncesH1 italic size="page">
           {isAnti ? 'Brutal. You broke it.' : 'You broke it.'}
         </FrauncesH1>
       </div>
@@ -124,7 +124,7 @@ function VowBrokenContent() {
 
       {/* Receipt card */}
       <div style={{ width: '100%', maxWidth: 340, marginBottom: 32 }}>
-        <RitualCard compact>
+        <RitualCard variant="dashboard">
           <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--uv-font-sans)', fontSize: 13 }}>
             <span style={{ color: 'var(--uv-text-dim)' }}>Vow</span>
             <span style={{ color: 'var(--uv-text)', fontStyle: 'italic', fontFamily: 'var(--uv-font-serif)' }}>

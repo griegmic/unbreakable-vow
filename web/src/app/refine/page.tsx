@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Sparkles } from 'lucide-react';
-import { RitualScreen, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, RadioCard } from '@/components/primitives';
+import { RitualScreen, FrauncesH1, FrauncesSub, GoldCTA, MutedSecondary, RadioCard } from '@/components/primitives';
 import { useVowFlow } from '@/providers/vow-flow';
 import { generateSuggestion, getContextualSuggestions } from '@/lib/vow-logic';
 
@@ -64,7 +64,7 @@ export default function RefinePage() {
         </button>
 
         {/* H1 — kept as-is per FLAG 1 */}
-        <FrauncesH1 italic size="lg">Sharpen your vow.</FrauncesH1>
+        <FrauncesH1 italic size="page">Sharpen your vow.</FrauncesH1>
 
         {/* Raw input — italic Fraunces subject line per FLAG 3 */}
         <div style={{
@@ -146,7 +146,7 @@ export default function RefinePage() {
           onPress={handleSubmit}
           disabled={!input.trim()}
         />
-        <OutlinedGoldCTA
+        <MutedSecondary
           label="Keep my original"
           onPress={handleKeepOriginal}
         />

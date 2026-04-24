@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen, GoldCTA, OutlinedGoldCTA } from '@/components/primitives';
+import { RitualScreen, GoldCTA, OutlinedGoldCTA, FrauncesH1, FrauncesSub } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 
@@ -293,25 +293,17 @@ export default function HomePage() {
 
       {/* Hero */}
       <div style={{ marginTop: 40, display: 'flex', flexDirection: 'column', gap: 0 }}>
-        <h1 style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 48, fontWeight: 400,
-          color: 'var(--uv-text)', lineHeight: 1.0, letterSpacing: '-0.5px', margin: 0,
-        }}>
-          You say a lot.
-        </h1>
-        <h1 style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 48, fontWeight: 400,
-          fontStyle: 'italic', color: 'var(--uv-gold)', lineHeight: 1.0,
-          letterSpacing: '-0.5px', margin: '4px 0 0',
-        }}>
-          This time vow it.
-        </h1>
-        <p style={{
-          fontFamily: 'var(--uv-font-sans)', fontSize: 16, color: 'var(--uv-text)',
-          marginTop: 20, lineHeight: 1.5, maxWidth: 340,
-        }}>
-          Put $$ on a goal. A friend decides if you pulled it off.
-        </p>
+        <FrauncesH1 size="hero">You say a lot.</FrauncesH1>
+        <div style={{ marginTop: 4 }}>
+          <FrauncesH1 size="hero" italic>
+            <span style={{ color: 'var(--uv-gold)' }}>This time vow it.</span>
+          </FrauncesH1>
+        </div>
+        <FrauncesSub>
+          <span style={{ marginTop: 20, display: 'block', maxWidth: 340 }}>
+            Put $$ on a goal. A friend decides if you pulled it off.
+          </span>
+        </FrauncesSub>
       </div>
 
       {/* Live feed */}

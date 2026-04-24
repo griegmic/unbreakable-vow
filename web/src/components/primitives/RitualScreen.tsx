@@ -13,7 +13,7 @@ const GRADIENTS = {
 } as const;
 
 export function RitualScreen({ children, gradient = 'default', variant = 'ceremony' }: RitualScreenProps) {
-  const padding = variant === 'ceremony' ? '0 36px' : '0 22px';
+  const isCeremony = variant === 'ceremony';
   return (
     <div
       style={{
@@ -23,11 +23,10 @@ export function RitualScreen({ children, gradient = 'default', variant = 'ceremo
         display: 'flex',
         flexDirection: 'column' as const,
         alignItems: 'center',
-        padding,
-        paddingTop: variant === 'ceremony' ? 120 : 24,
+        padding: isCeremony ? '54px 28px 36px' : '24px 22px 24px',
       }}
     >
-      <div style={{ width: '100%', maxWidth: 480 }}>
+      <div className="ritual-screen-inner" style={{ width: '100%' }}>
         {children}
       </div>
     </div>

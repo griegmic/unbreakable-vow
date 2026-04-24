@@ -98,6 +98,7 @@ html {
     --uv-gold-bg: #2A2015;
     --uv-gold-glow: rgba(200, 155, 60, 0.28);
     --uv-gold-line: rgba(200, 155, 60, 0.22);
+    --uv-gold-soft: rgba(200, 155, 60, 0.10);
 
     /* ── Signals ── */
     --uv-success: #4ADE80;
@@ -183,6 +184,30 @@ html {
     --uv-z-backdrop: 90;
     --uv-z-modal: 100;
     --uv-z-toast: 200;
+  }
+}
+
+/* ─── RitualCard ceremony variant — ::before gold gradient line ─── */
+.ritual-card-ceremony {
+  position: relative;
+}
+.ritual-card-ceremony::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 28px;
+  right: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--uv-gold), transparent);
+}
+
+/* ─── RitualScreen inner max-width ─── */
+.ritual-screen-inner {
+  max-width: 393px;
+}
+@media (min-width: 768px) {
+  .ritual-screen-inner {
+    max-width: 440px;
   }
 }
 

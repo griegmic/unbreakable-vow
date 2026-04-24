@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  WaxSeal, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA,
+  WaxSeal, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, MutedSecondary,
   EyebrowTag, DeliveredPill, TimestampPill, VowDocCard, RitualCard,
   RitualScreen, StakeTile, RadioCard, Countdown, StreakGrid, Stamp,
   ContactPicker, DatePickerSheet, ChangeStakeSheet, DismissDraftSheet,
@@ -79,10 +79,11 @@ export default function PrimitivesPage() {
       </Section>
 
       <Section title="FrauncesH1">
-        <Row label="xl (default)"><FrauncesH1>Sealed.</FrauncesH1></Row>
-        <Row label="xl italic"><FrauncesH1 italic>Over to Nick.</FrauncesH1></Row>
-        <Row label="lg"><FrauncesH1 size="lg">Your vow needs a witness.</FrauncesH1></Row>
-        <Row label="lg italic"><FrauncesH1 size="lg" italic>Make a vow. Mean it.</FrauncesH1></Row>
+        <Row label="hero"><FrauncesH1 size="hero">Make a vow.</FrauncesH1></Row>
+        <Row label="hero italic"><FrauncesH1 size="hero" italic>Mean it.</FrauncesH1></Row>
+        <Row label="page (default)"><FrauncesH1>Your vow needs a witness.</FrauncesH1></Row>
+        <Row label="page italic"><FrauncesH1 italic>Make a vow. Mean it.</FrauncesH1></Row>
+        <Row label="card"><FrauncesH1 size="card">Go to the gym 3x this week.</FrauncesH1></Row>
       </Section>
 
       <Section title="FrauncesSub">
@@ -91,13 +92,18 @@ export default function PrimitivesPage() {
       </Section>
 
       <Section title="GoldCTA">
-        <Row label="filled-gold"><GoldCTA label="Make my vow →" onPress={() => {}} /></Row>
+        <Row label="default"><GoldCTA label="Make my vow →" onPress={() => {}} /></Row>
+        <Row label="pill"><GoldCTA label="Pick your judge" amount="— $50" onPress={() => {}} variant="pill" /></Row>
         <Row label="filled-imsg-green"><GoldCTA label="Tell Nick →" onPress={() => {}} variant="filled-imsg-green" /></Row>
         <Row label="disabled"><GoldCTA label="Lock in $50  Pay" onPress={() => {}} disabled /></Row>
       </Section>
 
       <Section title="OutlinedGoldCTA">
         <Row label="default"><OutlinedGoldCTA label="See your vow →" onPress={() => {}} /></Row>
+      </Section>
+
+      <Section title="MutedSecondary">
+        <Row label="default"><MutedSecondary label="Keep it as-is" onPress={() => {}} /></Row>
       </Section>
 
       <Section title="EyebrowTag">
@@ -131,7 +137,7 @@ export default function PrimitivesPage() {
           <RitualCard><span style={{ color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', fontSize: 14 }}>Card content</span></RitualCard>
         </Row>
         <Row label="compact + gold pulse">
-          <RitualCard compact pulseColor="gold"><span style={{ color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', fontSize: 14 }}>Active vow content</span></RitualCard>
+          <RitualCard variant="dashboard" pulseColor="gold"><span style={{ color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', fontSize: 14 }}>Active vow content</span></RitualCard>
         </Row>
       </Section>
 

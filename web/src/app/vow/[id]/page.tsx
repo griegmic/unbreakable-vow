@@ -2,7 +2,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Clock, Shield, MessageCircle, Ban, ChevronDown, ChevronUp, Share2, Eye, Trophy, XCircle } from 'lucide-react';
-import { RitualScreen, RitualCard, GoldCTA, OutlinedGoldCTA } from '@/components/primitives';
+import { RitualScreen, RitualCard, GoldCTA, OutlinedGoldCTA, MutedSecondary } from '@/components/primitives';
 
 // ── Screen-local components (inlined from uv/ to eliminate pre-V6 imports) ──
 // TODO #28: StatusPill promotion candidate — promote to /components/primitives if used elsewhere
@@ -443,7 +443,7 @@ export default function VowDetailPage() {
     if (!isMaker || isTerminal) return null;
     return (
       <div style={{ marginTop: 16 }}>
-        <OutlinedGoldCTA label="Withdraw vow" onPress={() => setVoidModalOpen(true)} />
+        <MutedSecondary label="Withdraw vow" onPress={() => setVoidModalOpen(true)} />
 
 
       </div>
@@ -457,7 +457,7 @@ export default function VowDetailPage() {
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <GoldCTA label={actionBusy ? 'Withdrawing...' : 'Yes, withdraw'} onPress={handleWithdraw} disabled={actionBusy} />
-        <OutlinedGoldCTA label="Never mind" onPress={() => setVoidModalOpen(false)} />
+        <MutedSecondary label="Never mind" onPress={() => setVoidModalOpen(false)} />
       </div>
     </Modal>
   );
@@ -590,7 +590,7 @@ export default function VowDetailPage() {
         {/* Go solo link */}
         {!witnessDeclined && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <OutlinedGoldCTA label="or go solo" onPress={handleGoSolo} />
+            <MutedSecondary label="or go solo" onPress={handleGoSolo} />
           </div>
         )}
 

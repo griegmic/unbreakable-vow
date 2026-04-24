@@ -577,7 +577,7 @@ export default function ChallengeInviteClient({
             background: 'var(--uv-bg-card)', border: '1px solid var(--uv-border)',
             boxShadow: '0 16px 28px rgba(0,0,0,0.26)',
           }}>
-            <FrauncesH1 italic size="lg">Are you sure?</FrauncesH1>
+            <FrauncesH1 italic size="page">Are you sure?</FrauncesH1>
             <FrauncesSub>{makerName} will know you backed down.</FrauncesSub>
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, width: '100%' }}>
               <GoldCTA
@@ -629,7 +629,7 @@ export default function ChallengeInviteClient({
           justifyContent: 'center', minHeight: '70dvh', gap: 20, textAlign: 'center',
           padding: '0 16px',
         }}>
-          <FrauncesH1 italic size="lg">You backed down.</FrauncesH1>
+          <FrauncesH1 italic size="page">You backed down.</FrauncesH1>
           <FrauncesSub>{makerName} has been notified.</FrauncesSub>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
             <a
@@ -662,7 +662,7 @@ export default function ChallengeInviteClient({
       <RitualScreen variant="utility">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
           <div style={{ textAlign: 'center' }}>
-            <FrauncesH1 italic size="lg">You&apos;re in.</FrauncesH1>
+            <FrauncesH1 italic size="page">You&apos;re in.</FrauncesH1>
             <FrauncesSub>Stake something. Fail and it goes to charity.</FrauncesSub>
           </div>
 
@@ -790,7 +790,7 @@ export default function ChallengeInviteClient({
           <EyebrowTag>UNBREAKABLE VOW</EyebrowTag>
 
           <div>
-            <FrauncesH1 italic size="lg">Almost there.</FrauncesH1>
+            <FrauncesH1 italic size="page">Almost there.</FrauncesH1>
             <div style={{ marginTop: 8 }}>
               <FrauncesSub>
                 {isStaked
@@ -968,7 +968,7 @@ export default function ChallengeInviteClient({
 
           {/* Title */}
           <div style={{ textAlign: 'center' }}>
-            <FrauncesH1 italic size="lg">The vow is sealed.</FrauncesH1>
+            <FrauncesH1 italic size="page">The vow is sealed.</FrauncesH1>
             <div style={{ marginTop: 8 }}>
               <FrauncesSub>{makerFirstName} will decide if you kept it at the deadline.</FrauncesSub>
             </div>

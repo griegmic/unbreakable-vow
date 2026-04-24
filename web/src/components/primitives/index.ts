@@ -12,6 +12,7 @@ export { FrauncesH1 } from './FrauncesH1';
 export { FrauncesSub } from './FrauncesSub';
 export { GoldCTA } from './GoldCTA';
 export { OutlinedGoldCTA } from './OutlinedGoldCTA';
+export { MutedSecondary } from './MutedSecondary';
 export { EyebrowTag } from './EyebrowTag';
 export { DeliveredPill } from './DeliveredPill';
 export { TimestampPill } from './TimestampPill';

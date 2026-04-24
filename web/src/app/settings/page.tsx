@@ -367,7 +367,7 @@ export default function SettingsPage() {
         </div>
 
         {/* H1 */}
-        <FrauncesH1 italic size="lg">Settings.</FrauncesH1>
+        <FrauncesH1 italic size="page">Settings.</FrauncesH1>
 
         {!isAuthenticated && !authLoading ? (
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '64px 0', gap: 16 }}>

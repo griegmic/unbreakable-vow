@@ -306,7 +306,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
 
         {/* H1 per mock: "Joey's vow / is up." with forced line break */}
         <div style={{ textAlign: 'center' }}>
-          <FrauncesH1 italic size="lg">{judgeName}&apos;s vow<br/>is <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>up.</em></FrauncesH1>
+          <FrauncesH1 italic size="page">{judgeName}&apos;s vow<br/>is <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>up.</em></FrauncesH1>
         </div>
 
         {/* Vow card with stamp header + 2-col meta per mock */}
@@ -342,7 +342,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
 
         {/* TODO-MOCK-REFRESH: hardcoded "his" to match mock. Final impl needs pronoun derivation. */}
         <div style={{ textAlign: 'center' }}>
-          <FrauncesH1 italic size="lg">Did {judgeName} keep <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>his word?</em></FrauncesH1>
+          <FrauncesH1 italic size="page">Did {judgeName} keep <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>his word?</em></FrauncesH1>
         </div>
 
         {/* Verdict buttons — side-by-side per mock (~120px tall each) */}

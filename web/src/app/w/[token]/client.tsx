@@ -342,7 +342,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               {/* H1 per §3.2 S16 */}
               <div style={{ textAlign: 'center' }}>
                 {/* TODO-MOCK-REFRESH: hardcoded "him" to match mock. Final impl needs pronoun derivation from schema. */}
-                <FrauncesH1 italic size="lg">{makerFirstName} knows<br/>you&apos;ve got <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>him.</em></FrauncesH1>
+                <FrauncesH1 italic size="page">{makerFirstName} knows<br/>you&apos;ve got <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>him.</em></FrauncesH1>
               </div>
 
               {/* Sub per §3.2 S16 */}
@@ -424,7 +424,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%', maxWidth: 380 }}>
         <EyebrowTag tone="gold">UNBREAKABLE VOW</EyebrowTag>
 
-        <FrauncesH1 italic size="lg">{makerFirstName} needs you to witness this.</FrauncesH1>
+        <FrauncesH1 italic size="page">{makerFirstName} needs you to witness this.</FrauncesH1>
 
         {/* Sub line per mock */}
         <FrauncesSub>

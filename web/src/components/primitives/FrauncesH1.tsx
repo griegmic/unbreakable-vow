@@ -3,21 +3,27 @@ import { type ReactNode } from 'react';
 interface FrauncesH1Props {
   children: ReactNode;
   italic?: boolean;
-  size?: 'lg' | 'xl';
+  size?: 'hero' | 'page' | 'card';
 }
 
-export function FrauncesH1({ children, italic = false, size = 'xl' }: FrauncesH1Props) {
-  const fontSize = size === 'xl' ? 52 : 34;
+const SIZES = {
+  hero: { fontSize: 52, lineHeight: 0.98, letterSpacing: '-0.02em' },
+  page: { fontSize: 38, lineHeight: 1.05, letterSpacing: '-0.02em' },
+  card: { fontSize: 24, lineHeight: 1.15, letterSpacing: '-0.012em' },
+} as const;
+
+export function FrauncesH1({ children, italic = false, size = 'page' }: FrauncesH1Props) {
+  const s = SIZES[size];
   return (
     <h1
       style={{
         fontFamily: 'var(--uv-font-serif)',
-        fontSize,
-        fontWeight: 500,
+        fontSize: s.fontSize,
+        fontWeight: 400,
         fontStyle: italic ? 'italic' : 'normal',
-        fontVariationSettings: '"opsz" 144',
-        letterSpacing: size === 'xl' ? '-0.035em' : '-0.025em',
-        lineHeight: 1,
+        fontVariationSettings: '"opsz" 144, "SOFT" 30',
+        letterSpacing: s.letterSpacing,
+        lineHeight: s.lineHeight,
         color: 'var(--uv-text)',
         margin: 0,
       }}
