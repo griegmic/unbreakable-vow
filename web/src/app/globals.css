@@ -116,6 +116,10 @@ html {
     --uv-imessage-bg: rgba(52, 199, 89, 0.10);
     --uv-imessage-border: rgba(52, 199, 89, 0.28);
 
+    /* ── Selection states ── */
+    --uv-gold-selected-bg: rgba(200, 155, 60, 0.12);
+    --uv-gold-selected-shadow: rgba(200, 155, 60, 0.15);
+
     /* ── Certificate ── */
     --uv-cert-paper: #14110D;
     --uv-cert-stamp-text: #1A1205;

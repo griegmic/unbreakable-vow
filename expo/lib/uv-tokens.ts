@@ -54,6 +54,10 @@ export const uvColors = {
   imessageBg: 'rgba(52, 199, 89, 0.10)',
   imessageBorder: 'rgba(52, 199, 89, 0.28)',
 
+  // Selection states
+  goldSelectedBg: 'rgba(200, 155, 60, 0.12)',
+  goldSelectedShadow: 'rgba(200, 155, 60, 0.15)',
+
   // Certificate
   certPaper: '#14110D',
   certStampText: '#1A1205',

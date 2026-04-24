@@ -2,9 +2,17 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { Heart, Users, Flame } from 'lucide-react';
-import { RitualScreen, BackButton, TitleBlock, SectionLabel, ChoiceChip, PrimaryButton, SecondaryButton, FadeUp, RitualCard } from '@/components/ui';
+import { RitualScreen, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, RitualCard, ChoicePill } from '@/components/primitives';
 import { useVowFlow } from '@/providers/vow-flow';
 import { stakeAmounts, charities, antiCauses, consequenceOptions, inferDeadline } from '@/lib/vow-logic';
+
+/**
+ * S3 · Stake — §3.5
+ *
+ * Stake amount selection, consequence type (charity/anti), destination,
+ * and deadline picker. All state writes to useVowFlow provider.
+ * Zero Stripe SDK calls — payment happens on /seal.
+ */
 
 const consequenceIcons = { charity: Heart, witness: Users, anti: Flame };
 
@@ -21,6 +29,19 @@ const DEADLINE_PRESETS = [
   { label: 'In 7 days', days: () => 7 },
   { label: 'Pick date', days: () => -1 },
 ];
+
+// Screen-local section label
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <span style={{
+      fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 600,
+      letterSpacing: '0.18em', textTransform: 'uppercase' as const,
+      color: 'var(--uv-text-dim)',
+    }}>
+      {children}
+    </span>
+  );
+}
 
 export default function StakePage() {
   const router = useRouter();
@@ -90,148 +111,164 @@ export default function StakePage() {
   const destinations = vow.stake.consequence === 'charity' ? charities : vow.stake.consequence === 'anti' ? antiCauses : [];
 
   return (
-    <RitualScreen
-      footer={
-        <>
-          <PrimaryButton label={vow.stake.amount > 0 ? `Confirm $${vow.stake.amount} stake` : 'Continue'} onPress={() => router.push('/witness')} />
-          <SecondaryButton label="Back" onPress={() => router.back()} />
-        </>
-      }
-    >
-      <FadeUp><BackButton /></FadeUp>
+    <RitualScreen variant="utility">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
+        {/* Back */}
+        <button
+          onClick={() => router.back()}
+          aria-label="Go back"
+          style={{
+            background: 'none', border: 'none',
+            color: 'var(--uv-text-muted)', fontSize: 14, fontWeight: 500,
+            cursor: 'pointer', fontFamily: 'var(--uv-font-sans)',
+            padding: '4px 0', alignSelf: 'flex-start',
+          }}
+        >
+          &larr; Back
+        </button>
 
-      <FadeUp delay={0.05}>
-        <TitleBlock
-          title="Set the stakes."
-          subtitle="Pick an amount that'll keep you honest."
-        />
-      </FadeUp>
+        <FrauncesH1 italic size="lg">Set the stakes.</FrauncesH1>
+        <FrauncesSub>Pick an amount that&apos;ll keep you honest.</FrauncesSub>
 
-      <FadeUp delay={0.1}>
-        <div className="grid grid-cols-4 gap-3">
-          {stakeAmounts.map((amount) => (
-            <button
-              key={amount}
-              onClick={() => handleAmountSelect(amount)}
-              className="rounded-[18px] py-5 flex flex-col items-center justify-center transition-all"
-              style={{
-                backgroundColor: vow.stake.amount === amount ? 'rgba(212,162,79,0.12)' : 'var(--surface)',
-                border: `1.5px solid ${vow.stake.amount === amount ? 'var(--gold)' : 'var(--border)'}`,
-                boxShadow: vow.stake.amount === amount ? '0 0 20px rgba(212,162,79,0.15)' : 'none',
-              }}
-            >
-              <span
-                className="text-xl font-bold"
-                style={{ color: vow.stake.amount === amount ? 'var(--gold-bright)' : 'var(--text)' }}
-              >
-                ${amount}
-              </span>
-              <span
-                className="text-[10px] mt-0.5"
-                style={{ color: vow.stake.amount === amount ? 'var(--gold)' : 'var(--text-muted)' }}
-              >
-                {amountHints[amount]}
-              </span>
-            </button>
-          ))}
-        </div>
-      </FadeUp>
-
-      {/* $0 escape hatch — de-emphasized per expert panel */}
-      <FadeUp delay={0.12}>
-        <div className="flex justify-center -mt-1">
-          <button
-            onClick={() => handleAmountSelect(0)}
-            className="text-[13px] font-medium py-1"
-            style={{ color: vow.stake.amount === 0 ? 'var(--gold)' : 'var(--text-muted)' }}
-          >
-            {vow.stake.amount === 0 ? '✓ Free vow — just my word' : 'or make a free vow'}
-          </button>
-        </div>
-      </FadeUp>
-
-      {vow.stake.amount > 0 && (
-      <FadeUp delay={0.15}>
-        <SectionLabel>IF YOU BREAK IT</SectionLabel>
-      </FadeUp>
-      )}
-
-      {vow.stake.amount > 0 && (
-      <FadeUp delay={0.2}>
-        <div className="flex flex-col gap-2.5">
-          {consequenceOptions.map((option) => {
-            const Icon = consequenceIcons[option.id];
-            const active = vow.stake.consequence === option.id;
+        {/* Stake amount grid */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+          {stakeAmounts.map((amount) => {
+            const active = vow.stake.amount === amount;
             return (
               <button
-                key={option.id}
-                onClick={() => {
-                  const dest = option.id === 'charity' ? charities[0] : option.id === 'anti' ? antiCauses[0] : '';
-                  updateConsequence(option.id, dest);
-                }}
-                className="rounded-[18px] p-4 flex items-center gap-3.5 text-left transition-all"
+                key={amount}
+                onClick={() => handleAmountSelect(amount)}
                 style={{
-                  backgroundColor: active ? 'rgba(212,162,79,0.08)' : 'var(--surface)',
-                  border: `1.5px solid ${active ? 'var(--gold)' : 'var(--border)'}`,
+                  borderRadius: 18, padding: '20px 0',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                  background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-card)',
+                  border: `1.5px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
+                  boxShadow: active ? '0 0 20px var(--uv-gold-selected-shadow)' : 'none',
+                  cursor: 'pointer', transition: 'all 150ms',
                 }}
               >
-                <div
-                  className="w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0"
-                  style={{ backgroundColor: active ? 'rgba(212,162,79,0.15)' : 'var(--surface-elevated)' }}
-                >
-                  <Icon className="w-5 h-5" style={{ color: active ? 'var(--gold-bright)' : 'var(--text-muted)' }} />
-                </div>
-                <div>
-                  <span className="text-[15px] font-semibold block" style={{ color: active ? 'var(--text)' : 'var(--text-secondary)' }}>
-                    {option.label}
-                  </span>
-                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-                    {option.description}
-                  </span>
-                </div>
+                <span style={{
+                  fontSize: 20, fontWeight: 700,
+                  color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text)',
+                }}>
+                  ${amount}
+                </span>
+                <span style={{
+                  fontSize: 10, marginTop: 2,
+                  color: active ? 'var(--uv-gold)' : 'var(--uv-text-muted)',
+                }}>
+                  {amountHints[amount]}
+                </span>
               </button>
             );
           })}
         </div>
-      </FadeUp>
-      )}
 
-      {vow.stake.amount > 0 && destinations.length > 0 && (
-        <FadeUp delay={0.25}>
-          <div className="flex flex-col gap-2">
-            <SectionLabel>{vow.stake.consequence === 'charity' ? 'CHOOSE A CAUSE' : 'CHOOSE A CAUSE'}</SectionLabel>
-            <div className="flex flex-wrap gap-2">
-              {destinations.map((dest) => (
-                <button
-                  key={dest}
-                  onClick={() => updateConsequence(vow.stake.consequence, dest)}
-                  className="px-3.5 py-[11px] rounded-full transition-colors"
-                  style={{
-                    backgroundColor: vow.stake.destination === dest ? 'rgba(212,162,79,0.12)' : 'var(--surface)',
-                    border: `1px solid ${vow.stake.destination === dest ? 'var(--border-strong)' : 'var(--border)'}`,
-                  }}
-                >
-                  <span
-                    className="text-[13px] font-medium"
-                    style={{ color: vow.stake.destination === dest ? 'var(--gold-bright)' : 'var(--text-secondary)' }}
+        {/* $0 escape hatch */}
+        <div style={{ display: 'flex', justifyContent: 'center', marginTop: -4 }}>
+          <button
+            onClick={() => handleAmountSelect(0)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500,
+              padding: '4px 0',
+              color: vow.stake.amount === 0 ? 'var(--uv-gold)' : 'var(--uv-text-muted)',
+            }}
+          >
+            {vow.stake.amount === 0 ? '✓ Free vow — just my word' : 'or make a free vow'}
+          </button>
+        </div>
+
+        {/* Consequence type selector */}
+        {vow.stake.amount > 0 && (
+          <>
+            <SectionLabel>IF YOU BREAK IT</SectionLabel>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {consequenceOptions.map((option) => {
+                const Icon = consequenceIcons[option.id];
+                const active = vow.stake.consequence === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => {
+                      const dest = option.id === 'charity' ? charities[0] : option.id === 'anti' ? antiCauses[0] : '';
+                      updateConsequence(option.id, dest);
+                    }}
+                    style={{
+                      borderRadius: 18, padding: 16,
+                      display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-card)',
+                      border: `1.5px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
+                      cursor: 'pointer', transition: 'all 150ms',
+                    }}
                   >
-                    {dest}
-                  </span>
-                </button>
-              ))}
+                    <div style={{
+                      width: 40, height: 40, borderRadius: 14,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      flexShrink: 0,
+                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-elevated)',
+                    }}>
+                      <Icon style={{ width: 20, height: 20, color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)' }} />
+                    </div>
+                    <div>
+                      <span style={{
+                        fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 600,
+                        display: 'block', color: active ? 'var(--uv-text)' : 'var(--uv-text-muted)',
+                      }}>
+                        {option.label}
+                      </span>
+                      <span style={{
+                        fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                        color: 'var(--uv-text-muted)',
+                      }}>
+                        {option.description}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Destination picker */}
+        {vow.stake.amount > 0 && destinations.length > 0 && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <SectionLabel>CHOOSE A CAUSE</SectionLabel>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {destinations.map((dest) => {
+                const active = vow.stake.destination === dest;
+                return (
+                  <button
+                    key={dest}
+                    onClick={() => updateConsequence(vow.stake.consequence, dest)}
+                    style={{
+                      padding: '11px 14px', borderRadius: 9999,
+                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-card)',
+                      border: `1px solid ${active ? 'var(--uv-border-strong)' : 'var(--uv-border)'}`,
+                      cursor: 'pointer', transition: 'all 150ms',
+                    }}
+                  >
+                    <span style={{
+                      fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500,
+                      color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
+                    }}>
+                      {dest}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-        </FadeUp>
-      )}
+        )}
 
-      {/* Deadline picker — only shown when vow text doesn't imply one */}
-      {needsDeadlinePicker && (
-        <FadeUp delay={0.3}>
+        {/* Deadline picker — only shown when vow text doesn't imply one */}
+        {needsDeadlinePicker && (
           <RitualCard>
             <SectionLabel>Deadline</SectionLabel>
-            <div className="flex flex-wrap">
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {DEADLINE_PRESETS.map((p) => (
-                <ChoiceChip
+                <ChoicePill
                   key={p.label}
                   label={p.label}
                   active={deadlineLabel === p.label}
@@ -245,18 +282,33 @@ export default function StakePage() {
                 value={customDate}
                 onChange={(e) => setCustomDate(e.target.value)}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full bg-transparent text-[15px] outline-none py-2 px-3 rounded-xl"
-                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                style={{
+                  width: '100%', padding: '8px 12px', borderRadius: 12,
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 15,
+                  color: 'var(--uv-text)', background: 'transparent',
+                  border: '1px solid var(--uv-border)', outline: 'none',
+                  boxSizing: 'border-box',
+                }}
               />
             )}
             {pickedEndDate && (
-              <p className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+              <p style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                color: 'var(--uv-text-muted)', margin: 0,
+              }}>
                 Ends {pickedEndDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
               </p>
             )}
           </RitualCard>
-        </FadeUp>
-      )}
+        )}
+
+        {/* CTAs */}
+        <GoldCTA
+          label={vow.stake.amount > 0 ? `Confirm $${vow.stake.amount} stake` : 'Continue'}
+          onPress={() => router.push('/witness')}
+        />
+        <OutlinedGoldCTA label="Back" onPress={() => router.back()} />
+      </div>
     </RitualScreen>
   );
 }
