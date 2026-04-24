@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen, FrauncesH1, GoldCTA, OutlinedGoldCTA } from '@/components/primitives';
+import { RitualScreen, FrauncesH1, GoldCTA, OutlinedGoldCTA, ChoicePill } from '@/components/primitives';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { IfBrokenSheet } from '@/app/create/components/IfBrokenSheet';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -67,32 +67,6 @@ const DEADLINE_PILLS: { id: DeadlineId; label: string }[] = [
 
 const STAKE_OPTIONS = [10, 25, 50, 100];
 
-// Screen-local pill button for deadline + stake selection
-// TODO: promote to primitive if reused in 3+ screens
-function SelectionPill({ label, active, onPress, flex }: {
-  label: string; active: boolean; onPress: () => void; flex?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onPress}
-      style={{
-        flex: flex ? 1 : undefined,
-        padding: flex ? '10px 0' : '8px 14px',
-        borderRadius: flex ? 12 : 20,
-        border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
-        background: active ? 'var(--uv-gold-bg)' : 'transparent',
-        color: active ? 'var(--uv-gold)' : 'var(--uv-text-muted)',
-        fontFamily: 'var(--uv-font-sans)',
-        fontSize: flex ? 15 : 13,
-        fontWeight: flex ? 600 : 500,
-        cursor: 'pointer', transition: 'all 150ms',
-      }}
-    >
-      {label}
-    </button>
-  );
-}
 
 export default function QuickVowPage() {
   const router = useRouter();
@@ -218,7 +192,7 @@ export default function QuickVowPage() {
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {DEADLINE_PILLS.map(pill => (
-                <SelectionPill
+                <ChoicePill
                   key={pill.id}
                   label={pill.label}
                   active={selectedDeadline === pill.id}
@@ -282,7 +256,7 @@ export default function QuickVowPage() {
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
               {STAKE_OPTIONS.map(amt => (
-                <SelectionPill
+                <ChoicePill
                   key={amt}
                   label={`$${amt}`}
                   active={stakeAmount === amt}
