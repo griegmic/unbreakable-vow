@@ -2,9 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Star, Check } from 'lucide-react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { SecondaryButton } from '@/components/uv/SecondaryButton';
+import { RitualScreen, GoldCTA, OutlinedGoldCTA } from '@/components/primitives';
 import { PaymentModal } from '@/components/payment-form';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useVowFlow } from '@/providers/vow-flow';
@@ -829,7 +827,7 @@ export default function SealPage() {
               {/* Trust lines */}
               <p style={{
                 fontFamily: 'var(--uv-font-sans)', fontSize: 13,
-                color: '#6ee7a0', textAlign: 'center',
+                color: 'var(--uv-success)', textAlign: 'center',
                 margin: '24px 0 4px',
               }}>
                 Keep your word, get every cent back
@@ -843,9 +841,11 @@ export default function SealPage() {
               </p>
 
               {/* Seal CTA */}
-              <PrimaryButton onClick={handlePhoneContinue} loading={phoneBusy}>
-                Seal my vow {vow.stake.amount > 0 ? `— $${vow.stake.amount}` : ''}
-              </PrimaryButton>
+              <GoldCTA
+                label={phoneBusy ? 'Sending...' : `Seal my vow${vow.stake.amount > 0 ? ` — $${vow.stake.amount}` : ''}`}
+                onPress={handlePhoneContinue}
+                disabled={phoneBusy}
+              />
 
               {/* Google fallback */}
               <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
@@ -952,10 +952,12 @@ export default function SealPage() {
 
         {/* CTA area */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 'auto' }}>
-          <PrimaryButton onClick={handleSealTap} loading={sealing}>
-            {sealLabel}
-          </PrimaryButton>
-          <SecondaryButton onClick={() => router.push('/create')}>Back</SecondaryButton>
+          <GoldCTA
+            label={sealing ? 'Sealing...' : sealLabel}
+            onPress={handleSealTap}
+            disabled={sealing}
+          />
+          <OutlinedGoldCTA label="Back" onPress={() => router.push('/create')} />
 
           {isDevBypass && (
             <button

@@ -1,14 +1,35 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Users } from 'lucide-react';
-import { RitualScreen, BackButton, TitleBlock, FadeUp } from '@/components/ui';
+import { Users, Link2, Check } from 'lucide-react';
+import { RitualScreen, FrauncesH1, FrauncesSub } from '@/components/primitives';
 import { useVowFlow } from '@/providers/vow-flow';
 import { formalizeVow } from '@/lib/vow-logic';
+
+/**
+ * S4 · Witness pick — §3.4
+ *
+ * Device-aware two-option layout:
+ *   Mobile (navigator.share available): "Text a friend" → share sheet → push /seal
+ *   Desktop (no share): "Copy invite link" → clipboard + inline confirmation → push /seal
+ *   Both: "No witness — just my word" → switchToSolo() → push /seal
+ *
+ * Device detection via navigator.share feature check (not UA sniffing).
+ * SSR defaults to mobile to avoid hydration mismatch.
+ */
 
 export default function WitnessPage() {
   const router = useRouter();
   const { vow, setWitnessName, setWitnessType, setWitnessInviteToken, switchToSolo } = useVowFlow();
+
+  // Device detection: SSR = mobile (safe default), client = feature check
+  const [canShare, setCanShare] = useState(true);
+  useEffect(() => {
+    setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
+  }, []);
+
+  // Desktop copy feedback state
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!vow.rawInput) {
@@ -20,8 +41,8 @@ export default function WitnessPage() {
     }
   }, [vow.rawInput, router]);
 
-  const handleFriend = async () => {
-    // Reuse existing token if user navigated back and re-tapped
+  // Shared: generate invite text + URL, set witness state
+  const prepareWitness = useCallback(() => {
     const token = vow.witnessInviteToken || crypto.randomUUID();
     setWitnessName('Your witness');
     setWitnessType('friend');
@@ -32,69 +53,145 @@ export default function WitnessPage() {
     const stakeHook = vow.stake.amount > 0 ? ` and put $${vow.stake.amount} on it` : '';
     const shareText = `I just made a vow to ${vowText.toLowerCase()}${stakeHook}. You're my witness: ${witnessUrl}`;
 
-    // Pop native share sheet (non-blocking — navigate to seal regardless)
+    return { shareText, witnessUrl };
+  }, [vow, setWitnessName, setWitnessType, setWitnessInviteToken]);
+
+  // Mobile: share sheet → push /seal
+  const handleMobileShare = useCallback(async () => {
+    const { shareText } = prepareWitness();
     if (navigator.share) {
       navigator.share({ text: shareText }).catch(() => {});
     }
-
     router.push('/seal');
-  };
+  }, [prepareWitness, router]);
+
+  // Desktop: copy to clipboard → show confirmation → auto-push /seal after 1.5s
+  const handleDesktopCopy = useCallback(async () => {
+    if (copied) return; // Already in copied state
+    const { shareText } = prepareWitness();
+    try {
+      await navigator.clipboard.writeText(shareText);
+    } catch {
+      // Clipboard failed — push anyway, user can share later
+    }
+    setCopied(true);
+    setTimeout(() => router.push('/seal'), 1500);
+  }, [copied, prepareWitness, router]);
 
   const handleSolo = () => {
     switchToSolo();
     router.push('/seal');
   };
 
-  return (
-    <RitualScreen>
-      <FadeUp><BackButton /></FadeUp>
-      <FadeUp delay={0.05}>
-        <TitleBlock
-          title="Who's holding you to it?"
-          subtitle="Pick someone who won't let you off the hook."
-        />
-      </FadeUp>
+  // Card content based on device + copy state
+  const primaryIcon = canShare
+    ? <Users style={{ width: 22, height: 22, color: 'var(--uv-gold-bright)' }} />
+    : copied
+      ? <Check style={{ width: 22, height: 22, color: 'var(--uv-success)' }} />
+      : <Link2 style={{ width: 22, height: 22, color: 'var(--uv-gold-bright)' }} />;
 
-      <FadeUp delay={0.1}>
+  const primaryTitle = canShare
+    ? 'Text a friend'
+    : copied ? 'Link copied ✓' : 'Copy invite link';
+
+  const primarySub = canShare
+    ? "They'll decide if you kept your word"
+    : copied ? 'Now send it to them however you want' : 'Paste it anywhere to send to your witness';
+
+  const primaryHandler = canShare ? handleMobileShare : handleDesktopCopy;
+
+  const primaryBorder = copied
+    ? '1.5px solid var(--uv-success-border)'
+    : '1.5px solid var(--uv-border-strong)';
+
+  const primaryTitleColor = copied ? 'var(--uv-success)' : 'var(--uv-gold-bright)';
+
+  return (
+    <RitualScreen variant="utility">
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
+        {/* Back */}
         <button
-          onClick={handleFriend}
-          className="w-full rounded-[22px] p-[18px] flex items-center gap-3.5 text-left transition-all active:scale-[0.98]"
+          onClick={() => router.back()}
+          aria-label="Go back"
           style={{
-            backgroundColor: 'var(--surface)',
-            border: '1.5px solid var(--border-strong)',
-            boxShadow: '0 6px 14px rgba(212,162,79,0.12)',
+            background: 'none', border: 'none',
+            color: 'var(--uv-text-muted)', fontSize: 14, fontWeight: 500,
+            cursor: 'pointer', fontFamily: 'var(--uv-font-sans)',
+            padding: '4px 0', alignSelf: 'flex-start',
           }}
         >
-          <div
-            className="w-12 h-12 rounded-[14px] flex items-center justify-center shrink-0"
-            style={{ backgroundColor: 'rgba(212,162,79,0.1)', border: '1px solid var(--border-strong)' }}
-          >
-            <Users className="w-[22px] h-[22px]" style={{ color: 'var(--gold-bright)' }} />
+          &larr; Back
+        </button>
+
+        <FrauncesH1 italic size="lg">Who&apos;s holding you to it?</FrauncesH1>
+        <FrauncesSub>Pick someone who won&apos;t let you off the hook.</FrauncesSub>
+
+        {/* Primary option — device-aware */}
+        <button
+          onClick={primaryHandler}
+          disabled={copied}
+          style={{
+            width: '100%', borderRadius: 22, padding: 18,
+            display: 'flex', alignItems: 'center', gap: 14, textAlign: 'left',
+            background: 'var(--uv-bg-card)',
+            border: primaryBorder,
+            boxShadow: copied ? 'none' : '0 6px 14px var(--uv-gold-glow)',
+            cursor: copied ? 'default' : 'pointer',
+            transition: 'transform 100ms, border-color 200ms',
+          }}
+          onMouseDown={(e) => { if (!copied) e.currentTarget.style.transform = 'scale(0.98)'; }}
+          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+        >
+          <div style={{
+            width: 48, height: 48, borderRadius: 14,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0,
+            background: copied ? 'var(--uv-success-bg)' : 'var(--uv-gold-bg)',
+            border: `1px solid ${copied ? 'var(--uv-success-border)' : 'var(--uv-border-strong)'}`,
+          }}>
+            {primaryIcon}
           </div>
-          <div className="flex-1">
-            <span className="text-[17px] font-bold font-serif block tracking-[-0.2px]" style={{ color: 'var(--gold-bright)' }}>Text a friend</span>
-            <span className="text-[13px] mt-0.5 block leading-[18px]" style={{ color: 'var(--text-secondary)' }}>
-              They&apos;ll decide if you kept your word
+          <div style={{ flex: 1 }}>
+            <span style={{
+              fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 700,
+              color: primaryTitleColor, display: 'block',
+              letterSpacing: '-0.2px',
+            }}>
+              {primaryTitle}
+            </span>
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 13, marginTop: 2,
+              display: 'block', lineHeight: '18px', color: 'var(--uv-text-muted)',
+            }}>
+              {primarySub}
             </span>
           </div>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold-bright)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="9 18 15 12 9 6" />
-          </svg>
+          {!copied && (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--uv-gold-bright)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6" />
+            </svg>
+          )}
         </button>
-      </FadeUp>
 
-      <FadeUp delay={0.15}>
-        <div className="flex-1 flex items-end justify-center pt-5 pb-6">
+        {/* Solo option */}
+        <div style={{ flex: 1, display: 'flex', alignItems: 'flex-end', justifyContent: 'center', paddingTop: 20, paddingBottom: 24 }}>
           <button
             onClick={handleSolo}
-            className="py-2 px-4"
+            style={{
+              background: 'none', border: 'none', padding: '8px 16px',
+              cursor: 'pointer',
+            }}
           >
-            <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+              color: 'var(--uv-text-muted)',
+            }}>
               No witness — just my word
             </span>
           </button>
         </div>
-      </FadeUp>
+      </div>
     </RitualScreen>
   );
 }

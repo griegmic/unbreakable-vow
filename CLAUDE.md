@@ -161,7 +161,7 @@ Challenge: challenge_status: pending → accepted | declined
 - `expo/lib/supabase.ts`
 
 **Web:**
-- `/stake/page.tsx`, `/witness/page.tsx` (first-time flow)
+- `/stake/page.tsx` (first-time flow)
 - `/live/page.tsx`, `/self-resolve/page.tsx` (existing single-vow tracking)
 - `/auth/callback/page.tsx`
 - `components/auth-modal.tsx`, `components/share-button.tsx`
