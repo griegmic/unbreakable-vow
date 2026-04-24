@@ -2,13 +2,20 @@
 
 import React, { useState, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { RitualScreen, FrauncesH1, GoldCTA, OutlinedGoldCTA } from '@/components/primitives';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { IfBrokenSheet } from '@/app/create/components/IfBrokenSheet';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
 import { inferDeadline } from '@/lib/vow-logic';
+
+/**
+ * Quick Vow — §3.5 S21
+ *
+ * Returning-user power flow: vow input + inline pills (deadline, stake,
+ * charity) on one screen. CTA "Seal it." routes to /seal → /sent → /live.
+ * Same seal-vow edge function as first-time flow.
+ */
 
 type DeadlineId = 'eow' | 'tomorrow' | '7days' | '30days' | 'custom';
 
@@ -59,6 +66,33 @@ const DEADLINE_PILLS: { id: DeadlineId; label: string }[] = [
 ];
 
 const STAKE_OPTIONS = [10, 25, 50, 100];
+
+// Screen-local pill button for deadline + stake selection
+// TODO: promote to primitive if reused in 3+ screens
+function SelectionPill({ label, active, onPress, flex }: {
+  label: string; active: boolean; onPress: () => void; flex?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onPress}
+      style={{
+        flex: flex ? 1 : undefined,
+        padding: flex ? '10px 0' : '8px 14px',
+        borderRadius: flex ? 12 : 20,
+        border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
+        background: active ? 'var(--uv-gold-bg)' : 'transparent',
+        color: active ? 'var(--uv-gold)' : 'var(--uv-text-muted)',
+        fontFamily: 'var(--uv-font-sans)',
+        fontSize: flex ? 15 : 13,
+        fontWeight: flex ? 600 : 500,
+        cursor: 'pointer', transition: 'all 150ms',
+      }}
+    >
+      {label}
+    </button>
+  );
+}
 
 export default function QuickVowPage() {
   const router = useRouter();
@@ -134,16 +168,11 @@ export default function QuickVowPage() {
 
   return (
     <>
-      <RitualScreen>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24 }}>
+      <RitualScreen variant="utility">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
           {/* Header */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h1 style={{
-              fontFamily: 'var(--uv-font-sans)', fontSize: 24, fontWeight: 600,
-              color: 'var(--uv-text)', margin: 0,
-            }}>
-              Quick vow
-            </h1>
+            <FrauncesH1 italic size="lg">Quick vow.</FrauncesH1>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
               <a
                 href="/create"
@@ -152,7 +181,7 @@ export default function QuickVowPage() {
                   color: 'var(--uv-gold)', textDecoration: 'none',
                 }}
               >
-                Use guided flow &rarr;
+                Guided flow &rarr;
               </a>
               {isAuthenticated && <HamburgerMenu />}
             </div>
@@ -176,40 +205,26 @@ export default function QuickVowPage() {
                 outline: 'none',
               }}
             />
-            <style>{`input::placeholder { color: var(--uv-text-invisible); font-style: italic; }`}</style>
           </div>
 
           {/* Deadline pills */}
           <div>
             <label style={{
               fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
-              letterSpacing: '1px', textTransform: 'uppercase',
+              letterSpacing: '1px', textTransform: 'uppercase' as const,
               color: 'var(--uv-text-faint)', display: 'block', marginBottom: 8,
             }}>
               Deadline
             </label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {DEADLINE_PILLS.map(pill => {
-                const active = selectedDeadline === pill.id;
-                return (
-                  <button
-                    key={pill.id}
-                    type="button"
-                    onClick={() => handleDeadlineClick(pill.id)}
-                    style={{
-                      padding: '8px 14px',
-                      borderRadius: 20,
-                      border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
-                      background: active ? 'rgba(212,168,74,0.1)' : 'transparent',
-                      color: active ? 'var(--uv-gold)' : 'var(--uv-text-muted)',
-                      fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500,
-                      cursor: 'pointer', transition: 'all 150ms',
-                    }}
-                  >
-                    {pill.label}
-                  </button>
-                );
-              })}
+              {DEADLINE_PILLS.map(pill => (
+                <SelectionPill
+                  key={pill.id}
+                  label={pill.label}
+                  active={selectedDeadline === pill.id}
+                  onPress={() => handleDeadlineClick(pill.id)}
+                />
+              ))}
             </div>
             <input
               ref={dateInputRef}
@@ -233,7 +248,7 @@ export default function QuickVowPage() {
           <div>
             <label style={{
               fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
-              letterSpacing: '1px', textTransform: 'uppercase',
+              letterSpacing: '1px', textTransform: 'uppercase' as const,
               color: 'var(--uv-text-faint)', display: 'block', marginBottom: 8,
             }}>
               Witness
@@ -260,34 +275,21 @@ export default function QuickVowPage() {
           <div>
             <label style={{
               fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
-              letterSpacing: '1px', textTransform: 'uppercase',
+              letterSpacing: '1px', textTransform: 'uppercase' as const,
               color: 'var(--uv-text-faint)', display: 'block', marginBottom: 8,
             }}>
               Stake
             </label>
             <div style={{ display: 'flex', gap: 8 }}>
-              {STAKE_OPTIONS.map(amt => {
-                const active = stakeAmount === amt;
-                return (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setStakeAmount(amt)}
-                    style={{
-                      flex: 1,
-                      padding: '10px 0',
-                      borderRadius: 12,
-                      border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
-                      background: active ? 'rgba(212,168,74,0.1)' : 'transparent',
-                      color: active ? 'var(--uv-gold)' : 'var(--uv-text-muted)',
-                      fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 600,
-                      cursor: 'pointer', transition: 'all 150ms',
-                    }}
-                  >
-                    ${amt}
-                  </button>
-                );
-              })}
+              {STAKE_OPTIONS.map(amt => (
+                <SelectionPill
+                  key={amt}
+                  label={`$${amt}`}
+                  active={stakeAmount === amt}
+                  onPress={() => setStakeAmount(amt)}
+                  flex
+                />
+              ))}
             </div>
           </div>
 
@@ -322,9 +324,17 @@ export default function QuickVowPage() {
           <div style={{ flex: 1, minHeight: 12 }} />
 
           {/* CTA */}
-          <PrimaryButton onClick={handleSeal} disabled={!canSeal}>
-            Seal my vow &mdash; ${stakeAmount}
-          </PrimaryButton>
+          <GoldCTA
+            label={`Seal my vow \u2014 $${stakeAmount}`}
+            onPress={handleSeal}
+            disabled={!canSeal}
+          />
+
+          {/* Secondary — dare a friend */}
+          <OutlinedGoldCTA
+            label="Dare a friend \u2192"
+            onPress={() => router.push('/cast')}
+          />
         </div>
       </RitualScreen>
 
