@@ -1,7 +1,7 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Check, Phone, MessageCircle } from 'lucide-react';
-import { WaxSeal, FrauncesH1, FrauncesSub, GoldCTA, EyebrowTag, VowDocCard, TimelineCard, RitualCard } from '@/components/primitives';
+import { useState } from 'react';
+import { Check } from 'lucide-react';
+import { FrauncesH1, FrauncesSub, GoldCTA, MutedSecondary, TimelineCard } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 
@@ -420,87 +420,100 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   const stakeDisplay = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : null;
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '100px 36px 40px', textAlign: 'center' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24, width: '100%', maxWidth: 380 }}>
-        <EyebrowTag tone="gold">UNBREAKABLE VOW</EyebrowTag>
+    <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at top, rgba(200,155,60,0.07), transparent 55%), radial-gradient(ellipse at 50% 100%, rgba(200,155,60,0.04), transparent 70%)', display: 'flex', flexDirection: 'column', padding: '30px 24px 26px' }}>
+      {/* Brand: diamond seal + "Unbreakable Vow" wordmark per mock */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, marginBottom: 18 }}>
+        <div style={{ width: 18, height: 18, border: '1px solid var(--uv-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(45deg)' }}>
+          <div style={{ width: 4, height: 4, background: 'var(--uv-gold)' }} />
+        </div>
+        <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 13, fontWeight: 500, letterSpacing: '0.01em', color: 'var(--uv-text-muted)' }}>
+          Unbreakable <em style={{ color: 'var(--uv-gold)', fontStyle: 'italic' }}>Vow</em>
+        </div>
+      </div>
 
-        <FrauncesH1 italic size="page">{makerFirstName} needs you to witness this.</FrauncesH1>
+      {/* H1 per mock: "[Name] needs you to hold them to this." */}
+      <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontWeight: 400, fontVariationSettings: '"opsz" 144', fontSize: 30, lineHeight: 1.08, letterSpacing: '-0.018em', textAlign: 'center', marginBottom: 8, color: 'var(--uv-text)' }}>
+        <span style={{ fontStyle: 'italic', color: 'var(--uv-gold)', fontWeight: 400 }}>{makerFirstName}</span> needs you<br/>to hold them to this.
+      </h1>
 
-        {/* Sub line per mock */}
-        <FrauncesSub>
-          {stakeDisplay
-            ? <>They put {stakeDisplay} on it. If they break their word, <strong style={{ color: 'var(--uv-text)', fontWeight: 500, fontStyle: 'normal' }}>you call it.</strong></>
-            : <>If they break their word, <strong style={{ color: 'var(--uv-text)', fontWeight: 500, fontStyle: 'normal' }}>you call it.</strong></>
-          }
-        </FrauncesSub>
+      {/* Sub line per mock */}
+      <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-serif)', fontWeight: 400, fontSize: 14.5, color: 'var(--uv-text-muted)', lineHeight: 1.5, marginBottom: 22, padding: '0 10px', fontStyle: 'italic' }}>
+        {stakeDisplay
+          ? <>They put {stakeDisplay} on it. If they break their word, <b style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>you call it.</b></>
+          : <>If they break their word, <b style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>you call it.</b></>
+        }
+      </div>
 
-        {/* Vow card with "— THE VOW —" stamp + 2-column meta per mock */}
-        <RitualCard>
-          {/* Stamp header */}
-          <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 8 }}>
-            — The Vow —
-          </div>
-          {/* Vow text */}
-          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, fontStyle: 'italic', color: 'var(--uv-gold)', margin: 0, textAlign: 'center', lineHeight: 1.4 }}>
-            &ldquo;{vow.refined_text}&rdquo;
-          </p>
-          {/* 2-column meta: ON THE LINE / YOU DECIDE */}
-          {stakeDisplay && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, paddingTop: 14, borderTop: '1px dashed var(--uv-border-soft)' }}>
-              <div>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>On the line</div>
-                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>{stakeDisplay}</div>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)' }}>to {vow.destination}, if broken</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>You decide</div>
-                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>{endDate?.split(',')[0] || 'TBD'}</div>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)' }}>at 9:00 PM</div>
+      {/* Vow doc card per mock — surface bg, rule border, 6px radius */}
+      <div style={{ background: 'var(--uv-bg-card)', border: '1px solid var(--uv-border-soft)', borderRadius: 6, padding: '20px 20px 16px', marginBottom: 16, position: 'relative' }}>
+        {/* Gold gradient line at top */}
+        <div style={{ position: 'absolute', top: 0, left: 22, right: 22, height: 1, background: 'linear-gradient(90deg, transparent, var(--uv-gold-line), transparent)' }} />
+        {/* "— The Vow —" label */}
+        <div style={{ fontSize: 9.5, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--uv-gold)', fontWeight: 500, marginBottom: 10, textAlign: 'center', fontFamily: 'var(--uv-font-sans)' }}>
+          &mdash; The Vow &mdash;
+        </div>
+        {/* Vow quote */}
+        <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 21, lineHeight: 1.28, color: 'var(--uv-text)', fontStyle: 'italic', fontWeight: 400, textAlign: 'center', letterSpacing: '-0.005em', padding: '4px 0 14px', borderBottom: '1px dashed var(--uv-border-soft)', marginBottom: 14 }}>
+          &ldquo;{vow.refined_text}&rdquo;
+        </div>
+        {/* 2-column meta: ON THE LINE / YOU DECIDE */}
+        {stakeDisplay && (
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 18px' }}>
+            <div>
+              <div style={{ fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontWeight: 500, marginBottom: 4, fontFamily: 'var(--uv-font-sans)' }}>On the line</div>
+              <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 15, fontWeight: 500, color: 'var(--uv-text)', letterSpacing: '-0.005em', fontFeatureSettings: '"tnum"' }}>
+                {stakeDisplay}
+                <span style={{ fontSize: 11, color: 'var(--uv-text-muted)', fontWeight: 400, fontStyle: 'italic', marginTop: 2, display: 'block' }}>to {vow.destination}, if broken</span>
               </div>
             </div>
-          )}
-        </RitualCard>
-
-        {/* Reassurance line per mock */}
-        <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text-muted)', margin: 0, textAlign: 'center' }}>
-          All you do: <strong style={{ color: 'var(--uv-text)', fontWeight: 500 }}>say if they kept it or broke it.</strong>
-        </p>
-
-        {/* Oath checkbox — inline, matching V6 pattern */}
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', padding: '8px 0' }}>
-          <input type="checkbox" checked={sworn} onChange={(e) => setSworn(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--uv-gold)' }} />
-          <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 15, color: 'var(--uv-text-muted)' }}>
-            I swear to keep {makerLabel} accountable
-          </span>
-        </label>
-
-        {!sworn && (
-          <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-            they picked you for a reason
-          </p>
-        )}
-
-        <GoldCTA label="I'm in →" onPress={handleAccept} disabled={!sworn || busy} />
-
-        <button
-          onClick={handleDecline}
-          disabled={busy}
-          style={{ marginTop: 12, background: 'none', border: 'none', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)', fontSize: 13, lineHeight: 1.2, cursor: 'pointer', padding: 0 }}
-        >
-          Pass — I can&apos;t
-        </button>
-
-        {/* Reassurance footer — moved from killed S14.5 (§3.2 S14) */}
-        <p style={{ marginTop: 16, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 12.5, lineHeight: 1.5, color: 'var(--uv-text-dim)', textAlign: 'center' }}>
-          Zero cost to you. No account needed. {makerFirstName}&apos;s your only connection.
-        </p>
-
-        {error && (
-          <div style={{ borderRadius: 12, padding: '12px 16px', fontSize: 14, backgroundColor: 'rgba(220,38,38,0.1)', color: 'var(--uv-danger)', border: '1px solid var(--uv-danger)', fontFamily: 'var(--uv-font-sans)' }}>
-            {error}
+            <div>
+              <div style={{ fontSize: 9, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontWeight: 500, marginBottom: 4, fontFamily: 'var(--uv-font-sans)' }}>You decide</div>
+              <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 15, fontWeight: 500, color: 'var(--uv-text)', letterSpacing: '-0.005em', fontFeatureSettings: '"tnum"' }}>
+                {endDate?.replace(/,.*$/, '') || 'TBD'}
+                <span style={{ fontSize: 11, color: 'var(--uv-text-muted)', fontWeight: 400, fontStyle: 'italic', marginTop: 2, display: 'block' }}>at 9:00 PM</span>
+              </div>
+            </div>
           </div>
         )}
       </div>
+
+      {/* Role line per mock — serif italic */}
+      <p style={{ textAlign: 'center', fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 13, color: 'var(--uv-text-muted)', margin: '8px 0 14px', lineHeight: 1.45 }}>
+        All you do: <b style={{ color: 'var(--uv-text)', fontWeight: 500, fontStyle: 'normal' }}>say if they kept it or broke it.</b>
+      </p>
+
+      {/* Oath checkbox — product addition, not in mock */}
+      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', padding: '8px 0' }}>
+        <input type="checkbox" checked={sworn} onChange={(e) => setSworn(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--uv-gold)' }} />
+        <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 15, color: 'var(--uv-text-muted)' }}>
+          I swear to keep {makerLabel} accountable
+        </span>
+      </label>
+
+      {!sworn && (
+        <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-faint)', margin: '0 0 8px', fontFamily: 'var(--uv-font-sans)' }}>
+          they picked you for a reason
+        </p>
+      )}
+
+      {/* Footer — pushed to bottom */}
+      <div style={{ marginTop: 'auto' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <GoldCTA label="I'm in →" onPress={handleAccept} disabled={!sworn || busy} />
+          <MutedSecondary label="Pass — I can't" onPress={handleDecline} />
+        </div>
+        {/* "First time? How this works →" per mock */}
+        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--uv-text-dim)', marginTop: 12, lineHeight: 1.5 }}>
+          <em style={{ color: 'var(--uv-text-muted)', fontStyle: 'italic' }}>First time?</em>{' '}
+          <a href="#" onClick={(e) => e.preventDefault()} style={{ color: 'var(--uv-gold)', textDecoration: 'none' }}>How this works &rarr;</a>
+        </div>
+      </div>
+
+      {error && (
+        <div style={{ borderRadius: 12, padding: '12px 16px', fontSize: 14, backgroundColor: 'rgba(220,38,38,0.1)', color: 'var(--uv-danger)', border: '1px solid var(--uv-danger)', fontFamily: 'var(--uv-font-sans)', marginTop: 12 }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 }
