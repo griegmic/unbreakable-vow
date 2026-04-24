@@ -32,3 +32,4 @@ export { TimelineCard } from './TimelineCard';
 export { WitnessChip } from './WitnessChip';
 export { NeedsNowCard } from './NeedsNowCard';
 export { ChoicePill } from './ChoicePill';
+export { AvatarMenuTrigger } from './AvatarMenuTrigger';

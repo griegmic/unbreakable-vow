@@ -90,8 +90,59 @@ Check this doc FIRST when starting a P0 screen rebuild to avoid re-asking the sa
 
 ---
 
-## /quick-vow — PR #3U (pending)
+## /quick-vow — PR #3U
 
-**Decision:** TBD — will be proposed when #3U starts.
+**Decision:** Option A — Full layout rebuild to match mock, keep all state/handler logic.
+**Date:** 2026-04-24
 **Mock:** `08-quick-vow.html`
-**Known features to evaluate:** Current vertical form vs mock's card-based layout + one-tap suggestions + dual pill CTA
+
+**Layout changes (old -> new):**
+- Old: RitualScreen utility wrapper, FrauncesH1 "Quick vow." heading, vertical form sections (input, deadline pills, witness input, stake pills, if-broken card), single GoldCTA + OutlinedGoldCTA
+- New: Full-bleed screen matching mock layout. Topbar (live pulse + avatar menu trigger), vow card with inline meta-pills, one-tap suggestion chips, dual CTA footer
+
+**Topbar:**
+- Left: "2 VOWS LIVE" green pulse (static for now, real count is follow-up)
+- Right: AvatarMenuTrigger primitive (28px visual avatar in 44x44 touch target, opens navigation menu)
+- No heading — removed per Joey's approval. Mock has no heading.
+
+**Avatar-as-menu trigger (addition a + c):**
+- Created new `AvatarMenuTrigger` primitive at `web/src/components/primitives/AvatarMenuTrigger.tsx`
+- Pattern appears in multiple mocks (08-quick-vow, s20-dashboard-*), so primitive is reusable
+- 44x44 transparent touch target wrapping 28px visual avatar circle
+- display_name fallback chain: first letter of displayName -> first letter of email -> "?"
+- Opens same navigation menu as HamburgerMenu (same links, same portal pattern)
+
+**Vow card:**
+- Surface bg, gold-line border, 18px radius, gold gradient ::before top line
+- Header: "A NEW VOW" eyebrow + "need an idea?" link (scrolls to suggestions)
+- Input: Fraunces serif 23px, transparent, opsz 144, placeholder "walk 10,000 steps every day"
+- Meta-pill row (below dashed divider): verdict pill, stake pill, witness pill
+- Tapping any pill expands inline options below the card (deadline presets, stake tiles, witness input)
+
+**One-tap suggestions (5 rows from mock):**
+- First row featured (subtle gold gradient bg, gold-line border)
+- Each: serif vow text + "$amount . deadline" in gold
+- Tapping fills card with suggestion values
+
+**Footer (dual CTA):**
+- Primary (flex 2.2): pill-shape gold gradient "Lock it in -- $50 ->" (Expo copy improvement)
+- Secondary (flex 1): outlined "Dare a friend / -> them" (adapts to "Dare [name]" when witness set)
+- Reassurance: "Keep your word. Keep your $50." (dynamic amount, Expo copy improvement)
+
+**Preserved from current code:**
+- All useVowFlow() hooks and state management
+- Auth check via useAuth()
+- handleSeal handler (saves to VowFlowProvider, routes to /seal)
+- IfBrokenSheet modal
+- inferDeadline() smart date parsing
+- All deadline/stake computation helpers
+
+**Copy changes from mock (Expo improvements):**
+- CTA: "Lock it in -- $50" instead of mock's "Make my vow -- $50"
+- Reassurance: "Keep your word. Keep your $50." instead of mock's "Held by Stripe..."
+- Secondary CTA: adapts text when witness name available
+
+**Three additions (Joey-approved):**
+- (a) Avatar touch target: 44x44 transparent wrapper on 28px visual
+- (b) display_name fallback: matches auth-provider.tsx chain (full_name -> email prefix -> "?")
+- (c) Primitive reuse: AvatarMenuTrigger created as reusable primitive (used in multiple mocks)
