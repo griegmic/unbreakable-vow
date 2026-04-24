@@ -3,13 +3,26 @@ import { useState, useCallback, useEffect } from 'react';
 import { Calendar, Check, MessageCircle, Phone } from 'lucide-react';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-// V6 primitives for pre-payment steps (dare, back-down-confirm, backed-down, stakes)
 import { RitualScreen, RitualCard, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, EyebrowTag } from '@/components/primitives';
-// Pre-V6 imports — retained for payment + sealed steps (swapped in PR #3H-2b)
-import { RitualScreen as LegacyRitualScreen, TitleBlock, PrimaryButton, FadeUp, HeaderBadge, ChoiceChip } from '@/components/ui';
 import { supabase } from '@/lib/supabase';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+/**
+ * Stripe SDK requires raw hex values — cannot accept CSS var() references.
+ * Keep these in sync with --uv-* token family in globals.css.
+ */
+const STRIPE_COLORS = {
+  primary: '#E8B656',           // --uv-gold-bright
+  background: '#181512',        // --uv-bg-card
+  text: '#F0E9DB',              // --uv-text
+  danger: '#F87171',            // --uv-danger
+  inputBg: '#1A1612',           // --uv-bg-input
+  inputBorder: 'rgba(240,233,219,0.08)', // ~--uv-border-soft
+  focusBorder: 'rgba(232,182,86,0.18)',  // gold tint focus
+  disabledBg: '#1F1B16',        // --uv-bg-elevated
+  textOnGold: '#1A1205',        // --uv-text-on-gold
+} as const;
 
 interface Vow {
   id: string;
@@ -67,18 +80,18 @@ function getCountdownTint(days: number | null) {
 const stripeAppearance = {
   theme: 'night' as const,
   variables: {
-    colorPrimary: '#F0C86E',
-    colorBackground: '#161B25',
-    colorText: '#F6F7FB',
-    colorDanger: '#FF7B7B',
+    colorPrimary: STRIPE_COLORS.primary,
+    colorBackground: STRIPE_COLORS.background,
+    colorText: STRIPE_COLORS.text,
+    colorDanger: STRIPE_COLORS.danger,
     borderRadius: '14px',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   rules: {
-    '.Input': { border: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#10141C' },
-    '.Input:focus': { border: '1px solid rgba(255,214,102,0.18)', boxShadow: '0 0 0 1px rgba(255,214,102,0.18)' },
-    '.Tab': { border: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#10141C' },
-    '.Tab--selected': { border: '1px solid rgba(255,214,102,0.18)', backgroundColor: '#161B25' },
+    '.Input': { border: `1px solid ${STRIPE_COLORS.inputBorder}`, backgroundColor: STRIPE_COLORS.inputBg },
+    '.Input:focus': { border: `1px solid ${STRIPE_COLORS.focusBorder}`, boxShadow: `0 0 0 1px ${STRIPE_COLORS.focusBorder}` },
+    '.Tab': { border: `1px solid ${STRIPE_COLORS.inputBorder}`, backgroundColor: STRIPE_COLORS.inputBg },
+    '.Tab--selected': { border: `1px solid ${STRIPE_COLORS.focusBorder}`, backgroundColor: STRIPE_COLORS.background },
   },
 };
 
@@ -122,37 +135,45 @@ function PaymentForm({
   const isLoading = loading || submitting;
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PaymentElement options={{ layout: 'tabs' }} />
       {cardError && (
-        <p className="text-[13px]" style={{ color: 'var(--danger)' }}>
+        <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-danger)', margin: 0 }}>
           {cardError}
         </p>
       )}
       <button
         type="submit"
         disabled={!stripe || isLoading}
-        className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975] disabled:active:scale-100"
         style={{
-          boxShadow: isLoading ? 'none' : '0 12px 24px rgba(212,162,79,0.28)',
+          width: '100%', height: 62, borderRadius: 14, border: 'none',
+          cursor: !stripe || isLoading ? 'not-allowed' : 'pointer',
+          background: isLoading
+            ? STRIPE_COLORS.disabledBg
+            : 'linear-gradient(180deg, var(--uv-gold-bright) 0%, var(--uv-gold) 60%, var(--uv-gold-deep) 100%)',
+          boxShadow: isLoading ? 'none' : '0 0 20px var(--uv-gold-glow), inset 0 1px 0 rgba(255,255,255,0.18)',
+          opacity: isLoading ? 0.5 : 1,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          transition: 'transform 100ms ease, opacity 100ms ease',
         }}
+        onMouseDown={(e) => { if (!isLoading) (e.currentTarget.style.transform = 'scale(0.97)'); }}
+        onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
       >
-        <div
-          className="min-h-[56px] flex items-center justify-center px-5"
-          style={{
-            background: isLoading
-              ? '#29303C'
-              : 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-          }}
-        >
-          {isLoading ? (
-            <div className="w-5 h-5 border-2 border-[#0B0D11] border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-              Seal the vow
-            </span>
-          )}
-        </div>
+        {isLoading ? (
+          <div style={{
+            width: 20, height: 20, border: `2px solid ${STRIPE_COLORS.textOnGold}`,
+            borderTopColor: 'transparent', borderRadius: '50%',
+            animation: 'uv-spin 600ms linear infinite',
+          }} />
+        ) : (
+          <span style={{
+            fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500,
+            color: STRIPE_COLORS.textOnGold, letterSpacing: '0.005em',
+          }}>
+            Seal the vow
+          </span>
+        )}
       </button>
     </form>
   );
@@ -783,49 +804,71 @@ export default function ChallengeInviteClient({
     };
 
     return (
-      <LegacyRitualScreen>
-        <FadeUp><HeaderBadge /></FadeUp>
+      <RitualScreen variant="utility">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
+          <EyebrowTag>UNBREAKABLE VOW</EyebrowTag>
 
-        <FadeUp delay={0.05}>
-          <TitleBlock
-            title="Almost there."
-            subtitle={
-              isStaked
-                ? `$${stakeAmount / 100} held until your vow is resolved.`
-                : 'Sign in to seal the vow.'
-            }
-          />
-        </FadeUp>
+          <div>
+            <FrauncesH1 italic size="lg">Almost there.</FrauncesH1>
+            <div style={{ marginTop: 8 }}>
+              <FrauncesSub>
+                {isStaked
+                  ? `$${stakeAmount / 100} held until your vow is resolved.`
+                  : 'Sign in to seal the vow.'}
+              </FrauncesSub>
+            </div>
+          </div>
 
-        <FadeUp delay={0.12}>
-          <div className="flex flex-col gap-4">
-            {/* Google Sign In */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Google Sign In — brand colors are Google's requirement */}
             {!email && (
               <button
                 onClick={handleGoogleSignIn}
                 disabled={busy}
-                className="w-full min-h-[52px] rounded-2xl flex items-center justify-center gap-2.5 transition-opacity active:opacity-80 disabled:opacity-60"
-                style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+                style={{
+                  width: '100%', minHeight: 52, borderRadius: 16,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  background: 'var(--uv-bg-card)', border: '1px solid var(--uv-border)',
+                  cursor: busy ? 'not-allowed' : 'pointer',
+                  opacity: busy ? 0.6 : 1, transition: 'opacity 100ms',
+                }}
               >
-                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                {/* Google brand SVG — hex colors are Google's brand requirement */}
+                <svg width="20" height="20" viewBox="0 0 24 24">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                   <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
-                <span className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>Continue with Google</span>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 600, color: 'var(--uv-text)' }}>
+                  Continue with Google
+                </span>
               </button>
             )}
 
             {/* Signed in state */}
             {email && (
-              <div className="flex items-center gap-3 rounded-[14px] px-4 py-3" style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}>
-                <div className="w-8 h-8 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(212,162,79,0.12)' }}>
-                  <Check className="w-4 h-4" style={{ color: 'var(--gold)' }} />
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 12,
+                borderRadius: 14, padding: '12px 16px',
+                background: 'var(--uv-bg-card)', border: '1px solid var(--uv-border)',
+              }}>
+                <div style={{
+                  width: 32, height: 32, borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'var(--uv-gold-bg)',
+                }}>
+                  <Check style={{ width: 16, height: 16, color: 'var(--uv-gold)' }} />
                 </div>
-                <div className="flex flex-col">
-                  {displayName && <span className="text-[14px] font-medium" style={{ color: 'var(--text)' }}>{displayName}</span>}
-                  <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>{email}</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {displayName && (
+                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 500, color: 'var(--uv-text)' }}>
+                      {displayName}
+                    </span>
+                  )}
+                  <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)' }}>
+                    {email}
+                  </span>
                 </div>
               </div>
             )}
@@ -847,10 +890,10 @@ export default function ChallengeInviteClient({
                 />
               </Elements>
             ) : email ? (
-              <PrimaryButton
-                label="Seal the vow"
+              <GoldCTA
+                label={busy ? 'Sealing...' : 'Seal the vow'}
                 onPress={() => handleSeal()}
-                loading={busy}
+                disabled={busy}
               />
             ) : null}
 
@@ -860,25 +903,33 @@ export default function ChallengeInviteClient({
                 type="button"
                 onClick={handleTestBypass}
                 disabled={busy}
-                className="py-2 transition-opacity hover:opacity-70 disabled:opacity-40"
+                style={{
+                  background: 'none', border: 'none', padding: '8px 0',
+                  cursor: busy ? 'not-allowed' : 'pointer', opacity: busy ? 0.4 : 1,
+                }}
               >
-                <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
+                <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)' }}>
                   Just testing
                 </span>
               </button>
             )}
 
             {error && (
-              <p className="text-[13px]" style={{ color: 'var(--danger)' }}>{error}</p>
+              <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-danger)', margin: 0 }}>
+                {error}
+              </p>
             )}
 
-            <p className="text-center text-[12px]" style={{ color: 'var(--text-muted)' }}>
+            <p style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 12, textAlign: 'center',
+              color: 'var(--uv-text-muted)', margin: 0,
+            }}>
               By continuing you agree to the{' '}
-              <a href="/terms" className="underline" style={{ color: 'var(--text-muted)' }}>terms</a>.
+              <a href="/terms" style={{ color: 'var(--uv-text-muted)', textDecoration: 'underline' }}>terms</a>.
             </p>
           </div>
-        </FadeUp>
-      </LegacyRitualScreen>
+        </div>
+      </RitualScreen>
     );
   }
 
@@ -908,110 +959,122 @@ export default function ChallengeInviteClient({
     if (endDate) metaParts.push(`Verdict: ${endDate}`);
 
     return (
-      <LegacyRitualScreen>
-        <FadeUp><HeaderBadge /></FadeUp>
+      <RitualScreen variant="utility">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
+          <EyebrowTag>UNBREAKABLE VOW</EyebrowTag>
 
-        {/* Status badge */}
-        <FadeUp delay={0.05}>
-          <div className="flex justify-center">
-            <div
-              className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full"
-              style={{
-                backgroundColor: isVerdictDue ? 'rgba(212,162,79,0.12)' : 'var(--success-muted)',
-                border: isVerdictDue ? '1px solid var(--border-strong)' : '1px solid rgba(82,214,154,0.22)',
-              }}
-            >
-              <div
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
-              />
-              <span
-                className="text-[12px] font-bold tracking-[1px] uppercase"
-                style={{ color: isVerdictDue ? 'var(--gold-bright)' : 'var(--success)' }}
-              >
+          {/* Status badge */}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '8px 14px', borderRadius: 9999,
+              background: isVerdictDue ? 'var(--uv-gold-bg)' : 'var(--uv-success-bg)',
+              border: isVerdictDue ? '1px solid var(--uv-border-strong)' : '1px solid var(--uv-success-border)',
+            }}>
+              <div style={{
+                width: 8, height: 8, borderRadius: '50%',
+                background: isVerdictDue ? 'var(--uv-gold-bright)' : 'var(--uv-success)',
+              }} />
+              <span style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 700,
+                letterSpacing: '1px', textTransform: 'uppercase' as const,
+                color: isVerdictDue ? 'var(--uv-gold-bright)' : 'var(--uv-success)',
+              }}>
                 {isVerdictDue ? 'VERDICT DUE' : 'VOW ACTIVE'}
               </span>
             </div>
           </div>
-        </FadeUp>
 
-        {/* Title */}
-        <FadeUp delay={0.08}>
-          <TitleBlock
-            title="THE VOW IS SEALED"
-            subtitle={`${makerFirstName} will decide if you kept it at the deadline.`}
-          />
-        </FadeUp>
-
-        {/* Vow quote card with gold left border — hero element */}
-        <FadeUp delay={0.12}>
-          <div
-            className="flex items-stretch overflow-hidden rounded-[14px]"
-            style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-          >
-            <div className="w-[3px] shrink-0" style={{ backgroundColor: 'var(--gold)' }} />
-            <div className="flex-1 py-3.5 px-4">
-              <p className="text-[17px] leading-[24px] font-serif font-medium" style={{ color: 'var(--text)' }}>
-                &ldquo;{vow.refined_text}&rdquo;
-              </p>
-              <p className="text-[12px] mt-2" style={{ color: 'var(--text-muted)' }}>
-                Dared by {makerFirstName}
-              </p>
+          {/* Title */}
+          <div style={{ textAlign: 'center' }}>
+            <FrauncesH1 italic size="lg">The vow is sealed.</FrauncesH1>
+            <div style={{ marginTop: 8 }}>
+              <FrauncesSub>{makerFirstName} will decide if you kept it at the deadline.</FrauncesSub>
             </div>
           </div>
-        </FadeUp>
 
-        {/* Countdown + stake + progress — single card, no redundancy */}
-        {daysLeft !== null && (
-          <FadeUp delay={0.16}>
-            <div
-              className="rounded-[16px] p-4"
-              style={{ backgroundColor: tint.bg, border: `1px solid ${tint.border}` }}
-            >
-              <div className="flex items-center justify-between">
-                <span className="text-[22px] font-bold font-serif" style={{ color: 'var(--text)' }}>
+          {/* Vow quote card — gold left border, matches dashboard card pattern */}
+          <RitualCard>
+            <div style={{ display: 'flex', alignItems: 'stretch' }}>
+              <div style={{ width: 3, flexShrink: 0, background: 'var(--uv-gold)', borderRadius: 2 }} />
+              <div style={{ flex: 1, padding: '14px 16px' }}>
+                <p style={{
+                  fontFamily: 'var(--uv-font-serif)', fontSize: 17, lineHeight: '24px',
+                  fontWeight: 500, color: 'var(--uv-text)', margin: 0,
+                }}>
+                  &ldquo;{vow.refined_text}&rdquo;
+                </p>
+                <p style={{
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 12, marginTop: 8,
+                  color: 'var(--uv-text-muted)', margin: '8px 0 0',
+                }}>
+                  Dared by {makerFirstName}
+                </p>
+              </div>
+            </div>
+          </RitualCard>
+
+          {/* Countdown — matches dashboard countdown visual pattern */}
+          {daysLeft !== null && (
+            <div style={{
+              borderRadius: 16, padding: 16,
+              background: tint.bg, border: `1px solid ${tint.border}`,
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{
+                  fontFamily: 'var(--uv-font-serif)', fontSize: 22, fontWeight: 700,
+                  color: 'var(--uv-text)',
+                }}>
                   {countdownLabel}
                 </span>
-                <Calendar className="w-5 h-5 shrink-0" style={{ color: 'var(--text-muted)', opacity: 0.4 }} />
+                <Calendar style={{ width: 20, height: 20, color: 'var(--uv-text-muted)', opacity: 0.4 }} />
               </div>
               {metaParts.length > 0 && (
-                <p className="text-[13px] mt-1" style={{ color: 'var(--text-muted)' }}>
+                <p style={{
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 13, marginTop: 4,
+                  color: 'var(--uv-text-muted)', margin: '4px 0 0',
+                }}>
                   {metaParts.join(' \u00B7 ')}
                 </p>
               )}
-              {/* Progress bar */}
+              {/* Progress bar — screen-local */}
               {!isVerdictDue && dayNumber !== null && (
-                <div className="mt-3 h-[3px] rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(255,255,255,0.06)' }}>
-                  <div
-                    className="h-full rounded-full transition-all duration-500"
-                    style={{
-                      width: `${Math.min(100, (dayNumber / totalDays) * 100)}%`,
-                      backgroundColor: daysLeft !== null && daysLeft <= 1 ? '#EF4444' : daysLeft !== null && daysLeft <= 3 ? '#F59E0B' : 'var(--gold)',
-                    }}
-                  />
+                <div style={{
+                  marginTop: 12, height: 3, borderRadius: 9999, overflow: 'hidden',
+                  background: 'rgba(255,255,255,0.06)',
+                }}>
+                  <div style={{
+                    height: '100%', borderRadius: 9999,
+                    transition: 'width 500ms ease',
+                    width: `${Math.min(100, (dayNumber / totalDays) * 100)}%`,
+                    background: daysLeft !== null && daysLeft <= 1
+                      ? 'var(--uv-danger)'
+                      : daysLeft !== null && daysLeft <= 3
+                        ? 'var(--uv-warn)'
+                        : 'var(--uv-gold)',
+                  }} />
                 </div>
               )}
             </div>
-          </FadeUp>
-        )}
+          )}
 
-        {/* Stake callout — only if staked, separate visual weight */}
-        {displayStake > 0 && displayCharity && (
-          <FadeUp delay={0.19}>
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>
-                If you fail: <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>{displayCharity}</span>
+          {/* Stake callout */}
+          {displayStake > 0 && displayCharity && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '0 4px', fontFamily: 'var(--uv-font-sans)',
+            }}>
+              <span style={{ fontSize: 13, color: 'var(--uv-text-muted)' }}>
+                If you fail: <span style={{ fontWeight: 500, color: 'var(--uv-text)' }}>{displayCharity}</span>
               </span>
-              <span className="text-[14px] font-bold" style={{ color: 'var(--gold)' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--uv-gold)' }}>
                 ${displayStake / 100}
               </span>
             </div>
-          </FadeUp>
-        )}
+          )}
 
-        {/* Primary CTA: Text the darer — time-based contextual copy */}
-        {/* Primary CTA: Text the darer — rotates by progress */}
-        <FadeUp delay={0.22}>
+          {/* SMS nudge — screen-local gold button with icon */}
+          {/* TODO: extend GoldCTA to support a leading icon slot if this pattern appears 3+ times */}
           {(() => {
             const elapsed = (start && end) ? Math.min(1, Math.max(0, (now.getTime() - start.getTime()) / (end.getTime() - start.getTime()))) : 0;
             const nudgeLabel = elapsed < 0.15
@@ -1037,43 +1100,52 @@ export default function ChallengeInviteClient({
                     window.location.href = `sms:?body=${message}`;
                   }
                 }}
-                className="w-full rounded-[18px] overflow-hidden transition-transform active:scale-[0.975]"
                 style={{
-                  background: 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-                  boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+                  width: '100%', height: 62, borderRadius: 14, border: 'none',
+                  cursor: 'pointer',
+                  background: 'linear-gradient(180deg, var(--uv-gold-bright) 0%, var(--uv-gold) 60%, var(--uv-gold-deep) 100%)',
+                  boxShadow: '0 0 20px var(--uv-gold-glow), inset 0 1px 0 rgba(255,255,255,0.18)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  transition: 'transform 100ms ease',
                 }}
+                onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)'; }}
+                onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
               >
-                <div className="min-h-[56px] flex items-center justify-center gap-2.5 px-5">
-                  <MessageCircle className="w-5 h-5" style={{ color: '#0B0D11' }} />
-                  <span className="text-[15px] font-extrabold tracking-[0.2px]" style={{ color: '#0B0D11' }}>
-                    {nudgeLabel}
-                  </span>
-                </div>
+                <MessageCircle style={{ width: 20, height: 20, color: 'var(--uv-text-on-gold)' }} />
+                <span style={{
+                  fontFamily: 'var(--uv-font-serif)', fontSize: 15, fontWeight: 500,
+                  letterSpacing: '0.005em', color: 'var(--uv-text-on-gold)',
+                }}>
+                  {nudgeLabel}
+                </span>
               </button>
             );
           })()}
-        </FadeUp>
 
-        {/* Phone capture — auto-expanded on first visit (peak engagement moment) */}
-        <FadeUp delay={0.26}>
+          {/* Phone capture */}
           {reminderSaved ? (
-            <div
-              className="flex items-center justify-center gap-2 py-3.5 rounded-[18px]"
-              style={{ backgroundColor: 'rgba(82,214,154,0.08)', border: '1px solid rgba(82,214,154,0.2)' }}
-            >
-              <Check className="w-4 h-4" style={{ color: 'var(--success)' }} />
-              <span className="text-[14px] font-semibold" style={{ color: 'var(--success)' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '14px 0', borderRadius: 18,
+              background: 'var(--uv-success-bg)', border: '1px solid var(--uv-success-border)',
+            }}>
+              <Check style={{ width: 16, height: 16, color: 'var(--uv-success)' }} />
+              <span style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 600,
+                color: 'var(--uv-success)',
+              }}>
                 We&apos;ll text you when the verdict drops
               </span>
             </div>
           ) : (
-            <div
-              className="rounded-[18px] p-4 flex flex-col gap-3"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)' }}
-            >
-              <div className="flex items-center gap-2">
-                <Phone className="w-4 h-4" style={{ color: 'var(--gold-bright)' }} />
-                <span className="text-[14px] font-semibold" style={{ color: 'var(--text)' }}>
+            <RitualCard>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                <Phone style={{ width: 16, height: 16, color: 'var(--uv-gold-bright)' }} />
+                <span style={{
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 600,
+                  color: 'var(--uv-text)',
+                }}>
                   Get a text when the verdict drops
                 </span>
               </div>
@@ -1082,67 +1154,80 @@ export default function ChallengeInviteClient({
                 value={reminderPhone}
                 onChange={(e) => setReminderPhone(e.target.value)}
                 placeholder="(555) 555-5555"
-                className="w-full bg-transparent text-[15px] outline-none py-2.5 px-3.5 rounded-xl"
-                style={{ color: 'var(--text)', border: '1px solid var(--border)' }}
+                style={{
+                  width: '100%', padding: '10px 14px', borderRadius: 12,
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 15,
+                  color: 'var(--uv-text)', background: 'transparent',
+                  border: '1px solid var(--uv-border)', outline: 'none',
+                  boxSizing: 'border-box',
+                }}
               />
               <button
                 type="button"
                 onClick={handleSavePhone}
                 disabled={!reminderPhone.trim() || reminderSaving}
-                className="w-full min-h-[44px] rounded-xl text-[14px] font-bold transition-opacity"
                 style={{
-                  backgroundColor: 'var(--gold-bright)',
-                  color: '#0B0D11',
+                  width: '100%', minHeight: 44, borderRadius: 12, border: 'none',
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 700,
+                  background: 'var(--uv-gold-bright)', color: 'var(--uv-text-on-gold)',
+                  cursor: !reminderPhone.trim() || reminderSaving ? 'not-allowed' : 'pointer',
                   opacity: !reminderPhone.trim() || reminderSaving ? 0.5 : 1,
+                  transition: 'opacity 100ms',
                 }}
               >
                 {reminderSaving ? 'Saving...' : 'Notify me'}
               </button>
-            </div>
+            </RitualCard>
           )}
-        </FadeUp>
 
-        {/* App Store + viral — compact row */}
-        <FadeUp delay={0.3}>
-          <div className="flex flex-col items-center gap-3 pt-1">
+          {/* App Store + viral */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, paddingTop: 4 }}>
             <a
               href="https://apps.apple.com/app/unbreakable-vow/id6743597637"
               target="_blank"
               rel="noopener noreferrer"
-              className="transition-opacity hover:opacity-80"
             >
               <img
                 src="https://developer.apple.com/assets/elements/badges/download-on-the-app-store.svg"
                 alt="Download on the App Store"
-                className="h-[36px]"
+                style={{ height: 36 }}
               />
             </a>
             <a
               href="/"
-              className="text-[13px] font-semibold transition-opacity hover:opacity-80"
-              style={{ color: 'var(--gold-bright)' }}
+              style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 600,
+                color: 'var(--uv-gold-bright)', textDecoration: 'none',
+              }}
             >
               Your turn &mdash; dare someone else
             </a>
           </div>
-        </FadeUp>
 
-        {/* Test verdict buttons — dev only */}
-        {process.env.NODE_ENV === 'development' && vow.witness_invite_token && (
-          <FadeUp delay={0.35}>
-            <div className="flex flex-col gap-2 pt-2">
-              <p className="text-[11px] font-bold tracking-[1px] uppercase text-center" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>
+          {/* Test verdict buttons — dev only */}
+          {process.env.NODE_ENV === 'development' && vow.witness_invite_token && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 8 }}>
+              <p style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 700,
+                letterSpacing: '1px', textTransform: 'uppercase' as const, textAlign: 'center',
+                color: 'var(--uv-text-muted)', opacity: 0.5, margin: 0,
+              }}>
                 Testing only
               </p>
-              <div className="flex gap-2">
+              <div style={{ display: 'flex', gap: 8 }}>
                 <button
                   type="button"
                   onClick={() => handleTestVerdict('kept')}
                   disabled={verdictBusy}
-                  className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
-                  style={{ backgroundColor: 'rgba(82,214,154,0.12)', border: '1px solid rgba(82,214,154,0.25)' }}
+                  style={{
+                    flex: 1, minHeight: 44, borderRadius: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'var(--uv-success-bg)', border: '1px solid var(--uv-success-border)',
+                    cursor: verdictBusy ? 'not-allowed' : 'pointer',
+                    opacity: verdictBusy ? 0.4 : 1,
+                  }}
                 >
-                  <span className="text-[13px] font-bold" style={{ color: 'var(--success)' }}>
+                  <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 700, color: 'var(--uv-success)' }}>
                     {verdictBusy ? '...' : 'Test: Kept'}
                   </span>
                 </button>
@@ -1150,24 +1235,32 @@ export default function ChallengeInviteClient({
                   type="button"
                   onClick={() => handleTestVerdict('broken')}
                   disabled={verdictBusy}
-                  className="flex-1 min-h-[44px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97] disabled:opacity-40"
-                  style={{ backgroundColor: 'rgba(255,123,123,0.12)', border: '1px solid rgba(255,123,123,0.25)' }}
+                  style={{
+                    flex: 1, minHeight: 44, borderRadius: 14,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'var(--uv-danger-bg)', border: '1px solid var(--uv-danger)',
+                    cursor: verdictBusy ? 'not-allowed' : 'pointer',
+                    opacity: verdictBusy ? 0.4 : 1,
+                  }}
                 >
-                  <span className="text-[13px] font-bold" style={{ color: 'var(--danger)' }}>
+                  <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 700, color: 'var(--uv-danger)' }}>
                     {verdictBusy ? '...' : 'Test: Broken'}
                   </span>
                 </button>
               </div>
             </div>
-          </FadeUp>
-        )}
+          )}
 
-        {error && (
-          <FadeUp>
-            <p className="text-[13px] text-center" style={{ color: 'var(--danger)' }}>{error}</p>
-          </FadeUp>
-        )}
-      </LegacyRitualScreen>
+          {error && (
+            <p style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 13, textAlign: 'center',
+              color: 'var(--uv-danger)', margin: 0,
+            }}>
+              {error}
+            </p>
+          )}
+        </div>
+      </RitualScreen>
     );
   }
 
