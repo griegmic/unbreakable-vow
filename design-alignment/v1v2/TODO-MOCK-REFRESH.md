@@ -39,3 +39,7 @@ or uses values that differ from the shipped primitives.
 16. **S20 sticky CTA overlaps content**: "Make a vow →" footer CTA overlays the NEEDS YOU NOW section header and first card. Scrollable content needs padding-bottom equal to CTA height + margin so content scrolls clear. Fix in polish PR.
 
 17. **M11 confetti effect**: Spec §5.1 calls for "subtle gold particles on initial render, respects reduced-motion." Deferred from PR #3E. Bundle with certificate-page polish pass.
+
+18. **Broken seal glyph missing crack treatment**: M11 trophy and M11B shield are bespoke. Both broken screens reuse default UV wax seal — no crack/split treatment per spec. BROKEN stamp carries the state OK. Deferred from PR #3E.
+
+19. **Cast (/cast) SMS gap**: §3.10.3 C6 specifies Twilio SMS sent to target on dare creation. Current /cast page creates the vow row client-side but does NOT trigger SMS — relies on share sheet / link copy. Needs a `create-challenge` edge function that writes the vow + sends SMS atomically. Post-V6.
