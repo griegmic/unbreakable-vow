@@ -1,15 +1,95 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ArrowLeft, Clock, Shield, MessageCircle, Ban, ChevronDown, ChevronUp, Share2, Eye, Trophy, XCircle } from 'lucide-react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { Card } from '@/components/uv/Card';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
-import { SecondaryButton } from '@/components/uv/SecondaryButton';
-import { StatusPill } from '@/components/uv/StatusPill';
-import { Countdown } from '@/components/uv/Countdown';
-import { Modal } from '@/components/uv/Modal';
-import { SkeletonRow } from '@/components/uv/SkeletonRow';
+import { RitualScreen, RitualCard, GoldCTA, OutlinedGoldCTA } from '@/components/primitives';
+
+// ── Screen-local components (inlined from uv/ to eliminate pre-V6 imports) ──
+// TODO #28: StatusPill promotion candidate — promote to /components/primitives if used elsewhere
+type StatusVariant = 'active' | 'pending' | 'verdict' | 'kept' | 'broken' | 'voided';
+function StatusPill({ variant, children }: { variant: StatusVariant; children: React.ReactNode }) {
+  const styles: Record<StatusVariant, { background: string; color: string }> = {
+    active: { background: 'var(--uv-success-bg)', color: 'var(--uv-success)' },
+    pending: { background: 'var(--uv-warn-bg)', color: 'var(--uv-warn)' },
+    verdict: { background: 'var(--uv-info-bg)', color: 'var(--uv-info)' },
+    kept: { background: 'var(--uv-success-bg)', color: 'var(--uv-success)' },
+    broken: { background: 'var(--uv-danger-bg)', color: 'var(--uv-danger)' },
+    voided: { background: 'var(--uv-bg-elevated)', color: 'var(--uv-text-dim)' },
+  };
+  const s = styles[variant];
+  return (
+    <span style={{
+      display: 'inline-block', padding: '4px 10px', borderRadius: 9999,
+      background: s.background, color: s.color,
+      fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 500,
+      letterSpacing: '0.5px', textTransform: 'uppercase' as const,
+    }}>
+      {children}
+    </span>
+  );
+}
+
+// TODO #29: Countdown promotion candidate — promote to /components/primitives if used elsewhere
+function Countdown({ endsAt, startsAt }: { endsAt: string; startsAt?: string }) {
+  const [time, setTime] = React.useState(() => getTimeRemaining(endsAt));
+  React.useEffect(() => {
+    const tick = () => setTime(getTimeRemaining(endsAt));
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [endsAt]);
+  const showDayFormat = startsAt && time.totalMs > 24 * 60 * 60 * 1000;
+  const color = time.totalMs < 6 * 3600000 ? 'var(--uv-danger)' : time.totalMs < 86400000 ? 'var(--uv-warn)' : 'var(--uv-gold)';
+  let display: string;
+  if (time.totalMs <= 0) display = '00:00:00';
+  else if (showDayFormat) {
+    const start = new Date(startsAt!).getTime(), end = new Date(endsAt).getTime();
+    const total = Math.ceil((end - start) / 86400000), elapsed = Math.ceil((Date.now() - start) / 86400000);
+    display = `Day ${Math.min(elapsed, total)} of ${total}`;
+  } else display = `${pad(time.hours)}:${pad(time.minutes)}:${pad(time.seconds)}`;
+  return (
+    <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 'clamp(36px, 8vw, 56px)', fontWeight: 400, color, lineHeight: 1.1, textAlign: 'center' }}>
+      {display}
+    </div>
+  );
+}
+function getTimeRemaining(endsAt: string) {
+  const diff = Math.max(0, new Date(endsAt).getTime() - Date.now());
+  return { hours: Math.floor(diff / 3600000), minutes: Math.floor((diff % 3600000) / 60000), seconds: Math.floor((diff % 60000) / 1000), totalMs: diff };
+}
+function pad(n: number) { return n.toString().padStart(2, '0'); }
+
+// Screen-local Modal (inlined from uv/Modal)
+function Modal({ open, onClose, children, title }: { open: boolean; onClose: () => void; children: React.ReactNode; title?: string }) {
+  React.useEffect(() => {
+    if (!open) return;
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <>
+      <div onClick={onClose} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--uv-bg-overlay)' }} />
+      <div role="dialog" aria-modal="true" aria-label={title} style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 101, background: 'var(--uv-bg-elevated)', border: '1px solid var(--uv-border-strong)', borderRadius: '22px 22px 0 0', padding: '16px 16px 14px', boxShadow: '0 -8px 32px rgba(0,0,0,0.4)' }}>
+        <div style={{ width: 36, height: 3, background: 'var(--uv-border-strong)', borderRadius: 9999, margin: '0 auto 14px' }} />
+        {title && <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: '0 0 12px' }}>{title}</h2>}
+        {children}
+      </div>
+    </>
+  );
+}
+
+// Screen-local SkeletonRow
+function SkeletonRow({ count = 1 }: { count?: number }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {Array.from({ length: count }, (_, i) => (
+        <div key={i} aria-hidden="true" style={{ height: 80, borderRadius: 22, background: 'var(--uv-bg-card)', animation: 'uv-shimmer 1.5s ease-in-out infinite' }} />
+      ))}
+    </div>
+  );
+}
 import { ShareButton, CopyLinkButton } from '@/components/share-button';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import Timeline from '@/components/timeline';
@@ -352,9 +432,9 @@ export default function VowDetailPage() {
         }
       </button>
       {timelineOpen && (
-        <Card>
+        <RitualCard>
           <Timeline key={timelineKey} vowId={vowId} endsAt={vow.ends_at} />
-        </Card>
+        </RitualCard>
       )}
     </div>
   );
@@ -363,9 +443,9 @@ export default function VowDetailPage() {
     if (!isMaker || isTerminal) return null;
     return (
       <div style={{ marginTop: 16 }}>
-        <SecondaryButton onClick={() => setVoidModalOpen(true)}>
-          Withdraw vow
-        </SecondaryButton>
+        <OutlinedGoldCTA label="Withdraw vow" onPress={() => setVoidModalOpen(true)} />
+
+
       </div>
     );
   };
@@ -376,12 +456,8 @@ export default function VowDetailPage() {
         This will cancel your vow{vow.stake_amount > 0 ? ' and refund your stake' : ''}. This cannot be undone.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <PrimaryButton onClick={handleWithdraw} loading={actionBusy}>
-          Yes, withdraw
-        </PrimaryButton>
-        <SecondaryButton onClick={() => setVoidModalOpen(false)}>
-          Never mind
-        </SecondaryButton>
+        <GoldCTA label={actionBusy ? 'Withdrawing...' : 'Yes, withdraw'} onPress={handleWithdraw} disabled={actionBusy} />
+        <OutlinedGoldCTA label="Never mind" onPress={() => setVoidModalOpen(false)} />
       </div>
     </Modal>
   );
@@ -405,8 +481,8 @@ export default function VowDetailPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: 'rgba(82,214,154,0.12)',
-              border: '1px solid rgba(82,214,154,0.25)',
+              backgroundColor: 'var(--uv-success-bg)',
+              border: '1px solid var(--uv-success-border)',
               cursor: verdictBusy ? 'not-allowed' : 'pointer',
               opacity: verdictBusy ? 0.4 : 1,
             }}
@@ -426,8 +502,8 @@ export default function VowDetailPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              backgroundColor: 'rgba(248,113,113,0.12)',
-              border: '1px solid rgba(248,113,113,0.25)',
+              backgroundColor: 'var(--uv-danger-bg)',
+              border: '1px solid var(--uv-danger-border)',
               cursor: verdictBusy ? 'not-allowed' : 'pointer',
               opacity: verdictBusy ? 0.4 : 1,
             }}
@@ -445,7 +521,7 @@ export default function VowDetailPage() {
   };
 
   const DashboardButton = () => (
-    <SecondaryButton onClick={() => router.push('/dashboard')}>My Vows</SecondaryButton>
+    <OutlinedGoldCTA label="My Vows" onPress={() => router.push('/dashboard')} />
   );
 
   const ActionMessage = () => actionMsg ? (
@@ -468,7 +544,7 @@ export default function VowDetailPage() {
 
         {/* Witness declined */}
         {witnessDeclined && (
-          <Card variant="warn">
+          <div style={{ borderRadius: 18, padding: '18px 22px', background: 'var(--uv-bg-card)', border: '1px solid var(--uv-warn)', display: 'flex', flexDirection: 'column' as const, gap: 0 }}>
             <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
               {vow.witness_name} declined.
             </span>
@@ -476,16 +552,16 @@ export default function VowDetailPage() {
               You can continue solo &mdash; you&apos;ll judge the vow yourself on verdict day.
             </p>
             <div style={{ marginTop: 12 }}>
-              <PrimaryButton onClick={handleGoSolo} loading={actionBusy}>Go solo instead</PrimaryButton>
+              <GoldCTA label={actionBusy ? 'Switching...' : 'Go solo instead'} onPress={handleGoSolo} disabled={actionBusy} />
             </div>
-          </Card>
+          </div>
         )}
 
         {/* Witness pending - nudge card */}
         {!witnessDeclined && witnessUrl && (
-          <Card>
+          <RitualCard>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(212,162,79,0.15)' }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--uv-gold-selected-shadow)' }}>
                 <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--uv-gold)' }} />
               </div>
               <div>
@@ -508,15 +584,13 @@ export default function VowDetailPage() {
               </div>
               <CopyLinkButton url={witnessUrl} />
             </div>
-          </Card>
+          </RitualCard>
         )}
 
         {/* Go solo link */}
         {!witnessDeclined && (
           <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <SecondaryButton onClick={handleGoSolo}>
-              or go solo
-            </SecondaryButton>
+            <OutlinedGoldCTA label="or go solo" onPress={handleGoSolo} />
           </div>
         )}
 
@@ -550,7 +624,7 @@ export default function VowDetailPage() {
 
         {/* Invite a witness - solo vows only */}
         {isSolo && witnessUrl && (
-          <Card onClick={async () => {
+          <button type="button" style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left' }} onClick={async () => {
             if (navigator.share) {
               try { await navigator.share({ text: inviteShareText, url: witnessUrl }); } catch {}
             } else {
@@ -559,17 +633,19 @@ export default function VowDetailPage() {
               setTimeout(() => setActionMsg(''), 2000);
             }
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Eye className="w-[18px] h-[18px] shrink-0" style={{ color: 'var(--uv-text-faint)' }} />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: 14, fontWeight: 500, display: 'block', color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Invite a witness</span>
-                <span style={{ fontSize: 12, display: 'block', marginTop: 2, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>People keep vows 3x more with someone watching.</span>
+            <RitualCard>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <Eye className="w-[18px] h-[18px] shrink-0" style={{ color: 'var(--uv-text-faint)' }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: 14, fontWeight: 500, display: 'block', color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Invite a witness</span>
+                  <span style={{ fontSize: 12, display: 'block', marginTop: 2, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>People keep vows 3x more with someone watching.</span>
+                </div>
+                <div onClick={(e) => e.stopPropagation()}>
+                  <CopyLinkButton url={witnessUrl} />
+                </div>
               </div>
-              <div onClick={(e) => e.stopPropagation()}>
-                <CopyLinkButton url={witnessUrl} />
-              </div>
-            </div>
-          </Card>
+            </RitualCard>
+          </button>
         )}
 
         {/* Share vow */}
@@ -592,9 +668,7 @@ export default function VowDetailPage() {
         {/* Footer CTAs */}
         <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {!isSolo && vow.witness_phone && (
-            <PrimaryButton onClick={handleTextWitness}>
-              Text {vow.witness_name}
-            </PrimaryButton>
+            <GoldCTA label={`Text ${vow.witness_name}`} onPress={handleTextWitness} />
           )}
           <DashboardButton />
         </div>
@@ -619,7 +693,7 @@ export default function VowDetailPage() {
           sub={isSolo ? 'How did it go?' : witnessAccepted ? undefined : `${vow.witness_name} never accepted. You can self-resolve.`}
         />
 
-        <Card>
+        <RitualCard>
           <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, color: 'var(--uv-text)', margin: 0 }}>
             {vow.refined_text}
           </p>
@@ -634,7 +708,7 @@ export default function VowDetailPage() {
               <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>{vow.destination}</span>
             </div>
           )}
-        </Card>
+        </RitualCard>
 
         <TimelineBlock />
         <WithdrawButton />
@@ -645,14 +719,10 @@ export default function VowDetailPage() {
         {/* Footer CTAs */}
         <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {canSelfResolve && (
-            <PrimaryButton onClick={() => router.push(`/self-resolve?id=${vow.id}`)}>
-              Deliver your verdict
-            </PrimaryButton>
+            <GoldCTA label="Deliver your verdict" onPress={() => router.push(`/self-resolve?id=${vow.id}`)} />
           )}
           {isMaker && witnessAccepted && vow.witness_phone && (
-            <PrimaryButton onClick={() => { if (vow.witness_phone) window.open(`sms:${vow.witness_phone}`, '_self'); }}>
-              Nudge {vow.witness_name}
-            </PrimaryButton>
+            <GoldCTA label={`Nudge ${vow.witness_name}`} onPress={() => { if (vow.witness_phone) window.open(`sms:${vow.witness_phone}`, '_self'); }} />
           )}
           {isMaker && witnessAccepted && !vow.witness_phone && (
             <ShareButton
@@ -662,9 +732,7 @@ export default function VowDetailPage() {
             />
           )}
           {isWitness && vow.witness_invite_token && (
-            <PrimaryButton onClick={() => router.push(`/w/${vow.witness_invite_token}/verdict`)}>
-              Deliver your verdict
-            </PrimaryButton>
+            <GoldCTA label="Deliver your verdict" onPress={() => router.push(`/w/${vow.witness_invite_token}/verdict`)} />
           )}
           <DashboardButton />
         </div>
@@ -685,9 +753,9 @@ export default function VowDetailPage() {
 
         <VowTitle text={vow.refined_text} sub={`Waiting for ${targetName} to accept the challenge.`} />
 
-        <Card>
+        <RitualCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(96,165,250,0.15)' }}>
+            <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--uv-info-bg)' }}>
               <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--uv-gold)' }} />
             </div>
             <div>
@@ -697,7 +765,7 @@ export default function VowDetailPage() {
               </span>
             </div>
           </div>
-        </Card>
+        </RitualCard>
 
         <TimelineBlock />
         <WithdrawButton />
@@ -705,9 +773,7 @@ export default function VowDetailPage() {
 
         <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {vow.target_phone && (
-            <PrimaryButton onClick={() => window.open(`sms:${vow.target_phone}`, '_self')}>
-              Nudge {targetName}
-            </PrimaryButton>
+            <GoldCTA label={`Nudge ${targetName}`} onPress={() => window.open(`sms:${vow.target_phone}`, '_self')} />
           )}
           <DashboardButton />
         </div>
@@ -752,7 +818,7 @@ export default function VowDetailPage() {
 
         <VowTitle text="Time's up." sub={`Did ${targetName} keep their word?`} />
 
-        <Card>
+        <RitualCard>
           <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, color: 'var(--uv-text)', margin: 0 }}>
             {vow.refined_text}
           </p>
@@ -761,16 +827,14 @@ export default function VowDetailPage() {
             <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>At stake</span>
             <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel || 'Accountability only'}</span>
           </div>
-        </Card>
+        </RitualCard>
 
         <TimelineBlock />
         <DevVerdictButtons />
 
         <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
           {vow.witness_invite_token && (
-            <PrimaryButton onClick={() => router.push(`/w/${vow.witness_invite_token}/verdict`)}>
-              Deliver your verdict
-            </PrimaryButton>
+            <GoldCTA label="Deliver your verdict" onPress={() => router.push(`/w/${vow.witness_invite_token}/verdict`)} />
           )}
           <DashboardButton />
         </div>
@@ -791,14 +855,14 @@ export default function VowDetailPage() {
 
         <CountdownSection />
 
-        <Card>
+        <RitualCard>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <Eye className="w-5 h-5 shrink-0" style={{ color: 'var(--uv-gold)' }} />
             <p style={{ fontSize: 14, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: 0 }}>
               You&apos;ll be asked to deliver your verdict on {endDateFormatted}.
             </p>
           </div>
-        </Card>
+        </RitualCard>
 
         <TimelineBlock />
 
@@ -814,7 +878,7 @@ export default function VowDetailPage() {
   // ============================================================
   if (phase === 'kept') {
     return (
-      <RitualScreen variant="outcome-kept">
+      <RitualScreen gradient="verdict">
         <BackNav />
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
@@ -824,7 +888,7 @@ export default function VowDetailPage() {
           </h1>
         </div>
 
-        <Card>
+        <RitualCard>
           <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text)', margin: 0 }}>
             &ldquo;{vow.refined_text}&rdquo;
           </p>
@@ -847,7 +911,7 @@ export default function VowDetailPage() {
               </span>
             </div>
           )}
-        </Card>
+        </RitualCard>
 
         <TimelineBlock />
 
@@ -870,7 +934,7 @@ export default function VowDetailPage() {
   // ============================================================
   if (phase === 'broken') {
     return (
-      <RitualScreen variant="outcome-broken">
+      <RitualScreen gradient="broken">
         <BackNav />
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
@@ -883,7 +947,7 @@ export default function VowDetailPage() {
           </p>
         </div>
 
-        <Card>
+        <RitualCard>
           <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text)', margin: 0 }}>
             &ldquo;{vow.refined_text}&rdquo;
           </p>
@@ -898,12 +962,12 @@ export default function VowDetailPage() {
               <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-danger)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel} &rarr; {vow.destination}</span>
             </div>
           )}
-        </Card>
+        </RitualCard>
 
         <TimelineBlock />
 
         <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <PrimaryButton onClick={() => router.push('/create')}>Make a new vow</PrimaryButton>
+          <GoldCTA label="Make a new vow" onPress={() => router.push('/create')} />
           <DashboardButton />
         </div>
       </RitualScreen>
@@ -927,16 +991,16 @@ export default function VowDetailPage() {
         </p>
       </div>
 
-      <Card>
+      <RitualCard>
         <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, textAlign: 'center', color: 'var(--uv-text-faint)', margin: 0 }}>
           &ldquo;{vow.refined_text}&rdquo;
         </p>
-      </Card>
+      </RitualCard>
 
       <TimelineBlock />
 
       <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <PrimaryButton onClick={() => router.push('/create')}>Make a new vow</PrimaryButton>
+        <GoldCTA label="Make a new vow" onPress={() => router.push('/create')} />
         <DashboardButton />
       </div>
     </RitualScreen>

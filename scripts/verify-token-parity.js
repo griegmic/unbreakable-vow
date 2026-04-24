@@ -76,7 +76,7 @@ const cssTokens = parseCssTokens(cssContent);
 const tsTokens = parseTsTokens(tsContent);
 
 // Filter CSS tokens to only color-related ones (backgrounds, borders, text, gold, signals, imessage)
-const colorPrefixes = ['bg', 'border', 'text', 'gold', 'success', 'danger', 'warn', 'imessage', 'cert'];
+const colorPrefixes = ['bg', 'border', 'text', 'gold', 'success', 'danger', 'warn', 'imessage', 'cert', 'info'];
 const cssColorTokens = {};
 for (const [name, value] of Object.entries(cssTokens)) {
   const isColor = colorPrefixes.some(p => name.startsWith(p));
