@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { RitualScreen } from '@/components/uv/RitualScreen';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { RitualScreen, GoldCTA } from '@/components/primitives';
 import { ChevronLeft } from 'lucide-react';
 
 interface IfBrokenSheetProps {
@@ -99,7 +98,7 @@ export function IfBrokenSheet({ destination, destinationKind, onSelect, onClose 
               : 'var(--uv-gold-bg)';
             const activeBorder = t.id === 'anti' ? 'rgba(248,113,113,0.3)'
               : t.id === 'charity' ? 'rgba(74,222,128,0.2)'
-              : 'rgba(212,168,74,0.2)';
+              : 'var(--uv-gold-selected-shadow)';
 
             return (
               <button
@@ -196,7 +195,7 @@ export function IfBrokenSheet({ destination, destinationKind, onSelect, onClose 
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     flexShrink: 0,
                   }}>
-                    <span style={{ color: '#fff', fontSize: 13, fontWeight: 600 }}>✓</span>
+                    <span style={{ color: 'var(--uv-text)', fontSize: 13, fontWeight: 600 }}>✓</span>
                   </div>
                 )}
               </button>
@@ -218,9 +217,7 @@ export function IfBrokenSheet({ destination, destinationKind, onSelect, onClose 
 
         <div style={{ flex: 1, minHeight: 24 }} />
 
-        <PrimaryButton onClick={() => onSelect(selectedDest, selectedKind)}>
-          Lock it in →
-        </PrimaryButton>
+        <GoldCTA label="Lock it in →" onPress={() => onSelect(selectedDest, selectedKind)} />
       </div>
     </RitualScreen>
   );

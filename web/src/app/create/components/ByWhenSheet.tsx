@@ -1,9 +1,27 @@
 'use client';
 
 import React, { useState, useMemo, useRef } from 'react';
-import { BottomSheet } from '@/components/uv/BottomSheet';
-import { RadioCard } from '@/components/uv/RadioCard';
-import { PrimaryButton } from '@/components/uv/PrimaryButton';
+import { RadioCard, GoldCTA } from '@/components/primitives';
+
+// Screen-local bottom sheet — same behavior as uv/BottomSheet but no pre-V6 import
+function BottomSheet({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  React.useEffect(() => {
+    if (!open) return;
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleKey);
+    return () => document.removeEventListener('keydown', handleKey);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <>
+      <div onClick={onClose} aria-hidden="true" style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'var(--uv-bg-overlay)', animation: 'uv-fade-up 240ms ease' }} />
+      <div role="dialog" aria-modal="true" style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 101, background: 'var(--uv-bg-elevated)', border: '1px solid var(--uv-border-strong)', borderRadius: '22px 22px 0 0', padding: '16px 16px 14px', boxShadow: '0 -8px 32px rgba(0,0,0,0.4)' }}>
+        <div style={{ width: 36, height: 3, background: 'var(--uv-border-strong)', borderRadius: 9999, margin: '0 auto 14px' }} />
+        {children}
+      </div>
+    </>
+  );
+}
 
 interface ByWhenSheetProps {
   open: boolean;
@@ -113,7 +131,7 @@ export function ByWhenSheet({ open, onClose, onSelect }: ByWhenSheetProps) {
               key={opt.id}
               label={opt.label}
               selected={selected === opt.id}
-              onClick={() => { setSelected(opt.id); setCustomDate(''); }}
+              onPress={() => { setSelected(opt.id); setCustomDate(''); }}
             />
           ))}
 
@@ -159,12 +177,7 @@ export function ByWhenSheet({ open, onClose, onSelect }: ByWhenSheetProps) {
         </div>
 
         <div style={{ marginTop: 8 }}>
-          <PrimaryButton
-            onClick={handleConfirm}
-            disabled={selected === 'custom' && !customDate}
-          >
-            Set deadline
-          </PrimaryButton>
+          <GoldCTA label="Set deadline" onPress={handleConfirm} disabled={selected === 'custom' && !customDate} />
         </div>
       </div>
     </BottomSheet>
