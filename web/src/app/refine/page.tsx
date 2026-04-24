@@ -1,22 +1,23 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Sparkles } from 'lucide-react';
-import { RitualScreen, FrauncesH1, FrauncesSub, GoldCTA, MutedSecondary, RadioCard } from '@/components/primitives';
+import { GoldCTA, MutedSecondary } from '@/components/primitives';
 import { useVowFlow } from '@/providers/vow-flow';
 import { generateSuggestion, getContextualSuggestions } from '@/lib/vow-logic';
 
 /**
- * S2 · Refine nudge — §3.3
+ * S2 -- Refine nudge (bottom-sheet overlay)
  *
- * Shown when analyzeVow() flags vagueness. Layout per V6 spec:
- *   H1: "Sharpen your vow" (kept per FLAG 1 — spec copy requires witness name)
- *   Raw input as italic Fraunces subject line
- *   Editable sharpened-vow textarea
- *   RadioCards for alternative suggestions
- *   GoldCTA "Use this vow →" / OutlinedGoldCTA "Keep my original"
+ * Rebuilt to match mock: design-alignment/v1v2/flow/html/02-refine-nudge.html
  *
- * State machine: mount → populate suggestions → user edits/selects → push /stake
+ * Layout: faux-dimmed home behind + dark backdrop + bottom-positioned sheet.
+ * Standalone page styled as a bottom-sheet overlay (not a real overlay on home).
+ *
+ * Headline override (Joey-approved): "Is this specific enough?"
+ * (Mock says "Will Nick know if you did it?" but witness name isn't available here.)
+ * Documented in SCREEN-FEATURE-SCOPE.md.
+ *
+ * State machine: mount -> populate suggestion -> user tightens or keeps -> push /stake
  * All handlers preserved from pre-V6 implementation.
  */
 
@@ -35,122 +36,252 @@ export default function RefinePage() {
     setSuggestions(getContextualSuggestions(vow.rawInput));
   }, [vow.rawInput, router]);
 
-  const handleSubmit = () => {
+  const handleTighten = () => {
     if (!input.trim()) return;
     setRefinedText(input.trim());
     router.push('/stake');
   };
 
-  const handleKeepOriginal = () => {
+  const handleKeepAsIs = () => {
     setRefinedText(vow.rawInput);
     router.push('/stake');
   };
 
   return (
-    <RitualScreen variant="utility">
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
-        {/* Back */}
-        <button
-          onClick={() => router.back()}
-          aria-label="Go back"
+    <div
+      style={{
+        position: 'relative',
+        width: '100%',
+        minHeight: '100dvh',
+        overflow: 'hidden',
+        background: 'var(--uv-bg)',
+      }}
+    >
+      {/* ── Faux home content (dimmed behind) ── */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          padding: '54px 28px',
+          opacity: 0.18,
+          filter: 'blur(2px)',
+          pointerEvents: 'none',
+        }}
+      >
+        <h1
           style={{
-            background: 'none', border: 'none',
-            color: 'var(--uv-text-muted)', fontSize: 14, fontWeight: 500,
-            cursor: 'pointer', fontFamily: 'var(--uv-font-sans)',
-            padding: '4px 0', alignSelf: 'flex-start',
+            fontFamily: 'var(--uv-font-serif)',
+            fontWeight: 400,
+            fontSize: 52,
+            lineHeight: 0.98,
+            letterSpacing: '-0.02em',
+            color: 'var(--uv-text)',
+            marginTop: 100,
           }}
         >
-          &larr; Back
-        </button>
+          Make a vow.<br />
+          <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>Mean it.</em>
+        </h1>
+        <div
+          style={{
+            color: 'var(--uv-text-muted)',
+            marginTop: 16,
+            maxWidth: 320,
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: 15,
+          }}
+        >
+          Tell a friend. Put money on it.
+        </div>
+        <div
+          style={{
+            marginTop: 36,
+            paddingBottom: 12,
+            borderBottom: '1px solid var(--uv-gold-line)',
+            fontFamily: 'var(--uv-font-serif)',
+            fontSize: 21,
+            color: 'var(--uv-text)',
+          }}
+        >
+          {vow.rawInput || 'be better'}
+        </div>
+      </div>
 
-        {/* H1 — kept as-is per FLAG 1 */}
-        <FrauncesH1 italic size="page">Is this specific enough?</FrauncesH1>
+      {/* ── Backdrop overlay ── */}
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          background: 'rgba(15,13,10,0.72)',
+        }}
+      />
 
-        {/* Raw input — italic Fraunces subject line per FLAG 3 */}
-        <div style={{
-          background: 'var(--uv-bg-elevated)',
-          borderLeft: '2px solid var(--uv-gold)',
-          borderRadius: 2,
-          padding: '12px 14px',
-        }}>
-          <span style={{
-            fontFamily: 'var(--uv-font-sans)', fontStyle: 'normal',
-            fontSize: 9.5, letterSpacing: '0.24em', textTransform: 'uppercase' as const,
-            color: 'var(--uv-gold)', fontWeight: 500,
-            display: 'block', marginBottom: 6,
-          }}>
+      {/* ── Bottom sheet ── */}
+      <div
+        className="animate-slide-up"
+        style={{
+          position: 'absolute',
+          left: 16,
+          right: 16,
+          bottom: 24,
+          background: 'var(--uv-bg-card)',
+          border: '1px solid var(--uv-gold-line)',
+          borderRadius: 18,
+          padding: '28px 26px 26px',
+          boxShadow: '0 30px 80px rgba(0,0,0,0.6)',
+          zIndex: 10,
+        }}
+      >
+        {/* Drag handle */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 10,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: 32,
+            height: 3,
+            borderRadius: 2,
+            background: 'var(--uv-border-soft)',
+          }}
+        />
+
+        {/* ? glyph */}
+        <div
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            border: '1px solid var(--uv-gold-line)',
+            background: 'var(--uv-gold-soft)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontFamily: 'var(--uv-font-serif)',
+            fontStyle: 'italic',
+            fontSize: 18,
+            color: 'var(--uv-gold)',
+            margin: '6px auto 18px',
+          }}
+        >
+          ?
+        </div>
+
+        {/* Headline -- Joey override: "Is this specific enough?" */}
+        <div
+          style={{
+            fontFamily: 'var(--uv-font-serif)',
+            fontWeight: 400,
+            fontVariationSettings: '"opsz" 144',
+            fontSize: 24,
+            lineHeight: 1.15,
+            letterSpacing: '-0.01em',
+            textAlign: 'center',
+            marginBottom: 14,
+          }}
+        >
+          Is this specific enough?
+        </div>
+
+        {/* Body */}
+        <div
+          style={{
+            fontSize: 13.5,
+            lineHeight: 1.5,
+            color: 'var(--uv-text-muted)',
+            textAlign: 'center',
+            margin: '0 4px 8px',
+            fontFamily: 'var(--uv-font-sans)',
+          }}
+        >
+          Vows work best when there&rsquo;s no room to argue.
+        </div>
+
+        {/* Before / after example */}
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 6,
+            margin: '0 auto 22px',
+            width: 'fit-content',
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: 13.5,
+            lineHeight: 1.5,
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: 'var(--uv-text-muted)', opacity: 0.5 }}>&#x2717;</span>
+            <span
+              style={{
+                color: 'var(--uv-text-muted)',
+                opacity: 0.5,
+                textDecoration: 'line-through',
+                fontStyle: 'italic',
+              }}
+            >
+              &ldquo;Get healthier&rdquo;
+            </span>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: 'var(--uv-gold)' }}>&#x2713;</span>
+            <span
+              style={{
+                color: 'var(--uv-gold)',
+                fontWeight: 600,
+              }}
+            >
+              &ldquo;Run a 5K by Sunday&rdquo;
+            </span>
+          </div>
+        </div>
+
+        {/* Quoted vow */}
+        <div
+          style={{
+            background: 'var(--uv-bg-elevated)',
+            borderLeft: '2px solid var(--uv-gold)',
+            borderRadius: 2,
+            padding: '12px 14px',
+            marginBottom: 22,
+            fontFamily: 'var(--uv-font-serif)',
+            fontStyle: 'italic',
+            fontSize: 16,
+            color: 'var(--uv-text)',
+            lineHeight: 1.4,
+          }}
+        >
+          <span
+            style={{
+              display: 'block',
+              fontFamily: 'var(--uv-font-sans)',
+              fontStyle: 'normal',
+              fontSize: 9.5,
+              letterSpacing: '0.24em',
+              textTransform: 'uppercase',
+              color: 'var(--uv-gold)',
+              marginBottom: 6,
+              fontWeight: 500,
+            }}
+          >
             Your vow
           </span>
-          <FrauncesSub>&ldquo;{vow.rawInput}&rdquo;</FrauncesSub>
+          &ldquo;{vow.rawInput}&rdquo;
         </div>
 
-        {/* Editable sharpened vow */}
-        <div style={{
-          borderRadius: 18, padding: 20,
-          display: 'flex', flexDirection: 'column', gap: 10,
-          background: 'var(--uv-bg-card)',
-          border: '1.5px solid var(--uv-gold-line)',
-          boxShadow: '0 0 24px var(--uv-gold-glow)',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Sparkles style={{ width: 14, height: 14, color: 'var(--uv-gold)' }} />
-            <span style={{
-              fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 700,
-              letterSpacing: '1.3px', textTransform: 'uppercase' as const,
-              color: 'var(--uv-gold)',
-            }}>
-              Sharpened vow
-            </span>
-          </div>
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            rows={3}
-            autoFocus
-            style={{
-              width: '100%', boxSizing: 'border-box',
-              background: 'transparent', border: 'none', outline: 'none',
-              resize: 'vertical',
-              fontFamily: 'var(--uv-font-serif)', fontSize: 18,
-              lineHeight: '26px', color: 'var(--uv-text)',
-            }}
+        {/* Actions */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <GoldCTA
+            label="Tighten it"
+            onPress={handleTighten}
+            disabled={!input.trim()}
+          />
+          <MutedSecondary
+            label="Keep it as-is"
+            onPress={handleKeepAsIs}
           />
         </div>
-
-        {/* Alternative suggestions as RadioCards per FLAG 2 */}
-        {suggestions.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <span style={{
-              fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 500,
-              color: 'var(--uv-text-muted)',
-            }}>
-              Or try one of these
-            </span>
-            {suggestions.map((s) => (
-              <RadioCard
-                key={s}
-                label={s}
-                selected={input === s}
-                onPress={() => setInput(s)}
-              />
-            ))}
-          </div>
-        )}
-
-        {/* Spacer */}
-        <div style={{ flex: 1, minHeight: 12 }} />
-
-        {/* CTAs */}
-        <GoldCTA
-          label="Use this vow →"
-          onPress={handleSubmit}
-          disabled={!input.trim()}
-        />
-        <MutedSecondary
-          label="Keep my original"
-          onPress={handleKeepOriginal}
-        />
       </div>
-    </RitualScreen>
+    </div>
   );
 }
