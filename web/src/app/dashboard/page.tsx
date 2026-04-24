@@ -408,10 +408,10 @@ export default function DashboardPage() {
         {activeVows.length > 0 && (
           <div style={{ marginBottom: 32 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--uv-gold-line)' }}>
-              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)' }}>
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, fontWeight: 600, letterSpacing: '0.32em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)' }}>
                 Your vows
               </span>
-              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-muted)' }}>· {activeVows.length}</span>
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, color: 'var(--uv-text-muted)' }}>· {activeVows.length}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {activeVows.map(vow => {
@@ -419,7 +419,30 @@ export default function DashboardPage() {
                 const isAwaitingWitness = vow.status === 'sealed' && !vow.witness_accepted_at;
                 const isAwaitingVerdict = vow.status === 'awaiting_verdict';
                 const daysLeft = vow.ends_at ? Math.ceil((new Date(vow.ends_at).getTime() - Date.now()) / 86400000) : null;
+                const totalDays = (vow.starts_at && vow.ends_at)
+                  ? Math.ceil((new Date(vow.ends_at).getTime() - new Date(vow.starts_at).getTime()) / 86400000)
+                  : null;
+                const dayNumber = (totalDays !== null && daysLeft !== null) ? Math.max(1, totalDays - daysLeft + 1) : null;
                 const witnessFirst = vow.witness_name?.split(' ')[0] || 'Witness';
+
+                // Time display for awaiting-witness: "Sealed X hrs ago"
+                const sealedHoursAgo = vow.sealed_at
+                  ? Math.max(1, Math.round((Date.now() - new Date(vow.sealed_at).getTime()) / 3600000))
+                  : null;
+
+                // Time display for awaiting-verdict: "Maya replies in X hrs"
+                const verdictHoursLeft = vow.ends_at
+                  ? Math.max(0, Math.round((new Date(vow.ends_at).getTime() - Date.now()) / 3600000))
+                  : null;
+
+                // Pill content per mock
+                const pillContent = isAwaitingWitness
+                  ? `Awaiting ${witnessFirst}`
+                  : isAwaitingVerdict
+                    ? 'Awaiting verdict'
+                    : (dayNumber !== null && totalDays !== null)
+                      ? `Active \u00B7 Day ${dayNumber} of ${totalDays}`
+                      : 'Active';
 
                 return (
                   <button
@@ -427,7 +450,7 @@ export default function DashboardPage() {
                     onClick={() => router.push(`/vow/${vow.id}`)}
                     style={{
                       width: '100%',
-                      padding: '14px 16px',
+                      padding: '14px 16px 12px',
                       borderRadius: 14,
                       borderLeft: `2px solid ${isAwaitingWitness ? 'var(--uv-gold-deep)' : 'var(--uv-gold)'}`,
                       border: '1px solid var(--uv-border)',
@@ -440,42 +463,66 @@ export default function DashboardPage() {
                       textAlign: 'left',
                       display: 'flex',
                       flexDirection: 'column',
-                      gap: 8,
+                      position: 'relative',
                     }}
                   >
                     {/* Top row: pill + time */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                       <EyebrowTag tone={isAwaitingWitness || isAwaitingVerdict ? 'amber' : 'gold'}>
-                        {isAwaitingWitness ? `Awaiting ${witnessFirst}` : isAwaitingVerdict ? 'Awaiting verdict' : `Active`}
+                        {pillContent}
                       </EyebrowTag>
-                      <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--uv-text-muted)' }}>
-                        {isAwaitingWitness ? 'Sealed' : daysLeft !== null ? (daysLeft <= 0 ? "Time's up" : `${daysLeft}d left`) : ''}
+                      <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 10.5, color: 'var(--uv-text-muted)', fontFeatureSettings: '"tnum"' }}>
+                        {isAwaitingWitness
+                          ? <>Sealed <b style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>{sealedHoursAgo ?? '?'} hrs</b> ago</>
+                          : isAwaitingVerdict
+                            ? <>{witnessFirst} replies in <b style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>{verdictHoursLeft ?? '?'} hrs</b></>
+                            : daysLeft !== null
+                              ? (daysLeft <= 0 ? <b style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>Time&apos;s up</b> : <><b style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>{daysLeft} days</b> left</>)
+                              : ''
+                        }
                       </span>
                     </div>
                     {/* Vow text */}
                     <p style={{
                       fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 17,
                       lineHeight: 1.28, color: isAwaitingWitness ? 'var(--uv-text-muted)' : 'var(--uv-text)',
-                      margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      margin: '4px 0 12px',
                     }}>
                       {vow.refined_text}
                     </p>
-                    {/* Meta row — 2-col per §3.4 mock with state-dependent right column */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
-                      <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-muted)' }}>
-                        {stakeDollars > 0 ? `On hold $${stakeDollars}` : 'No stake'}
-                        {' · '}
-                        {isAwaitingWitness
-                          ? <span style={{ color: 'var(--uv-warn)' }}>Starts when {witnessFirst} accepts</span>
-                          : isAwaitingVerdict
-                            ? `If broken → ${vow.destination}`
-                            : vow.ends_at ? `Until ${new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short' })} · 9pm` : ''
-                        }
+                    {/* Meta row — structured 2-col + witness chip per mock */}
+                    <div style={{
+                      display: 'flex', gap: 14, paddingTop: 8,
+                      borderTop: '1px dashed var(--uv-border)',
+                      alignItems: 'center',
+                    }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <span style={{ fontSize: 8.5, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--uv-text-muted)', fontWeight: 500, fontFamily: 'var(--uv-font-sans)' }}>
+                          On hold
+                        </span>
+                        <span style={{ fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontSize: 13, color: stakeDollars > 0 ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)', fontFeatureSettings: '"tnum"' }}>
+                          {stakeDollars > 0 ? `$${stakeDollars}` : '$0'}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                        <span style={{ fontSize: 8.5, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--uv-text-muted)', fontWeight: 500, fontFamily: 'var(--uv-font-sans)' }}>
+                          {isAwaitingWitness ? 'Starts when' : isAwaitingVerdict ? 'If broken' : 'Until'}
+                        </span>
+                        <span style={{ fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontSize: 13, color: isAwaitingWitness ? 'var(--uv-warn)' : 'var(--uv-text)', fontFeatureSettings: '"tnum"' }}>
+                          {isAwaitingWitness
+                            ? `${witnessFirst} accepts`
+                            : isAwaitingVerdict
+                              ? `\u2192 ${vow.destination}`
+                              : vow.ends_at ? `${new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short' })} \u00B7 9pm` : '\u2014'
+                          }
+                        </span>
+                      </div>
+                      <span style={{ marginLeft: 'auto' }}>
+                        <WitnessChip
+                          status={vow.witness_accepted_at ? 'accepted' : 'pending'}
+                          name={witnessFirst}
+                        />
                       </span>
-                      <WitnessChip
-                        status={vow.witness_accepted_at ? 'accepted' : 'pending'}
-                        name={witnessFirst}
-                      />
                     </div>
                   </button>
                 );
@@ -487,9 +534,9 @@ export default function DashboardPage() {
         {/* Section 2: NEEDS YOU NOW */}
         {(urgentWitnessing.length > 0 || challenges.length > 0) && (
           <div style={{ marginBottom: 32 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--uv-gold-line)' }}>
-              <div className="animate-pulse-dot" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--uv-warn)' }} />
-              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '22px 6px 10px' }}>
+              <div className="animate-pulse-dot" style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--uv-warn)', boxShadow: '0 0 0 3px rgba(241,169,60,0.20)' }} />
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, fontWeight: 600, letterSpacing: '0.32em', textTransform: 'uppercase', color: 'var(--uv-warn)' }}>
                 Needs you now
               </span>
             </div>
@@ -508,16 +555,62 @@ export default function DashboardPage() {
                   />
                 );
               })}
-              {challenges.map(vow => (
-                <NeedsNowCard
-                  key={vow.id}
-                  kind="dare"
-                  makerName={(vow as any).maker_display_name || 'Someone'}
-                  vowText={vow.refined_text}
-                  stake={Math.round(vow.stake_amount / 100)}
-                  onPress={() => router.push(`/c/${vow.challenge_invite_token}`)}
-                />
-              ))}
+              {/* Pending dares — separate card per mock with Accept/Decline buttons */}
+              {challenges.map(vow => {
+                const challengerName = (vow as any).maker_display_name || 'Someone';
+                const stakeDollars = Math.round(vow.stake_amount / 100);
+                return (
+                  <div
+                    key={vow.id}
+                    style={{
+                      background: 'var(--uv-bg-elevated)',
+                      border: '1px solid var(--uv-gold-line)',
+                      borderRadius: 12,
+                      padding: '12px 14px',
+                    }}
+                  >
+                    <div style={{ fontSize: 9.5, letterSpacing: '0.3em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)', fontWeight: 500, marginBottom: 6, fontFamily: 'var(--uv-font-sans)' }}>
+                      &mdash; Pending dare &mdash;
+                    </div>
+                    <p style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontWeight: 400, fontSize: 14.5, color: 'var(--uv-text)', marginBottom: 10, margin: '0 0 10px' }}>
+                      <b style={{ fontStyle: 'normal', fontWeight: 500, color: 'var(--uv-gold-bright)' }}>{challengerName}</b> dared you: <em>&ldquo;{vow.refined_text}{stakeDollars > 0 ? `, $${stakeDollars} to ${vow.destination}` : ''}.&rdquo;</em>
+                    </p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => handleAcceptChallenge(vow.id)}
+                        disabled={actionBusy === vow.id}
+                        style={{
+                          flex: 1, height: 36, borderRadius: 10,
+                          background: 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold))',
+                          color: 'var(--uv-text-on-gold)',
+                          fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontSize: 13,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          border: 'none', cursor: 'pointer',
+                          opacity: actionBusy === vow.id ? 0.6 : 1,
+                        }}
+                      >
+                        Accept →
+                      </button>
+                      <button
+                        onClick={() => handleDeclineChallenge(vow.id)}
+                        disabled={actionBusy === vow.id}
+                        style={{
+                          flex: 1, height: 36, borderRadius: 10,
+                          background: 'transparent',
+                          border: '1px solid var(--uv-border)',
+                          color: 'var(--uv-text-muted)',
+                          fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontSize: 13,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          cursor: 'pointer',
+                          opacity: actionBusy === vow.id ? 0.6 : 1,
+                        }}
+                      >
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -526,15 +619,16 @@ export default function DashboardPage() {
         {regularWitnessing.length > 0 && (
           <div style={{ marginBottom: 32 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--uv-gold-line)' }}>
-              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)' }}>
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, fontWeight: 600, letterSpacing: '0.32em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)' }}>
                 You&apos;re witnessing
               </span>
-              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-muted)' }}>· {witnessingVows.length - urgentWitnessing.length}</span>
+              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, color: 'var(--uv-text-muted)' }}>· {witnessingVows.length - urgentWitnessing.length}</span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {regularWitnessing.map(vow => {
                 const makerName = (vow as any).maker_display_name || 'Someone';
                 const isUrgent = vow.status === 'awaiting_verdict';
+                const wDaysLeft = vow.ends_at ? Math.ceil((new Date(vow.ends_at).getTime() - Date.now()) / 86400000) : null;
                 return (
                   <button
                     key={vow.id}
@@ -543,21 +637,26 @@ export default function DashboardPage() {
                       width: '100%', padding: '12px 14px', borderRadius: 12,
                       background: 'var(--uv-bg-card)', border: '1px solid var(--uv-border)',
                       cursor: 'pointer', textAlign: 'left',
-                      display: 'flex', alignItems: 'center', gap: 10,
+                      display: 'flex', alignItems: 'center', gap: 12,
                     }}
                   >
                     {/* Avatar */}
-                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--uv-bg-elevated)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-muted)', flexShrink: 0 }}>
+                    <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--uv-bg-elevated)', border: '1px solid var(--uv-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, fontWeight: 500, color: 'var(--uv-text-muted)', flexShrink: 0 }}>
                       {makerName.charAt(0)}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--uv-text)' }}>{makerName}</div>
-                      <div style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 14, color: 'var(--uv-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 1 }}>
+                        <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 500, color: 'var(--uv-text)' }}>{makerName}</span>
+                        <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 11, color: isUrgent ? 'var(--uv-warn)' : 'var(--uv-text-muted)', fontFeatureSettings: '"tnum"', ...(isUrgent ? { fontStyle: 'normal', fontWeight: 500 } : {}) }}>
+                          {wDaysLeft !== null ? (wDaysLeft <= 0 ? "Time's up" : `${wDaysLeft} days left`) : ''}
+                        </span>
+                      </div>
+                      <div style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontWeight: 400, fontSize: 14, color: 'var(--uv-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', lineHeight: 1.2 }}>
                         {vow.refined_text}
                       </div>
                     </div>
                     {vow.stake_amount > 0 && (
-                      <span style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 12, color: 'var(--uv-gold)', flexShrink: 0 }}>${Math.round(vow.stake_amount / 100)}</span>
+                      <span style={{ fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontSize: 12, color: 'var(--uv-gold-bright)', flexShrink: 0, fontFeatureSettings: '"tnum"' }}>${Math.round(vow.stake_amount / 100)}</span>
                     )}
                   </button>
                 );
