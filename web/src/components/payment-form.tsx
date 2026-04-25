@@ -18,6 +18,13 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, amount, mode = 'payment' }:
     setLoading(true);
     setError('');
 
+    const { error: submitError } = await elements.submit();
+    if (submitError) {
+      setError(submitError.message || 'Payment details could not be submitted.');
+      setLoading(false);
+      return;
+    }
+
     if (mode === 'setup') {
       const result = await stripe.confirmSetup({
         elements,
@@ -65,25 +72,27 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, amount, mode = 'payment' }:
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
       <PaymentElement
         options={{
-          layout: 'accordion',
+          layout: 'tabs',
           wallets: { applePay: 'auto', googlePay: 'auto' },
           defaultValues: { billingDetails: { address: { country: 'US' } } },
         }}
       />
-      {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
+      {error && <p className="text-sm" style={{ color: 'var(--uv-danger)' }}>{error}</p>}
       <button
         type="submit"
         disabled={!stripe || loading}
         className="w-full min-h-[52px] rounded-2xl flex items-center justify-center transition-transform active:scale-[0.975]"
         style={{
-          background: loading ? '#29303C' : 'linear-gradient(135deg, var(--gold-bright), var(--gold), var(--gold-deep))',
-          boxShadow: '0 12px 24px rgba(212,162,79,0.28)',
+          background: loading ? 'var(--uv-bg-elevated)' : 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold))',
+          boxShadow: '0 1px 0 rgba(255,220,140,0.25) inset, 0 10px 30px rgba(200,155,60,0.18)',
+          border: 'none',
+          cursor: loading ? 'default' : 'pointer',
         }}
       >
         {loading ? (
           <div className="w-5 h-5 border-2 border-[#0B0D11] border-t-transparent rounded-full animate-spin" />
         ) : (
-          <span className="text-[15px] font-extrabold" style={{ color: '#0B0D11' }}>{mode === 'setup' ? 'Save card' : 'Lock it in'}</span>
+          <span className="text-[15px] font-bold" style={{ color: 'var(--uv-text-on-gold)' }}>{mode === 'setup' ? 'Save card' : 'Lock it in'}</span>
         )}
       </button>
       {onSkip && (
@@ -98,9 +107,9 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, amount, mode = 'payment' }:
           style={{ border: '1px dashed rgba(212,162,79,0.3)', background: 'rgba(212,162,79,0.06)' }}
         >
           {skipping ? (
-            <div className="w-5 h-5 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 border-[var(--uv-gold)] border-t-transparent rounded-full animate-spin" />
           ) : (
-            <span className="text-[14px] font-semibold" style={{ color: 'var(--gold)' }}>Skip payment</span>
+            <span className="text-[14px] font-semibold" style={{ color: 'var(--uv-gold)' }}>Skip payment</span>
           )}
         </button>
       )}
@@ -109,7 +118,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, amount, mode = 'payment' }:
         onClick={onCancel}
         className="min-h-[40px] flex items-center justify-center"
       >
-        <span className="text-sm font-semibold" style={{ color: 'var(--text-secondary)' }}>Cancel</span>
+        <span className="text-sm font-semibold" style={{ color: 'var(--uv-text-muted)' }}>Cancel</span>
       </button>
     </form>
   );
@@ -135,17 +144,17 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip, amount
       <div className="absolute inset-0 bg-black/60" />
       <div
         className="relative w-full max-w-[440px] rounded-t-[28px] p-5 pb-8 safe-bottom animate-slide-up overflow-y-auto"
-        style={{ backgroundColor: 'var(--surface-elevated)', maxHeight: '85vh' }}
+        style={{ backgroundColor: 'var(--uv-bg-elevated)', maxHeight: '85vh' }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center mb-3">
-          <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'var(--text-muted)', opacity: 0.4 }} />
+          <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'var(--uv-text-muted)', opacity: 0.4 }} />
         </div>
-        <h2 className="text-lg font-bold font-serif" style={{ color: 'var(--text)' }}>
+        <h2 className="text-lg font-bold font-serif" style={{ color: 'var(--uv-text)' }}>
           {mode === 'setup' ? 'Save your card' : amount ? `Hold $${amount} on your card` : 'Authorize hold'}
         </h2>
-        <p className="text-[13px] mb-3" style={{ color: 'var(--text-muted)' }}>
-          {mode === 'setup' ? 'No charge now. Only if you break it.' : 'Released if you keep your vow.'}
+        <p className="text-[13px] mb-3" style={{ color: 'var(--uv-text-muted)' }}>
+          {mode === 'setup' ? 'No charge now. Only if you break it.' : `No charge now. Released if you keep your vow.`}
         </p>
         <Elements
           stripe={stripePromise}
@@ -154,21 +163,26 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip, amount
             appearance: {
               theme: 'night',
               variables: {
-                colorPrimary: '#F0C86E',
-                colorBackground: '#161B25',
-                colorText: '#F6F7FB',
-                colorDanger: '#FF7B7B',
-                borderRadius: '12px',
+                colorPrimary: '#E8B656',
+                colorBackground: '#181512',
+                colorText: '#F0E9DB',
+                colorDanger: '#F87171',
+                colorTextPlaceholder: '#8A8172',
+                colorIconTab: '#F0E9DB',
+                colorIconTabSelected: '#1A1205',
+                borderRadius: '14px',
                 fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
                 spacingGridRow: '14px',
               },
               rules: {
-                '.Input': { border: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#10141C', padding: '10px 12px' },
-                '.Input:focus': { border: '1px solid rgba(255,214,102,0.18)', boxShadow: '0 0 0 1px rgba(255,214,102,0.18)' },
-                '.Tab': { border: '1px solid rgba(255,255,255,0.08)', backgroundColor: '#10141C' },
-                '.Tab--selected': { border: '1px solid rgba(255,214,102,0.18)', backgroundColor: '#161B25' },
-                '.TabLabel': { color: '#F6F7FB' },
-                '.TabIcon': { fill: '#F6F7FB' },
+                '.Label': { color: '#B8AD9A', fontWeight: '500' },
+                '.Input': { border: '1px solid rgba(240,233,219,0.14)', backgroundColor: '#1A1612', color: '#F0E9DB', padding: '12px 14px' },
+                '.Input:focus': { border: '1px solid rgba(232,182,86,0.42)', boxShadow: '0 0 0 1px rgba(232,182,86,0.28)' },
+                '.Tab': { border: '1px solid rgba(240,233,219,0.14)', backgroundColor: '#1A1612', color: '#F0E9DB' },
+                '.Tab--selected': { border: '1px solid rgba(232,182,86,0.54)', backgroundColor: '#E8B656', color: '#1A1205' },
+                '.TabLabel': { color: '#F0E9DB' },
+                '.TabLabel--selected': { color: '#1A1205' },
+                '.Block': { backgroundColor: '#181512', border: '1px solid rgba(240,233,219,0.10)' },
               },
             },
           }}
