@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen, FrauncesH1, FrauncesSub } from '@/components/primitives';
+import { RitualScreen, FrauncesH1, FrauncesSub, GoldCTA } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 import { AuthModal } from '@/components/auth-modal';
@@ -14,22 +14,13 @@ const STARTER_CHIPS = [
 ];
 
 // ─── Ceremony ───────────────────────────────────────────────────────────────
-// Ceremony uses raw hex (#050403) — intentionally darker than --uv-bg for
-// cinematic effect. rgba(212,168,74,...) glow values tuned for that specific
-// black. Not tokenized — one-shot overlay with no reuse path.
+// 3-line oath overlay. Show-once (localStorage). ~2.7s staggered fade-in.
 
 function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
-  // 3-screen cold-open cinematic
-  // Screen 1: "The Mirror" — white on black
-  // Screen 2: "The Invitation" — gold on black with ember glow
-  // Screen 3: "The Consequence" — dim white on black
-  const [line1Opacity, setLine1Opacity] = useState(0);   // "you said you'd do it."
-  const [line2Opacity, setLine2Opacity] = useState(0);   // "you didn't."
-  const [screen2Opacity, setScreen2Opacity] = useState(0); // "make the unbreakable vow."
-  const [glowOpacity, setGlowOpacity] = useState(0);     // gold ember glow
-  const [screen3Opacity, setScreen3Opacity] = useState(0); // "break it, and pay the price."
-  const [showSkip, setShowSkip] = useState(false);
-  const [crossfade, setCrossfade] = useState(false);
+  const [line1Visible, setLine1Visible] = useState(false);
+  const [line2Visible, setLine2Visible] = useState(false);
+  const [line3Visible, setLine3Visible] = useState(false);
+  const [ctaVisible, setCtaVisible] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const reducedMotion = typeof window !== 'undefined'
@@ -39,119 +30,47 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
     try { localStorage.setItem('uv_ceremony_seen', '1'); } catch {}
     timersRef.current.forEach(clearTimeout);
     timersRef.current = [];
-    setCrossfade(true);
-    setTimeout(() => onComplete(), 600);
+    onComplete();
   }, [onComplete]);
 
-  const skip = useCallback((e: React.MouseEvent) => {
-    e.stopPropagation();
-    finish();
-  }, [finish]);
-
   useEffect(() => {
-    if (reducedMotion) {
-      // Reduced motion: show all 3 lines stacked statically for 3s, then cross-fade
-      setLine1Opacity(0.95);
-      setLine2Opacity(0.95);
-      setScreen2Opacity(1);
-      setScreen3Opacity(0.85);
-      const t1 = setTimeout(() => finish(), 3000);
-      timersRef.current = [t1];
-      return () => clearTimeout(t1);
-    }
-
-    // Full choreography — setTimeout chain
     const t = (ms: number, fn: () => void) => {
       const id = setTimeout(fn, ms);
       timersRef.current.push(id);
       return id;
     };
 
-    // ─── Screen 1: The Mirror ───
-    // t=1.0s: "you said you'd do it." fades in over 1.0s
-    t(1000, () => setLine1Opacity(0.95));
-
-    // t=3.1s: "you didn't." fades in over 0.6s
-    t(3100, () => setLine2Opacity(0.95));
-
-    // t=4.0s: show skip
-    t(4000, () => setShowSkip(true));
-
-    // t=5.7s: Both lines fade out over 0.6s
-    t(5700, () => { setLine1Opacity(0); setLine2Opacity(0); });
-
-    // ─── Gap 1: 0.8s of pure black (t=6.3 → 7.1) ───
-
-    // ─── Screen 2: The Invitation ───
-    // t=7.1s: "make the unbreakable vow." + glow fades in over 0.8s
-    t(7100, () => { setScreen2Opacity(1); setGlowOpacity(1); });
-
-    // t=10.2s: Screen 2 + glow fades out over 0.6s
-    t(10200, () => { setScreen2Opacity(0); setGlowOpacity(0); });
-
-    // ─── Gap 2: 0.6s of pure black (t=10.8 → 11.4) ───
-
-    // ─── Screen 3: The Consequence ───
-    // t=11.4s: "break it, and pay the price." fades in over 0.8s
-    t(11400, () => setScreen3Opacity(0.85));
-
-    // t=14.5s: Cross-fade to home begins (0.6s)
-    t(14500, () => finish());
+    if (reducedMotion) {
+      // Reduced motion: all lines immediately, CTA after 500ms
+      setLine1Visible(true);
+      setLine2Visible(true);
+      setLine3Visible(true);
+      t(500, () => setCtaVisible(true));
+    } else {
+      // Full sequence: ~2.7s
+      // 0.0s — line 1 fades in (400ms ease-out)
+      setLine1Visible(true);
+      // 1.0s — line 2 fades in
+      t(1000, () => setLine2Visible(true));
+      // 2.0s — line 3 fades in
+      t(2000, () => setLine3Visible(true));
+      // 2.4s — CTA fades in
+      t(2400, () => setCtaVisible(true));
+    }
 
     return () => timersRef.current.forEach(clearTimeout);
-  }, [reducedMotion, finish]);
+  }, [reducedMotion]);
 
-  // Reduced motion: render all 3 lines stacked
-  if (reducedMotion) {
-    return (
-      <div
-        role="dialog"
-        aria-live="polite"
-        style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: '#0F0D0A',
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center',
-          gap: 16,
-          opacity: crossfade ? 0 : 1,
-          transition: 'opacity 600ms ease',
-        }}
-      >
-        <p style={{
-          fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic',
-          fontSize: 22, fontWeight: 400, color: 'rgba(240,233,219,0.95)',
-          textAlign: 'center', lineHeight: 1.35, margin: 0,
-          maxWidth: 320, padding: '0 24px',
-        }}>
-          you said you&apos;d do it.
-        </p>
-        <p style={{
-          fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic',
-          fontSize: 22, fontWeight: 400, color: 'rgba(240,233,219,0.95)',
-          textAlign: 'center', lineHeight: 1.35, margin: 0,
-          maxWidth: 320, padding: '0 24px',
-        }}>
-          you didn&apos;t.
-        </p>
-        <p style={{
-          fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic',
-          fontSize: 28, fontWeight: 400, color: '#C89B3C',
-          textAlign: 'center', lineHeight: 1.35, margin: 0,
-          padding: '16px 24px 0',
-        }}>
-          make the unbreakable vow.
-        </p>
-        <p style={{
-          fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic',
-          fontSize: 26, fontWeight: 400, color: 'rgba(240,233,219,0.85)',
-          textAlign: 'center', lineHeight: 1.4, margin: 0,
-          padding: '0 24px',
-        }}>
-          break it, and pay the price.
-        </p>
-      </div>
-    );
-  }
+  const lineBase: React.CSSProperties = {
+    fontFamily: 'var(--uv-font-serif)',
+    fontSize: 32,
+    fontWeight: 400,
+    color: 'var(--uv-gold)',
+    textAlign: 'center',
+    lineHeight: 1.35,
+    margin: 0,
+    transition: reducedMotion ? 'none' : 'opacity 400ms ease-out',
+  };
 
   return (
     <div
@@ -159,129 +78,49 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
       aria-live="polite"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: '#0F0D0A',
+        background: 'var(--uv-bg)',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        opacity: crossfade ? 0 : 1,
-        transition: 'opacity 600ms ease',
-        overflow: 'hidden',
       }}
     >
-      {/* ─── Screen 1: "The Mirror" — white on black ─── */}
+      {/* ─── Oath lines ─── */}
       <div style={{
-        position: 'absolute', zIndex: 1,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        maxWidth: 320, padding: '0 24px',
-        pointerEvents: 'none',
-      }}>
-        <p style={{
-          fontFamily: 'var(--uv-font-serif)',
-          fontStyle: 'italic',
-          fontSize: 22,
-          fontWeight: 400,
-          color: 'rgba(240,233,219,0.95)',
-          textAlign: 'center',
-          lineHeight: 1.35,
-          margin: 0,
-          opacity: line1Opacity,
-          transition: `opacity 1.0s cubic-bezier(0.33, 1, 0.68, 1)`,
-        }}>
-          you said you&apos;d do it.
-        </p>
-        <p style={{
-          fontFamily: 'var(--uv-font-serif)',
-          fontStyle: 'italic',
-          fontSize: 22,
-          fontWeight: 400,
-          color: 'rgba(240,233,219,0.95)',
-          textAlign: 'center',
-          lineHeight: 1.35,
-          margin: 0,
-          paddingTop: 16,
-          opacity: line2Opacity,
-          transition: `opacity 0.6s cubic-bezier(0.33, 1, 0.68, 1)`,
-        }}>
-          you didn&apos;t.
-        </p>
-      </div>
-
-      {/* ─── Screen 2: "The Invitation" — gold on black with ember glow ─── */}
-      <div style={{
-        position: 'absolute', zIndex: 1,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        pointerEvents: 'none',
-      }}>
-        {/* Gold ember glow */}
-        <div style={{
-          position: 'absolute',
-          width: 400, height: 400,
-          background: 'radial-gradient(circle, rgba(200,155,60,0.08), transparent 60%)',
-          filter: 'blur(50px)',
-          opacity: glowOpacity,
-          transition: `opacity 0.8s cubic-bezier(0.33, 1, 0.68, 1)`,
-          top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-        }} />
-        <p style={{
-          fontFamily: 'var(--uv-font-serif)',
-          fontStyle: 'italic',
-          fontSize: 28,
-          fontWeight: 400,
-          color: '#C89B3C',
-          textAlign: 'center',
-          lineHeight: 1.35,
-          margin: 0,
-          padding: '0 24px',
-          opacity: screen2Opacity,
-          transition: `opacity 0.8s cubic-bezier(0.33, 1, 0.68, 1)`,
-          position: 'relative',
-          zIndex: 1,
-        }}>
-          make the unbreakable vow.
-        </p>
-      </div>
-
-      {/* ─── Screen 3: "The Consequence" — dim white on black ─── */}
-      <p style={{
-        position: 'absolute', zIndex: 1,
-        fontFamily: 'var(--uv-font-serif)',
-        fontStyle: 'italic',
-        fontSize: 26,
-        fontWeight: 400,
-        color: 'rgba(240,233,219,0.85)',
-        textAlign: 'center',
-        lineHeight: 1.4,
-        margin: 0,
+        display: 'flex', flexDirection: 'column',
+        alignItems: 'center', gap: 10,
         padding: '0 24px',
-        opacity: screen3Opacity,
-        transition: `opacity 0.8s cubic-bezier(0.33, 1, 0.68, 1)`,
-        pointerEvents: 'none',
       }}>
-        break it, and pay the price.
-      </p>
+        <p style={{ ...lineBase, opacity: line1Visible ? 1 : 0 }}>
+          I solemnly swear
+        </p>
+        <p style={{ ...lineBase, opacity: line2Visible ? 1 : 0 }}>
+          to keep my word this week
+        </p>
+        <p style={{
+          ...lineBase,
+          fontStyle: 'italic',
+          fontSize: 24,
+          color: 'var(--uv-text-muted)',
+          opacity: line3Visible ? 1 : 0,
+        }}>
+          or else.
+        </p>
+      </div>
 
-      {/* Skip — bottom-right, appears at t=4.0s */}
-      <button
-        onClick={skip}
-        style={{
-          position: 'absolute',
-          bottom: 32,
-          right: 24,
-          background: 'none',
-          border: 'none',
-          padding: '8px 12px',
-          cursor: 'pointer',
-          fontFamily: 'var(--uv-font-sans)',
-          fontSize: 13,
-          color: 'rgba(240,233,219,0.4)',
-          opacity: showSkip ? 1 : 0,
-          transition: 'opacity 0.6s ease',
-          pointerEvents: showSkip ? 'auto' : 'none',
-          zIndex: 2,
-        }}
-      >
-        skip
-      </button>
+      {/* ─── CTA anchored to bottom ─── */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0, left: 0, right: 0,
+        padding: '0 24px',
+        paddingBottom: 'max(24px, env(safe-area-inset-bottom))',
+        opacity: ctaVisible ? 1 : 0,
+        transition: reducedMotion ? 'none' : 'opacity 400ms ease-out',
+        pointerEvents: ctaVisible ? 'auto' : 'none',
+      }}>
+        <GoldCTA
+          label="I swear it →"
+          onPress={finish}
+        />
+      </div>
     </div>
   );
 }
