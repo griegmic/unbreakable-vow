@@ -644,8 +644,6 @@ export default function HomePage() {
           <strong style={{ fontWeight: 600, color: 'var(--uv-text)' }}>60 seconds</strong>
           <span style={{ color: 'var(--uv-text-muted)', margin: '0 6px' }}>&middot;</span>
           No signup
-          <span style={{ color: 'var(--uv-text-muted)', margin: '0 6px' }}>&middot;</span>
-          No card yet
         </div>
       </div>
 
