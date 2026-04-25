@@ -396,33 +396,108 @@ export default function SealPage() {
   }, [ensureDraftVow, sealing, router, resetVow]);
 
   const handleAuthSuccess = useCallback(async () => {
-    // CRITICAL: Set authCompletedRef BEFORE setStep so the useEffect guard
-    // doesn't yank us back to 'auth' during the race window where
-    // isAuthenticated hasn't propagated yet.
+    // NUCLEAR FIX: After OTP verification, the session is guaranteed valid
+    // RIGHT NOW. Don't wait, don't change step, don't let any useEffect
+    // interfere. Seal immediately using the live session.
     authCompletedRef.current = true;
     setError('');
-    setStep('review');
 
-    // Wait for Supabase session to fully settle, then auto-seal.
-    // The user already tapped "Seal" once — don't make them tap again.
-    await new Promise(r => setTimeout(r, 500));
-
-    // Verify we actually have a session before proceeding
-    const sess = await getValidSession();
-    if (!sess) {
-      // Truly no session — force re-auth
-      authCompletedRef.current = false;
-      setStep('auth');
-      return;
-    }
-
-    // Auto-trigger the seal flow
+    // Don't set step to 'review' — go straight to sealing.
+    // Setting step='review' then waiting created a race window where
+    // useEffects and re-renders could yank the user back to 'auth'.
     if (vow.stake.amount === 0) {
-      handleZeroStakeSeal();
+      // Zero-stake: seal inline right now
+      if (sealingRef.current) return;
+      sealingRef.current = true;
+      setSealing(true);
+      setStep('review'); // Show review UI with "Sealing..." button state
+      try {
+        const draft = await ensureDraftVow();
+        if (!draft || !draft.id) {
+          if (draft?.error === '__needs_auth__') {
+            // This should never happen — we JUST authed. But handle it.
+            authCompletedRef.current = false;
+            setStep('auth');
+            sealingRef.current = false;
+            setSealing(false);
+            return;
+          }
+          throw new Error(draft?.error || 'Could not create vow. Please try again.');
+        }
+        const result = await callSealVow(draft.id, { skip_payment: true });
+        if (!result.ok) {
+          if (result.error === '__needs_auth__') {
+            authCompletedRef.current = false;
+            setStep('auth');
+            sealingRef.current = false;
+            setSealing(false);
+            return;
+          }
+          throw new Error(result.error || 'Could not activate your vow. Please try again.');
+        }
+        resetVow();
+        router.push('/sent');
+      } catch (err) {
+        console.error('Post-auth seal error:', err);
+        setError(err instanceof Error ? err.message : 'Could not seal your vow. Please try again.');
+        sealingRef.current = false;
+        setSealing(false);
+      }
     } else {
-      createVowAndPay();
+      // Staked: need payment — go to payment flow inline
+      if (sealingRef.current) return;
+      sealingRef.current = true;
+      setSealing(true);
+      setStep('review'); // Show review UI with "Sealing..." button state
+      try {
+        const draft = await ensureDraftVow();
+        if (!draft || !draft.id) {
+          if (draft?.error === '__needs_auth__') {
+            authCompletedRef.current = false;
+            setStep('auth');
+            sealingRef.current = false;
+            setSealing(false);
+            return;
+          }
+          throw new Error(draft?.error || 'Could not create vow. Please try again.');
+        }
+        const { data: siData, error: siError } = await supabase.functions.invoke('save-card', {
+          body: { vow_id: draft.id },
+        });
+        if (siError) {
+          let detail = siError.message;
+          try {
+            if (typeof (siError as any).context?.json === 'function') {
+              const body = await (siError as any).context.json();
+              detail = body?.error || body?.message || detail;
+            } else if (typeof (siError as any).context?.text === 'function') {
+              const text = await (siError as any).context.text();
+              detail = text || detail;
+            }
+          } catch {}
+          if (detail?.includes('Unauthorized') || detail?.includes('JWT') || detail?.includes('401')) {
+            authCompletedRef.current = false;
+            setStep('auth');
+            sealingRef.current = false;
+            setSealing(false);
+            return;
+          }
+          throw new Error(`Payment: ${detail}`);
+        }
+        const secret = siData?.clientSecret || siData?.client_secret;
+        if (!secret) {
+          throw new Error(`No client secret. Response: ${JSON.stringify(siData)}`);
+        }
+        setClientSecret(secret);
+        setStep('payment');
+      } catch (err) {
+        console.error('Post-auth payment error:', err);
+        setError(err instanceof Error ? err.message : 'Payment setup failed. Please try again.');
+        sealingRef.current = false;
+        setSealing(false);
+      }
     }
-  }, [ensureDraftVow, vow.stake.amount, handleZeroStakeSeal, createVowAndPay]);
+  }, [vow.stake.amount, ensureDraftVow, callSealVow, router, resetVow]);
 
   const handlePaymentSuccess = async () => {
     setStep('sealing');
