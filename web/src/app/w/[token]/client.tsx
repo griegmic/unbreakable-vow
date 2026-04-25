@@ -1,5 +1,6 @@
 'use client';
 import { useState } from 'react';
+import Link from 'next/link';
 import { Check } from 'lucide-react';
 import { FrauncesH1, FrauncesSub, GoldCTA, MutedSecondary, TimelineCard } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
@@ -181,9 +182,10 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     }
   };
 
+  const displayMakerName = makerName.replace(/\D/g, '').length >= 7 ? 'Your friend' : makerName;
   // Use first name only for intimacy
-  const makerFirstName = makerName === 'Your friend' ? 'Your friend' : makerName.split(' ')[0];
-  const makerLabel = makerName === 'Your friend' ? 'your friend' : makerFirstName;
+  const makerFirstName = displayMakerName === 'Your friend' ? 'Your friend' : displayMakerName.split(' ')[0];
+  const makerLabel = displayMakerName === 'Your friend' ? 'your friend' : makerFirstName;
 
   const endDate = vow.ends_at
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
@@ -213,9 +215,9 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               {msg.subtitle}
             </p>
           </div>
-          <a href="/" style={{ textDecoration: 'none' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
             <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -341,8 +343,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
               {/* H1 per §3.2 S16 */}
               <div style={{ textAlign: 'center' }}>
-                {/* TODO-MOCK-REFRESH: hardcoded "him" to match mock. Final impl needs pronoun derivation from schema. */}
-                <FrauncesH1 italic size="page">{makerFirstName} knows<br/>you&apos;ve got <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>him.</em></FrauncesH1>
+                <FrauncesH1 italic size="page">{makerFirstName} knows<br/>you&apos;ve got <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>them.</em></FrauncesH1>
               </div>
 
               {/* Sub per §3.2 S16 */}
@@ -374,8 +375,15 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
               {/* Footer per mock: preview text + micro */}
               <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 12, lineHeight: 1.4, color: 'var(--uv-text-dim)' }}>
-                Opens Messages with: <em style={{ color: 'var(--uv-text-muted)', fontStyle: 'italic' }}>&ldquo;I&apos;ve got you. See you Sunday.&rdquo;</em>
+                Opens Messages with: <em style={{ color: 'var(--uv-text-muted)', fontStyle: 'italic' }}>&ldquo;Just accepted your vow. I&apos;m watching.&rdquo;</em>
               </div>
+
+              {/* Early-accept note for draft/sealed vows */}
+              {(vow.status === 'draft' || vow.status === 'sealed') && (
+                <p style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontStyle: 'italic', color: 'var(--uv-text-dim)', margin: '4px 0 0' }}>
+                  {makerFirstName} is still setting things up. We&apos;ll text you when the vow goes live.
+                </p>
+              )}
             </>
           )}
         </div>
@@ -402,13 +410,13 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <a href="/" style={{ textDecoration: 'none' }}>
+            <Link href="/" style={{ textDecoration: 'none' }}>
               <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
-            </a>
+            </Link>
             <div style={{ textAlign: 'center' }}>
-              <a href={`/?ref=witness&dare=${encodeURIComponent(makerFirstName)}`} style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}>
+              <Link href={`/?ref=witness&dare=${encodeURIComponent(makerFirstName)}`} style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}>
                 Dare {makerFirstName} &rarr;
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -483,8 +491,29 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       </p>
 
       {/* Oath checkbox — product addition, not in mock */}
-      <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', padding: '8px 0' }}>
-        <input type="checkbox" checked={sworn} onChange={(e) => setSworn(e.target.checked)} style={{ width: 20, height: 20, accentColor: 'var(--uv-gold)' }} />
+      <label style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, cursor: 'pointer', padding: '8px 0' }}>
+        <input
+          type="checkbox"
+          checked={sworn}
+          onChange={(e) => setSworn(e.target.checked)}
+          style={{ position: 'absolute', opacity: 0, width: 1, height: 1 }}
+        />
+        <span
+          aria-hidden="true"
+          style={{
+            width: 21,
+            height: 21,
+            flex: '0 0 21px',
+            borderRadius: 6,
+            border: sworn ? '1px solid var(--uv-gold)' : '1px solid var(--uv-border-strong)',
+            background: sworn ? 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold))' : 'rgba(238,231,215,0.04)',
+            boxShadow: sworn ? '0 0 20px rgba(200,155,60,0.16)' : 'inset 0 1px 0 rgba(255,255,255,0.03)',
+            display: 'grid',
+            placeItems: 'center',
+          }}
+        >
+          {sworn && <Check style={{ width: 14, height: 14, color: 'var(--uv-text-on-gold)', strokeWidth: 3 }} />}
+        </span>
         <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 15, color: 'var(--uv-text-muted)' }}>
           I swear to keep {makerLabel} accountable
         </span>
@@ -501,11 +530,6 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <GoldCTA label="I'm in →" onPress={handleAccept} disabled={!sworn || busy} />
           <MutedSecondary label="Pass — I can't" onPress={handleDecline} />
-        </div>
-        {/* "First time? How this works →" per mock */}
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--uv-text-dim)', marginTop: 12, lineHeight: 1.5 }}>
-          <em style={{ color: 'var(--uv-text-muted)', fontStyle: 'italic' }}>First time?</em>{' '}
-          <a href="#" onClick={(e) => e.preventDefault()} style={{ color: 'var(--uv-gold)', textDecoration: 'none' }}>How this works &rarr;</a>
         </div>
       </div>
 
