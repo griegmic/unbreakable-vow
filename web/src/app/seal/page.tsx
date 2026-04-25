@@ -597,13 +597,11 @@ export default function SealPage() {
     setPhoneError('');
     setPhoneBusy(true);
 
-    // Check if already authenticated (auth may have loaded late)
-    const { data: { session: existingSession } } = await supabase.auth.getSession();
-    if (existingSession) {
-      setPhoneBusy(false);
-      handleAuthSuccess();
-      return;
-    }
+    // DO NOT check for existing session here. If the user is on the auth
+    // screen entering their phone, they want to authenticate. A stale/expired
+    // session from a previous attempt would short-circuit this and create
+    // an infinite loop where the user can never get past auth.
+    // Always send a fresh OTP.
 
     const formattedPhone = `+1${digits}`;
     const { error: otpError } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
