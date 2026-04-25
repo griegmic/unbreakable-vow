@@ -209,9 +209,11 @@ export default function SealPage() {
       setError('');
 
       // Proactively refresh session before payment flow to prevent token expiry
-      await supabase.auth.refreshSession();
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) {
+      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+      const currentSession = refreshed?.session ?? (await supabase.auth.getSession()).data.session;
+      if (!currentSession || refreshErr) {
+        // Session truly gone — force re-auth
+        setError('');
         setStep('auth');
         sealingRef.current = false;
         setSealing(false);
@@ -268,8 +270,10 @@ export default function SealPage() {
     setSealing(true);
     try {
       setError('');
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      if (!currentSession) {
+      // Proactively refresh session before zero-stake seal
+      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+      const currentSession = refreshed?.session ?? (await supabase.auth.getSession()).data.session;
+      if (!currentSession || refreshErr) {
         setStep('auth');
         sealingRef.current = false;
         setSealing(false);
@@ -334,8 +338,11 @@ export default function SealPage() {
 
   const handleAuthSuccess = async () => {
     setStep('review');
+    // Poll for session availability after auth callback
     const maxAttempts = 10;
     for (let i = 0; i < maxAttempts; i++) {
+      // Try refresh first to ensure we have a fresh token
+      await supabase.auth.refreshSession();
       const { data: { session: freshSession } } = await supabase.auth.getSession();
       if (freshSession) {
         await ensureDraftVow();
