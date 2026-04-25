@@ -380,11 +380,11 @@ export default function HomePage() {
   }
 
   return (
-    <RitualScreen>
+    <RitualScreen variant="utility">
       {/* ─── Brand header ─── */}
       <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        marginBottom: 44, marginTop: 8,
+        marginBottom: 36, marginTop: 4,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           {/* Diamond seal */}
@@ -430,7 +430,7 @@ export default function HomePage() {
       </FrauncesH1>
 
       {/* ─── Subtitle ─── */}
-      <div style={{ marginTop: 24 }}>
+      <div style={{ marginTop: 18 }}>
         <FrauncesSub>
           <span style={{ maxWidth: 320, display: 'block' }}>
             <strong style={{ color: 'var(--uv-text)', fontWeight: 500 }}>Flake and lose it all.</strong>{' '}
@@ -442,7 +442,7 @@ export default function HomePage() {
       {/* ─── Input label ─── */}
       <div style={{
         fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 13,
-        color: 'var(--uv-gold)', marginTop: 28, marginBottom: 8,
+        color: 'var(--uv-gold)', marginTop: 24, marginBottom: 8,
         letterSpacing: '0.01em',
       }}>
         I vow to&hellip;
@@ -581,7 +581,7 @@ export default function HomePage() {
       {/* ─── Starter chips ─── */}
       <div style={{
         fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase' as const,
-        color: 'var(--uv-text-dim)', marginTop: 24, marginBottom: 10, fontWeight: 500,
+        color: 'var(--uv-text-dim)', marginTop: 18, marginBottom: 10, fontWeight: 500,
         fontFamily: 'var(--uv-font-sans)',
       }}>
         Tap one to start
