@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { RitualScreen, GoldCTA, FrauncesH1, FrauncesSub } from '@/components/primitives';
+import { RitualScreen, FrauncesH1, FrauncesSub } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 import { AuthModal } from '@/components/auth-modal';
@@ -10,7 +10,7 @@ import { inferDeadline, analyzeVow } from '@/lib/vow-logic';
 const STARTER_CHIPS = [
   'Gym 3x this week',
   'No texting my ex',
-  'No alcohol, 2 weeks',
+  'Dry, 2 weeks',
 ];
 
 // ─── Ceremony ───────────────────────────────────────────────────────────────
@@ -433,7 +433,8 @@ export default function HomePage() {
       <div style={{ marginTop: 24 }}>
         <FrauncesSub>
           <span style={{ maxWidth: 320, display: 'block' }}>
-            Stake cash on your word. Your friend judges. Flake and lose it all.
+            <strong style={{ color: 'var(--uv-text)', fontWeight: 500 }}>Flake and lose it all.</strong>{' '}
+            Stake real cash on your word. Your friend judges. No mercy.
           </span>
         </FrauncesSub>
       </div>
@@ -448,15 +449,17 @@ export default function HomePage() {
       </div>
 
       {/* ─── Input field ─── */}
+      <style>{`.uv-home-input::placeholder { font-style: italic; opacity: 0.5; }`}</style>
       <input
         ref={inputRef}
         type="text"
+        className="uv-home-input"
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
         placeholder="no phone after 10pm"
         style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 21, fontWeight: 400,
+          fontFamily: 'var(--uv-font-serif)', fontSize: 26, fontWeight: 400,
           color: 'var(--uv-text)',
           background: 'transparent',
           border: 'none', borderBottom: '1px solid var(--uv-gold-line)',
@@ -581,7 +584,7 @@ export default function HomePage() {
         color: 'var(--uv-text-dim)', marginTop: 24, marginBottom: 10, fontWeight: 500,
         fontFamily: 'var(--uv-font-sans)',
       }}>
-        Or start with
+        Tap one to start
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7 }}>
         {STARTER_CHIPS.map((chip) => (
@@ -603,17 +606,46 @@ export default function HomePage() {
 
       {/* ─── Footer ─── */}
       <div style={{ marginTop: 'auto' }}>
-        <GoldCTA
-          label="Make my vow →"
-          onPress={handleSubmit}
+        <button
+          onClick={handleSubmit}
           disabled={!inputText.trim()}
-        />
+          style={{
+            background: 'var(--uv-text)',
+            color: 'var(--uv-bg)',
+            border: 'none',
+            borderRadius: 14,
+            padding: 17,
+            fontFamily: 'var(--uv-font-serif)',
+            fontSize: 19,
+            fontWeight: 600,
+            letterSpacing: '0.01em',
+            boxShadow: '0 0 40px rgba(244,237,224,0.12)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            width: '100%',
+            cursor: 'pointer',
+            opacity: inputText.trim() ? 1 : 0.4,
+            transition: 'transform 0.12s ease, opacity 0.2s ease',
+          }}
+          onMouseDown={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.98)'; }}
+          onMouseUp={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
+          onTouchStart={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(0.98)'; }}
+          onTouchEnd={(e) => { (e.currentTarget as HTMLButtonElement).style.transform = 'scale(1)'; }}
+        >
+          Make my vow &rarr;
+        </button>
         <div style={{
           textAlign: 'center', fontSize: 11, color: 'var(--uv-text-dim)',
           marginTop: 14, fontFamily: 'var(--uv-font-sans)',
         }}>
-          <em style={{ fontStyle: 'italic', color: 'var(--uv-text-muted)' }}>60 seconds.</em>{' '}
-          No account needed yet.
+          <strong style={{ fontWeight: 600, color: 'var(--uv-text)' }}>60 seconds</strong>
+          <span style={{ color: 'var(--uv-text-muted)', margin: '0 6px' }}>&middot;</span>
+          No signup
+          <span style={{ color: 'var(--uv-text-muted)', margin: '0 6px' }}>&middot;</span>
+          No card yet
         </div>
       </div>
 
