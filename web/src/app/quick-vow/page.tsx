@@ -221,6 +221,20 @@ export default function QuickVowPage() {
             )}
           </div>
 
+          {/* Step-by-step link */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+            <button
+              onClick={() => router.push('/')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 500,
+                color: 'var(--uv-text-dim)',
+              }}
+            >
+              Step-by-step →
+            </button>
+          </div>
+
           {/* ── Vow Card ── */}
           <div style={{
             background: 'var(--uv-bg-card)',
