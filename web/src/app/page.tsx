@@ -471,7 +471,6 @@ export default function HomePage() {
       {/* ─── Verdict date pill (hidden until user types) ─── */}
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 10,
-        marginTop: 16,
         padding: '8px 14px 8px 12px',
         border: '1px solid var(--uv-gold-line)',
         background: 'var(--uv-gold-soft)',
@@ -480,7 +479,10 @@ export default function HomePage() {
         color: 'var(--uv-text)',
         letterSpacing: '-0.005em',
         opacity: inputText.trim() ? 1 : 0,
-        transition: 'opacity 0.3s ease',
+        maxHeight: inputText.trim() ? 60 : 0,
+        marginTop: inputText.trim() ? 16 : 0,
+        overflow: 'hidden',
+        transition: 'opacity 0.3s ease, max-height 0.3s ease, margin-top 0.3s ease',
         pointerEvents: inputText.trim() ? 'auto' as const : 'none' as const,
       }}>
         {/* Gold dot with glow */}
@@ -605,7 +607,7 @@ export default function HomePage() {
       </div>
 
       {/* ─── Footer ─── */}
-      <div style={{ marginTop: 'auto' }}>
+      <div style={{ marginTop: 'auto', paddingTop: 24 }}>
         <button
           onClick={handleSubmit}
           disabled={!inputText.trim()}
