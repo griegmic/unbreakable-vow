@@ -42,7 +42,7 @@ function formatPhoneDisplay(digits: string): string {
 
 export default function SealPage() {
   const router = useRouter();
-  const { vow, activeVowText, isSelfWitness, setVowId } = useVowFlow();
+  const { vow, activeVowText, isSelfWitness, setVowId, resetVow } = useVowFlow();
   const { isAuthenticated, session, loading: authLoading } = useAuth();
   const [step, setStep] = useState<SealStep>('review');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
@@ -82,6 +82,14 @@ export default function SealPage() {
       timersRef.current.forEach(clearTimeout);
     };
   }, []);
+
+  // When auth finishes loading and user is not authenticated, show auth UI
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated && step === 'review') {
+      setStep('auth');
+    }
+  }, [authLoading, isAuthenticated, step]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -311,6 +319,7 @@ export default function SealPage() {
         }
         throw new Error(result.error || 'Could not activate your vow. Please try again.');
       }
+      resetVow();
       router.push('/sent');
     } catch (err) {
       console.error('Zero-stake seal error:', err);
@@ -318,7 +327,7 @@ export default function SealPage() {
       sealingRef.current = false;
       setSealing(false);
     }
-  }, [vow, ensureDraftVow, callSealVow, router]);
+  }, [vow, ensureDraftVow, callSealVow, router, resetVow]);
 
   const handleSealTap = async () => {
     if (authLoading) return;
@@ -350,6 +359,7 @@ export default function SealPage() {
       const t2 = setTimeout(() => setSealAnimPhase(3), 800);
       const t3 = setTimeout(() => {
         setStep('done');
+        resetVow();
         router.push('/sent');
       }, 1400);
       timersRef.current.push(t1, t2, t3);
@@ -358,9 +368,9 @@ export default function SealPage() {
       setError(err instanceof Error ? err.message : 'Dev bypass failed. Check console for details.');
       setSealing(false);
     }
-  }, [ensureDraftVow, sealing, router]);
+  }, [ensureDraftVow, sealing, router, resetVow]);
 
-  const handleAuthSuccess = async () => {
+  const handleAuthSuccess = useCallback(async () => {
     // After auth, just show the review step. Clear any errors.
     // The user will tap "Seal" themselves, which calls createVowAndPay/handleZeroStakeSeal
     // with a fresh session — no race condition.
@@ -372,7 +382,7 @@ export default function SealPage() {
     } catch {
       // Non-critical — draft will be created when they tap Seal
     }
-  };
+  }, [ensureDraftVow]);
 
   const handlePaymentSuccess = async () => {
     setStep('sealing');
@@ -397,6 +407,7 @@ export default function SealPage() {
     const t2 = setTimeout(() => setSealAnimPhase(3), 800);
     const t3 = setTimeout(() => {
       setStep('done');
+      resetVow();
       router.push('/sent');
     }, 1400);
     timersRef.current.push(t1, t2, t3);
@@ -474,7 +485,8 @@ export default function SealPage() {
     // Check if already authenticated (auth may have loaded late)
     const { data: { session: existingSession } } = await supabase.auth.getSession();
     if (existingSession) {
-      window.location.reload();
+      setPhoneBusy(false);
+      handleAuthSuccess();
       return;
     }
 
@@ -497,7 +509,7 @@ export default function SealPage() {
     setOtp(['', '', '', '', '', '']);
     setPhoneStep('otp');
     setTimeout(() => otpRefs.current[0]?.focus(), 100);
-  }, [phone, startCooldown]);
+  }, [phone, startCooldown, handleAuthSuccess]);
 
   // ── OTP verification ──
   const handleVerifyOtp = useCallback(async (code?: string) => {
@@ -533,7 +545,7 @@ export default function SealPage() {
 
     // Auth success — trigger the seal flow
     handleAuthSuccess();
-  }, [otp, phone, phoneBusy]);
+  }, [otp, phone, phoneBusy, handleAuthSuccess]);
 
   // ── OTP input handlers ──
   const handleOtpChange = useCallback((index: number, value: string) => {
@@ -684,8 +696,8 @@ export default function SealPage() {
     : '7 days';
 
   // ── NEEDS AUTH: show phone/Google sign-in ──
-  // Show auth view if not authenticated OR if session was lost mid-flow (step forced to 'auth')
-  if ((!isAuthenticated && !authLoading) || step === 'auth') {
+  // Only show auth when explicitly requested via step — avoids race with isAuthenticated propagation after OTP
+  if (step === 'auth') {
     return (
       <RitualScreen>
         <style>{`
@@ -725,8 +737,8 @@ export default function SealPage() {
                     ref={(el) => { otpRefs.current[i] = el; }}
                     type="text"
                     inputMode="numeric"
-                    maxLength={i === 0 ? 6 : 1}
-                    autoComplete={i === 0 ? 'one-time-code' : 'off'}
+                    maxLength={6}
+                    autoComplete="one-time-code"
                     value={digit}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
@@ -1085,6 +1097,7 @@ export default function SealPage() {
             const t2 = setTimeout(() => setSealAnimPhase(3), 800);
             const t3 = setTimeout(() => {
               setStep('done');
+              resetVow();
               router.push('/sent');
             }, 1400);
             timersRef.current.push(t1, t2, t3);
