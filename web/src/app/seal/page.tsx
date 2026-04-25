@@ -12,6 +12,18 @@ import { getVowVerdictDate } from '@/lib/vow-logic';
 
 type SealStep = 'review' | 'auth' | 'payment' | 'sealing' | 'done';
 
+/** Try to get a valid session, attempting refresh first then falling back to getSession. */
+async function getValidSession() {
+  // Try refresh first — this handles stale tokens
+  try {
+    const { data: refreshed } = await supabase.auth.refreshSession();
+    if (refreshed?.session) return refreshed.session;
+  } catch {}
+  // Fall back to getSession — works for freshly-created sessions (e.g. phone OTP)
+  const { data } = await supabase.auth.getSession();
+  return data.session ?? null;
+}
+
 /** Ensure a public.users row exists before inserting a vow (foreign key requirement). */
 async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, email?: string) {
   await supabase.from('users').upsert(
@@ -116,14 +128,8 @@ export default function SealPage() {
 
     const doCreate = async (): Promise<{ id: string; error?: string } | null> => {
       try {
-        // Try getSession first (works for freshly-created sessions like phone OTP),
-        // fall back to refreshSession if the token might be stale.
-        let s = (await supabase.auth.getSession()).data.session;
-        if (!s) {
-          const { data, error: sessErr } = await supabase.auth.refreshSession();
-          s = data.session;
-          if (sessErr || !s) return { id: '', error: 'Not signed in. Please sign in and try again.' };
-        }
+        const s = await getValidSession();
+        if (!s) return { id: '', error: '__needs_auth__' };
 
         await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
 
@@ -173,10 +179,8 @@ export default function SealPage() {
     let lastError = '';
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        // Proactively refresh session before each seal attempt to prevent token expiry
-        await supabase.auth.refreshSession();
-        const { data: { session: s } } = await supabase.auth.getSession();
-        if (!s) return { ok: false, error: 'Session expired. Please sign in again.' };
+        const s = await getValidSession();
+        if (!s) return { ok: false, error: '__needs_auth__' };
         const { error: sealError } = await supabase.functions.invoke('seal-vow', {
           body: { vow_id: vowId, ...(opts?.skip_payment ? { skip_payment: true } : {}) },
         });
@@ -208,12 +212,10 @@ export default function SealPage() {
     try {
       setError('');
 
-      // Proactively refresh session before payment flow to prevent token expiry
-      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
-      const currentSession = refreshed?.session ?? (await supabase.auth.getSession()).data.session;
-      if (!currentSession || refreshErr) {
-        // Session truly gone — force re-auth
-        setError('');
+      // Verify session before payment flow
+      const currentSession = await getValidSession();
+      if (!currentSession) {
+        // Session gone — silently show auth form, no error message needed
         setStep('auth');
         sealingRef.current = false;
         setSealing(false);
@@ -221,7 +223,16 @@ export default function SealPage() {
       }
 
       const draft = await ensureDraftVow();
-      if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
+      if (!draft || !draft.id) {
+        // If draft failed because auth is needed, show auth form silently
+        if (draft?.error === '__needs_auth__') {
+          setStep('auth');
+          sealingRef.current = false;
+          setSealing(false);
+          return;
+        }
+        throw new Error(draft?.error || 'Could not create vow. Please try again.');
+      }
 
       const { data: siData, error: siError } = await supabase.functions.invoke('save-card', {
         body: { vow_id: draft.id },
@@ -240,7 +251,7 @@ export default function SealPage() {
         } catch {}
 
         if (detail?.includes('Unauthorized') || detail?.includes('JWT') || detail?.includes('401')) {
-          setError('Session expired — please sign in again.');
+          // Auth issue — silently show auth form
           setStep('auth');
           sealingRef.current = false;
           setSealing(false);
@@ -270,10 +281,9 @@ export default function SealPage() {
     setSealing(true);
     try {
       setError('');
-      // Proactively refresh session before zero-stake seal
-      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
-      const currentSession = refreshed?.session ?? (await supabase.auth.getSession()).data.session;
-      if (!currentSession || refreshErr) {
+      // Verify session before zero-stake seal
+      const currentSession = await getValidSession();
+      if (!currentSession) {
         setStep('auth');
         sealingRef.current = false;
         setSealing(false);
@@ -281,10 +291,24 @@ export default function SealPage() {
       }
 
       const draft = await ensureDraftVow();
-      if (!draft || !draft.id) throw new Error(draft?.error || 'Could not create vow. Please try again.');
+      if (!draft || !draft.id) {
+        if (draft?.error === '__needs_auth__') {
+          setStep('auth');
+          sealingRef.current = false;
+          setSealing(false);
+          return;
+        }
+        throw new Error(draft?.error || 'Could not create vow. Please try again.');
+      }
 
       const result = await callSealVow(draft.id, { skip_payment: true });
       if (!result.ok) {
+        if (result.error === '__needs_auth__') {
+          setStep('auth');
+          sealingRef.current = false;
+          setSealing(false);
+          return;
+        }
         throw new Error(result.error || 'Could not activate your vow. Please try again.');
       }
       router.push('/sent');
@@ -337,25 +361,17 @@ export default function SealPage() {
   }, [ensureDraftVow, sealing, router]);
 
   const handleAuthSuccess = async () => {
+    // After auth, just show the review step. Clear any errors.
+    // The user will tap "Seal" themselves, which calls createVowAndPay/handleZeroStakeSeal
+    // with a fresh session — no race condition.
+    setError('');
     setStep('review');
-    // Poll for session availability after auth callback
-    const maxAttempts = 10;
-    for (let i = 0; i < maxAttempts; i++) {
-      // Try refresh first to ensure we have a fresh token
-      await supabase.auth.refreshSession();
-      const { data: { session: freshSession } } = await supabase.auth.getSession();
-      if (freshSession) {
-        await ensureDraftVow();
-        if (vow.stake.amount === 0) {
-          handleZeroStakeSeal();
-        } else {
-          createVowAndPay();
-        }
-        return;
-      }
-      await new Promise(r => setTimeout(r, 300));
+    // Eagerly create draft in background so it's ready when they tap Seal
+    try {
+      await ensureDraftVow();
+    } catch {
+      // Non-critical — draft will be created when they tap Seal
     }
-    setError('Session not found after sign-in. Please try again.');
   };
 
   const handlePaymentSuccess = async () => {
@@ -364,8 +380,12 @@ export default function SealPage() {
     if (vow.vowId) {
       const result = await callSealVow(vow.vowId);
       if (!result.ok) {
-        setError(result.error || 'Your payment went through but we couldn\'t finish sealing. Please try again.');
-        setStep('review');
+        if (result.error === '__needs_auth__') {
+          setStep('auth');
+        } else {
+          setError(result.error || 'Your payment went through but we couldn\'t finish sealing. Please try again.');
+          setStep('review');
+        }
         sealingRef.current = false;
         setSealing(false);
         return;
@@ -428,6 +448,17 @@ export default function SealPage() {
     return () => {
       if (cooldownRef.current) clearInterval(cooldownRef.current);
     };
+  }, []);
+
+  // Refresh session when user returns to tab (handles backgrounded tabs, Safari ITP)
+  useEffect(() => {
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        getValidSession().catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => document.removeEventListener('visibilitychange', handleVisibility);
   }, []);
 
   // ── Phone "Continue" handler — send OTP ──
@@ -635,8 +666,9 @@ export default function SealPage() {
     ? new Date(vow.deadlineIso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
     : '7 days';
 
-  // ── NOT AUTHENTICATED: all-in-one seal page ──
-  if (!isAuthenticated && !authLoading) {
+  // ── NEEDS AUTH: show phone/Google sign-in ──
+  // Show auth view if not authenticated OR if session was lost mid-flow (step forced to 'auth')
+  if ((!isAuthenticated && !authLoading) || step === 'auth') {
     return (
       <RitualScreen>
         <style>{`
