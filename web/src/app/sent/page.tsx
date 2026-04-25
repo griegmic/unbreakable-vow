@@ -104,12 +104,12 @@ export default function SentPage() {
     return () => clearTimeout(t);
   }, [stateB]);
 
-  // State A: "Tell Nick" handler
+  // State A: "Tell witness" handler
   const handleTellWitness = useCallback(() => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
     if (isMobile && vow.witnessPhone) {
       // Open iMessage / SMS with prefilled body
-      window.location.href = `sms:${encodeURIComponent(vow.witnessPhone)}&body=${encodeURIComponent(smsBody)}`;
+      window.location.href = `sms:${vow.witnessPhone}&body=${encodeURIComponent(smsBody)}`;
     } else if (isMobile) {
       // No phone — open SMS with no recipient
       window.location.href = `sms:?&body=${encodeURIComponent(smsBody)}`;
@@ -326,18 +326,18 @@ export default function SentPage() {
 
       {/* H1 */}
       <div style={{ marginBottom: 16 }}>
-        <FrauncesH1>{stateB ? 'Over to Nick.' : 'Sealed.'}</FrauncesH1>
+        <FrauncesH1>{stateB ? `Over to ${witnessName}.` : 'Sealed.'}</FrauncesH1>
       </div>
 
       {/* Sub */}
       <div style={{ marginBottom: 40, maxWidth: 300 }}>
         {stateB ? (
           <FrauncesSub>
-            He&apos;s got <span style={{ color: 'var(--uv-gold-bright)', fontWeight: 500, fontStyle: 'italic' }}>24 hours</span> to accept.<br/>Heckle him until he does.
+            They&apos;ve got <span style={{ color: 'var(--uv-gold-bright)', fontWeight: 500, fontStyle: 'italic' }}>24 hours</span> to accept.<br/>Heckle them until they do.
           </FrauncesSub>
         ) : (
           <FrauncesSub>
-            Now tell <span style={{ color: 'var(--uv-gold)', fontWeight: 500, fontStyle: 'italic' }}>{witnessName}</span>.<br/>He doesn&apos;t know yet.
+            Now tell <span style={{ color: 'var(--uv-gold)', fontWeight: 500, fontStyle: 'italic' }}>{witnessName}</span>.<br/>They don&apos;t know yet.
           </FrauncesSub>
         )}
       </div>

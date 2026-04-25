@@ -1,5 +1,6 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { Check, DollarSign, Share2, CheckCheck, Undo2 } from 'lucide-react';
 import { RitualCard, GoldCTA, OutlinedGoldCTA, EyebrowTag, FrauncesH1, FrauncesSub, Stamp } from '@/components/primitives';
 
@@ -10,15 +11,43 @@ interface Vow {
   destination: string;
   witness_name: string;
   status: string;
+  ends_at: string | null;
 }
 
 type VerdictChoice = 'kept' | 'broken' | null;
 type ViewState = 'choose' | 'confirm' | 'done';
 
+function formatRelativeTime(dateStr: string | null): string {
+  if (!dateStr) return 'recently';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  if (diff < 0) return 'soon';
+  const minutes = Math.floor(diff / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return '1 day ago';
+  return `${days} days ago`;
+}
+
+function formatEndDate(dateStr: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { weekday: 'short' }) + ', ' +
+    d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
 export default function VerdictClient({ vow, token, makerName, targetName }: { vow: Vow; token: string; makerName: string; targetName?: string }) {
   // For challenge vows, the "maker" is the challenger/witness viewing this page,
   // and "targetName" is the person being judged.
-  const judgeName = targetName || makerName;
+  const cleanName = (name: string | undefined, fallback: string) => {
+    if (!name) return fallback;
+    const digits = name.replace(/\D/g, '');
+    return digits.length >= 7 ? fallback : name;
+  };
+  const judgeName = cleanName(targetName || makerName, 'Your friend');
+  const judgeNameInline = judgeName === 'Your friend' ? 'your friend' : judgeName;
   const [choice, setChoice] = useState<VerdictChoice>(null);
   const [view, setView] = useState<ViewState>('choose');
   const [busy, setBusy] = useState(false);
@@ -242,16 +271,16 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
 
           {/* Growth CTAs */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-            <a href="/" style={{ textDecoration: 'none' }}>
+            <Link href="/" style={{ textDecoration: 'none' }}>
               <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
-            </a>
+            </Link>
             <div style={{ textAlign: 'center' }}>
-              <a
+              <Link
                 href={targetName ? '/cast' : `/?ref=witness&from=${encodeURIComponent(makerName)}`}
                 style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}
               >
                 Dare {judgeName} &rarr;
-              </a>
+              </Link>
             </div>
           </div>
         </div>
@@ -326,8 +355,8 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
               </div>
               <div style={{ textAlign: 'right' }}>
                 <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>Vow ended</div>
-                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>2h ago</div>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)', fontStyle: 'italic' }}>Sun, 9:00 PM</div>
+                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>{formatRelativeTime(vow.ends_at)}</div>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)', fontStyle: 'italic' }}>{formatEndDate(vow.ends_at)}</div>
               </div>
             </div>
           )}
@@ -340,9 +369,8 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
           Your call
         </div>
 
-        {/* TODO-MOCK-REFRESH: hardcoded "his" to match mock. Final impl needs pronoun derivation. */}
         <div style={{ textAlign: 'center' }}>
-          <FrauncesH1 italic size="page">Did {judgeName} keep <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>his word?</em></FrauncesH1>
+          <FrauncesH1 italic size="page">Did {judgeNameInline} keep <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>their word?</em></FrauncesH1>
         </div>
 
         {/* Verdict buttons — side-by-side per mock (~120px tall each) */}
@@ -407,7 +435,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
             }}
             style={{ background: 'none', border: 'none', fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)', cursor: 'pointer', padding: 0 }}
           >
-            Need to check? <span style={{ color: 'var(--uv-gold)', fontWeight: 500 }}>Open Messages with {judgeName}</span>
+            Need to check? <span style={{ color: 'var(--uv-gold)', fontWeight: 500 }}>Open Messages with {judgeNameInline}</span>
           </button>
           <p style={{ fontSize: 13, color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic' }}>
             Be honest. They&apos;re counting on it.
@@ -427,7 +455,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
               display: 'flex',
               alignItems: 'center',
               gap: 12,
-              backgroundColor: 'var(--uv-bg-elev)',
+              backgroundColor: 'var(--uv-bg-elevated)',
               border: '1px solid var(--uv-border-strong)',
               boxShadow: 'var(--uv-shadow-xl)',
             }}

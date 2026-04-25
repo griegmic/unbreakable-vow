@@ -6,6 +6,18 @@ interface Props {
   params: Promise<{ token: string }>;
 }
 
+function isPhoneLikeName(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const digits = value.replace(/\D/g, '');
+  return digits.length >= 7 && digits.length >= value.replace(/\s/g, '').length - 2;
+}
+
+function cleanPersonName(value: string | null | undefined, fallback: string): string {
+  const trimmed = value?.trim();
+  if (!trimmed || isPhoneLikeName(trimmed)) return fallback;
+  return trimmed;
+}
+
 export default async function VerdictPage({ params }: Props) {
   const { token } = await params;
   // Use service role key — RLS witness policies were removed for security.
@@ -17,7 +29,7 @@ export default async function VerdictPage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('id, refined_text, stake_amount, destination, witness_name, status, verdict, user_id, vow_type, target_user_id')
+    .select('id, refined_text, stake_amount, destination, witness_name, status, verdict, user_id, vow_type, target_user_id, ends_at')
     .eq('witness_invite_token', token)
     .single();
 
@@ -29,10 +41,10 @@ export default async function VerdictPage({ params }: Props) {
   // Block verdict UI for vows that aren't ready for judgment yet
   if (['draft', 'sealed'].includes(vow.status)) {
     return (
-      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-serif font-bold mb-2" style={{ color: 'var(--text)' }}>Not ready yet</h1>
-          <p className="text-[15px]" style={{ color: 'var(--text-secondary)' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--uv-bg)' }}>
+        <div style={{ textAlign: 'center', padding: '0 24px' }}>
+          <h1 style={{ fontSize: 24, fontFamily: 'var(--uv-font-serif)', fontWeight: 700, marginBottom: 8, color: 'var(--uv-text)' }}>Not ready yet</h1>
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)' }}>
             This vow hasn&apos;t reached its verdict date yet. You&apos;ll get a notification when it&apos;s time to judge.
           </p>
         </div>
@@ -41,14 +53,14 @@ export default async function VerdictPage({ params }: Props) {
   }
 
   // Get the vow maker's name for the reciprocity CTA
-  let makerName = 'your friend';
+  let makerName = 'Your friend';
   if (vow.user_id) {
     const { data: user } = await supabase
       .from('users')
       .select('display_name')
       .eq('id', vow.user_id)
       .single();
-    if (user?.display_name) makerName = user.display_name;
+    makerName = cleanPersonName(user?.display_name, 'Your friend');
   }
 
   // For challenge vows, get the target's name (the person being judged)
@@ -59,16 +71,16 @@ export default async function VerdictPage({ params }: Props) {
       .select('display_name')
       .eq('id', vow.target_user_id)
       .single();
-    if (targetUser?.display_name) targetName = targetUser.display_name;
+    targetName = cleanPersonName(targetUser?.display_name, 'them');
   }
 
   if (vow.verdict) {
     return (
-      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-serif font-bold mb-2" style={{ color: 'var(--text)' }}>Already decided</h1>
-          <p className="text-[15px]" style={{ color: 'var(--text-secondary)' }}>
-            This vow has already been judged: <span className="font-semibold" style={{ color: vow.verdict === 'kept' ? 'var(--success)' : 'var(--danger)' }}>{vow.verdict}</span>.
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--uv-bg)' }}>
+        <div style={{ textAlign: 'center', padding: '0 24px' }}>
+          <h1 style={{ fontSize: 24, fontFamily: 'var(--uv-font-serif)', fontWeight: 700, marginBottom: 8, color: 'var(--uv-text)' }}>Already decided</h1>
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)' }}>
+            This vow has already been judged: <span style={{ fontWeight: 600, color: vow.verdict === 'kept' ? 'var(--uv-success)' : 'var(--uv-danger)' }}>{vow.verdict}</span>.
           </p>
         </div>
       </div>

@@ -90,7 +90,9 @@ export default function WitnessTerminalClient({ variant, makerName, makerPhone, 
           <FrauncesSub>
             {isKept
               ? `${makerName} kept the vow. Witnessed by ${vow.witness_name} on ${verdictDate}.`
-              : `Witnessed by ${vow.witness_name} on ${verdictDate}. $${stakeDollars} went to ${vow.destination}.`
+              : stakeDollars > 0
+                ? `Witnessed by ${vow.witness_name} on ${verdictDate}. $${stakeDollars} went to ${vow.destination}.`
+                : `Witnessed by ${vow.witness_name} on ${verdictDate}. No stake on this one.`
             }
           </FrauncesSub>
         )}
@@ -141,7 +143,7 @@ export default function WitnessTerminalClient({ variant, makerName, makerPhone, 
             label={`Change of heart? Text ${makerName} →`}
             onPress={() => {
               const body = encodeURIComponent(`Hey — about that vow you asked me to witness. Still need someone?`);
-              window.location.href = `sms:${encodeURIComponent(makerPhone)}&body=${body}`;
+              window.location.href = `sms:${makerPhone}&body=${body}`;
             }}
           />
         </div>

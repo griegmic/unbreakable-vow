@@ -58,10 +58,10 @@ export default async function OutcomePage({ params }: Props) {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!supabaseUrl || !supabaseServiceKey) {
     return (
-      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-serif font-bold mb-2" style={{ color: 'var(--text)' }}>Configuration error</h1>
-          <p className="text-[15px]" style={{ color: 'var(--text-secondary)' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--uv-bg)' }}>
+        <div style={{ textAlign: 'center', padding: '0 24px' }}>
+          <h1 style={{ fontSize: 24, fontFamily: 'var(--uv-font-serif)', fontWeight: 700, marginBottom: 8, color: 'var(--uv-text)' }}>Configuration error</h1>
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)' }}>
             Unable to load vow data. Please try again later.
           </p>
         </div>
@@ -79,10 +79,10 @@ export default async function OutcomePage({ params }: Props) {
 
   if (vowError || !vow) {
     return (
-      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-serif font-bold mb-2" style={{ color: 'var(--text)' }}>Vow not found</h1>
-          <p className="text-[15px]" style={{ color: 'var(--text-secondary)' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--uv-bg)' }}>
+        <div style={{ textAlign: 'center', padding: '0 24px' }}>
+          <h1 style={{ fontSize: 24, fontFamily: 'var(--uv-font-serif)', fontWeight: 700, marginBottom: 8, color: 'var(--uv-text)' }}>Vow not found</h1>
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)' }}>
             This vow doesn't exist or has been removed.
           </p>
         </div>
@@ -92,10 +92,10 @@ export default async function OutcomePage({ params }: Props) {
 
   if (!vow.verdict) {
     return (
-      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--bg)' }}>
-        <div className="text-center px-6">
-          <h1 className="text-2xl font-serif font-bold mb-2" style={{ color: 'var(--text)' }}>Verdict pending</h1>
-          <p className="text-[15px]" style={{ color: 'var(--text-secondary)' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--uv-bg)' }}>
+        <div style={{ textAlign: 'center', padding: '0 24px' }}>
+          <h1 style={{ fontSize: 24, fontFamily: 'var(--uv-font-serif)', fontWeight: 700, marginBottom: 8, color: 'var(--uv-text)' }}>Verdict pending</h1>
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)' }}>
             This vow hasn't been judged yet. Check back later.
           </p>
         </div>

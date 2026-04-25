@@ -359,7 +359,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 steps={[
                   { label: 'Now', desc: `${makerFirstName} gets the green light.`, state: 'now' },
                   { label: `${daysLeft !== null && daysLeft > 1 ? 'Sat' : 'Tomorrow'} — 24h before`, desc: "We'll text you a heads-up.", state: 'future' },
-                  { label: vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short' }) + ', 9pm' : 'Verdict day', desc: 'One tap: did he keep it?', state: 'future' },
+                  { label: vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short' }) + ', 9pm' : 'Verdict day', desc: 'One tap: did they keep it?', state: 'future' },
                 ]}
               />
 
