@@ -633,6 +633,7 @@ export default function SealPage() {
     setPhoneBusy(true);
     setPhoneError('');
 
+    try {
     const digits = phone.replace(/\D/g, '');
     const formattedPhone = `+1${digits}`;
     const { data, error: verifyError } = await supabase.auth.verifyOtp({
@@ -650,16 +651,28 @@ export default function SealPage() {
       return;
     }
 
-    // Save phone to public.users
-    if (data.user) {
-      await supabase.from('users').upsert(
-        { id: data.user.id, display_name: formattedPhone, phone: formattedPhone },
-        { onConflict: 'id' },
-      );
+    // Save phone to public.users — wrapped in try/catch so it NEVER blocks sealing
+    try {
+      if (data.user) {
+        await supabase.from('users').upsert(
+          { id: data.user.id, display_name: formattedPhone, phone: formattedPhone },
+          { onConflict: 'id' },
+        );
+      }
+    } catch (e) {
+      // Non-critical — user row will be created by ensureDraftVow if needed
+      console.warn('User upsert after OTP failed (non-blocking):', e);
     }
 
-    // Auth success — trigger the seal flow
+    // Auth success — trigger the seal flow IMMEDIATELY
+    // This MUST run regardless of whether the user upsert succeeded
     handleAuthSuccess();
+    } catch (fatalErr) {
+      // NOTHING should prevent the user from proceeding after OTP success
+      console.error('Fatal error in handleVerifyOtp after OTP succeeded:', fatalErr);
+      setPhoneBusy(false);
+      setPhoneError('Something went wrong. Please try again.');
+    }
   }, [otp, phone, phoneBusy, handleAuthSuccess]);
 
   // ── OTP input handlers ──
