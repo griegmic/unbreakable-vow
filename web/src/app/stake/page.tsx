@@ -16,11 +16,13 @@ const consequenceIcons = { charity: Heart, witness: Users, anti: Flame };
 
 const STAKE_AMOUNTS = [20, 50, 100]; // "Other" is 4th tile
 
-const AMOUNT_HINTS: Record<number, string> = {
-  20: 'pick what you\'d hate to lose',
-  50: 'a nice dinner you won\'t have',
-  100: 'real consequences',
-};
+function getStakeNote(amount: number, isCustom = false): string {
+  if (isCustom) return 'Name your pain. Just make it real.';
+  if (amount <= 20) return 'Enough to sting. Still sane.';
+  if (amount <= 50) return 'Enough to hurt. Not enough to be stupid.';
+  if (amount <= 100) return 'Now your word has teeth.';
+  return 'Max pain. Choose wisely.';
+}
 
 const DEADLINE_PRESETS = [
   { label: 'This Friday', days: () => { const d = new Date(); const diff = 5 - d.getDay(); return diff <= 0 ? diff + 7 : diff; } },
@@ -107,13 +109,15 @@ export default function StakePage() {
 
   const destinations = vow.stake.consequence === 'charity' ? charities : vow.stake.consequence === 'anti' ? antiCauses : [];
 
-  // Days until deadline
-  const daysUntilDeadline = useMemo(() => {
-    const d = inferredDeadline || pickedEndDate;
-    if (!d) return null;
-    const now = new Date();
-    return Math.max(1, Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-  }, [inferredDeadline, pickedEndDate]);
+  const handleConsequenceSelect = (consequence: typeof vow.stake.consequence) => {
+    const defaultDestination = consequence === 'charity' ? charities[0] : antiCauses[0];
+    updateConsequence(consequence, defaultDestination);
+  };
+
+  const handleDestinationSelect = (destination: string) => {
+    updateConsequence(vow.stake.consequence, destination);
+    setShowDestPicker(false);
+  };
 
   // Format deadline for resolve text — "Fri, May 1 · 11:59pm"
   const deadlineResolveDisplay = useMemo(() => {
@@ -130,7 +134,7 @@ export default function StakePage() {
 
   // Current display amount (for caption and ledger)
   const displayAmount = vow.stake.amount;
-  const amountHint = displayAmount > 0 ? 'pick what you\'d hate to lose' : '';
+  const amountHint = displayAmount > 0 ? getStakeNote(displayAmount, showCustomAmount) : 'Name your pain. Just make it real.';
 
   // Strip "I'll" prefix from vow text for display
   const vowBody = activeVowText.replace(/^I('ll|'ll| will)\s*/i, '');
@@ -151,10 +155,10 @@ export default function StakePage() {
       }}>
         {/* Back button */}
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push('/refine')}
           aria-label="Go back"
           style={{
-            width: 32, height: 32, borderRadius: '50%',
+            width: 44, height: 44, borderRadius: '50%',
             border: '1px solid var(--uv-border)',
             background: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -168,30 +172,19 @@ export default function StakePage() {
         {/* Progress */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
-            letterSpacing: '0.16em', textTransform: 'uppercase' as const,
-            color: 'var(--uv-gold)',
+            fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 600,
+            color: 'var(--uv-text-muted)', fontFeatureSettings: '"tnum"',
           }}>
-            Step 2 of 3
+            3 / 5
           </span>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: 'var(--uv-gold)',
-              display: 'inline-block',
-            }} />
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: 'var(--uv-gold)',
-              boxShadow: '0 0 8px var(--uv-gold-glow)',
-              display: 'inline-block',
-            }} />
-            <span style={{
-              width: 6, height: 6, borderRadius: '50%',
-              background: 'transparent',
-              border: '1px solid var(--uv-text-dim)',
-              display: 'inline-block',
-            }} />
+          <div style={{
+            height: 3,
+            width: 72,
+            borderRadius: 999,
+            background: 'var(--uv-bg-elevated)',
+            overflow: 'hidden',
+          }}>
+            <div style={{ width: '60%', height: '100%', borderRadius: 999, background: 'var(--uv-gold)' }} />
           </div>
         </div>
       </div>
@@ -236,9 +229,10 @@ export default function StakePage() {
               THE VOW
             </span>
             <button
-              onClick={() => router.back()}
+              onClick={() => router.push('/refine')}
               style={{
-                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: '8px 12px', margin: '-8px -12px',
                 fontFamily: 'var(--uv-font-sans)', fontSize: 13,
                 color: 'var(--uv-gold)',
               }}
@@ -385,7 +379,7 @@ export default function StakePage() {
               fontStyle: 'italic',
               color: 'var(--uv-text-dim)',
             }}>
-              Pick what you&apos;d hate to lose.
+              {amountHint}
             </p>
           )}
 
@@ -426,11 +420,12 @@ export default function StakePage() {
 
               {/* Change link */}
               <button
-                onClick={() => setShowDestPicker(!showDestPicker)}
+                onClick={() => setShowDestPicker(true)}
                 style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontFamily: 'var(--uv-font-sans)', fontSize: 12,
-                  color: 'var(--uv-text-dim)', flexShrink: 0,
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: '10px 0 10px 8px', margin: '-10px 0 -10px -8px',
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 700,
+                  color: 'var(--uv-gold-bright)', flexShrink: 0,
                 }}
               >
                 Change
@@ -438,110 +433,6 @@ export default function StakePage() {
             </div>
           )}
         </div>
-
-        {/* ── Consequence/Destination picker (shown when "Change" tapped) ── */}
-        {displayAmount > 0 && showDestPicker && (
-          <div style={{
-            background: 'var(--uv-bg-card)',
-            border: '1px solid var(--uv-border)',
-            borderRadius: 14, padding: 16,
-            marginBottom: 14,
-            display: 'flex', flexDirection: 'column', gap: 14,
-          }}>
-            {/* Consequence type label */}
-            <span style={{
-              fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
-              letterSpacing: '0.16em', textTransform: 'uppercase' as const,
-              color: 'var(--uv-text-dim)',
-            }}>
-              IF YOU BREAK IT
-            </span>
-
-            {/* Consequence type cards */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {consequenceOptions.map((option) => {
-                const Icon = consequenceIcons[option.id];
-                const active = vow.stake.consequence === option.id;
-                return (
-                  <button
-                    key={option.id}
-                    onClick={() => {
-                      const dest = option.id === 'charity' ? charities[0] : option.id === 'anti' ? antiCauses[0] : '';
-                      updateConsequence(option.id, dest);
-                    }}
-                    style={{
-                      borderRadius: 10, padding: '12px 14px',
-                      display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left' as const,
-                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-elevated)',
-                      border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
-                      cursor: 'pointer', transition: 'all 150ms',
-                    }}
-                  >
-                    <div style={{
-                      width: 36, height: 36, borderRadius: 10,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      flexShrink: 0,
-                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-card)',
-                    }}>
-                      <Icon style={{ width: 18, height: 18, color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)' }} />
-                    </div>
-                    <div>
-                      <span style={{
-                        fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 600,
-                        display: 'block', color: active ? 'var(--uv-text)' : 'var(--uv-text-muted)',
-                      }}>
-                        {option.label}
-                      </span>
-                      <span style={{
-                        fontFamily: 'var(--uv-font-sans)', fontSize: 12,
-                        color: 'var(--uv-text-dim)',
-                      }}>
-                        {option.description}
-                      </span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Destination picker pills */}
-            {destinations.length > 0 && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span style={{
-                  fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
-                  letterSpacing: '0.16em', textTransform: 'uppercase' as const,
-                  color: 'var(--uv-text-dim)',
-                }}>
-                  CHOOSE A CAUSE
-                </span>
-                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
-                  {destinations.map((dest) => {
-                    const active = vow.stake.destination === dest;
-                    return (
-                      <button
-                        key={dest}
-                        onClick={() => updateConsequence(vow.stake.consequence, dest)}
-                        style={{
-                          padding: '8px 14px', borderRadius: 9999,
-                          background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-elevated)',
-                          border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
-                          cursor: 'pointer', transition: 'all 150ms',
-                        }}
-                      >
-                        <span style={{
-                          fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500,
-                          color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
-                        }}>
-                          {dest}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* ── 5. Card 3 — The Deadline ── */}
         {needsDeadlinePicker && (
@@ -660,8 +551,8 @@ export default function StakePage() {
             }}
           >
             <span style={{
-              fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 600,
-              letterSpacing: '-0.01em',
+              fontFamily: 'var(--uv-font-sans)', fontSize: 16, fontWeight: 700,
+              letterSpacing: '0',
             }}>
               Choose your witness
             </span>
@@ -679,6 +570,234 @@ export default function StakePage() {
           </button>
         </div>
       </div>
+
+      {/* ── Cause picker sheet ── */}
+      {displayAmount > 0 && showDestPicker && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cause-sheet-title"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            display: 'flex',
+            alignItems: 'flex-end',
+            justifyContent: 'center',
+          }}
+        >
+          <button
+            aria-label="Close cause picker"
+            onClick={() => setShowDestPicker(false)}
+            style={{
+              position: 'absolute',
+              inset: 0,
+              background: 'rgba(5,4,3,0.72)',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+            }}
+          />
+
+          <div style={{
+            position: 'relative',
+            width: '100%',
+            maxWidth: 440,
+            maxHeight: '82dvh',
+            overflowY: 'auto',
+            background: 'var(--uv-bg-card)',
+            border: '1px solid var(--uv-border-strong)',
+            borderBottom: 'none',
+            borderRadius: '24px 24px 0 0',
+            padding: '12px 20px max(28px, env(safe-area-inset-bottom))',
+            boxShadow: '0 -24px 70px rgba(0,0,0,0.55)',
+          }}>
+            <div style={{
+              width: 40,
+              height: 4,
+              borderRadius: 9999,
+              background: 'var(--uv-border-strong)',
+              margin: '0 auto 14px',
+            }} />
+
+            <div style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              justifyContent: 'space-between',
+              gap: 14,
+              marginBottom: 18,
+            }}>
+              <div>
+                <h2
+                  id="cause-sheet-title"
+                  style={{
+                    fontFamily: 'var(--uv-font-serif)',
+                    fontSize: 26,
+                    fontWeight: 500,
+                    lineHeight: 1.08,
+                    letterSpacing: '-0.01em',
+                    color: 'var(--uv-text)',
+                    margin: '0 0 6px',
+                  }}
+                >
+                  Change where it goes.
+                </h2>
+                <p style={{
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 13,
+                  lineHeight: 1.45,
+                  color: 'var(--uv-text-muted)',
+                  margin: 0,
+                }}>
+                  If the vow breaks, the stake goes to the destination you choose here.
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowDestPicker(false)}
+                aria-label="Close"
+                style={{
+                  width: 44,
+                  height: 44,
+                  borderRadius: '50%',
+                  border: '1px solid var(--uv-border)',
+                  background: 'var(--uv-bg-elevated)',
+                  color: 'var(--uv-text-muted)',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 20,
+                  lineHeight: 1,
+                  flexShrink: 0,
+                }}
+              >
+                &times;
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+              {consequenceOptions.map((option) => {
+                const Icon = consequenceIcons[option.id];
+                const active = vow.stake.consequence === option.id;
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => handleConsequenceSelect(option.id)}
+                    style={{
+                      borderRadius: 14,
+                      padding: '13px 14px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      textAlign: 'left' as const,
+                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-elevated)',
+                      border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
+                      cursor: 'pointer',
+                      transition: 'all 150ms',
+                    }}
+                  >
+                    <span style={{
+                      width: 38,
+                      height: 38,
+                      borderRadius: 12,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      background: active ? 'rgba(212,169,85,0.16)' : 'var(--uv-bg-card)',
+                    }}>
+                      <Icon style={{
+                        width: 18,
+                        height: 18,
+                        color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
+                      }} />
+                    </span>
+                    <span>
+                      <span style={{
+                        fontFamily: 'var(--uv-font-sans)',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        display: 'block',
+                        color: active ? 'var(--uv-text)' : 'var(--uv-text-muted)',
+                        marginBottom: 2,
+                      }}>
+                        {option.label}
+                      </span>
+                      <span style={{
+                        fontFamily: 'var(--uv-font-sans)',
+                        fontSize: 12,
+                        lineHeight: 1.35,
+                        color: 'var(--uv-text-dim)',
+                      }}>
+                        {option.description}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {destinations.length > 0 && (
+              <div style={{ marginBottom: 18 }}>
+                <span style={{
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.14em',
+                  textTransform: 'uppercase' as const,
+                  color: 'var(--uv-text-dim)',
+                  display: 'block',
+                  marginBottom: 10,
+                }}>
+                  Choose a destination
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
+                  {destinations.map((dest) => {
+                    const active = vow.stake.destination === dest;
+                    return (
+                      <button
+                        key={dest}
+                        onClick={() => handleDestinationSelect(dest)}
+                        style={{
+                          padding: '9px 13px',
+                          borderRadius: 9999,
+                          background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-elevated)',
+                          border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
+                          cursor: 'pointer',
+                          transition: 'all 150ms',
+                          fontFamily: 'var(--uv-font-sans)',
+                          fontSize: 13,
+                          fontWeight: 650,
+                          color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
+                        }}
+                      >
+                        {dest}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <button
+              onClick={() => setShowDestPicker(false)}
+              style={{
+                width: '100%',
+                minHeight: 46,
+                borderRadius: 9999,
+                border: '1px solid var(--uv-border-strong)',
+                background: 'var(--uv-text)',
+                color: 'var(--uv-bg)',
+                cursor: 'pointer',
+                fontFamily: 'var(--uv-font-sans)',
+                fontSize: 15,
+                fontWeight: 750,
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

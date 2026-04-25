@@ -65,11 +65,12 @@ export default function SealPage() {
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const paymentVowIdRef = useRef<string | null>(null);
+  const witnessShareAttemptedRef = useRef(false);
 
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
   const witnessName = isSelfWitness ? 'Just me' : (vow.witnessName || 'Witness');
-  const sealLabel = isAuthenticated ? 'Seal this vow' : 'Seal this vow';
+  const sealLabel = 'Seal this vow';
 
   useEffect(() => {
     const isLocal = typeof window !== 'undefined' && (
@@ -78,6 +79,15 @@ export default function SealPage() {
     );
     setIsDevBypass(isLocal);
   }, []);
+
+  useEffect(() => {
+    if (!vow.rawInput) return;
+    try {
+      localStorage.removeItem('auth-return-path');
+      sessionStorage.removeItem('auth-return-path');
+      document.cookie = 'auth_return_path=; path=/; max-age=0';
+    } catch {}
+  }, [vow.rawInput]);
 
   useEffect(() => {
     try {
@@ -132,7 +142,7 @@ export default function SealPage() {
   // ── Shared: ensure a draft vow row exists ──
   const draftCreatingRef = useRef(false);
   const draftPromiseRef = useRef<Promise<{ id: string } | null> | null>(null);
-  const ensureDraftVow = useCallback(async (): Promise<{ id: string; error?: string } | null> => {
+  const ensureDraftVow = useCallback(async (): Promise<{ id: string; witness_invite_token?: string | null; error?: string } | null> => {
     if (vow.vowId) {
       const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
       const { data: existing } = await supabase.from('vows')
@@ -147,7 +157,7 @@ export default function SealPage() {
         })
         .eq('id', vow.vowId)
         .eq('status', 'draft')
-        .select('id')
+        .select('id, witness_invite_token')
         .maybeSingle();
       if (existing) return existing;
     }
@@ -158,7 +168,7 @@ export default function SealPage() {
 
     draftCreatingRef.current = true;
 
-    const doCreate = async (): Promise<{ id: string; error?: string } | null> => {
+    const doCreate = async (): Promise<{ id: string; witness_invite_token?: string | null; error?: string } | null> => {
       try {
         const s = await getValidSession();
         if (!s) return { id: '', error: '__needs_auth__' };
@@ -205,6 +215,57 @@ export default function SealPage() {
     }
   }, [isAuthenticated, vow.rawInput, vow.vowId, ensureDraftVow]);
 
+  useEffect(() => {
+    if (!isAuthenticated || !vow.rawInput || isSelfWitness || witnessShareAttemptedRef.current) return;
+
+    let shouldShare = false;
+    try {
+      shouldShare = new URLSearchParams(window.location.search).get('shareWitness') === '1';
+    } catch {}
+    try {
+      shouldShare = shouldShare || localStorage.getItem('uv-share-witness-after-auth') === '1';
+    } catch {}
+    if (!shouldShare) return;
+
+    witnessShareAttemptedRef.current = true;
+
+    const shareWitness = async () => {
+      const draft = await ensureDraftVow();
+      if (!draft?.id || draft.error) {
+        witnessShareAttemptedRef.current = false;
+        return;
+      }
+
+      const token = draft.witness_invite_token || vow.witnessInviteToken;
+      if (!token) {
+        witnessShareAttemptedRef.current = false;
+        return;
+      }
+
+      try { localStorage.removeItem('uv-share-witness-after-auth'); } catch {}
+
+      const vowText = activeVowText.replace(/\.$/, '').toLowerCase();
+      const witnessUrl = `${window.location.origin}/w/${token}`;
+      const stakeHook = vow.stake.amount > 0 ? ` and put $${vow.stake.amount} on it` : '';
+      const shareText = `I just made a vow to ${vowText}${stakeHook}. You're my witness: ${witnessUrl}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ text: shareText });
+        } catch {}
+      } else {
+        try {
+          await navigator.clipboard.writeText(shareText);
+          setError('Witness invite copied. Send it, then finish sealing.');
+        } catch {}
+      }
+
+      router.replace('/seal', { scroll: false });
+    };
+
+    shareWitness();
+  }, [activeVowText, ensureDraftVow, isAuthenticated, isSelfWitness, router, vow.rawInput, vow.stake.amount, vow.witnessInviteToken]);
+
   // ── Shared: call seal-vow with silent retries ──
   const callSealVow = useCallback(async (vowId: string, opts?: { skip_payment?: boolean }): Promise<{ ok: boolean; error?: string }> => {
     const maxRetries = 3;
@@ -238,6 +299,14 @@ export default function SealPage() {
   }, []);
 
   const scheduleSealRedirect = useCallback((sealedId: string) => {
+    try {
+      const target = JSON.stringify({ id: sealedId, ts: Date.now() });
+      localStorage.setItem('uv-post-seal-target', target);
+      sessionStorage.setItem('uv-post-seal-target', target);
+      localStorage.removeItem('auth-return-path');
+      sessionStorage.removeItem('auth-return-path');
+      document.cookie = 'auth_return_path=; path=/; max-age=0';
+    } catch {}
     setStep('sealing');
     setSealAnimPhase(0);
     const t0 = setTimeout(() => setSealAnimPhase(1), 120);
@@ -247,7 +316,7 @@ export default function SealPage() {
       setStep('done');
       paymentVowIdRef.current = null;
       resetVow();
-      router.push(`/vow/${sealedId}?sealed=1`);
+      router.replace(`/vow/${sealedId}?sealed=1`);
     }, 2600);
     timersRef.current.push(t0, t1, t2, t3);
   }, [resetVow, router]);
@@ -904,6 +973,17 @@ export default function SealPage() {
             -webkit-text-fill-color: var(--uv-text, #F6F7FB) !important;
             caret-color: var(--uv-text, #F6F7FB);
           }
+          .uv-auth-text-input {
+            appearance: none !important;
+            -webkit-appearance: none !important;
+            border: 0 !important;
+            border-bottom: 0 !important;
+            box-shadow: none !important;
+            background-image: none !important;
+            text-decoration: none !important;
+            outline: none !important;
+            line-height: 1.25 !important;
+          }
         `}</style>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           <button
@@ -916,7 +996,7 @@ export default function SealPage() {
                 setPhoneStep('name');
                 setPhoneError('');
               } else {
-                router.back();
+                setStep('review');
               }
             }}
             aria-label="Go back"
@@ -988,8 +1068,11 @@ export default function SealPage() {
                 }}
               >
                 <input
+                  className="uv-auth-text-input"
                   type="text"
-                  autoComplete="name"
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
                   placeholder="Your name"
                   value={makerName}
                   onChange={(e) => { setMakerName(e.target.value); setPhoneError(''); }}
@@ -1083,9 +1166,10 @@ export default function SealPage() {
                 onClick={() => { setPhoneStep('input'); setPhoneError(''); setOtp(['', '', '', '', '', '']); }}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
-                  fontFamily: 'var(--uv-font-sans)', fontSize: 12,
-                  color: 'var(--uv-text-faint)', padding: '4px 0',
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                  color: 'var(--uv-text-faint)', padding: '12px 0',
                   textAlign: 'center',
+                  minHeight: 44,
                 }}
               >
                 Use a different number
@@ -1174,9 +1258,20 @@ export default function SealPage() {
       )}
       <RitualScreen>
         {/* Progress indicator */}
-        <p style={{ fontSize: 11, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-faint)', marginBottom: 8 }}>
-          5 / 5
-        </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <span style={{
+            fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 600,
+            color: 'var(--uv-text-muted)', fontFeatureSettings: '"tnum"',
+          }}>
+            5 / 5
+          </span>
+          <div style={{
+            height: 3, width: 72, borderRadius: 999,
+            background: 'var(--uv-bg-elevated)', overflow: 'hidden',
+          }}>
+            <div style={{ width: '100%', height: '100%', borderRadius: 999, background: 'var(--uv-gold)' }} />
+          </div>
+        </div>
 
         {isDevBypass && (
           <div style={{ borderRadius: 8, padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: 6, backgroundColor: 'rgba(212,162,79,0.08)', border: '1px dashed rgba(212,162,79,0.3)', marginBottom: 12 }}>
@@ -1187,10 +1282,10 @@ export default function SealPage() {
         {/* Hero */}
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-text)', margin: 0, marginBottom: 6 }}>
-            Almost done.
+            Last look.
           </h1>
           <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text-muted)', margin: 0 }}>
-            One tap to seal.
+            Once you seal, there&apos;s no going back.
           </p>
         </div>
 
@@ -1252,7 +1347,7 @@ export default function SealPage() {
             onPress={handleSealTap}
             disabled={sealing}
           />
-          <MutedSecondary label="Back" onPress={() => router.back()} />
+          <MutedSecondary label="Back" onPress={() => router.push('/witness')} />
 
           {isDevBypass && (
             <button

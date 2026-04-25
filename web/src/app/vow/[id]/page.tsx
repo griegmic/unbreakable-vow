@@ -1203,7 +1203,7 @@ function VowDetailContent() {
     return (
       <RitualScreen>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, padding: '0 4px' }}>
-          <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--uv-text-muted)', padding: 0 }} aria-label="Back to dashboard">
+          <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--uv-text-muted)', padding: '10px 12px 10px 0', margin: '-10px 0 -10px 0', minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center' }} aria-label="Back to dashboard">
             ←
           </button>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, letterSpacing: '0.24em', textTransform: 'uppercase' as const, color: 'var(--uv-success)', fontWeight: 650, fontFamily: 'var(--uv-font-sans)' }}>

@@ -63,7 +63,7 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
           >
             Menu
           </span>
-          <button onClick={onClose} className="p-1">
+          <button onClick={onClose} className="p-3 -m-1" aria-label="Close menu">
             <X className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
           </button>
         </div>
@@ -349,6 +349,7 @@ export default function DashboardPage() {
   if (loading || authLoading) {
     return (
       <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', padding: '24px 22px' }}>
+        <style>{`@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
         <div style={{ maxWidth: 480, margin: '0 auto' }}>
           {[1,2,3].map(i => (
             <div key={i} style={{ height: 80, borderRadius: 18, background: 'var(--uv-bg-card)', marginBottom: 12, animation: 'shimmer 1.5s ease-in-out infinite', backgroundImage: 'linear-gradient(90deg, var(--uv-bg-card) 25%, var(--uv-bg-elevated) 50%, var(--uv-bg-card) 75%)', backgroundSize: '200% 100%' }} />
@@ -367,11 +368,11 @@ export default function DashboardPage() {
         <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
         {/* Header */}
         <div style={{ width: '100%', maxWidth: 480, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <button onClick={() => setMenuOpen(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+          <button onClick={() => setMenuOpen(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 10, margin: -6 }}>
             <Menu className="w-5 h-5" style={{ color: 'var(--uv-text-muted)' }} />
           </button>
           <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--uv-text)' }}>Unbreakable Vow</span>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-on-gold)' }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-on-gold)' }}>
             {firstName ? firstName.charAt(0) : '⟡'}
           </div>
         </div>
@@ -400,11 +401,11 @@ export default function DashboardPage() {
 
         {/* V6 Header per §3.4: hamburger + wordmark + avatar */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <button onClick={() => setMenuOpen(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
+          <button onClick={() => setMenuOpen(true)} aria-label="Open menu" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 10, margin: -6 }}>
             <Menu className="w-5 h-5" style={{ color: 'var(--uv-text-muted)' }} />
           </button>
           <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--uv-text)' }}>Unbreakable Vow</span>
-          <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-on-gold)' }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-on-gold)' }}>
             {firstName ? firstName.charAt(0) : '⟡'}
           </div>
         </div>
@@ -765,7 +766,7 @@ export default function DashboardPage() {
                         onClick={() => handleDeclineChallenge(vow.id)}
                         disabled={actionBusy === vow.id}
                         style={{
-                          width: '100%', minHeight: 32,
+                          width: '100%', minHeight: 44,
                           background: 'transparent',
                           border: 'none',
                           color: 'var(--uv-text-muted)',
