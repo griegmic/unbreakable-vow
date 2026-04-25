@@ -19,150 +19,172 @@ const STARTER_CHIPS = [
 // black. Not tokenized — one-shot overlay with no reuse path.
 
 function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
-  // 0=dark, 1=page1 (accusation + "it was free"), 2=page2 (logo), 3=exit
-  const [phase, setPhase] = useState(0);
-  const [exiting, setExiting] = useState(false);
+  // Phases: 'black' | 'screen1' | 'gap' | 'screen2' | 'exit'
+  const [line1Opacity, setLine1Opacity] = useState(0);
+  const [line2Opacity, setLine2Opacity] = useState(0);
+  const [screen2Opacity, setScreen2Opacity] = useState(0);
+  const [showSkip, setShowSkip] = useState(false);
+  const [crossfade, setCrossfade] = useState(false);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   const reducedMotion = typeof window !== 'undefined'
     && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   const finish = useCallback(() => {
     try { localStorage.setItem('uv_ceremony_seen', '1'); } catch {}
-    setExiting(true);
-    setTimeout(() => onComplete(), 500);
+    timersRef.current.forEach(clearTimeout);
+    timersRef.current = [];
+    setCrossfade(true);
+    setTimeout(() => onComplete(), 600);
   }, [onComplete]);
 
-  useEffect(() => {
-    const f = reducedMotion ? 0.15 : 1;
-    const timers = [
-      setTimeout(() => setPhase(1), 300 * f),       // page 1 fades in
-      setTimeout(() => setPhase(2), 3800 * f),       // page 2 (logo)
-      setTimeout(() => finish(), 6000 * f),           // auto-exit
-    ];
-    return () => timers.forEach(clearTimeout);
-  }, [reducedMotion, finish]);
+  const skip = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    finish();
+  }, [finish]);
 
-  const fade = (visible: boolean, delay = 0): React.CSSProperties => ({
-    opacity: visible ? 1 : 0,
-    transform: visible ? 'translateY(0)' : 'translateY(6px)',
-    transition: reducedMotion
-      ? 'opacity 100ms'
-      : `opacity 0.8s cubic-bezier(0.19,1,0.22,1) ${delay}ms, transform 0.8s cubic-bezier(0.19,1,0.22,1) ${delay}ms`,
-  });
+  useEffect(() => {
+    if (reducedMotion) {
+      // Reduced motion: static copy, Screen 1 for 2s, Screen 2 for 2s, then home
+      setLine1Opacity(0.95);
+      setLine2Opacity(1);
+      const t1 = setTimeout(() => {
+        setLine1Opacity(0);
+        setLine2Opacity(0);
+        setScreen2Opacity(0.95);
+      }, 2000);
+      const t2 = setTimeout(() => finish(), 4000);
+      timersRef.current = [t1, t2];
+      return () => { t1 && clearTimeout(t1); t2 && clearTimeout(t2); };
+    }
+
+    // Full choreography — setTimeout chain matching spec timings
+    const t = (ms: number, fn: () => void) => {
+      const id = setTimeout(fn, ms);
+      timersRef.current.push(id);
+      return id;
+    };
+
+    // t=4.0s: show skip
+    t(4000, () => setShowSkip(true));
+
+    // t=1.5s: Line 1 fade-in begins (CSS transition handles the 1.2s duration)
+    t(1500, () => setLine1Opacity(0.95));
+
+    // t=5.2s: Line 2 fade-in begins (CSS transition handles the 1.0s duration)
+    t(5200, () => setLine2Opacity(1));
+
+    // t=8.2s: Both lines fade out (CSS transition handles the 0.8s duration)
+    t(8200, () => { setLine1Opacity(0); setLine2Opacity(0); });
+
+    // t=10.2s: Screen 2 fade-in begins (CSS transition handles the 1.0s duration)
+    t(10200, () => setScreen2Opacity(0.95));
+
+    // t=14.2s: Screen 2 fade-out + cross-fade to home (0.6s)
+    t(14200, () => finish());
+
+    return () => timersRef.current.forEach(clearTimeout);
+  }, [reducedMotion, finish]);
 
   return (
     <div
-      onClick={() => { if (phase === 1) setPhase(2); else finish(); }}
       role="dialog"
       aria-live="polite"
       style={{
         position: 'fixed', inset: 0, zIndex: 9999,
-        background: '#050403',
+        background: '#0F0D0A',
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        cursor: 'pointer',
-        opacity: exiting ? 0 : 1,
-        transition: 'opacity 500ms ease',
+        opacity: crossfade ? 0 : 1,
+        transition: 'opacity 600ms ease',
         overflow: 'hidden',
       }}
     >
-      {/* Vignette */}
+      {/* ─── Screen 1: "the invitation" ─── */}
       <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse at center, transparent 30%, #050403 75%)',
-      }} />
-
-      {/* Gold ember */}
-      <div style={{
-        position: 'absolute', top: '45%', left: '50%',
-        width: 300, height: 300,
-        transform: 'translate(-50%, -50%)',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, rgba(212,168,74,0.12) 0%, transparent 65%)',
-        opacity: phase >= 1 ? 1 : 0,
-        filter: 'blur(50px)',
-        transition: 'opacity 1.5s ease',
+        position: 'absolute', zIndex: 1,
+        display: 'flex', flexDirection: 'column', alignItems: 'center',
+        maxWidth: 320, padding: '0 24px',
         pointerEvents: 'none',
-      }} />
-
-      {/* ─── PAGE 1: Accusation + punchline ─── */}
-      <div style={{
-        position: 'absolute', zIndex: 1,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        maxWidth: 340, padding: '0 24px',
-        opacity: phase === 1 ? 1 : 0,
-        transition: 'opacity 0.6s ease',
-        pointerEvents: phase === 1 ? 'auto' : 'none',
       }}>
         <p style={{
-          ...fade(phase >= 1),
           fontFamily: 'var(--uv-font-serif)',
-          fontSize: 'clamp(18px, 5vw, 22px)',
+          fontStyle: 'italic',
+          fontSize: 22,
           fontWeight: 400,
-          color: 'rgba(245,240,228,0.7)',
+          color: '#F0E9DB',
           textAlign: 'center',
-          lineHeight: 1.5,
-          margin: '0 0 20px',
+          lineHeight: 1.35,
+          margin: 0,
+          opacity: line1Opacity,
+          transition: reducedMotion
+            ? 'opacity 100ms'
+            : `opacity 1.2s cubic-bezier(0.33, 1, 0.68, 1)`,
         }}>
-          Every promise you&apos;ve ever broken had one thing in common.
+          there&apos;s a promise you keep breaking {'\u2014'} you know the one.
         </p>
         <p style={{
-          ...fade(phase >= 1, 600),
           fontFamily: 'var(--uv-font-serif)',
-          fontSize: 'clamp(32px, 9vw, 44px)',
-          fontWeight: 500,
-          color: 'var(--uv-gold)',
+          fontStyle: 'italic',
+          fontSize: 28,
+          fontWeight: 400,
+          color: '#C89B3C',
           textAlign: 'center',
-          lineHeight: 1.1,
+          lineHeight: 1.35,
           margin: 0,
-          textShadow: '0 0 40px rgba(212,168,74,0.25)',
+          paddingTop: 48,
+          opacity: line2Opacity,
+          transition: reducedMotion
+            ? 'opacity 100ms'
+            : `opacity 1.0s cubic-bezier(0.33, 1, 0.68, 1)`,
         }}>
-          It was free.
+          make the unbreakable vow.
         </p>
       </div>
 
-      {/* ─── PAGE 2: Logo ─── */}
-      <div style={{
+      {/* ─── Screen 2: "the price" ─── */}
+      <p style={{
         position: 'absolute', zIndex: 1,
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        gap: 16,
-        opacity: phase === 2 ? 1 : 0,
-        transform: phase === 2 ? 'scale(1)' : 'scale(0.95)',
-        transition: 'opacity 0.8s ease, transform 0.8s cubic-bezier(0.19,1,0.22,1)',
-        pointerEvents: phase === 2 ? 'auto' : 'none',
+        fontFamily: 'var(--uv-font-serif)',
+        fontStyle: 'italic',
+        fontSize: 30,
+        fontWeight: 400,
+        color: '#F0E9DB',
+        textAlign: 'center',
+        lineHeight: 1.4,
+        margin: 0,
+        padding: '0 24px',
+        opacity: screen2Opacity,
+        transition: reducedMotion
+          ? 'opacity 100ms'
+          : `opacity 1.0s cubic-bezier(0.33, 1, 0.68, 1)`,
+        pointerEvents: 'none',
       }}>
-        {/* Gold diamond logo mark */}
-        <div style={{
-          width: 36, height: 36, background: 'var(--uv-gold)', borderRadius: 8,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}>
-          <div style={{
-            width: 14, height: 14, background: '#050403', transform: 'rotate(45deg)',
-          }} />
-        </div>
-        <h1 style={{
-          fontFamily: 'var(--uv-font-sans)',
-          fontSize: 14,
-          fontWeight: 500,
-          letterSpacing: '3px',
-          textTransform: 'uppercase' as const,
-          color: 'var(--uv-gold)',
-          margin: 0,
-        }}>
-          UNBREAKABLE VOW
-        </h1>
-      </div>
+        break it, and pay the price.
+      </p>
 
-      {/* Skip hint */}
-      <span style={{
-        position: 'absolute', bottom: '10%',
-        fontFamily: 'var(--uv-font-sans)', fontSize: 11,
-        color: 'var(--uv-text-faint)', letterSpacing: '0.5px',
-        opacity: phase >= 1 ? 0.25 : 0,
-        transition: 'opacity 1s',
-      }}>
-        tap anywhere
-      </span>
+      {/* Skip link — bottom-right, appears after 4s */}
+      <button
+        onClick={skip}
+        style={{
+          position: 'absolute',
+          bottom: 32,
+          right: 24,
+          background: 'none',
+          border: 'none',
+          padding: '8px 12px',
+          cursor: 'pointer',
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 13,
+          color: 'rgba(255,255,255,0.4)',
+          opacity: showSkip ? 1 : 0,
+          transition: 'opacity 0.6s ease',
+          pointerEvents: showSkip ? 'auto' : 'none',
+          zIndex: 2,
+        }}
+      >
+        skip
+      </button>
     </div>
   );
 }
