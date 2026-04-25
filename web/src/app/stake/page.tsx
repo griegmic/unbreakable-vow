@@ -17,7 +17,7 @@ const consequenceIcons = { charity: Heart, witness: Users, anti: Flame };
 const STAKE_AMOUNTS = [20, 50, 100]; // "Other" is 4th tile
 
 const AMOUNT_HINTS: Record<number, string> = {
-  20: 'a coffee a day for a week',
+  20: 'pick what you\'d hate to lose',
   50: 'a nice dinner you won\'t have',
   100: 'real consequences',
 };
@@ -130,7 +130,7 @@ export default function StakePage() {
 
   // Current display amount (for caption and ledger)
   const displayAmount = vow.stake.amount;
-  const amountHint = AMOUNT_HINTS[displayAmount] || (displayAmount > 0 ? `$${displayAmount} on the line` : '');
+  const amountHint = displayAmount > 0 ? 'pick what you\'d hate to lose' : '';
 
   // Strip "I'll" prefix from vow text for display
   const vowBody = activeVowText.replace(/^I('ll|'ll| will)\s*/i, '');
@@ -378,24 +378,14 @@ export default function StakePage() {
           )}
 
           {/* Caption below tiles */}
-          {displayAmount > 0 && (
+          {displayAmount > 0 && amountHint && (
             <p style={{
               textAlign: 'center' as const, margin: '0 0 14px',
+              fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+              fontStyle: 'italic',
+              color: 'var(--uv-text-dim)',
             }}>
-              <span style={{
-                fontFamily: 'var(--uv-font-serif)', fontSize: 16, fontWeight: 600,
-                color: 'var(--uv-text)',
-              }}>
-                ${displayAmount}
-              </span>
-              {amountHint && (
-                <span style={{
-                  fontFamily: 'var(--uv-font-sans)', fontSize: 14,
-                  color: 'var(--uv-text-dim)',
-                }}>
-                  {' '}&mdash; {amountHint}
-                </span>
-              )}
+              Pick what you&apos;d hate to lose.
             </p>
           )}
 
@@ -644,38 +634,6 @@ export default function StakePage() {
           padding: '0 20px 32px',
           maxWidth: 440, margin: '0 auto',
         }}>
-          {/* Ledger row */}
-          {displayAmount > 0 && (
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: 8,
-            }}>
-              <span style={{
-                fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
-                letterSpacing: '0.16em', textTransform: 'uppercase' as const,
-                color: 'var(--uv-text-dim)',
-              }}>
-                YOU&apos;RE STAKING
-              </span>
-              <span>
-                <span style={{
-                  fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 600,
-                  color: 'var(--uv-text)',
-                }}>
-                  ${displayAmount}
-                </span>
-                {daysUntilDeadline && (
-                  <span style={{
-                    fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 500,
-                    color: 'var(--uv-text-dim)',
-                  }}>
-                    {' '}· {daysUntilDeadline} day{daysUntilDeadline !== 1 ? 's' : ''}
-                  </span>
-                )}
-              </span>
-            </div>
-          )}
-
           {/* Reassurance */}
           <p style={{
             textAlign: 'center' as const,
@@ -705,7 +663,7 @@ export default function StakePage() {
               fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 600,
               letterSpacing: '-0.01em',
             }}>
-              Name your witness
+              Choose your witness
             </span>
 
             {/* Arrow circle */}
