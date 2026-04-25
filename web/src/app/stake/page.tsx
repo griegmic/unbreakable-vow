@@ -2,18 +2,25 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useMemo } from 'react';
 import { Heart, Users, Flame } from 'lucide-react';
-import { RitualScreen, FrauncesH1, FrauncesSub, GoldCTA, RitualCard, ChoicePill } from '@/components/primitives';
 import { useVowFlow } from '@/providers/vow-flow';
-import { stakeAmounts, charities, antiCauses, consequenceOptions, inferDeadline } from '@/lib/vow-logic';
+import { charities, antiCauses, consequenceOptions, inferDeadline } from '@/lib/vow-logic';
 
 /**
- * S3 · Stake — §3.5, rebuilt to match 03-pitch.html mock layout.
+ * S3 · Stake — rebuilt to match Joey's new HTML design.
  *
- * Layout: topbar → vow card → stake tiles → destination row → below-fold features → footer CTA
+ * Layout: topbar → page header → vow card → stake card → deadline card → sticky CTA
  * All state writes to useVowFlow provider. Zero Stripe SDK calls.
  */
 
 const consequenceIcons = { charity: Heart, witness: Users, anti: Flame };
+
+const STAKE_AMOUNTS = [20, 50, 100]; // "Other" is 4th tile
+
+const AMOUNT_HINTS: Record<number, string> = {
+  20: 'a coffee a day for a week',
+  50: 'a nice dinner you won\'t have',
+  100: 'real consequences',
+};
 
 const DEADLINE_PRESETS = [
   { label: 'This Friday', days: () => { const d = new Date(); const diff = 5 - d.getDay(); return diff <= 0 ? diff + 7 : diff; } },
@@ -82,7 +89,7 @@ export default function StakePage() {
       try {
         const stored = localStorage.getItem('unbreakable-vow-flow');
         if (stored && JSON.parse(stored).rawInput) return;
-      } catch {}
+      } catch { /* empty */ }
       router.replace('/');
     }
   }, [vow.rawInput, router]);
@@ -93,12 +100,25 @@ export default function StakePage() {
     setStake({ ...vow.stake, amount });
   };
 
+  const handleOtherTap = () => {
+    setShowCustomAmount(true);
+    setStake({ ...vow.stake, amount: 0 });
+  };
+
   const destinations = vow.stake.consequence === 'charity' ? charities : vow.stake.consequence === 'anti' ? antiCauses : [];
 
-  // Format deadline for vow card meta — matches mock: "Sun, Apr 26 · 9pm"
-  const deadlineDisplay = useMemo(() => {
+  // Days until deadline
+  const daysUntilDeadline = useMemo(() => {
     const d = inferredDeadline || pickedEndDate;
-    if (!d) return 'Not set';
+    if (!d) return null;
+    const now = new Date();
+    return Math.max(1, Math.ceil((d.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+  }, [inferredDeadline, pickedEndDate]);
+
+  // Format deadline for resolve text — "Fri, May 1 · 11:59pm"
+  const deadlineResolveDisplay = useMemo(() => {
+    const d = inferredDeadline || pickedEndDate;
+    if (!d) return null;
     const datePart = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     const hours = d.getHours();
     const ampm = hours >= 12 ? 'pm' : 'am';
@@ -108,155 +128,174 @@ export default function StakePage() {
     return `${datePart} · ${timePart}`;
   }, [inferredDeadline, pickedEndDate]);
 
-  return (
-    <RitualScreen variant="utility">
-      <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100dvh', paddingBottom: 24 }}>
+  // Current display amount (for caption and ledger)
+  const displayAmount = vow.stake.amount;
+  const amountHint = AMOUNT_HINTS[displayAmount] || (displayAmount > 0 ? `$${displayAmount} on the line` : '');
 
-        {/* ── (a) Topbar ── */}
-        <div style={{
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          marginBottom: 14, padding: '0 6px',
-        }}>
-          <button
-            onClick={() => router.back()}
-            aria-label="Go back"
-            style={{
-              background: 'none', border: 'none', cursor: 'pointer',
-              fontSize: 22, color: 'var(--uv-text-muted)', padding: 0,
-              lineHeight: 1,
-            }}
-          >
-            &larr;
-          </button>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 6,
-            fontSize: 10.5, letterSpacing: '0.18em', textTransform: 'uppercase' as const,
-            color: 'var(--uv-gold)', fontWeight: 500,
-            fontFamily: 'var(--uv-font-sans)',
+  // Strip "I'll" prefix from vow text for display
+  const vowBody = activeVowText.replace(/^I('ll|'ll| will)\s*/i, '');
+
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', minHeight: '100dvh',
+      background: 'var(--uv-bg)',
+      maxWidth: 440, margin: '0 auto',
+      padding: '16px 20px 0',
+      position: 'relative',
+    }}>
+
+      {/* ── 1. Topbar ── */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 24,
+      }}>
+        {/* Back button */}
+        <button
+          onClick={() => router.back()}
+          aria-label="Go back"
+          style={{
+            width: 32, height: 32, borderRadius: '50%',
+            border: '1px solid var(--uv-border)',
+            background: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 16, color: 'var(--uv-text-muted)',
+            padding: 0, lineHeight: 1,
+          }}
+        >
+          &larr;
+        </button>
+
+        {/* Progress */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
+            letterSpacing: '0.16em', textTransform: 'uppercase' as const,
+            color: 'var(--uv-gold)',
           }}>
+            Step 2 of 3
+          </span>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <span style={{
               width: 6, height: 6, borderRadius: '50%',
-              background: 'var(--uv-gold-bright)',
-              boxShadow: '0 0 8px var(--uv-gold)',
-              display: 'inline-block', flexShrink: 0,
+              background: 'var(--uv-gold)',
+              display: 'inline-block',
             }} />
-            Set the weight
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: 'var(--uv-gold)',
+              boxShadow: '0 0 8px var(--uv-gold-glow)',
+              display: 'inline-block',
+            }} />
+            <span style={{
+              width: 6, height: 6, borderRadius: '50%',
+              background: 'transparent',
+              border: '1px solid var(--uv-text-dim)',
+              display: 'inline-block',
+            }} />
           </div>
         </div>
+      </div>
 
-        {/* ── (b) Vow card ── */}
-        <div style={{ marginBottom: 22 }}>
-          <RitualCard variant="ceremony">
-            {/* Head row: label + edit */}
-            <div style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              marginBottom: 0,
-            }}>
-              <span style={{
-                fontSize: 9.5, letterSpacing: '0.3em', textTransform: 'uppercase' as const,
-                color: 'var(--uv-text-dim)', fontWeight: 500,
-                fontFamily: 'var(--uv-font-sans)',
-              }}>
-                The Vow
-              </span>
-              <button
-                onClick={() => router.back()}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic',
-                  fontSize: 12, color: 'var(--uv-gold)',
-                }}
-              >
-                edit
-              </button>
-            </div>
+      {/* ── 2. Page Header ── */}
+      <div style={{ marginBottom: 18 }}>
+        <h1 style={{
+          fontFamily: 'var(--uv-font-serif)', fontSize: 34, fontWeight: 500,
+          color: 'var(--uv-text)', margin: '0 0 6px',
+          lineHeight: 1.15, letterSpacing: '-0.01em',
+        }}>
+          Set the <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>terms</em>.
+        </h1>
+        <p style={{
+          fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 400,
+          color: 'var(--uv-text-dim)', margin: 0,
+        }}>
+          A vow without weight is a wish.
+        </p>
+      </div>
 
-            {/* Vow text */}
-            <div style={{ marginBottom: 2 }}>
-              <FrauncesH1 size="card">
-                <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>I&apos;ll</em>{' '}
-                {activeVowText.replace(/^I('ll|'ll| will)\s*/i, '')}
-              </FrauncesH1>
-            </div>
+      {/* ── Scrollable content ── */}
+      <div style={{ flex: 1, paddingBottom: 180 }}>
 
-            {/* Meta row */}
-            <div style={{
-              display: 'flex', alignItems: 'stretch',
-              borderTop: '1px solid var(--uv-border-soft)', paddingTop: 12,
-            }}>
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 3, paddingRight: 14 }}>
-                <span style={{
-                  fontSize: 9, letterSpacing: '0.24em', textTransform: 'uppercase' as const,
-                  color: 'var(--uv-text-dim)', fontWeight: 500,
-                  fontFamily: 'var(--uv-font-sans)',
-                }}>
-                  Verdict
-                </span>
-                <span style={{
-                  fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontSize: 14,
-                  color: 'var(--uv-text)', letterSpacing: '-0.005em',
-                  fontFeatureSettings: '"tnum"',
-                }}>
-                  {deadlineDisplay}
-                </span>
-              </div>
-              <div style={{
-                flex: 1, display: 'flex', flexDirection: 'column', gap: 3,
-                borderLeft: '1px solid var(--uv-border-soft)', paddingLeft: 14,
-              }}>
-                <span style={{
-                  fontSize: 9, letterSpacing: '0.24em', textTransform: 'uppercase' as const,
-                  color: 'var(--uv-text-dim)', fontWeight: 500,
-                  fontFamily: 'var(--uv-font-sans)',
-                }}>
-                  Judge
-                </span>
-                <span style={{
-                  fontFamily: 'var(--uv-font-serif)', fontWeight: 500, fontSize: 14,
-                  color: 'var(--uv-text)', letterSpacing: '-0.005em',
-                }}>
-                  Pick next &rarr;
-                </span>
-              </div>
-            </div>
-          </RitualCard>
-        </div>
-
-        {/* ── (c) Stake section ── */}
-        <div style={{ marginBottom: 18 }}>
-          {/* Section header */}
+        {/* ── 3. Card 1 — The Vow ── */}
+        <div style={{
+          background: 'var(--uv-bg-card)',
+          border: '1px solid var(--uv-border)',
+          borderRadius: 14, padding: 16,
+          marginBottom: 14,
+        }}>
+          {/* Label row */}
           <div style={{
-            textAlign: 'center' as const,
-            fontSize: 10, letterSpacing: '0.32em', textTransform: 'uppercase' as const,
-            color: 'var(--uv-text-dim)', fontWeight: 500,
-            fontFamily: 'var(--uv-font-sans)',
-            marginBottom: 14,
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            marginBottom: 10,
           }}>
-            &mdash; Put weight on it &mdash;
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
+              letterSpacing: '0.16em', textTransform: 'uppercase' as const,
+              color: 'var(--uv-text-dim)',
+            }}>
+              THE VOW
+            </span>
+            <button
+              onClick={() => router.back()}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                color: 'var(--uv-gold)',
+              }}
+            >
+              Edit
+            </button>
           </div>
 
-          {/* 4-column tile grid */}
+          {/* Vow text */}
+          <p style={{
+            fontFamily: 'var(--uv-font-serif)', fontSize: 24, fontWeight: 500,
+            color: 'var(--uv-text)', margin: 0, lineHeight: 1.3,
+            letterSpacing: '-0.01em',
+          }}>
+            <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>I&apos;ll</em>{' '}
+            {vowBody}
+          </p>
+        </div>
+
+        {/* ── 4. Card 2 — The Stake ── */}
+        <div style={{
+          background: 'linear-gradient(180deg, rgba(212,169,85,0.04) 0%, var(--uv-bg-card) 100%)',
+          border: '1px solid var(--uv-gold-line)',
+          borderRadius: 14, padding: 16,
+          marginBottom: 14,
+        }}>
+          {/* Label */}
+          <span style={{
+            fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
+            letterSpacing: '0.16em', textTransform: 'uppercase' as const,
+            color: 'var(--uv-text-dim)',
+            display: 'block', marginBottom: 12,
+          }}>
+            THE STAKE
+          </span>
+
+          {/* Tile grid: 4 columns */}
           <div style={{
             display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 8, marginBottom: 12,
+            gap: 8, marginBottom: 14,
           }}>
-            {stakeAmounts.map((amount) => {
-              const active = vow.stake.amount === amount;
+            {STAKE_AMOUNTS.map((amount) => {
+              const active = !showCustomAmount && vow.stake.amount === amount;
               return (
                 <button
                   key={amount}
                   onClick={() => handleAmountSelect(amount)}
                   style={{
-                    aspectRatio: '1.05',
+                    aspectRatio: '1 / 1',
                     background: active
-                      ? 'linear-gradient(180deg, rgba(200,155,60,0.18), rgba(200,155,60,0.08))'
-                      : 'var(--uv-bg-card)',
-                    border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-soft)'}`,
-                    borderRadius: 14,
+                      ? 'rgba(200,155,60,0.12)'
+                      : 'var(--uv-bg-elevated)',
+                    border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
+                    borderRadius: 10,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontFamily: 'var(--uv-font-serif)', fontWeight: 500,
-                    fontVariationSettings: '"opsz" 144',
-                    fontSize: 22, letterSpacing: '-0.02em',
+                    fontSize: 24, letterSpacing: '-0.02em',
                     color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
                     fontFeatureSettings: '"tnum"',
                     cursor: 'pointer',
@@ -271,53 +310,164 @@ export default function StakePage() {
                 </button>
               );
             })}
+
+            {/* "Other" tile */}
+            <button
+              onClick={handleOtherTap}
+              style={{
+                aspectRatio: '1 / 1',
+                background: showCustomAmount
+                  ? 'rgba(200,155,60,0.12)'
+                  : 'var(--uv-bg-elevated)',
+                border: `1px solid ${showCustomAmount ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
+                borderRadius: 10,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontFamily: 'var(--uv-font-sans)', fontWeight: 500,
+                fontSize: 13,
+                color: showCustomAmount ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
+                cursor: 'pointer',
+                boxShadow: showCustomAmount
+                  ? '0 0 24px rgba(200,155,60,0.18), 0 1px 0 rgba(232,182,86,0.25) inset'
+                  : 'none',
+                transition: 'all 150ms',
+                padding: 0,
+              }}
+            >
+              Other
+            </button>
           </div>
 
-          {/* Destination row */}
-          {vow.stake.amount > 0 && (
+          {/* Custom amount input (inline below tiles) */}
+          {showCustomAmount && (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: 6,
-              fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 13.5,
-              color: 'var(--uv-text-muted)',
-              marginBottom: 6,
+              gap: 4, marginBottom: 14,
             }}>
-              If broken, goes to{' '}
-              <b style={{
-                color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500,
-                borderBottom: '1px dotted var(--uv-gold-line)',
-                paddingBottom: 1,
+              <span style={{
+                fontFamily: 'var(--uv-font-serif)', fontSize: 22, color: 'var(--uv-text-muted)',
+                fontWeight: 500,
+              }}>$</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="1"
+                placeholder="200"
+                value={customAmountValue}
+                autoFocus
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setCustomAmountValue(val);
+                  const num = parseInt(val, 10);
+                  setStake({ ...vow.stake, amount: isNaN(num) ? 0 : num });
+                }}
+                style={{
+                  width: 100,
+                  background: 'transparent',
+                  border: 'none',
+                  borderBottom: '1px solid var(--uv-gold-line)',
+                  outline: 'none',
+                  fontFamily: 'var(--uv-font-serif)', fontSize: 22, fontWeight: 500,
+                  color: 'var(--uv-gold-bright)',
+                  padding: '2px 0 4px',
+                  letterSpacing: '-0.02em',
+                  fontFeatureSettings: '"tnum"',
+                  textAlign: 'center' as const,
+                }}
+              />
+            </div>
+          )}
+
+          {/* Caption below tiles */}
+          {displayAmount > 0 && (
+            <p style={{
+              textAlign: 'center' as const, margin: '0 0 14px',
+            }}>
+              <span style={{
+                fontFamily: 'var(--uv-font-serif)', fontSize: 16, fontWeight: 600,
+                color: 'var(--uv-text)',
               }}>
-                {vow.stake.destination}
-              </b>
+                ${displayAmount}
+              </span>
+              {amountHint && (
+                <span style={{
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+                  color: 'var(--uv-text-dim)',
+                }}>
+                  {' '}&mdash; {amountHint}
+                </span>
+              )}
+            </p>
+          )}
+
+          {/* Penalty box */}
+          {displayAmount > 0 && (
+            <div style={{
+              background: 'rgba(139,46,31,0.08)',
+              border: '1px solid rgba(139,46,31,0.25)',
+              borderRadius: 10, padding: '13px 14px',
+              display: 'flex', alignItems: 'center', gap: 10,
+            }}>
+              {/* Left icon */}
+              <span style={{
+                fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic',
+                fontSize: 22, color: 'var(--uv-gold)',
+                flexShrink: 0, lineHeight: 1,
+              }}>
+                &#x27F3;
+              </span>
+
+              {/* Text */}
+              <p style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+                color: 'var(--uv-text-muted)', margin: 0, flex: 1,
+                lineHeight: 1.4,
+              }}>
+                If you break it, <strong style={{ color: 'var(--uv-text)', fontWeight: 600 }}>
+                  ${displayAmount} goes to
+                </strong>{' '}
+                <em style={{
+                  fontStyle: 'italic', color: 'var(--uv-gold)',
+                  borderBottom: '1px dotted var(--uv-gold-line)',
+                  paddingBottom: 1,
+                }}>
+                  {vow.stake.destination}
+                </em>.
+              </p>
+
+              {/* Change link */}
               <button
                 onClick={() => setShowDestPicker(!showDestPicker)}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontFamily: 'var(--uv-font-sans)', fontStyle: 'normal',
-                  fontSize: 10.5, color: 'var(--uv-text-dim)',
-                  borderBottom: '1px dotted var(--uv-border-soft)',
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+                  color: 'var(--uv-text-dim)', flexShrink: 0,
                 }}
               >
-                change
+                Change
               </button>
             </div>
           )}
         </div>
 
-        {/* ── (d) Below-the-fold features ── */}
-
-        {/* Consequence type selector — shown when "change" tapped or amount > 0 with picker open */}
-        {vow.stake.amount > 0 && showDestPicker && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 18 }}>
-            {/* Consequence type cards */}
-            <div style={{
-              fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' as const,
-              color: 'var(--uv-text-dim)', fontWeight: 600,
-              fontFamily: 'var(--uv-font-sans)',
+        {/* ── Consequence/Destination picker (shown when "Change" tapped) ── */}
+        {displayAmount > 0 && showDestPicker && (
+          <div style={{
+            background: 'var(--uv-bg-card)',
+            border: '1px solid var(--uv-border)',
+            borderRadius: 14, padding: 16,
+            marginBottom: 14,
+            display: 'flex', flexDirection: 'column', gap: 14,
+          }}>
+            {/* Consequence type label */}
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
+              letterSpacing: '0.16em', textTransform: 'uppercase' as const,
+              color: 'var(--uv-text-dim)',
             }}>
-              If you break it
-            </div>
+              IF YOU BREAK IT
+            </span>
+
+            {/* Consequence type cards */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {consequenceOptions.map((option) => {
                 const Icon = consequenceIcons[option.id];
@@ -330,18 +480,18 @@ export default function StakePage() {
                       updateConsequence(option.id, dest);
                     }}
                     style={{
-                      borderRadius: 14, padding: '12px 14px',
+                      borderRadius: 10, padding: '12px 14px',
                       display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left' as const,
-                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-card)',
-                      border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-soft)'}`,
+                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-elevated)',
+                      border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
                       cursor: 'pointer', transition: 'all 150ms',
                     }}
                   >
                     <div style={{
-                      width: 36, height: 36, borderRadius: 12,
+                      width: 36, height: 36, borderRadius: 10,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       flexShrink: 0,
-                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-elevated)',
+                      background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-card)',
                     }}>
                       <Icon style={{ width: 18, height: 18, color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)' }} />
                     </div>
@@ -368,11 +518,11 @@ export default function StakePage() {
             {destinations.length > 0 && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <span style={{
-                  fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' as const,
-                  color: 'var(--uv-text-dim)', fontWeight: 600,
-                  fontFamily: 'var(--uv-font-sans)',
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
+                  letterSpacing: '0.16em', textTransform: 'uppercase' as const,
+                  color: 'var(--uv-text-dim)',
                 }}>
-                  Choose a cause
+                  CHOOSE A CAUSE
                 </span>
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
                   {destinations.map((dest) => {
@@ -383,8 +533,8 @@ export default function StakePage() {
                         onClick={() => updateConsequence(vow.stake.consequence, dest)}
                         style={{
                           padding: '8px 14px', borderRadius: 9999,
-                          background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-card)',
-                          border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-soft)'}`,
+                          background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-elevated)',
+                          border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
                           cursor: 'pointer', transition: 'all 150ms',
                         }}
                       >
@@ -403,128 +553,174 @@ export default function StakePage() {
           </div>
         )}
 
-        {/* Deadline picker — only shown when vow text doesn't imply one */}
+        {/* ── 5. Card 3 — The Deadline ── */}
         {needsDeadlinePicker && (
-          <div style={{ marginBottom: 18 }}>
-            <RitualCard variant="ceremony">
-              <span style={{
-                fontSize: 9.5, letterSpacing: '0.18em', textTransform: 'uppercase' as const,
-                color: 'var(--uv-text-dim)', fontWeight: 600,
-                fontFamily: 'var(--uv-font-sans)',
-              }}>
-                Deadline
-              </span>
-              <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
-                {DEADLINE_PRESETS.map((p) => (
-                  <ChoicePill
-                    key={p.label}
-                    label={p.label}
-                    active={deadlineLabel === p.label}
-                    onPress={() => handleDeadlineSelect(p.label)}
-                  />
-                ))}
-              </div>
-              {showCustomDate && (
-                <input
-                  type="date"
-                  value={customDate}
-                  onChange={(e) => setCustomDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                  style={{
-                    width: '100%', padding: '8px 12px', borderRadius: 12,
-                    fontFamily: 'var(--uv-font-sans)', fontSize: 15,
-                    color: 'var(--uv-text)', background: 'transparent',
-                    border: '1px solid var(--uv-border)', outline: 'none',
-                    boxSizing: 'border-box' as const,
-                  }}
-                />
-              )}
-              {pickedEndDate && (
-                <p style={{
-                  fontFamily: 'var(--uv-font-sans)', fontSize: 13,
-                  color: 'var(--uv-text-muted)', margin: 0,
-                }}>
-                  Ends {pickedEndDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                </p>
-              )}
-            </RitualCard>
-          </div>
-        )}
+          <div style={{
+            background: 'var(--uv-bg-card)',
+            border: '1px solid var(--uv-border)',
+            borderRadius: 14, padding: 16,
+            marginBottom: 14,
+          }}>
+            {/* Label */}
+            <span style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
+              letterSpacing: '0.16em', textTransform: 'uppercase' as const,
+              color: 'var(--uv-text-dim)',
+              display: 'block', marginBottom: 12,
+            }}>
+              THE DEADLINE
+            </span>
 
-        {/* "Enter other amount" link + inline input */}
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-          {!showCustomAmount ? (
-            <button
-              onClick={() => {
-                setShowCustomAmount(true);
-                // Deselect tiles — custom amount is now active (0 won't match any tile)
-                setStake({ ...vow.stake, amount: 0 });
-              }}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer', padding: '4px 0',
-                fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic',
-                fontSize: 12, color: 'var(--uv-text-dim)',
-              }}
-            >
-              Enter other amount
-            </button>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 4, width: 120 }}>
-              <span style={{
-                fontFamily: 'var(--uv-font-serif)', fontSize: 20, color: 'var(--uv-text-muted)',
-                fontWeight: 500,
-              }}>$</span>
+            {/* Chips row */}
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8, marginBottom: 12 }}>
+              {DEADLINE_PRESETS.map((p) => {
+                const active = deadlineLabel === p.label;
+                return (
+                  <button
+                    key={p.label}
+                    onClick={() => handleDeadlineSelect(p.label)}
+                    style={{
+                      padding: '8px 14px', borderRadius: 9999,
+                      background: active ? 'var(--uv-gold-selected-bg)' : 'transparent',
+                      border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border)'}`,
+                      cursor: 'pointer', transition: 'all 150ms',
+                      fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 500,
+                      color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
+                    }}
+                  >
+                    {p.label}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Custom date input */}
+            {showCustomDate && (
               <input
-                type="number"
-                inputMode="numeric"
-                min="0"
-                placeholder="200"
-                value={customAmountValue}
-                autoFocus
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setCustomAmountValue(val);
-                  const num = parseInt(val, 10);
-                  setStake({ ...vow.stake, amount: isNaN(num) ? 0 : num });
-                }}
+                type="date"
+                value={customDate}
+                onChange={(e) => setCustomDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
                 style={{
-                  flex: 1,
-                  background: 'transparent',
-                  border: 'none',
-                  borderBottom: '1px solid var(--uv-gold-line)',
-                  outline: 'none',
-                  fontFamily: 'var(--uv-font-serif)', fontSize: 20, fontWeight: 500,
-                  color: 'var(--uv-gold-bright)',
-                  padding: '2px 0 4px',
-                  letterSpacing: '-0.02em',
-                  fontFeatureSettings: '"tnum"',
+                  width: '100%', padding: '8px 12px', borderRadius: 10,
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 15,
+                  color: 'var(--uv-text)', background: 'transparent',
+                  border: '1px solid var(--uv-border)', outline: 'none',
+                  boxSizing: 'border-box' as const,
+                  marginBottom: 8,
                 }}
               />
+            )}
+
+            {/* Resolve text */}
+            {deadlineResolveDisplay && (
+              <p style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
+                letterSpacing: '0.14em', textTransform: 'uppercase' as const,
+                color: 'var(--uv-text-dim)', margin: 0,
+              }}>
+                Resolves <strong style={{ color: 'var(--uv-text-muted)' }}>{deadlineResolveDisplay}</strong>
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ── 6. Bottom CTA (sticky) ── */}
+      <div style={{
+        position: 'fixed',
+        bottom: 0, left: 0, right: 0,
+        zIndex: 10,
+      }}>
+        {/* Gradient fade */}
+        <div style={{
+          height: 60,
+          background: 'linear-gradient(to bottom, transparent, var(--uv-bg))',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{
+          background: 'var(--uv-bg)',
+          padding: '0 20px 32px',
+          maxWidth: 440, margin: '0 auto',
+        }}>
+          {/* Ledger row */}
+          {displayAmount > 0 && (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 8,
+            }}>
+              <span style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 600,
+                letterSpacing: '0.16em', textTransform: 'uppercase' as const,
+                color: 'var(--uv-text-dim)',
+              }}>
+                YOU&apos;RE STAKING
+              </span>
+              <span>
+                <span style={{
+                  fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 600,
+                  color: 'var(--uv-text)',
+                }}>
+                  ${displayAmount}
+                </span>
+                {daysUntilDeadline && (
+                  <span style={{
+                    fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 500,
+                    color: 'var(--uv-text-dim)',
+                  }}>
+                    {' '}· {daysUntilDeadline} day{daysUntilDeadline !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </span>
             </div>
           )}
-        </div>
 
-        {/* ── (e) Footer — pushed to bottom ── */}
-        <div style={{ marginTop: 'auto' }}>
-          {/* Reassurance text */}
+          {/* Reassurance */}
           <p style={{
             textAlign: 'center' as const,
-            fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic',
-            fontSize: 11.5, color: 'var(--uv-text-dim)',
-            marginBottom: 12, margin: '0 0 12px 0',
+            fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+            color: 'var(--uv-text-dim)',
+            margin: '0 0 12px',
           }}>
             Nothing charges unless you break it.
           </p>
 
-          {/* CTA pill */}
-          <GoldCTA
-            variant="pill"
-            label="Pick your judge"
-            amount={vow.stake.amount > 0 ? `\u2014 $${vow.stake.amount}` : undefined}
-            onPress={() => router.push('/witness')}
-          />
+          {/* CTA button */}
+          <button
+            onClick={() => router.push('/witness')}
+            style={{
+              width: '100%', padding: '16px 20px',
+              background: 'var(--uv-text)',
+              color: 'var(--uv-bg)',
+              border: 'none', borderRadius: 9999,
+              cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              position: 'relative',
+              boxShadow: '0 0 40px rgba(244,237,224,0.12), 0 8px 24px rgba(0,0,0,0.3)',
+              transition: 'transform 100ms',
+            }}
+          >
+            <span style={{
+              fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 600,
+              letterSpacing: '-0.01em',
+            }}>
+              Name your witness
+            </span>
+
+            {/* Arrow circle */}
+            <span style={{
+              position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)',
+              width: 36, height: 36, borderRadius: '50%',
+              background: 'var(--uv-bg)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: 16, color: 'var(--uv-text)',
+            }}>
+              &rarr;
+            </span>
+          </button>
         </div>
       </div>
-    </RitualScreen>
+    </div>
   );
 }
