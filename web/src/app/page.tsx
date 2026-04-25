@@ -9,9 +9,7 @@ import { inferDeadline, analyzeVow } from '@/lib/vow-logic';
 
 const STARTER_CHIPS = [
   'Gym 3x this week',
-  'Delete TikTok for a week',
   'No texting my ex',
-  'No DoorDash this week',
   'No alcohol, 2 weeks',
 ];
 
@@ -424,15 +422,6 @@ export default function HomePage() {
         </button>
       </div>
 
-      {/* ─── Hero label ─── */}
-      <div style={{
-        fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase' as const,
-        color: 'var(--uv-gold)', fontWeight: 500, marginBottom: 12,
-        fontFamily: 'var(--uv-font-sans)',
-      }}>
-        Yesterday, you said tomorrow.
-      </div>
-
       {/* ─── H1 ─── */}
       <FrauncesH1 size="hero">
         Make a vow.
@@ -441,10 +430,10 @@ export default function HomePage() {
       </FrauncesH1>
 
       {/* ─── Subtitle ─── */}
-      <div style={{ marginTop: 18 }}>
+      <div style={{ marginTop: 24 }}>
         <FrauncesSub>
           <span style={{ maxWidth: 320, display: 'block' }}>
-            Tell a friend. Put money on it. Keep your word, win it back — or lose it somewhere it hurts.
+            Stake cash on your word. Your friend judges. Flake and lose it all.
           </span>
         </FrauncesSub>
       </div>
@@ -465,7 +454,7 @@ export default function HomePage() {
         value={inputText}
         onChange={(e) => setInputText(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-        placeholder="ship the thing by Friday"
+        placeholder="no phone after 10pm"
         style={{
           fontFamily: 'var(--uv-font-serif)', fontSize: 21, fontWeight: 400,
           color: 'var(--uv-text)',
@@ -476,7 +465,7 @@ export default function HomePage() {
         }}
       />
 
-      {/* ─── Verdict date pill ─── */}
+      {/* ─── Verdict date pill (hidden until user types) ─── */}
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 10,
         marginTop: 16,
@@ -487,6 +476,9 @@ export default function HomePage() {
         fontFamily: 'var(--uv-font-serif)', fontSize: 13,
         color: 'var(--uv-text)',
         letterSpacing: '-0.005em',
+        opacity: inputText.trim() ? 1 : 0,
+        transition: 'opacity 0.3s ease',
+        pointerEvents: inputText.trim() ? 'auto' as const : 'none' as const,
       }}>
         {/* Gold dot with glow */}
         <span style={{

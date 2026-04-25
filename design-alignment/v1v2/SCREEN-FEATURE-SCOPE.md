@@ -31,6 +31,21 @@ Check this doc FIRST when starting a P0 screen rebuild to avoid re-asking the sa
 
 ---
 
+## / (home) — PR #3AC (polish pass)
+
+**Decision:** Copy + UX polish pass on unauthenticated landing.
+**Date:** 2026-04-24
+
+**Changes from PR #3T baseline:**
+- Subtitle: "Stake cash on your word. Your friend judges. Flake and lose it all." (Joey's copy, overrides mock's longer subtitle)
+- Hero label: REMOVED (was "YESTERDAY, YOU SAID TOMORROW." from mock — removed to reduce cognitive load, H1 is strong enough alone)
+- Date pill: HIDDEN until user types at least 1 character (progressive disclosure, reduces decision anxiety on first impression)
+- Chips: reduced from 5 to 3 — kept "Gym 3x this week", "No texting my ex", "No alcohol, 2 weeks" (Hick's law — fewer options, faster decision; removed "Delete TikTok for a week" and "No DoorDash this week" as weaker/more niche)
+
+**Unchanged:** H1, brand wordmark, input, CTA, footer note, all flow logic, ceremony, auth redirect, smart date parsing.
+
+---
+
 ## / (home) — PR #3T
 
 **Decision:** Full rebuild of unauthenticated landing to match mock layout.
@@ -86,7 +101,41 @@ Check this doc FIRST when starting a P0 screen rebuild to avoid re-asking the sa
 
 - Mock headline: "Will Nick know if you did it?" (references witness name)
 - Production headline: "Is this specific enough?" (no witness name dependency — witness isn't chosen yet at this stage)
-- Note: Refine layout is still full-page, not bottom-sheet overlay per mock. Bottom-sheet rebuild queued as separate PR.
+- Note: Bottom-sheet rebuild completed in PR #3V (see below).
+
+---
+
+## /refine — PR #3V (bottom-sheet overlay rebuild)
+
+**Decision:** Full layout rebuild from full-page to bottom-sheet overlay matching mock.
+**Date:** 2026-04-24
+**Mock:** `02-refine-nudge.html`
+
+**Design approach:** Standalone page styled as a bottom-sheet (not a real overlay on home).
+- Faux home content rendered at 18% opacity with 2px blur (pointer-events none)
+- Dark backdrop overlay: rgba(15,13,10,0.72)
+- Animated bottom sheet with slide-up entrance
+
+**Layout elements (matching mock):**
+- Drag handle pill (32x3px, rule color, centered at top)
+- "?" glyph circle (36x36, gold border, gold-soft bg, serif italic)
+- Headline: "Is this specific enough?" (Joey override — NOT mock's "Will Nick know if you did it?")
+- Body text explaining why vague vows don't work (references user's raw input inline)
+- Quoted vow block (surface-2 bg, gold left border, "YOUR VOW" uppercase label)
+- GoldCTA "Tighten it" (routes to /stake with AI-generated refined text)
+- MutedSecondary "Keep it as-is" (routes to /stake with original rawInput)
+
+**Navigation chrome:** None (mock shows no topbar). "Keep it as-is" serves as dismissal path. Browser back goes to /.
+
+**Preserved from current code:**
+- useVowFlow() hooks (vow, setRefinedText)
+- Redirect guard (no rawInput -> /)
+- generateSuggestion() and getContextualSuggestions() from vow-logic
+- All routing logic to /stake
+
+**Intentional deviations from mock:**
+1. Headline: "Is this specific enough?" (witness name not available at this stage)
+2. GoldCTA height: 58px (primitive default) vs mock's 50px — kept for cross-screen consistency
 
 ---
 
@@ -146,3 +195,68 @@ Check this doc FIRST when starting a P0 screen rebuild to avoid re-asking the sa
 - (a) Avatar touch target: 44x44 transparent wrapper on 28px visual
 - (b) display_name fallback: matches auth-provider.tsx chain (full_name -> email prefix -> "?")
 - (c) Primitive reuse: AvatarMenuTrigger created as reusable primitive (used in multiple mocks)
+
+---
+
+## /vow-kept — PR #3X
+
+**Decision:** Full rebuild to match mocks M11 (charity) + M11B (cause-you-hate).
+**Date:** 2026-04-24
+**Mocks:** `m11-vow-kept-charity.html`, `m11b-vow-kept-cause-you-hate.html`
+
+**Layout changes (old -> new):**
+- Old: emoji trophy (80px circle), FrauncesSub (sans 14px), RitualCard dashboard variant, plain text secondary
+- New: full SVG trophy with halo + drop-shadow (96px wrap, 80x80 SVG), serif italic 16px sub, receipt card with "-- The Receipt --" label + dashed rows, gold secondary with flame icon
+
+**Key fixes from PR #3R audit:**
+1. H1 copy: already correct ("You actually did it.") but fontWeight fixed to 500
+2. Sub font: changed from FrauncesSub (sans 14px) to inline serif italic 16px per mock
+3. Receipt card: rebuilt with proper label, dashed-border rows, green "$X returned" with check mark, streak with flame icon
+4. Confetti dots: added 8 static gold particles per mock
+5. Secondary: now gold-colored text with flame icon, "Dare a friend" (not dim text)
+6. Padding: fixed to 70px 28px 28px (was 100px 36px 40px)
+7. Background gradient: corrected ellipse dimensions, position, opacity per mock
+
+**M11B variant (cause-you-hate):**
+- Shield SVG hero with heraldic red/gold gradient
+- "Crisis averted." H1 + "$X saved from [cause]" gold line
+- "Saved from" receipt row with ban glyph (circle + slash)
+- "Tell everyone you saved $X from [cause] ->" CTA
+
+**Hardcoded hex values (from mock, not tokens):**
+- #4ade80 (mock's --green, used for money returned text/check)
+- #E8B656 (mock's --gold-bright, used in saved-from text-shadow)
+- #C8443A (mock's --red, used in ban glyph)
+
+---
+
+## /vow-broken — PR #3X
+
+**Decision:** Full rebuild to match mocks (charity + cause-you-hate).
+**Date:** 2026-04-24
+**Mocks:** `vow-broken-charity.html`, `vow-broken-cause-you-hate.html`
+
+**Layout changes (old -> new):**
+- Old: div-with-crack "UV" glyph (80px), Stamp primitive above H1, FrauncesSub (sans 14px), RitualCard dashboard variant
+- New: full SVG broken seal (96px, 4-piece cracked wax + jagged crack), H1 first, then sub, then receipt, then inline stamp below receipt
+
+**Key fixes from PR #3R audit:**
+1. Element order: stamp moved from above H1 to below receipt (matching mock)
+2. Stamp styling: muted-red #A05248 (mock's --muted-red), serif 600 16px, 1.5px border, borderRadius 4, rotate(-3deg) — was uv-danger #F87171, sans 22px, 2px border, borderRadius 8, rotate(-2.5deg)
+3. H1: "You broke it." for charity (no "Brutal." prefix). "Brutal. You broke it." for anti-cause only.
+4. Sub font: changed from FrauncesSub (sans 14px) to inline serif italic 16px per mock
+5. Receipt card: rebuilt with label, dashed-border rows, Money row ($X -> destination), Streak row
+6. Padding: fixed to 84px 28px 28px (was 100px 36px 40px)
+
+**Cause-you-hate variant:**
+- Broken seal + red shield overlay SVG (44x50, with ban circle inside)
+- "Brutal. You broke it." H1 with tighter letter-spacing
+- "$X just went to [cause]" sub with red text-shadow
+- Money row with red destination text + glow
+- "Make a new vow -- let's make this back ->" CTA + "Post the damage ->" secondary
+
+**Added URL param:** `streak` — for "Streak ended at X" display in receipt
+
+**Hardcoded hex values (from mock, not tokens):**
+- #A05248 (mock's --muted-red, stamp border + text)
+- #C8443A (mock's --red, used in cause-you-hate destination styling)
