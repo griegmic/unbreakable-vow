@@ -2,16 +2,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Settings, ArrowLeft, Menu, X, Zap, Clock, LayoutGrid, Send } from 'lucide-react';
-import { FrauncesH1, WaxSeal, GoldCTA, EyebrowTag, RitualCard, WitnessChip, NeedsNowCard } from '@/components/primitives';
+import { FrauncesH1, WaxSeal, GoldCTA, EyebrowTag, WitnessChip, NeedsNowCard } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
-import {
-  buildDashboardList,
-  computeStats,
-  getTapTarget,
-  type DashboardVow,
-  type SortedVow,
-} from '@/lib/dashboard-sort';
+import type { DashboardVow } from '@/lib/dashboard-sort';
 
 // --- SlideMenu (restyled with --uv-* tokens) ---
 
@@ -118,15 +112,21 @@ function InProgressBanner() {
   const [flowTarget, setFlowTarget] = useState<string | null>(null);
 
   useEffect(() => {
+    let frame: number | null = null;
     try {
       const flow = localStorage.getItem('unbreakable-vow-flow');
       if (flow) {
         const parsed = JSON.parse(flow);
         if (parsed.rawInput && !parsed.vowId) {
-          setFlowTarget(parsed.refinedText ? '/seal' : '/refine');
+          frame = window.requestAnimationFrame(() => {
+            setFlowTarget(parsed.refinedText ? '/seal' : '/refine');
+          });
         }
       }
     } catch {}
+    return () => {
+      if (frame !== null) window.cancelAnimationFrame(frame);
+    };
   }, []);
 
   if (!flowTarget) return null;
@@ -169,7 +169,6 @@ export default function DashboardPage() {
   const [challenges, setChallenges] = useState<DashboardVow[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionBusy, setActionBusy] = useState<string | null>(null);
-  const [acceptedChallengeIds, setAcceptedChallengeIds] = useState<Set<string>>(new Set());
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -208,8 +207,6 @@ export default function DashboardPage() {
     // Merge accepted challenges into myVows so they appear in active/stats
     const myVowsData = (myRes.data ?? []) as DashboardVow[];
     const acceptedChallenges = (acceptedChallengeRes.data ?? []) as DashboardVow[];
-    const newAcceptedIds = new Set(acceptedChallenges.map(v => v.id));
-    setAcceptedChallengeIds(newAcceptedIds);
     const merged: DashboardVow[] = [
       ...myVowsData,
       ...acceptedChallenges.filter(v => !myVowsData.some(m => m.id === v.id)),
@@ -271,12 +268,6 @@ export default function DashboardPage() {
   }, [isAuthenticated, authLoading, router, fetchData]);
 
   // --- Computed state ---
-  const { keptCount, streak } = computeStats(myVows);
-  const dashboardVows = buildDashboardList(myVows, witnessingVows, challenges, acceptedChallengeIds);
-  const myDashboardVows = dashboardVows.filter(v => v.role !== 'witness');
-  const theirDashboardVows = dashboardVows.filter(v => v.role === 'witness');
-  const completedCount = myVows.filter(v => ['kept', 'broken', 'voided'].includes(v.status)).length;
-
   // --- Challenge handlers (preserved) ---
   const handleAcceptChallenge = async (vowId: string) => {
     const vow = challenges.find(v => v.id === vowId);
@@ -302,13 +293,10 @@ export default function DashboardPage() {
   };
 
   // --- Greeting ---
-  const firstName = displayName?.split(' ')[0] || '';
-  const activeCount = myDashboardVows.length + theirDashboardVows.length;
-  const subGreeting = activeCount === 0
-    ? 'Nothing on the line.'
-    : activeCount === 1
-    ? 'One on the line.'
-    : `You've got ${activeCount} on the line.`;
+  // Extract first name — skip if display_name looks like a phone number or is missing
+  const rawFirst = displayName?.split(' ')[0] || '';
+  const isPhoneNumber = /^\+?\d[\d\s()-]{6,}$/.test(rawFirst);
+  const firstName = isPhoneNumber ? '' : rawFirst;
 
   /*
    * S20 Dashboard — V6 layout (§3.4)
@@ -360,7 +348,7 @@ export default function DashboardPage() {
           </button>
           <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--uv-text)' }}>Unbreakable Vow</span>
           <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-on-gold)' }}>
-            {firstName?.charAt(0) || '?'}
+            {firstName ? firstName.charAt(0) : '⟡'}
           </div>
         </div>
         {/* Empty content */}
@@ -383,7 +371,7 @@ export default function DashboardPage() {
   return (
     <>
       <SlideMenu open={menuOpen} onClose={() => setMenuOpen(false)} />
-      <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', paddingBottom: 80 }}>
+      <div className="dashboard-screen-with-cta" style={{ minHeight: '100dvh', background: 'var(--uv-bg)' }}>
         <div style={{ maxWidth: 480, margin: '0 auto', padding: '24px 22px 0' }}>
 
         {/* V6 Header per §3.4: hamburger + wordmark + avatar */}
@@ -393,13 +381,13 @@ export default function DashboardPage() {
           </button>
           <span style={{ fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 16, color: 'var(--uv-text)' }}>Unbreakable Vow</span>
           <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold))', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-serif)', fontSize: 13, color: 'var(--uv-text-on-gold)' }}>
-            {firstName?.charAt(0) || '?'}
+            {firstName ? firstName.charAt(0) : '⟡'}
           </div>
         </div>
 
         {/* Greeting per §3.4 */}
         <div style={{ marginBottom: 24 }}>
-          <FrauncesH1 italic size="page">Hey, {firstName}.</FrauncesH1>
+          <FrauncesH1 italic size="page">{firstName ? `Hey, ${firstName}.` : 'Your vows.'}</FrauncesH1>
         </div>
 
         <InProgressBanner />
@@ -547,7 +535,7 @@ export default function DashboardPage() {
                   <NeedsNowCard
                     key={vow.id}
                     kind="witness"
-                    makerName={(vow as any).maker_display_name || 'Someone'}
+                    makerName={vow.maker_display_name || 'Someone'}
                     vowText={vow.refined_text}
                     stake={Math.round(vow.stake_amount / 100)}
                     hoursLeft={Math.max(0, 24 - hoursAgo)}
@@ -557,7 +545,7 @@ export default function DashboardPage() {
               })}
               {/* Pending dares — separate card per mock with Accept/Decline buttons */}
               {challenges.map(vow => {
-                const challengerName = (vow as any).maker_display_name || 'Someone';
+                const challengerName = vow.maker_display_name || 'Someone';
                 const stakeDollars = Math.round(vow.stake_amount / 100);
                 return (
                   <div
@@ -626,7 +614,7 @@ export default function DashboardPage() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {regularWitnessing.map(vow => {
-                const makerName = (vow as any).maker_display_name || 'Someone';
+                const makerName = vow.maker_display_name || 'Someone';
                 const isUrgent = vow.status === 'awaiting_verdict';
                 const wDaysLeft = vow.ends_at ? Math.ceil((new Date(vow.ends_at).getTime() - Date.now()) / 86400000) : null;
                 return (
@@ -684,12 +672,8 @@ export default function DashboardPage() {
         </div>{/* end maxWidth container */}
 
         {/* Sticky footer CTA */}
-        <div style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 40,
-          padding: '12px 22px env(safe-area-inset-bottom, 12px)',
-          background: 'linear-gradient(180deg, transparent, var(--uv-bg) 30%)',
-        }}>
-          <div style={{ maxWidth: 480, margin: '0 auto' }}>
+        <div className="dashboard-floating-cta">
+          <div className="dashboard-floating-cta-inner">
             <GoldCTA label="Make a vow →" onPress={() => router.push('/')} />
           </div>
         </div>
@@ -697,4 +681,3 @@ export default function DashboardPage() {
     </>
   );
 }
-

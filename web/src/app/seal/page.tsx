@@ -334,8 +334,9 @@ export default function SealPage() {
         }
         throw new Error(result.error || 'Could not activate your vow. Please try again.');
       }
+      const sealedId = vow.vowId;
       resetVow();
-      router.push('/sent');
+      router.push(sealedId ? `/vow/${sealedId}` : '/dashboard');
     } catch (err) {
       console.error('Zero-stake seal error:', err);
       setError(err instanceof Error ? err.message : 'Could not seal your vow. Please try again.');
@@ -384,8 +385,9 @@ export default function SealPage() {
       const t2 = setTimeout(() => setSealAnimPhase(3), 800);
       const t3 = setTimeout(() => {
         setStep('done');
+        const sealedVowId = vow.vowId;
         resetVow();
-        router.push('/sent');
+        router.push(sealedVowId ? `/vow/${sealedVowId}` : '/dashboard');
       }, 1400);
       timersRef.current.push(t1, t2, t3);
     } catch (err) {
@@ -435,8 +437,9 @@ export default function SealPage() {
           }
           throw new Error(result.error || 'Could not activate your vow. Please try again.');
         }
+        const sealedVowId = vow.vowId;
         resetVow();
-        router.push('/sent');
+        router.push(sealedVowId ? `/vow/${sealedVowId}` : '/dashboard');
       } catch (err) {
         console.error('Post-auth seal error:', err);
         setError(err instanceof Error ? err.message : 'Could not seal your vow. Please try again.');
@@ -522,8 +525,9 @@ export default function SealPage() {
     const t2 = setTimeout(() => setSealAnimPhase(3), 800);
     const t3 = setTimeout(() => {
       setStep('done');
+      const sealedId = vow.vowId;
       resetVow();
-      router.push('/sent');
+      router.push(sealedId ? `/vow/${sealedId}` : '/dashboard');
     }, 1400);
     timersRef.current.push(t1, t2, t3);
   };
@@ -1033,7 +1037,7 @@ export default function SealPage() {
               </p>
               <p style={{
                 fontFamily: 'var(--uv-font-sans)', fontSize: 11,
-                color: 'var(--uv-text-faint)', textAlign: 'center',
+                color: 'var(--uv-text-dim)', textAlign: 'center',
                 margin: '0 0 16px',
               }}>
                 No charge unless you break your vow
@@ -1054,8 +1058,8 @@ export default function SealPage() {
                   style={{
                     background: 'none', border: 'none', cursor: 'pointer',
                     fontFamily: 'var(--uv-font-sans)', fontSize: 12,
-                    color: 'var(--uv-text-faint)', padding: '8px 0',
-                    opacity: phoneBusy ? 0.3 : 0.5,
+                    color: 'var(--uv-text-dim)', padding: '8px 0',
+                    opacity: phoneBusy ? 0.35 : 0.85,
                   }}
                 >
                   or sign in with Google
@@ -1186,11 +1190,11 @@ export default function SealPage() {
 
         {/* Fine print */}
         {vow.stake.amount > 0 && (
-          <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-faint)', marginTop: 12 }}>
+          <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-dim)', marginTop: 12 }}>
             No charge unless you break your vow
           </p>
         )}
-        <p style={{ fontSize: 10, textAlign: 'center', color: 'var(--uv-text-faint)', marginTop: 8, opacity: 0.6, lineHeight: 1.5 }}>
+        <p style={{ fontSize: 10, textAlign: 'center', color: 'var(--uv-text-faint)', marginTop: 8, opacity: 0.8, lineHeight: 1.5 }}>
           By signing in, you agree to receive transactional SMS (verification codes, vow updates). Your witness will receive a text when you seal. Reply STOP to opt out anytime.
         </p>
       </RitualScreen>
@@ -1223,8 +1227,9 @@ export default function SealPage() {
             const t2 = setTimeout(() => setSealAnimPhase(3), 800);
             const t3 = setTimeout(() => {
               setStep('done');
+              const sealedId = vow.vowId;
               resetVow();
-              router.push('/sent');
+              router.push(sealedId ? `/vow/${sealedId}` : '/dashboard');
             }, 1400);
             timersRef.current.push(t1, t2, t3);
           } : undefined}
