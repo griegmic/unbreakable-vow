@@ -968,7 +968,7 @@ export default function SealPage() {
             onPress={handleSealTap}
             disabled={sealing}
           />
-          <MutedSecondary label="Back" onPress={() => router.push('/create')} />
+          <MutedSecondary label="Back" onPress={() => router.back()} />
 
           {isDevBypass && (
             <button
