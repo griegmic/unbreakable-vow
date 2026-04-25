@@ -1,6 +1,6 @@
 'use client';
-import React, { useEffect, useState, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
+import React, { Suspense, useEffect, useState, useCallback, useRef } from 'react';
+import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Clock, Shield, MessageCircle, Ban, ChevronDown, ChevronUp, Share2, Eye, Trophy, XCircle } from 'lucide-react';
 import { RitualScreen, RitualCard, GoldCTA, OutlinedGoldCTA, MutedSecondary } from '@/components/primitives';
 
@@ -90,7 +90,7 @@ function SkeletonRow({ count = 1 }: { count?: number }) {
     </div>
   );
 }
-import { ShareButton, CopyLinkButton } from '@/components/share-button';
+import { ShareButton } from '@/components/share-button';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import Timeline from '@/components/timeline';
 import { useAuth } from '@/providers/auth-provider';
@@ -152,9 +152,10 @@ function getPhase(vow: VowRow, isMaker: boolean, isWitness: boolean, isTarget: b
   return 'active';
 }
 
-export default function VowDetailPage() {
+function VowDetailContent() {
   const router = useRouter();
   const params = useParams();
+  const searchParams = useSearchParams();
   const vowId = params.id as string;
   const { isAuthenticated, loading: authLoading, session } = useAuth();
   const [vow, setVow] = useState<VowRow | null>(null);
@@ -170,6 +171,46 @@ export default function VowDetailPage() {
 
   // Active-phase countdown grid (must be top-level for hooks rules)
   const [cdTime, setCdTime] = useState(() => ({ hours: 0, minutes: 0, seconds: 0, totalMs: 0 }));
+
+  // Post-seal celebration overlay
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebPhase, setCelebPhase] = useState<'seal' | 'text' | 'fade' | 'done'>('seal');
+  const celebTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  useEffect(() => {
+    if (searchParams.get('sealed') === '1') {
+      setShowCelebration(true);
+      setCelebPhase('seal');
+
+      // Check reduced motion preference
+      const prefersReducedMotion = typeof window !== 'undefined' &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (prefersReducedMotion) {
+        setCelebPhase('text');
+        const t1 = setTimeout(() => setCelebPhase('fade'), 500);
+        const t2 = setTimeout(() => {
+          setCelebPhase('done');
+          setShowCelebration(false);
+          router.replace(`/vow/${vowId}`, { scroll: false });
+        }, 700);
+        celebTimersRef.current.push(t1, t2);
+      } else {
+        const t1 = setTimeout(() => setCelebPhase('text'), 300);
+        const t2 = setTimeout(() => setCelebPhase('fade'), 2000);
+        const t3 = setTimeout(() => {
+          setCelebPhase('done');
+          setShowCelebration(false);
+          router.replace(`/vow/${vowId}`, { scroll: false });
+        }, 2500);
+        celebTimersRef.current.push(t1, t2, t3);
+      }
+    }
+    return () => {
+      celebTimersRef.current.forEach(clearTimeout);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const fetchVow = useCallback(async () => {
     const { data, error } = await supabase
@@ -204,6 +245,69 @@ export default function VowDetailPage() {
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
   }, [vow?.ends_at]);
+
+  // Post-seal celebration overlay
+  if (showCelebration && celebPhase !== 'done') {
+    return (
+      <div
+        style={{
+          position: 'fixed',
+          inset: 0,
+          zIndex: 200,
+          background: '#0F0D0A',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          opacity: celebPhase === 'fade' ? 0 : 1,
+          transition: 'opacity 500ms ease',
+        }}
+      >
+        {/* Gold wax seal icon */}
+        <div
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle at 30% 22%, #F2C766 0%, #E8B656 30%, #C89B3C 62%, #8B6820 100%)',
+            boxShadow: '0 0 0 1px rgba(139,104,32,0.45), 0 14px 40px rgba(200,155,60,0.32)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: celebPhase === 'seal' || celebPhase === 'text' || celebPhase === 'fade' ? 1 : 0,
+            transition: 'opacity 300ms ease',
+          }}
+        >
+          <span style={{
+            fontFamily: 'var(--uv-font-serif)',
+            fontSize: 28,
+            fontWeight: 600,
+            fontStyle: 'italic',
+            color: '#1A1205',
+            letterSpacing: '-0.03em',
+          }}>
+            UV
+          </span>
+        </div>
+
+        {/* "Sworn." text */}
+        <p
+          style={{
+            fontFamily: 'var(--uv-font-serif)',
+            fontStyle: 'italic',
+            fontSize: 36,
+            fontWeight: 400,
+            color: 'var(--uv-gold, #D4A955)',
+            margin: '20px 0 0',
+            opacity: celebPhase === 'text' || celebPhase === 'fade' ? 1 : 0,
+            transition: 'opacity 300ms ease',
+          }}
+        >
+          Sworn.
+        </p>
+      </div>
+    );
+  }
 
   if (loading || authLoading) {
     return (
@@ -251,6 +355,10 @@ export default function VowDetailPage() {
     : vow.witness_name
     ? `Waiting for ${vow.witness_name}`
     : 'Your witness is watching';
+
+  const witnessDisplayName = !vow.witness_name || ['Your witness', 'Witness'].includes(vow.witness_name)
+    ? 'your witness'
+    : vow.witness_name;
 
   const stakeSubtitle = vow.stake_amount > 0
     ? `${stakeLabel} at stake \u00b7 ${vow.destination} if broken`
@@ -451,11 +559,25 @@ export default function VowDetailPage() {
     </div>
   );
 
-  const WithdrawButton = () => {
+  const WithdrawButton = ({ compact = false }: { compact?: boolean }) => {
     if (!isMaker || isTerminal) return null;
     return (
-      <div style={{ marginTop: 16 }}>
-        <MutedSecondary label="Withdraw vow" onPress={() => setVoidModalOpen(true)} />
+      <div style={{ marginTop: compact ? 6 : 16, display: 'flex', justifyContent: 'center' }}>
+        <button
+          type="button"
+          onClick={() => setVoidModalOpen(true)}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--uv-text-faint)',
+            cursor: 'pointer',
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: compact ? 12 : 13,
+            padding: compact ? '6px 0' : '10px 0',
+          }}
+        >
+          Withdraw vow
+        </button>
 
 
       </div>
@@ -547,72 +669,145 @@ export default function VowDetailPage() {
     const witnessDeclined = vow.witness_declined;
     const nudgeShareText = `Hey, did you see my vow? "${vow.refined_text.replace(/\.$/, '')}"${stakeLabel ? ` I put ${stakeLabel} on it.` : ''} I need you to accept:`;
 
+    const handleSendInvite = async () => {
+      if (!witnessUrl) return;
+      if (navigator.share) {
+        try {
+          await navigator.share({ text: nudgeShareText, url: witnessUrl });
+        } catch {}
+      } else if (vow.witness_phone) {
+        const cleanPhone = vow.witness_phone.replace(/[^\d+\-]/g, '');
+        const body = encodeURIComponent(`${nudgeShareText} ${witnessUrl}`);
+        window.location.href = `sms:${cleanPhone}?body=${body}`;
+      }
+    };
+
+    const handleCopyLink = async () => {
+      if (!witnessUrl) return;
+      try {
+        await navigator.clipboard.writeText(witnessUrl);
+        setActionMsg('Link copied');
+        setTimeout(() => setActionMsg(''), 2000);
+      } catch {}
+    };
+
     return (
       <RitualScreen>
         <BackNav />
-        <StatusPill variant="pending">Waiting on witness</StatusPill>
 
-        <VowTitle text={vow.refined_text} sub={stakeSubtitle} />
+        {/* Header: pill + vow text */}
+        <div style={{ marginBottom: 6 }}>
+          <StatusPill variant="pending">Waiting on witness</StatusPill>
+        </div>
+        <h1 style={{
+          fontFamily: 'var(--uv-font-serif)',
+          fontSize: 24,
+          fontWeight: 400,
+          color: 'var(--uv-text)',
+          margin: '0 0 8px',
+          lineHeight: 1.25,
+        }}>
+          {vow.refined_text}
+        </h1>
 
-        {/* Witness declined */}
+        {/* Stake / deadline sub-info */}
+        <p style={{
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 13,
+          color: 'var(--uv-text-faint)',
+          margin: '0 0 20px',
+        }}>
+          {stakeLabel ? `${stakeLabel} at stake` : 'Accountability only'}
+          {endDateFormatted ? ` \u00b7 Verdict by ${endDateFormatted}` : ''}
+        </p>
+
+        {/* Witness declined card */}
         {witnessDeclined && (
-          <div style={{ borderRadius: 18, padding: '18px 22px', background: 'var(--uv-bg-card)', border: '1px solid var(--uv-warn)', display: 'flex', flexDirection: 'column' as const, gap: 0 }}>
-            <span style={{ fontSize: 15, fontWeight: 500, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
-              {vow.witness_name} declined.
-            </span>
-            <p style={{ fontSize: 13, lineHeight: '19px', color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', marginTop: 8 }}>
-              You can continue solo &mdash; you&apos;ll judge the vow yourself on verdict day.
-            </p>
-            <div style={{ marginTop: 12 }}>
-              <GoldCTA label={actionBusy ? 'Switching...' : 'Go solo instead'} onPress={handleGoSolo} disabled={actionBusy} />
+          <RitualCard>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: 'var(--uv-warn-bg)',
+              }}>
+                <Ban className="w-[18px] h-[18px]" style={{ color: 'var(--uv-warn)' }} />
+              </div>
+              <div>
+                <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
+                  {vow.witness_name} declined.
+                </span>
+                <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', lineHeight: 1.45, display: 'block', marginTop: 4 }}>
+                  You can continue solo &mdash; you&apos;ll judge the vow yourself on verdict day.
+                </span>
+              </div>
             </div>
-          </div>
+            <GoldCTA label={actionBusy ? 'Switching...' : 'Go solo instead'} onPress={handleGoSolo} disabled={actionBusy} />
+          </RitualCard>
         )}
 
-        {/* Witness pending - nudge card */}
+        {/* Witness pending card */}
         {!witnessDeclined && witnessUrl && (
           <RitualCard>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--uv-gold-selected-shadow)' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
+              <div style={{
+                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                backgroundColor: 'var(--uv-gold-selected-shadow)',
+              }}>
                 <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--uv-gold)' }} />
               </div>
               <div>
                 <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
-                  Waiting on {vow.witness_name}.
+                  Waiting on {witnessDisplayName}.
                 </span>
-                <span style={{ fontSize: 12, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>
-                  {vow.witness_phone ? 'We texted them an invite. Nudge if they haven\u2019t checked yet.' : 'Share the invite so they can accept.'}
+                <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)', lineHeight: 1.45, display: 'block', marginTop: 4 }}>
+                  Share the invite so they can accept.
                 </span>
               </div>
             </div>
-            <ShareButton
-              url={witnessUrl}
-              text={nudgeShareText}
-              buttonText={vow.witness_phone ? 'Nudge your witness' : 'Send the invite'}
+
+            <GoldCTA
+              label={vow.witness_phone ? 'Nudge your witness' : 'Send the invite'}
+              onPress={handleSendInvite}
             />
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
-              <div style={{ borderRadius: 10, padding: '8px 12px', flex: 1, minWidth: 0, backgroundColor: 'var(--uv-bg-elevated)', border: '1px solid var(--uv-border-strong)' }}>
-                <p style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: 'var(--uv-text-faint)', margin: 0 }}>{witnessUrl}</p>
-              </div>
-              <CopyLinkButton url={witnessUrl} />
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={handleCopyLink}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 13,
+                  fontWeight: 500,
+                  color: 'var(--uv-text-muted)',
+                  padding: '8px 0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Share2 className="w-3.5 h-3.5" style={{ color: 'var(--uv-text-faint)' }} />
+                {actionMsg === 'Link copied' ? 'Copied!' : 'Copy invite link'}
+              </button>
             </div>
           </RitualCard>
         )}
 
-        {/* Go solo link */}
+        {/* "or go solo" */}
         {!witnessDeclined && (
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <MutedSecondary label="or go solo" onPress={handleGoSolo} />
-          </div>
+          <MutedSecondary
+            label="or go solo"
+            onPress={handleGoSolo}
+          />
         )}
 
         <TimelineBlock />
-        <WithdrawButton />
+        <WithdrawButton compact />
         <VoidConfirmModal />
         <ActionMessage />
-        <div style={{ marginTop: 'auto', paddingTop: 16 }}>
-          <DashboardButton />
-        </div>
       </RitualScreen>
     );
   }
@@ -1158,5 +1353,18 @@ function BackNavSimple() {
       <ArrowLeft className="w-5 h-5" style={{ color: 'var(--uv-text-faint)' }} />
       <span style={{ fontSize: 14, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Dashboard</span>
     </button>
+  );
+}
+
+export default function VowDetailPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: 32, height: 32, border: '2px solid var(--uv-gold)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'uv-spin 600ms linear infinite' }} />
+        <style>{`@keyframes uv-spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    }>
+      <VowDetailContent />
+    </Suspense>
   );
 }

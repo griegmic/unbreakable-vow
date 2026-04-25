@@ -58,11 +58,13 @@ export default function SealPage() {
   const [phone, setPhone] = useState('');
   const [phoneBusy, setPhoneBusy] = useState(false);
   const [phoneError, setPhoneError] = useState('');
-  const [phoneStep, setPhoneStep] = useState<'input' | 'otp'>('input');
+  const [phoneStep, setPhoneStep] = useState<'name' | 'input' | 'otp'>('name');
+  const [makerName, setMakerName] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpCooldown, setOtpCooldown] = useState(0);
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const paymentVowIdRef = useRef<string | null>(null);
 
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
@@ -75,6 +77,13 @@ export default function SealPage() {
       window.location.hostname === '127.0.0.1'
     );
     setIsDevBypass(isLocal);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const storedName = localStorage.getItem('unbreakable-maker-name');
+      if (storedName) setMakerName(storedName);
+    } catch {}
   }, []);
 
   // Clean up seal animation timers on unmount
@@ -228,6 +237,21 @@ export default function SealPage() {
     return { ok: false, error: lastError || 'Could not reach server' };
   }, []);
 
+  const scheduleSealRedirect = useCallback((sealedId: string) => {
+    setStep('sealing');
+    setSealAnimPhase(0);
+    const t0 = setTimeout(() => setSealAnimPhase(1), 120);
+    const t1 = setTimeout(() => setSealAnimPhase(2), 520);
+    const t2 = setTimeout(() => setSealAnimPhase(3), 980);
+    const t3 = setTimeout(() => {
+      setStep('done');
+      paymentVowIdRef.current = null;
+      resetVow();
+      router.push(`/vow/${sealedId}?sealed=1`);
+    }, 2600);
+    timersRef.current.push(t0, t1, t2, t3);
+  }, [resetVow, router]);
+
   const createVowAndPay = useCallback(async () => {
     if (sealingRef.current) return;
     sealingRef.current = true;
@@ -257,6 +281,7 @@ export default function SealPage() {
         throw new Error(draft?.error || 'Could not create vow. Please try again.');
       }
 
+      paymentVowIdRef.current = draft.id;
       const { data: siData, error: siError } = await supabase.functions.invoke('save-card', {
         body: { vow_id: draft.id },
       });
@@ -296,7 +321,7 @@ export default function SealPage() {
       sealingRef.current = false;
       setSealing(false);
     }
-  }, [vow, ensureDraftVow]);
+  }, [ensureDraftVow]);
 
   const handleZeroStakeSeal = useCallback(async () => {
     if (sealingRef.current) return;
@@ -334,16 +359,14 @@ export default function SealPage() {
         }
         throw new Error(result.error || 'Could not activate your vow. Please try again.');
       }
-      const sealedId = vow.vowId;
-      resetVow();
-      router.push(sealedId ? `/vow/${sealedId}` : '/dashboard');
+      scheduleSealRedirect(draft.id);
     } catch (err) {
       console.error('Zero-stake seal error:', err);
       setError(err instanceof Error ? err.message : 'Could not seal your vow. Please try again.');
       sealingRef.current = false;
       setSealing(false);
     }
-  }, [vow, ensureDraftVow, callSealVow, router, resetVow]);
+  }, [ensureDraftVow, callSealVow, scheduleSealRedirect]);
 
   const handleSealTap = async () => {
     if (authLoading) return;
@@ -379,23 +402,13 @@ export default function SealPage() {
         sealed_at: new Date().toISOString(),
       }).eq('id', draft.id);
 
-      setStep('sealing');
-      setSealAnimPhase(1);
-      const t1 = setTimeout(() => setSealAnimPhase(2), 400);
-      const t2 = setTimeout(() => setSealAnimPhase(3), 800);
-      const t3 = setTimeout(() => {
-        setStep('done');
-        const sealedVowId = vow.vowId;
-        resetVow();
-        router.push(sealedVowId ? `/vow/${sealedVowId}` : '/dashboard');
-      }, 1400);
-      timersRef.current.push(t1, t2, t3);
+      scheduleSealRedirect(draft.id);
     } catch (err) {
       console.error('Dev bypass error:', err);
       setError(err instanceof Error ? err.message : 'Dev bypass failed. Check console for details.');
       setSealing(false);
     }
-  }, [ensureDraftVow, sealing, router, resetVow]);
+  }, [ensureDraftVow, sealing, scheduleSealRedirect]);
 
   const handleAuthSuccess = useCallback(async () => {
     // NUCLEAR FIX: After OTP verification, the session is guaranteed valid
@@ -437,9 +450,7 @@ export default function SealPage() {
           }
           throw new Error(result.error || 'Could not activate your vow. Please try again.');
         }
-        const sealedVowId = vow.vowId;
-        resetVow();
-        router.push(sealedVowId ? `/vow/${sealedVowId}` : '/dashboard');
+        scheduleSealRedirect(draft.id);
       } catch (err) {
         console.error('Post-auth seal error:', err);
         setError(err instanceof Error ? err.message : 'Could not seal your vow. Please try again.');
@@ -491,6 +502,7 @@ export default function SealPage() {
         if (!secret) {
           throw new Error(`No client secret. Response: ${JSON.stringify(siData)}`);
         }
+        paymentVowIdRef.current = draft.id;
         setClientSecret(secret);
         setStep('payment');
       } catch (err) {
@@ -500,13 +512,14 @@ export default function SealPage() {
         setSealing(false);
       }
     }
-  }, [vow.stake.amount, ensureDraftVow, callSealVow, router, resetVow]);
+  }, [vow.stake.amount, ensureDraftVow, callSealVow, scheduleSealRedirect]);
 
   const handlePaymentSuccess = async () => {
     setStep('sealing');
 
-    if (vow.vowId) {
-      const result = await callSealVow(vow.vowId);
+    const sealedTargetId = paymentVowIdRef.current || vow.vowId;
+    if (sealedTargetId) {
+      const result = await callSealVow(sealedTargetId);
       if (!result.ok) {
         if (result.error === '__needs_auth__') {
           setStep('auth');
@@ -520,16 +533,14 @@ export default function SealPage() {
       }
     }
 
-    setSealAnimPhase(1);
-    const t1 = setTimeout(() => setSealAnimPhase(2), 400);
-    const t2 = setTimeout(() => setSealAnimPhase(3), 800);
-    const t3 = setTimeout(() => {
-      setStep('done');
-      const sealedId = vow.vowId;
-      resetVow();
-      router.push(sealedId ? `/vow/${sealedId}` : '/dashboard');
-    }, 1400);
-    timersRef.current.push(t1, t2, t3);
+    if (sealedTargetId) {
+      scheduleSealRedirect(sealedTargetId);
+    } else {
+      setError('Your payment went through but we could not find the vow to seal. Please try again.');
+      setStep('review');
+      sealingRef.current = false;
+      setSealing(false);
+    }
   };
 
   // ── Phone auth: Google OAuth trigger ──
@@ -592,7 +603,25 @@ export default function SealPage() {
   }, []);
 
   // ── Phone "Continue" handler — send OTP ──
+  const handleNameContinue = useCallback(() => {
+    const cleanName = makerName.trim().replace(/\s+/g, ' ');
+    if (cleanName.length < 2) {
+      setPhoneError('Enter the name your witness will recognize.');
+      return;
+    }
+    setMakerName(cleanName);
+    try { localStorage.setItem('unbreakable-maker-name', cleanName); } catch {}
+    setPhoneError('');
+    setPhoneStep('input');
+  }, [makerName]);
+
   const handlePhoneContinue = useCallback(async () => {
+    const cleanName = makerName.trim().replace(/\s+/g, ' ');
+    if (cleanName.length < 2) {
+      setPhoneStep('name');
+      setPhoneError('Enter the name your witness will recognize.');
+      return;
+    }
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 10) {
       setPhoneError('Please enter a valid 10-digit phone number.');
@@ -626,7 +655,7 @@ export default function SealPage() {
     setOtp(['', '', '', '', '', '']);
     setPhoneStep('otp');
     setTimeout(() => otpRefs.current[0]?.focus(), 100);
-  }, [phone, startCooldown, handleAuthSuccess]);
+  }, [makerName, phone, startCooldown]);
 
   // ── OTP verification ──
   const handleVerifyOtp = useCallback(async (code?: string) => {
@@ -656,8 +685,16 @@ export default function SealPage() {
     // Save phone to public.users — wrapped in try/catch so it NEVER blocks sealing
     try {
       if (data.user) {
+        const cleanName = makerName.trim().replace(/\s+/g, ' ');
+        if (cleanName) {
+          try {
+            await supabase.auth.updateUser({ data: { full_name: cleanName } });
+          } catch (metadataErr) {
+            console.warn('Auth metadata update after OTP failed (non-blocking):', metadataErr);
+          }
+        }
         await supabase.from('users').upsert(
-          { id: data.user.id, display_name: formattedPhone, phone: formattedPhone },
+          { id: data.user.id, display_name: cleanName || null, phone: formattedPhone },
           { onConflict: 'id' },
         );
       }
@@ -675,7 +712,7 @@ export default function SealPage() {
       setPhoneBusy(false);
       setPhoneError('Something went wrong. Please try again.');
     }
-  }, [otp, phone, phoneBusy, handleAuthSuccess]);
+  }, [otp, phone, phoneBusy, makerName, handleAuthSuccess]);
 
   // ── OTP input handlers ──
   const handleOtpChange = useCallback((index: number, value: string) => {
@@ -762,59 +799,88 @@ export default function SealPage() {
 
   // ── Sealing animation ──
   if (step === 'sealing') {
+    const namedWitness = witnessName && !['Witness', 'Your witness', 'TBD', 'Just me'].includes(witnessName)
+      ? witnessName
+      : '';
+
     return (
       <div
         style={{
           position: 'fixed',
           inset: 0,
           display: 'flex',
-          alignItems: 'center',
+          alignItems: 'stretch',
           justifyContent: 'center',
           background: 'var(--uv-bg)',
+          backgroundImage: 'radial-gradient(ellipse at 50% 18%, rgba(212,169,85,0.12), transparent 46%), radial-gradient(ellipse at 50% 88%, rgba(212,169,85,0.06), transparent 55%)',
+          padding: '28px 28px 36px',
         }}
       >
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}>
-          {/* Seal ring */}
+        <div style={{ width: '100%', maxWidth: 420, margin: '0 auto', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', gap: 22, textAlign: 'center' }}>
           <div
             style={{
-              width: 100,
-              height: 100,
-              borderRadius: '50%',
+              width: 94,
+              height: 94,
+              borderRadius: 24,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              border: `3px solid ${sealAnimPhase >= 1 ? 'var(--uv-success)' : 'var(--uv-gold)'}`,
-              boxShadow: `0 0 ${sealAnimPhase >= 1 ? 40 : 20}px ${sealAnimPhase >= 1 ? 'rgba(82,214,154,0.4)' : 'rgba(212,162,79,0.3)'}`,
-              transform: sealAnimPhase === 1 ? 'scale(1.1)' : 'scale(1)',
-              transition: 'all 500ms',
+              background: sealAnimPhase >= 2 ? 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold))' : 'var(--uv-bg-card)',
+              border: '1px solid var(--uv-gold-line)',
+              boxShadow: sealAnimPhase >= 2
+                ? '0 0 0 10px rgba(212,169,85,0.06), 0 24px 60px rgba(212,169,85,0.22)'
+                : '0 20px 60px rgba(0,0,0,0.25)',
+              transform: sealAnimPhase === 1 ? 'scale(1.08)' : 'scale(1)',
+              transition: 'all 520ms cubic-bezier(.2,.9,.2,1)',
             }}
           >
             {sealAnimPhase < 2 ? (
-              <Star style={{ width: 40, height: 40, color: 'var(--uv-gold)' }} />
+              <Star style={{ width: 34, height: 34, color: 'var(--uv-gold)' }} />
             ) : (
-              <Check style={{ width: 40, height: 40, color: 'var(--uv-success)', animation: 'uv-scale-in 300ms ease' }} />
+              <Check style={{ width: 42, height: 42, color: 'var(--uv-text-on-gold)', animation: 'uv-scale-in 320ms ease', strokeWidth: 3 }} />
             )}
           </div>
 
-          {/* Flash text */}
           {sealAnimPhase >= 2 && (
-            <p
+            <div style={{ animation: 'uv-fade-in 420ms ease', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 700, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-gold)', margin: 0 }}>
+                Sealed
+              </p>
+              <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 48, lineHeight: 1, fontWeight: 400, color: 'var(--uv-text)', margin: 0 }}>
+                It&apos;s official.
+              </h1>
+              <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 16, lineHeight: 1.45, color: 'var(--uv-text-muted)', margin: '4px 0 0', maxWidth: 300 }}>
+                {namedWitness
+                  ? `Your vow is live. Now tell ${namedWitness}.`
+                  : 'Your vow is live. Now send the witness invite.'}
+              </p>
+            </div>
+          )}
+
+          {sealAnimPhase >= 3 && activeVowText && (
+            <div
               style={{
-                textAlign: 'center',
-                fontSize: 22,
-                fontFamily: 'var(--uv-font-serif)',
-                maxWidth: 280,
-                color: 'var(--uv-gold)',
-                animation: 'uv-fade-in 400ms ease',
+                width: '100%',
+                borderRadius: 18,
+                border: '1px solid var(--uv-border-soft)',
+                background: 'rgba(24,21,18,0.72)',
+                padding: '18px 20px',
+                animation: 'uv-fade-up 420ms ease',
               }}
             >
-              {activeVowText ? `\u201C${activeVowText}\u201D` : 'Your vow is sealed.'}
-            </p>
+              <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 600, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--uv-text-faint)', margin: '0 0 8px' }}>
+                The vow
+              </p>
+              <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 22, lineHeight: 1.25, fontStyle: 'italic', color: 'var(--uv-text)', margin: 0 }}>
+                &ldquo;{activeVowText}&rdquo;
+              </p>
+            </div>
           )}
         </div>
         <style>{`
           @keyframes uv-scale-in { from { transform: scale(0); } to { transform: scale(1); } }
           @keyframes uv-fade-in { from { opacity: 0; } to { opacity: 1; } }
+          @keyframes uv-fade-up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         `}</style>
       </div>
     );
@@ -840,23 +906,118 @@ export default function SealPage() {
           }
         `}</style>
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <button
+            onClick={() => {
+              if (phoneStep === 'otp') {
+                setPhoneStep('input');
+                setPhoneError('');
+                setOtp(['', '', '', '', '', '']);
+              } else if (phoneStep === 'input') {
+                setPhoneStep('name');
+                setPhoneError('');
+              } else {
+                router.back();
+              }
+            }}
+            aria-label="Go back"
+            style={{
+              alignSelf: 'flex-start',
+              background: 'none',
+              border: 'none',
+              color: 'var(--uv-text-muted)',
+              cursor: 'pointer',
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 13,
+              fontWeight: 500,
+              margin: '0 0 18px',
+              padding: 0,
+            }}
+          >
+            &larr; Back
+          </button>
+
           {/* Hero */}
           <h1 style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 26, fontWeight: 600,
             color: 'var(--uv-text)', margin: '0 0 6px', textAlign: 'center',
           }}>
-            {phoneStep === 'otp' ? 'Enter the code.' : 'Almost done.'}
+            {phoneStep === 'name'
+              ? 'What should we call you?'
+              : phoneStep === 'otp'
+                ? 'Enter the code.'
+                : 'What’s your number?'}
           </h1>
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 14,
-            color: 'var(--uv-text-muted)', margin: '0 0 24px', textAlign: 'center',
+            color: 'var(--uv-text-muted)', margin: '0 auto 28px', textAlign: 'center',
+            maxWidth: 280, lineHeight: 1.45,
           }}>
-            {phoneStep === 'otp'
-              ? `We texted a 6-digit code to (${phone.slice(0,3)}) ${phone.slice(3,6)}-${phone.slice(6)}`
-              : 'Enter your number to seal.'}
+            {phoneStep === 'name'
+              ? 'Your witness needs to know who they’re holding accountable.'
+              : phoneStep === 'otp'
+                ? `We texted a 6-digit code to (${phone.slice(0,3)}) ${phone.slice(3,6)}-${phone.slice(6)}`
+                : 'We’ll text the code that seals your vow. No password.'}
           </p>
 
-          {phoneStep === 'otp' ? (
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 28 }}>
+            {['name', 'input', 'otp'].map((s) => (
+              <span
+                key={s}
+                aria-hidden="true"
+                style={{
+                  width: phoneStep === s ? 18 : 6,
+                  height: 6,
+                  borderRadius: 999,
+                  background: phoneStep === s ? 'var(--uv-gold)' : 'var(--uv-border-strong)',
+                  transition: 'all 180ms ease',
+                }}
+              />
+            ))}
+          </div>
+
+          {phoneStep === 'name' ? (
+            <>
+              <div
+                style={{
+                  display: 'flex', alignItems: 'center',
+                  background: 'var(--uv-bg-input, #10141C)',
+                  border: '1px solid var(--uv-border-strong)',
+                  borderRadius: 16, padding: '0 16px',
+                  transition: 'border-color 200ms',
+                  marginBottom: 8,
+                }}
+              >
+                <input
+                  type="text"
+                  autoComplete="name"
+                  placeholder="Your name"
+                  value={makerName}
+                  onChange={(e) => { setMakerName(e.target.value); setPhoneError(''); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleNameContinue(); }}
+                  autoFocus
+                  onFocus={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-gold)'; }}
+                  onBlur={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-border-strong)'; }}
+                  style={{
+                    flex: 1, border: 'none', outline: 'none', background: 'transparent',
+                    fontSize: 18, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
+                    padding: '17px 0', WebkitAppearance: 'none',
+                  }}
+                />
+              </div>
+
+              {phoneError && (
+                <p style={{ fontSize: 13, color: 'var(--uv-danger)', margin: '4px 0 0', fontFamily: 'var(--uv-font-sans)' }}>{phoneError}</p>
+              )}
+
+              <div style={{ marginTop: 'auto', paddingTop: 32 }}>
+                <GoldCTA
+                  label="Continue"
+                  onPress={handleNameContinue}
+                  disabled={makerName.trim().length < 2}
+                />
+              </div>
+            </>
+          ) : phoneStep === 'otp' ? (
             /* ── OTP VERIFICATION ── */
             <>
               {/* 6-digit OTP input */}
@@ -935,52 +1096,13 @@ export default function SealPage() {
           ) : (
             /* ── PHONE INPUT ── */
             <>
-              {/* Review card */}
-              <div style={{
-                background: 'var(--uv-bg-elev)',
-                border: '1px solid var(--uv-border-strong)',
-                borderRadius: 14,
-                padding: '16px 18px',
-                marginBottom: 20,
-              }}>
-                <span style={{
-                  fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500,
-                  letterSpacing: '2px', textTransform: 'uppercase',
-                  color: 'var(--uv-text-faint)',
-                }}>
-                  I VOW TO
-                </span>
-                <p style={{
-                  fontFamily: 'var(--uv-font-serif)', fontSize: 18,
-                  fontStyle: 'italic', color: 'var(--uv-text)',
-                  margin: '6px 0 12px', lineHeight: 1.3,
-                }}>
-                  {activeVowText}
-                </p>
-                <div style={{ height: 1, background: 'var(--uv-border-strong)', margin: '0 0 12px' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <div>
-                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>STAKE</span>
-                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--uv-gold)' }}>${vow.stake.amount}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>JUDGE</span>
-                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{witnessName === 'TBD' || witnessName === 'Witness' ? 'You decide' : witnessName}</span>
-                  </div>
-                  <div>
-                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 500, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-text-faint)', display: 'block' }}>BY</span>
-                    <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)' }}>{deadlineLabel}</span>
-                  </div>
-                </div>
-              </div>
-
               {/* Phone input */}
               <div
                 style={{
                   display: 'flex', alignItems: 'center',
                   background: 'var(--uv-bg-input, #10141C)',
                   border: '1px solid var(--uv-border-strong)',
-                  borderRadius: 14, padding: '0 16px',
+                  borderRadius: 16, padding: '0 16px',
                   transition: 'border-color 200ms',
                   marginBottom: 6,
                 }}
@@ -1004,8 +1126,8 @@ export default function SealPage() {
                   onBlur={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-border-strong)'; }}
                   style={{
                     flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                    fontSize: 16, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
-                    padding: '14px 0', WebkitAppearance: 'none',
+                    fontSize: 18, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
+                    padding: '17px 0', WebkitAppearance: 'none',
                   }}
                 />
               </div>
@@ -1018,7 +1140,7 @@ export default function SealPage() {
                 fontSize: 12, fontFamily: 'var(--uv-font-sans)',
                 color: 'var(--uv-text-faint)', margin: '4px 0 0',
               }}>
-                We&apos;ll text you a code. No password ever.
+                For verification and vow updates only.
               </p>
 
               {error && (
@@ -1027,43 +1149,13 @@ export default function SealPage() {
                 </div>
               )}
 
-              {/* Trust lines */}
-              <p style={{
-                fontFamily: 'var(--uv-font-sans)', fontSize: 13,
-                color: 'var(--uv-success)', textAlign: 'center',
-                margin: '24px 0 4px',
-              }}>
-                Keep your word, get every cent back
-              </p>
-              <p style={{
-                fontFamily: 'var(--uv-font-sans)', fontSize: 11,
-                color: 'var(--uv-text-dim)', textAlign: 'center',
-                margin: '0 0 16px',
-              }}>
-                No charge unless you break your vow
-              </p>
-
               {/* Seal CTA */}
-              <GoldCTA
-                label={phoneBusy ? 'Sending...' : `Seal my vow${vow.stake.amount > 0 ? ` — $${vow.stake.amount}` : ''}`}
-                onPress={handlePhoneContinue}
-                disabled={phoneBusy}
-              />
-
-              {/* Google fallback */}
-              <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-                <button
-                  onClick={triggerGoogleOAuth}
-                  disabled={phoneBusy}
-                  style={{
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    fontFamily: 'var(--uv-font-sans)', fontSize: 12,
-                    color: 'var(--uv-text-dim)', padding: '8px 0',
-                    opacity: phoneBusy ? 0.35 : 0.85,
-                  }}
-                >
-                  or sign in with Google
-                </button>
+              <div style={{ marginTop: 'auto', paddingTop: 32 }}>
+                <GoldCTA
+                  label={phoneBusy ? 'Sending...' : 'Text me the code'}
+                  onPress={handlePhoneContinue}
+                  disabled={phoneBusy || phone.replace(/\D/g, '').length < 10}
+                />
               </div>
             </>
           )}
@@ -1105,7 +1197,7 @@ export default function SealPage() {
         {/* Review card */}
         <div
           style={{
-            background: 'var(--uv-bg-elev)',
+            background: 'var(--uv-bg-elevated)',
             border: '1px solid var(--uv-border-strong)',
             borderRadius: 12,
             padding: '12px 14px',
@@ -1207,14 +1299,15 @@ export default function SealPage() {
           onSuccess={handlePaymentSuccess}
           onCancel={() => { setStep('review'); sealingRef.current = false; setSealing(false); }}
           onSkip={isDevBypass ? async () => {
-            if (!vow.vowId) {
+            const skipVowId = paymentVowIdRef.current || vow.vowId;
+            if (!skipVowId) {
               setError('Could not skip payment. Please try again.');
               sealingRef.current = false;
               setSealing(false);
               return;
             }
             setStep('sealing');
-            const result = await callSealVow(vow.vowId, { skip_payment: true });
+            const result = await callSealVow(skipVowId, { skip_payment: true });
             if (!result.ok) {
               setError(result.error || 'Could not activate your vow. Please try again.');
               setStep('review');
@@ -1222,16 +1315,7 @@ export default function SealPage() {
               setSealing(false);
               return;
             }
-            setSealAnimPhase(1);
-            const t1 = setTimeout(() => setSealAnimPhase(2), 400);
-            const t2 = setTimeout(() => setSealAnimPhase(3), 800);
-            const t3 = setTimeout(() => {
-              setStep('done');
-              const sealedId = vow.vowId;
-              resetVow();
-              router.push(sealedId ? `/vow/${sealedId}` : '/dashboard');
-            }, 1400);
-            timersRef.current.push(t1, t2, t3);
+            scheduleSealRedirect(skipVowId);
           } : undefined}
         />
       )}
