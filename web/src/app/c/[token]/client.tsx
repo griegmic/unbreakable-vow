@@ -1,10 +1,11 @@
 'use client';
 import { useState, useCallback, useEffect } from 'react';
-import { Calendar, Check, MessageCircle, Phone } from 'lucide-react';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { ArrowLeft, Calendar, Check, MessageCircle, Phone } from 'lucide-react';
+import { Elements, ExpressCheckoutElement, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 import { RitualScreen, RitualCard, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, EyebrowTag, ChoicePill } from '@/components/primitives';
 import { supabase } from '@/lib/supabase';
+import { displayPhone, normalizePhoneE164 } from '@/lib/phone';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -37,6 +38,7 @@ interface Vow {
   status: string;
   challenge_status: string;
   witness_invite_token: string | null;
+  target_phone?: string | null;
 }
 
 type Step = 'dare' | 'back-down-confirm' | 'backed-down' | 'stakes' | 'payment' | 'sealed';
@@ -65,47 +67,61 @@ const stripeAppearance = {
     colorBackground: STRIPE_COLORS.background,
     colorText: STRIPE_COLORS.text,
     colorDanger: STRIPE_COLORS.danger,
+    colorTextPlaceholder: '#8A8172',
+    colorIconTab: STRIPE_COLORS.text,
+    colorIconTabSelected: STRIPE_COLORS.textOnGold,
     borderRadius: '14px',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
   },
   rules: {
-    '.Input': { border: `1px solid ${STRIPE_COLORS.inputBorder}`, backgroundColor: STRIPE_COLORS.inputBg },
-    '.Input:focus': { border: `1px solid ${STRIPE_COLORS.focusBorder}`, boxShadow: `0 0 0 1px ${STRIPE_COLORS.focusBorder}` },
-    '.Tab': { border: `1px solid ${STRIPE_COLORS.inputBorder}`, backgroundColor: STRIPE_COLORS.inputBg },
-    '.Tab--selected': { border: `1px solid ${STRIPE_COLORS.focusBorder}`, backgroundColor: STRIPE_COLORS.background },
+    '.Label': { color: '#B8AD9A', fontWeight: '500' },
+    '.Input': { border: `1px solid ${STRIPE_COLORS.inputBorder}`, backgroundColor: STRIPE_COLORS.inputBg, color: STRIPE_COLORS.text, padding: '12px 14px' },
+    '.Input:focus': { border: '1px solid rgba(232,182,86,0.42)', boxShadow: '0 0 0 1px rgba(232,182,86,0.28)' },
+    '.Tab': { border: `1px solid ${STRIPE_COLORS.inputBorder}`, backgroundColor: STRIPE_COLORS.inputBg, color: STRIPE_COLORS.text },
+    '.Tab--selected': { border: '1px solid rgba(232,182,86,0.54)', backgroundColor: STRIPE_COLORS.primary, color: STRIPE_COLORS.textOnGold },
+    '.TabLabel': { color: STRIPE_COLORS.text },
+    '.TabLabel--selected': { color: STRIPE_COLORS.textOnGold },
+    '.Block': { backgroundColor: STRIPE_COLORS.background, border: `1px solid ${STRIPE_COLORS.inputBorder}` },
   },
 };
 
-// ─── STRIPE PAYMENT FORM (inside Elements — supports Apple Pay + card) ───
+// ─── STRIPE PAYMENT FORM (inside Elements with clientSecret — supports Apple Pay + card) ───
 function PaymentForm({
-  onSubmit,
+  onConfirmed,
   loading,
+  amount,
 }: {
-  onSubmit: (stripe: ReturnType<typeof useStripe>, elements: ReturnType<typeof useElements>) => Promise<void>;
+  onConfirmed: () => Promise<void>;
   loading: boolean;
+  amount: number;
 }) {
   const stripe = useStripe();
   const elements = useElements();
   const [cardError, setCardError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // Standard confirmation — used by the card form submit button.
+  const confirmPayment = async () => {
     if (!stripe || !elements || submitting) return;
     setCardError('');
     setSubmitting(true);
 
     try {
-      // Step 1: Validate payment details (triggers Apple Pay sheet if applicable)
-      const { error: submitError } = await elements.submit();
-      if (submitError) {
-        setCardError(submitError.message || 'Payment error. Please try again.');
+      const { error: confirmError } = await stripe.confirmSetup({
+        elements,
+        confirmParams: {
+          return_url: window.location.href, // fallback for redirect-based methods
+        },
+        redirect: 'if_required',
+      });
+      if (confirmError) {
+        setCardError(confirmError.message || 'Payment failed. Please try again.');
         setSubmitting(false);
         return;
       }
 
-      // Step 2: Delegate to parent for server calls + confirmPayment
-      await onSubmit(stripe, elements);
+      // SetupIntent confirmed — let parent finalize the vow
+      await onConfirmed();
     } catch (err) {
       setCardError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
     } finally {
@@ -113,11 +129,63 @@ function PaymentForm({
     }
   };
 
+  // Express Checkout (Apple Pay / Google Pay) — onConfirm fires after the
+  // user authorises in the wallet sheet.  elements.submit() has already been
+  // called internally by ExpressCheckoutElement, so we must NOT call it again.
+  const handleExpressConfirm = async () => {
+    if (!stripe || !elements || submitting) return;
+    setCardError('');
+    setSubmitting(true);
+
+    try {
+      const { error: confirmError } = await stripe.confirmSetup({
+        elements,
+        confirmParams: { return_url: window.location.href },
+        redirect: 'if_required',
+      });
+      if (confirmError) {
+        setCardError(confirmError.message || 'Payment failed. Please try again.');
+        setSubmitting(false);
+        return;
+      }
+      await onConfirmed();
+    } catch (err) {
+      setCardError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await confirmPayment();
+  };
+
   const isLoading = loading || submitting;
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <PaymentElement options={{ layout: 'tabs' }} />
+      <div style={{
+        borderRadius: 14,
+        padding: '12px 14px',
+        background: 'rgba(232,182,86,0.08)',
+        border: '1px solid rgba(232,182,86,0.18)',
+      }}>
+        <p style={{
+          margin: 0,
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 13,
+          lineHeight: 1.4,
+          color: 'var(--uv-text-muted)',
+        }}>
+          Apple Pay shows first when available. Card is the backup.
+        </p>
+      </div>
+      <ExpressCheckoutElement onConfirm={handleExpressConfirm} />
+      <PaymentElement options={{
+        layout: 'tabs',
+        wallets: { applePay: 'auto', googlePay: 'auto' },
+      }} />
       {cardError && (
         <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-danger)', margin: 0 }}>
           {cardError}
@@ -152,7 +220,7 @@ function PaymentForm({
             fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500,
             color: STRIPE_COLORS.textOnGold, letterSpacing: '0.005em',
           }}>
-            Seal the vow
+            Stake ${amount / 100}
           </span>
         )}
       </button>
@@ -181,24 +249,36 @@ export default function ChallengeInviteClient({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Stripe payment state — obtained from prepare_payment before Elements renders
+  const [paymentClientSecret, setPaymentClientSecret] = useState<string | null>(null);
+  const [paymentSetupIntentId, setPaymentSetupIntentId] = useState<string | null>(null);
+  const [preparingPayment, setPreparingPayment] = useState(false);
+
   // Collected data
   const suggestedCents = vow.suggested_stake_amount || 0;
   const [stakeAmount, setStakeAmount] = useState<number>(
-    suggestedCents > 0 && STAKE_OPTIONS.includes(suggestedCents) ? suggestedCents : 0
+    suggestedCents > 0 && STAKE_OPTIONS.includes(suggestedCents) ? suggestedCents : 5000
   );
   // Phase 2: Auto-select first charity
   const [charity, setCharity] = useState(CHARITIES[0]);
   const [email, setEmail] = useState('');
+  const [identityPhone, setIdentityPhone] = useState('');
   const [displayName, setDisplayName] = useState('');
+  const [phoneInput, setPhoneInput] = useState('');
+  const [otp, setOtp] = useState('');
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [phoneError, setPhoneError] = useState('');
+  const [phonePhase, setPhonePhase] = useState<'input' | 'otp'>('input');
 
   // For sealed state display
   const [sealedVow, setSealedVow] = useState<{
     stake: number;
     charity: string;
     email: string;
+    phone: string | null;
   } | null>(
     vow.challenge_status === 'accepted'
-      ? { stake: vow.stake_amount, charity: vow.destination, email: '' }
+      ? { stake: vow.stake_amount, charity: vow.destination, email: '', phone: vow.target_phone || null }
       : null
   );
 
@@ -216,7 +296,8 @@ export default function ChallengeInviteClient({
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setEmail(session.user.email || '');
-        setDisplayName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
+        setIdentityPhone(session.user.phone || '');
+        setDisplayName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || session.user.phone || '');
       }
     };
     checkSession();
@@ -224,7 +305,8 @@ export default function ChallengeInviteClient({
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setEmail(session.user.email || '');
-        setDisplayName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || '');
+        setIdentityPhone(session.user.phone || '');
+        setDisplayName(session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || session.user.phone || '');
       }
     });
     return () => subscription.unsubscribe();
@@ -259,6 +341,118 @@ export default function ChallengeInviteClient({
   const endDate = vow.ends_at
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : null;
+  const hasIdentity = Boolean(email || identityPhone);
+
+  const handlePhoneInputChange = (value: string) => {
+    setPhoneInput(value.replace(/\D/g, '').slice(0, 10));
+    setPhoneError('');
+  };
+
+  const handlePhoneContinue = useCallback(async () => {
+    const normalized = normalizePhoneE164(phoneInput);
+    if (!normalized) {
+      setPhoneError('Enter a valid 10-digit phone number.');
+      return;
+    }
+    setPhoneBusy(true);
+    setPhoneError('');
+    const { error: otpError } = await supabase.auth.signInWithOtp({ phone: normalized });
+    setPhoneBusy(false);
+    if (otpError) {
+      setPhoneError(otpError.message?.toLowerCase().includes('rate')
+        ? 'Too many attempts. Please wait a minute and try again.'
+        : otpError.message || 'Could not send the code. Try again.');
+      return;
+    }
+    setOtp('');
+    setPhonePhase('otp');
+  }, [phoneInput]);
+
+  const handleVerifyOtp = useCallback(async () => {
+    const normalized = normalizePhoneE164(phoneInput);
+    if (!normalized || otp.length !== 6 || phoneBusy) return;
+    setPhoneBusy(true);
+    setPhoneError('');
+    const { data, error: verifyError } = await supabase.auth.verifyOtp({
+      phone: normalized,
+      token: otp,
+      type: 'sms',
+    });
+    setPhoneBusy(false);
+    if (verifyError) {
+      setPhoneError(verifyError.message?.includes('expired') ? 'Code expired. Send a new one.' : 'Invalid code. Try again.');
+      setOtp('');
+      return;
+    }
+    if (data.user) {
+      setIdentityPhone(normalized);
+      setEmail(data.user.email || '');
+      setDisplayName(data.user.user_metadata?.full_name || data.user.phone || '');
+      try {
+        await supabase.from('users').upsert({
+          id: data.user.id,
+          display_name: data.user.user_metadata?.full_name || null,
+          phone: normalized,
+          phone_e164: normalized,
+        }, { onConflict: 'id' });
+      } catch (err) {
+        console.warn('Challenge phone profile upsert failed (non-blocking):', err);
+      }
+    }
+  }, [otp, phoneBusy, phoneInput]);
+
+  const ChallengeTopBar = ({ backTo, backLabel = 'Back' }: { backTo?: Step; backLabel?: string }) => (
+    <div style={{
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap: 16, minHeight: 36, marginBottom: 10,
+    }}>
+      {backTo ? (
+        <button
+          type="button"
+          onClick={() => { setError(null); setStep(backTo); }}
+          aria-label={backLabel}
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 7,
+            background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+            color: 'var(--uv-text-muted)',
+            fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 600,
+          }}
+        >
+          <ArrowLeft style={{ width: 17, height: 17 }} />
+          {backLabel}
+        </button>
+      ) : (
+        <a
+          href="/quick-vow"
+          aria-label="Unbreakable Vow home"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            color: 'var(--uv-text-muted)', textDecoration: 'none',
+            fontFamily: 'var(--uv-font-serif)', fontSize: 14, fontWeight: 700,
+          }}
+        >
+          <span style={{
+            width: 18, height: 18, borderRadius: 5,
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            border: '1px solid var(--uv-gold)',
+            color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+          }}>
+            ◆
+          </span>
+          Unbreakable Vow
+        </a>
+      )}
+      <a
+        href="/quick-vow"
+        style={{
+          color: 'var(--uv-gold-bright)', textDecoration: 'none',
+          fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 800,
+        }}
+      >
+        Make a vow
+      </a>
+    </div>
+  );
 
   // Direct fetch to edge function — bypasses supabase.functions.invoke() which
   // wraps errors in FunctionsHttpError and makes response parsing unreliable.
@@ -346,6 +540,7 @@ export default function ChallengeInviteClient({
         stake_amount: 0,
         destination: '',
         email,
+        phone: identityPhone,
         display_name: displayName || undefined,
       };
 
@@ -355,65 +550,59 @@ export default function ChallengeInviteClient({
         setBusy(false);
         return;
       }
-      setSealedVow({ stake: 0, charity: '', email });
-      setStep('sealed');
+      setSealedVow({ stake: 0, charity: '', email, phone: identityPhone || null });
+      window.location.href = `/vow/${vow.id}?sealed=1`;
     } catch {
       setError('Network error. Please check your connection.');
     } finally {
       setBusy(false);
     }
-  }, [busy, token, email, displayName]);
+  }, [busy, token, email, identityPhone, displayName]);
 
-  // ─── STAKED PAYMENT HANDLER (deferred-intent — supports Apple Pay + card) ───
-  const handlePaymentConfirm = useCallback(async (
-    stripe: import('@stripe/stripe-js').Stripe | null,
-    elements: import('@stripe/stripe-js').StripeElements | null,
-  ) => {
-    if (!stripe || !elements || busy) return;
-    setBusy(true);
+  // ─── PREPARE PAYMENT: create SI on server before Elements renders ───
+  const preparePayment = useCallback(async () => {
+    if (preparingPayment || paymentClientSecret) return;
+    setPreparingPayment(true);
     setError(null);
     try {
-      // Step 1: Call prepare_payment to create PI on server
       const { data: prepData, errorCode: prepError } = await callAcceptChallenge({
         token,
         action: 'prepare_payment',
         stake_amount: stakeAmount,
         email,
+        phone: identityPhone,
         display_name: displayName || undefined,
       });
       if (prepError || !prepData) {
         setError(mapErrorMessage(prepError || 'payment_failed'));
-        setBusy(false);
+        setPreparingPayment(false);
         return;
       }
+      setPaymentClientSecret(prepData.client_secret as string);
+      setPaymentSetupIntentId(prepData.setup_intent_id as string);
+      setStep('payment');
+    } catch {
+      setError('Network error. Please check your connection.');
+    } finally {
+      setPreparingPayment(false);
+    }
+  }, [preparingPayment, paymentClientSecret, token, stakeAmount, email, identityPhone, displayName]);
 
-      const clientSecret = prepData.client_secret as string;
-      const paymentIntentId = prepData.payment_intent_id as string;
-
-      // Step 2: Confirm payment (triggers Apple Pay / card confirmation)
-      const { error: confirmError } = await stripe.confirmPayment({
-        elements,
-        clientSecret,
-        confirmParams: {
-          return_url: window.location.href, // fallback — shouldn't redirect for Apple Pay / card
-        },
-        redirect: 'if_required',
-      });
-      if (confirmError) {
-        setError(confirmError.message || 'Payment failed. Please try again.');
-        setBusy(false);
-        return;
-      }
-
-      // Step 3: Finalize — call accept with the confirmed PI
+  // ─── STAKED PAYMENT HANDLER — called after PaymentForm confirms the SI ───
+  const handlePaymentConfirmed = useCallback(async () => {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
       const { errorCode: acceptError } = await callAcceptChallenge({
         token,
         action: 'accept',
         stake_amount: stakeAmount,
         destination: charity,
         email,
+        phone: identityPhone,
         display_name: displayName || undefined,
-        payment_intent_id: paymentIntentId,
+        setup_intent_id: paymentSetupIntentId,
       });
       if (acceptError) {
         setError(mapErrorMessage(acceptError));
@@ -421,14 +610,14 @@ export default function ChallengeInviteClient({
         return;
       }
 
-      setSealedVow({ stake: stakeAmount, charity, email });
-      setStep('sealed');
+      setSealedVow({ stake: stakeAmount, charity, email, phone: identityPhone || null });
+      window.location.href = `/vow/${vow.id}?sealed=1`;
     } catch {
       setError('Network error. Please check your connection.');
     } finally {
       setBusy(false);
     }
-  }, [busy, token, stakeAmount, charity, email, displayName]);
+  }, [busy, token, stakeAmount, charity, email, identityPhone, displayName, paymentSetupIntentId]);
 
   // ─── PHONE CAPTURE HANDLER (Phase 3) ───
   const handleSavePhone = async () => {
@@ -491,19 +680,23 @@ export default function ChallengeInviteClient({
   if (step === 'dare') {
     return (
       <RitualScreen variant="utility">
+        <ChallengeTopBar />
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
-          justifyContent: 'center', minHeight: '70dvh', gap: 20, textAlign: 'center',
+          justifyContent: 'center', minHeight: '70dvh', gap: 18, textAlign: 'center',
           padding: '0 16px',
         }}>
-          <EyebrowTag>UNBREAKABLE VOW</EyebrowTag>
+          <EyebrowTag tone="amber">Dare received</EyebrowTag>
 
-          <p style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 18, lineHeight: '26px',
-            color: 'var(--uv-text-muted)', margin: 0,
-          }}>
-            {`${makerFirstName} doesn't think you can`}
-          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
+            <FrauncesH1 italic size="page">{makerFirstName} dared you.</FrauncesH1>
+            <p style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 16, lineHeight: '23px',
+              color: 'var(--uv-text-muted)', margin: 0, maxWidth: 310,
+            }}>
+              Accept it. Stake your word. Follow through and you lose nothing. Flake, and you pay.
+            </p>
+          </div>
 
           <RitualCard>
             <div style={{ display: 'flex', alignItems: 'stretch', overflow: 'hidden' }}>
@@ -524,12 +717,12 @@ export default function ChallengeInviteClient({
               fontFamily: 'var(--uv-font-sans)', fontSize: 14,
               color: 'var(--uv-text-muted)', margin: 0,
             }}>
-              by {endDate}
+              Due by {endDate}. {makerFirstName} makes the verdict.
             </p>
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, width: '100%', maxWidth: 320 }}>
-            <GoldCTA label="I do solemnly swear" onPress={() => setStep('stakes')} />
+            <GoldCTA label="Accept the dare" onPress={() => setStep('stakes')} />
             <button
               type="button"
               onClick={() => setStep('back-down-confirm')}
@@ -566,6 +759,7 @@ export default function ChallengeInviteClient({
   if (step === 'back-down-confirm') {
     return (
       <RitualScreen variant="utility">
+        <ChallengeTopBar backTo="dare" />
         <div style={{
           flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center',
           minHeight: '70dvh',
@@ -624,6 +818,7 @@ export default function ChallengeInviteClient({
   if (step === 'backed-down') {
     return (
       <RitualScreen variant="utility">
+        <ChallengeTopBar />
         <div style={{
           flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
           justifyContent: 'center', minHeight: '70dvh', gap: 20, textAlign: 'center',
@@ -642,7 +837,7 @@ export default function ChallengeInviteClient({
               Dare them back &rarr;
             </a>
             <a
-              href="/"
+              href="/quick-vow"
               style={{
                 fontFamily: 'var(--uv-font-sans)', fontSize: 13,
                 color: 'var(--uv-text-muted)', textDecoration: 'none',
@@ -660,11 +855,56 @@ export default function ChallengeInviteClient({
   if (step === 'stakes') {
     return (
       <RitualScreen variant="utility">
+        <ChallengeTopBar backTo="dare" />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 40 }}>
           <div style={{ textAlign: 'center' }}>
-            <FrauncesH1 italic size="page">You&apos;re in.</FrauncesH1>
-            <FrauncesSub>Stake something. Fail and it goes to charity.</FrauncesSub>
+            <FrauncesH1 italic size="page">Stake your word.</FrauncesH1>
+            <FrauncesSub>Keep it and you lose nothing. Miss, and the money goes to charity.</FrauncesSub>
           </div>
+
+          <RitualCard>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <p style={{
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 700,
+                  letterSpacing: '0.24em', textTransform: 'uppercase' as const,
+                  color: 'var(--uv-text-dim)', margin: '0 0 7px',
+                }}>
+                  The dare
+                </p>
+                <p style={{
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 20, lineHeight: 1.18,
+                  fontWeight: 750, color: 'var(--uv-text)', margin: 0,
+                }}>
+                  {vow.refined_text}
+                </p>
+              </div>
+              <div style={{ height: 1, background: 'var(--uv-border-soft)' }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, alignItems: 'center' }}>
+                <div>
+                  <p style={{
+                    fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 700,
+                    letterSpacing: '0.24em', textTransform: 'uppercase' as const,
+                    color: 'var(--uv-text-dim)', margin: '0 0 4px',
+                  }}>
+                    Due by
+                  </p>
+                  <p style={{
+                    fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 700,
+                    color: 'var(--uv-text)', margin: 0,
+                  }}>
+                    {endDate || 'Verdict day'}
+                  </p>
+                </div>
+                <p style={{
+                  fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+                  color: 'var(--uv-text-muted)', margin: 0, textAlign: 'right',
+                }}>
+                  {makerFirstName} judges
+                </p>
+              </div>
+            </div>
+          </RitualCard>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'center' }}>
             {suggestedCents > 0 && (
@@ -712,8 +952,17 @@ export default function ChallengeInviteClient({
           {/* Footer CTAs */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <GoldCTA
-              label={stakeAmount > 0 ? `Stake $${stakeAmount / 100}` : 'Continue'}
-              onPress={() => setStep('payment')}
+              label={preparingPayment ? 'Preparing...' : stakeAmount > 0 ? `Accept the dare - stake $${stakeAmount / 100}` : 'Accept with no stake'}
+              onPress={() => {
+                if (stakeAmount > 0 && hasIdentity) {
+                  // Staked + already signed in: prepare SI first, then show payment
+                  preparePayment();
+                } else {
+                  // No stake or needs sign-in: go to payment/sign-in step
+                  setStep('payment');
+                }
+              }}
+              disabled={preparingPayment}
             />
             <button
               type="button"
@@ -775,7 +1024,7 @@ export default function ChallengeInviteClient({
           setBusy(false);
           return;
         }
-        setSealedVow({ stake: 0, charity: '', email: 'test@unbreakablevow.app' });
+        setSealedVow({ stake: 0, charity: '', email: 'test@unbreakablevow.app', phone: null });
         setStep('sealed');
         setBusy(false);
       } catch {
@@ -786,23 +1035,153 @@ export default function ChallengeInviteClient({
 
     return (
       <RitualScreen variant="utility">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
-          <EyebrowTag>UNBREAKABLE VOW</EyebrowTag>
+        <ChallengeTopBar backTo="stakes" />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18, paddingBottom: 40 }}>
+          <EyebrowTag>{hasIdentity ? 'Last step' : 'Quick sign-in'}</EyebrowTag>
 
           <div>
-            <FrauncesH1 italic size="page">Almost there.</FrauncesH1>
+            <FrauncesH1 italic size="page">
+              {!hasIdentity
+                ? 'What’s your number?'
+                : isStaked
+                  ? `Authorize $${stakeAmount / 100}.`
+                  : 'You’re in.'}
+            </FrauncesH1>
             <div style={{ marginTop: 8 }}>
               <FrauncesSub>
-                {isStaked
-                  ? `$${stakeAmount / 100} held until your vow is resolved.`
-                  : 'Sign in to seal the vow.'}
+                {!hasIdentity
+                  ? 'We’ll text a code. This is your account and verdict reminder.'
+                  : isStaked
+                    ? 'Keep the dare and you lose nothing. Miss, and the stake goes to charity.'
+                    : `${makerFirstName} needs to know who accepted.`}
               </FrauncesSub>
             </div>
           </div>
 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 14,
+            padding: '13px 15px',
+            borderRadius: 16,
+            background: 'rgba(240,233,219,0.035)',
+            border: '1px solid var(--uv-border-soft)',
+          }}>
+            <p style={{
+              flex: 1,
+              minWidth: 0,
+              margin: 0,
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 14,
+              lineHeight: 1.25,
+              fontWeight: 700,
+              color: 'var(--uv-text)',
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+            }}>
+              {vow.refined_text}
+            </p>
+            <span style={{
+              flexShrink: 0,
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 13,
+              fontWeight: 800,
+              color: 'var(--uv-gold-bright)',
+            }}>
+              {isStaked ? `$${stakeAmount / 100}` : 'No stake'} · {endDate || 'verdict day'}
+            </span>
+          </div>
+
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Google Sign In — brand colors are Google's requirement */}
-            {!email && (
+            {!hasIdentity && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {phonePhase === 'otp' ? (
+                    <>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        autoComplete="one-time-code"
+                        value={otp}
+                        onChange={(e) => { setOtp(e.target.value.replace(/\D/g, '').slice(0, 6)); setPhoneError(''); }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleVerifyOtp(); }}
+                        placeholder="6-digit code"
+                        autoFocus
+                        style={{
+                          width: '100%', boxSizing: 'border-box',
+                          padding: '16px 16px', borderRadius: 14,
+                          fontFamily: 'var(--uv-font-sans)', fontSize: 22, fontWeight: 750,
+                          textAlign: 'center', letterSpacing: '0.16em',
+                          color: 'var(--uv-text)', background: 'var(--uv-bg-input)',
+                          border: '1px solid var(--uv-border-strong)', outline: 'none',
+                        }}
+                      />
+                      <GoldCTA
+                        label={phoneBusy ? 'Checking...' : 'Verify number'}
+                        onPress={handleVerifyOtp}
+                        disabled={phoneBusy || otp.length !== 6}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => { setPhonePhase('input'); setOtp(''); setPhoneError(''); }}
+                        style={{
+                          background: 'none', border: 'none', padding: 0, cursor: 'pointer',
+                          fontFamily: 'var(--uv-font-sans)', fontSize: 12,
+                          color: 'var(--uv-text-muted)',
+                        }}
+                      >
+                        Use a different number
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', gap: 10,
+                        borderRadius: 14, border: '1px solid var(--uv-border-strong)',
+                        background: 'var(--uv-bg-input)', padding: '0 14px',
+                      }}>
+                        <span style={{
+                          fontFamily: 'var(--uv-font-sans)', fontSize: 15,
+                          color: 'var(--uv-text-muted)', whiteSpace: 'nowrap',
+                        }}>
+                          +1
+                        </span>
+                        <input
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel-national"
+                          value={displayPhone(normalizePhoneE164(phoneInput) || phoneInput)}
+                          onChange={(e) => handlePhoneInputChange(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') handlePhoneContinue(); }}
+                          placeholder="(555) 867-5309"
+                          autoFocus
+                          style={{
+                            flex: 1, minWidth: 0, border: 'none', outline: 'none',
+                            background: 'transparent', padding: '16px 0',
+                            fontFamily: 'var(--uv-font-sans)', fontSize: 18,
+                            color: 'var(--uv-text)',
+                          }}
+                        />
+                      </div>
+                      <GoldCTA
+                        label={phoneBusy ? 'Sending...' : 'Text me the code'}
+                        onPress={handlePhoneContinue}
+                        disabled={phoneBusy || phoneInput.replace(/\D/g, '').length < 10}
+                      />
+                    </>
+                  )}
+
+                  {phoneError && (
+                    <p style={{ margin: 0, fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-danger)' }}>
+                      {phoneError}
+                    </p>
+                  )}
+              </div>
+            )}
+
+            {/* Google Sign In — secondary fallback. Brand colors are Google's requirement. */}
+            {!hasIdentity && (
               <button
                 onClick={handleGoogleSignIn}
                 disabled={busy}
@@ -811,7 +1190,7 @@ export default function ChallengeInviteClient({
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
                   background: 'var(--uv-bg-card)', border: '1px solid var(--uv-border)',
                   cursor: busy ? 'not-allowed' : 'pointer',
-                  opacity: busy ? 0.6 : 1, transition: 'opacity 100ms',
+                  opacity: busy ? 0.45 : 0.72, transition: 'opacity 100ms',
                 }}
               >
                 {/* Google brand SVG — hex colors are Google's brand requirement */}
@@ -822,13 +1201,13 @@ export default function ChallengeInviteClient({
                   <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                 </svg>
                 <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 600, color: 'var(--uv-text)' }}>
-                  Continue with Google
+                  or continue with Google
                 </span>
               </button>
             )}
 
             {/* Signed in state */}
-            {email && (
+            {hasIdentity && (
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
                 borderRadius: 14, padding: '12px 16px',
@@ -848,29 +1227,35 @@ export default function ChallengeInviteClient({
                     </span>
                   )}
                   <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)' }}>
-                    {email}
+                    {identityPhone ? displayPhone(normalizePhoneE164(identityPhone) || identityPhone) : email}
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Stripe payment if staked + signed in */}
-            {isStaked && email ? (
+            {/* Stripe payment if staked + signed in + SI ready */}
+            {isStaked && hasIdentity && paymentClientSecret ? (
               <Elements
                 stripe={stripePromise}
                 options={{
-                  mode: 'payment',
-                  amount: stakeAmount,
-                  currency: 'usd',
+                  clientSecret: paymentClientSecret,
                   appearance: stripeAppearance,
                 }}
               >
                 <PaymentForm
-                  onSubmit={handlePaymentConfirm}
+                  onConfirmed={handlePaymentConfirmed}
                   loading={busy}
+                  amount={stakeAmount}
                 />
               </Elements>
-            ) : email ? (
+            ) : isStaked && hasIdentity && !paymentClientSecret ? (
+              /* Signed in but SI not yet created — show button to prepare payment */
+              <GoldCTA
+                label={preparingPayment ? 'Preparing payment...' : `Stake $${stakeAmount / 100}`}
+                onPress={preparePayment}
+                disabled={preparingPayment}
+              />
+            ) : hasIdentity ? (
               <GoldCTA
                 label={busy ? 'Sealing...' : 'Seal the vow'}
                 onPress={() => handleSeal()}
@@ -918,6 +1303,7 @@ export default function ChallengeInviteClient({
   if (step === 'sealed') {
     const displayStake = sealedVow?.stake ?? vow.stake_amount;
     const displayCharity = sealedVow?.charity ?? vow.destination;
+    const verdictPhone = sealedVow?.phone || vow.target_phone || identityPhone || null;
 
     // Compute tracking stats
     const now = new Date();
@@ -941,6 +1327,7 @@ export default function ChallengeInviteClient({
 
     return (
       <RitualScreen variant="utility">
+        <ChallengeTopBar />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
           <EyebrowTag>UNBREAKABLE VOW</EyebrowTag>
 
@@ -1105,7 +1492,21 @@ export default function ChallengeInviteClient({
           })()}
 
           {/* Phone capture */}
-          {reminderSaved ? (
+          {verdictPhone ? (
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+              padding: '14px 0', borderRadius: 18,
+              background: 'var(--uv-success-bg)', border: '1px solid var(--uv-success-border)',
+            }}>
+              <Check style={{ width: 16, height: 16, color: 'var(--uv-success)' }} />
+              <span style={{
+                fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 600,
+                color: 'var(--uv-success)', textAlign: 'center',
+              }}>
+                We&apos;ll text {displayPhone(normalizePhoneE164(verdictPhone) || verdictPhone)} when the verdict drops
+              </span>
+            </div>
+          ) : reminderSaved ? (
             <div style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
               padding: '14px 0', borderRadius: 18,
@@ -1175,7 +1576,7 @@ export default function ChallengeInviteClient({
               />
             </a>
             <a
-              href="/"
+              href="/quick-vow"
               style={{
                 fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 600,
                 color: 'var(--uv-gold-bright)', textDecoration: 'none',
