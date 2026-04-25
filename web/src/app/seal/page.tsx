@@ -50,6 +50,7 @@ export default function SealPage() {
   const [sealAnimPhase, setSealAnimPhase] = useState(0);
   const [sealing, setSealing] = useState(false);
   const sealingRef = useRef(false);
+  const authCompletedRef = useRef(false);
   const [isDevBypass, setIsDevBypass] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
@@ -83,10 +84,24 @@ export default function SealPage() {
     };
   }, []);
 
-  // When auth finishes loading and user is not authenticated, show auth UI
+  // When auth finishes loading and user is not authenticated, show auth UI.
+  // IMPORTANT: Skip this if we just completed auth (authCompletedRef) — the
+  // AuthProvider's onAuthStateChange hasn't propagated isAuthenticated=true yet,
+  // so without this guard we'd yank the user back to 'auth' immediately after
+  // they verified their OTP.  Once isAuthenticated catches up, clear the ref.
   useEffect(() => {
     if (authLoading) return;
-    if (!isAuthenticated && step === 'review') {
+    if (isAuthenticated) {
+      // Auth state caught up — clear the guard so future sign-outs work correctly
+      authCompletedRef.current = false;
+      return;
+    }
+    if (authCompletedRef.current) {
+      // We just finished OTP verification; isAuthenticated hasn't caught up yet.
+      // Do NOT revert step to 'auth'.
+      return;
+    }
+    if (step === 'review') {
       setStep('auth');
     }
   }, [authLoading, isAuthenticated, step]);
@@ -331,7 +346,17 @@ export default function SealPage() {
 
   const handleSealTap = async () => {
     if (authLoading) return;
-    if (!isAuthenticated) {
+
+    // Check both React auth state AND Supabase session directly.
+    // After OTP verification, onAuthStateChange may not have propagated to
+    // isAuthenticated yet (React batching / closure staleness).
+    let authed = isAuthenticated;
+    if (!authed) {
+      const s = await getValidSession();
+      authed = !!s;
+    }
+
+    if (!authed) {
       setStep('auth');
     } else if (vow.stake.amount === 0) {
       handleZeroStakeSeal();
@@ -371,18 +396,33 @@ export default function SealPage() {
   }, [ensureDraftVow, sealing, router, resetVow]);
 
   const handleAuthSuccess = useCallback(async () => {
-    // After auth, just show the review step. Clear any errors.
-    // The user will tap "Seal" themselves, which calls createVowAndPay/handleZeroStakeSeal
-    // with a fresh session — no race condition.
+    // CRITICAL: Set authCompletedRef BEFORE setStep so the useEffect guard
+    // doesn't yank us back to 'auth' during the race window where
+    // isAuthenticated hasn't propagated yet.
+    authCompletedRef.current = true;
     setError('');
     setStep('review');
-    // Eagerly create draft in background so it's ready when they tap Seal
-    try {
-      await ensureDraftVow();
-    } catch {
-      // Non-critical — draft will be created when they tap Seal
+
+    // Wait for Supabase session to fully settle, then auto-seal.
+    // The user already tapped "Seal" once — don't make them tap again.
+    await new Promise(r => setTimeout(r, 500));
+
+    // Verify we actually have a session before proceeding
+    const sess = await getValidSession();
+    if (!sess) {
+      // Truly no session — force re-auth
+      authCompletedRef.current = false;
+      setStep('auth');
+      return;
     }
-  }, [ensureDraftVow]);
+
+    // Auto-trigger the seal flow
+    if (vow.stake.amount === 0) {
+      handleZeroStakeSeal();
+    } else {
+      createVowAndPay();
+    }
+  }, [ensureDraftVow, vow.stake.amount, handleZeroStakeSeal, createVowAndPay]);
 
   const handlePaymentSuccess = async () => {
     setStep('sealing');
