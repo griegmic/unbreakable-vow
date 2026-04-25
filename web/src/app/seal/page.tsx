@@ -537,11 +537,28 @@ export default function SealPage() {
 
   // ── OTP input handlers ──
   const handleOtpChange = useCallback((index: number, value: string) => {
-    const digit = value.replace(/\D/g, '').slice(-1);
+    const digits = value.replace(/\D/g, '');
+
+    // iOS autofill sends the full 6-digit code to the first input's onChange
+    if (digits.length > 1) {
+      const code = digits.slice(0, 6).split('');
+      setOtp((prev) => {
+        const next = [...prev];
+        code.forEach((d, i) => { next[i] = d; });
+        if (next.every(d => d !== '')) {
+          setTimeout(() => handleVerifyOtp(next.join('')), 50);
+        }
+        return next;
+      });
+      setPhoneError('');
+      otpRefs.current[Math.min(code.length, 5)]?.focus();
+      return;
+    }
+
+    const digit = digits.slice(-1);
     setOtp((prev) => {
       const next = [...prev];
       next[index] = digit;
-      // Auto-submit when all 6 digits entered
       if (digit && next.every(d => d !== '')) {
         setTimeout(() => handleVerifyOtp(next.join('')), 50);
       }
@@ -708,7 +725,8 @@ export default function SealPage() {
                     ref={(el) => { otpRefs.current[i] = el; }}
                     type="text"
                     inputMode="numeric"
-                    maxLength={1}
+                    maxLength={i === 0 ? 6 : 1}
+                    autoComplete={i === 0 ? 'one-time-code' : 'off'}
                     value={digit}
                     onChange={(e) => handleOtpChange(i, e.target.value)}
                     onKeyDown={(e) => handleOtpKeyDown(i, e)}
