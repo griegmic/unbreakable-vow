@@ -34,7 +34,7 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const nav = (path: string) => { onClose(); router.push(path); };
 
   const items = [
-    { icon: Zap, label: 'New Vow', description: 'Create a vow in seconds', path: '/create' },
+    { icon: Zap, label: 'New Vow', description: 'Create a vow in seconds', path: '/quick-vow' },
     { icon: Send, label: 'Dare a friend', description: 'Cast a vow on someone', path: '/cast' },
     { icon: LayoutGrid, label: 'My Vows', description: 'All your active vows', path: '/dashboard' },
     { icon: Clock, label: 'History', description: 'Past vows and outcomes', path: '/history' },
@@ -79,13 +79,13 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
               key={item.path}
               onClick={() => nav(item.path)}
               className="flex items-center gap-3 px-3 py-3 rounded-xl text-left transition-colors active:opacity-80"
-              style={{ backgroundColor: item.path === '/create' ? 'rgba(212,162,79,0.08)' : 'transparent' }}
+              style={{ backgroundColor: item.path === '/quick-vow' ? 'rgba(212,162,79,0.08)' : 'transparent' }}
             >
               <div
                 className="w-9 h-9 rounded-[12px] flex items-center justify-center shrink-0"
-                style={{ backgroundColor: item.path === '/create' ? 'rgba(212,162,79,0.15)' : 'var(--uv-bg-card)' }}
+                style={{ backgroundColor: item.path === '/quick-vow' ? 'rgba(212,162,79,0.15)' : 'var(--uv-bg-card)' }}
               >
-                <item.icon className="w-[18px] h-[18px]" style={{ color: item.path === '/create' ? 'var(--uv-gold-bright)' : 'var(--uv-text-faint)' }} />
+                <item.icon className="w-[18px] h-[18px]" style={{ color: item.path === '/quick-vow' ? 'var(--uv-gold-bright)' : 'var(--uv-text-faint)' }} />
               </div>
               <div>
                 <span
@@ -93,7 +93,7 @@ function SlideMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
                   style={{
                     fontSize: 15,
                     fontWeight: 500,
-                    color: item.path === '/create' ? 'var(--uv-gold-bright)' : 'var(--uv-text)',
+                    color: item.path === '/quick-vow' ? 'var(--uv-gold-bright)' : 'var(--uv-text)',
                     fontFamily: 'var(--uv-font-sans)',
                   }}
                 >

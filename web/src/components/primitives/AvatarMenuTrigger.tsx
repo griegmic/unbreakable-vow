@@ -25,7 +25,7 @@ interface AvatarMenuTriggerProps {
 }
 
 const links = [
-  { label: 'New Vow', icon: PlusCircle, path: '/create' },
+  { label: 'New Vow', icon: PlusCircle, path: '/quick-vow' },
   { label: 'My Vows', icon: Home, path: '/dashboard' },
   { label: 'Dare a Friend', icon: Send, path: '/cast' },
   { label: 'Settings', icon: Settings, path: '/settings' },
