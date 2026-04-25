@@ -372,7 +372,7 @@ function GuidedContent() {
           <div className="flex flex-col gap-2">
             <PrimaryButton label="The clock starts now" onPress={() => router.push('/live')} />
             <button
-              onClick={() => router.push('/create')}
+              onClick={() => router.push('/quick-vow')}
               className="min-h-[44px] flex items-center justify-center"
             >
               <span className="text-[13px]" style={{ color: 'var(--text-muted)' }}>Make another vow</span>

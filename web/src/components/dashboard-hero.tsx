@@ -223,7 +223,7 @@ export default function DashboardHero({ item, keptCount, streak, onAcceptChallen
       {state !== 'T1' && (
         <FadeUp delay={0.18}>
           <button
-            onClick={() => router.push('/create')}
+            onClick={() => router.push('/quick-vow')}
             className="w-full flex items-center justify-center py-2 transition-opacity active:opacity-70"
           >
             <span className="text-[13px] font-semibold" style={{ color: '#5a5650' }}>
@@ -284,7 +284,7 @@ function HeroCTA({
       return (
         <div className="flex flex-col gap-2">
           <button
-            onClick={() => router.push('/create')}
+            onClick={() => router.push('/quick-vow')}
             className="w-full min-h-[52px] rounded-[14px] flex items-center justify-center transition-transform active:scale-[0.97]"
             style={{ background: 'linear-gradient(135deg, #e8c36a, #d4a24f, #b8882e)' }}
           >

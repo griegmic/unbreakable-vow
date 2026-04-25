@@ -213,7 +213,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               {msg.subtitle}
             </p>
           </div>
-          <a href="/create" style={{ textDecoration: 'none' }}>
+          <a href="/" style={{ textDecoration: 'none' }}>
             <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
           </a>
         </div>
@@ -402,7 +402,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             </p>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <a href="/create" style={{ textDecoration: 'none' }}>
+            <a href="/" style={{ textDecoration: 'none' }}>
               <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
             </a>
             <div style={{ textAlign: 'center' }}>

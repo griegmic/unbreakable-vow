@@ -1099,7 +1099,7 @@ export default function VowDetailPage() {
         <TimelineBlock />
 
         <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <GoldCTA label="Make a new vow" onPress={() => router.push('/create')} />
+          <GoldCTA label="Make a new vow" onPress={() => router.push('/quick-vow')} />
           <DashboardButton />
         </div>
       </RitualScreen>
@@ -1132,7 +1132,7 @@ export default function VowDetailPage() {
       <TimelineBlock />
 
       <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <GoldCTA label="Make a new vow" onPress={() => router.push('/create')} />
+        <GoldCTA label="Make a new vow" onPress={() => router.push('/quick-vow')} />
         <DashboardButton />
       </div>
     </RitualScreen>
