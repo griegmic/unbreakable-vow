@@ -1,0 +1,75 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Witness Accepted / Quick Share Options</title>
+  <style>
+    :root {
+      --bg:#0f0d0a; --card:#17130f; --text:#f2eadc; --muted:#a79c8a;
+      --dim:#746b5e; --gold:#d4a24f; --green:#30c75a; --line:#2c251c;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #050403; color: var(--text); font-family: Inter, -apple-system, BlinkMacSystemFont, sans-serif; padding: 32px; }
+    .wrap { display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 393px)); gap: 28px; align-items: start; justify-content: center; }
+    .phone { width: 393px; min-height: 852px; border-radius: 36px; background: radial-gradient(ellipse at top, rgba(212,162,79,.08), transparent 46%), var(--bg); padding: 44px 24px 24px; display: flex; flex-direction: column; border: 1px solid #242016; }
+    .label { color: var(--gold); font-size: 11px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: 36px; line-height: 1.02; letter-spacing: 0; font-weight: 850; }
+    p { color: var(--muted); font-size: 16px; line-height: 1.42; margin: 12px 0 0; }
+    .check { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: var(--gold); color: #120d05; font-size: 30px; font-weight: 900; margin: 0 auto 24px; box-shadow: 0 0 34px rgba(212,162,79,.24); }
+    .vow { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin: 28px 0 18px; }
+    .vow .cap { color: var(--dim); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; font-weight: 800; margin-bottom: 10px; }
+    .vow .text { font-size: 21px; font-weight: 750; line-height: 1.2; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; border-top: 1px dashed var(--line); margin-top: 16px; padding-top: 14px; }
+    .grid b { display: block; font-size: 11px; color: var(--dim); letter-spacing: .16em; text-transform: uppercase; margin-bottom: 5px; }
+    .grid span { font-size: 16px; font-weight: 750; }
+    .timeline { border: 1px solid var(--line); border-radius: 18px; padding: 18px; margin-bottom: auto; }
+    .step { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+    .step:last-child { border: none; }
+    .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--dim); margin-top: 7px; }
+    .step:first-child .dot { background: var(--gold); box-shadow: 0 0 16px rgba(212,162,79,.5); }
+    .step small { display: block; color: var(--gold); letter-spacing: .16em; text-transform: uppercase; font-weight: 850; font-size: 11px; margin-bottom: 4px; }
+    .step div div { color: var(--text); font-size: 16px; font-weight: 700; }
+    .cta { height: 58px; border-radius: 16px; border: 0; background: var(--green); color: white; font-size: 18px; font-weight: 850; margin-top: 22px; }
+    .secondary { color: var(--muted); text-align: center; margin-top: 14px; font-size: 13px; font-weight: 700; }
+    .artifact { background: linear-gradient(180deg, rgba(212,162,79,.12), rgba(212,162,79,.03)); border: 1px solid rgba(212,162,79,.25); border-radius: 22px; padding: 24px; margin: 28px 0 auto; text-align: center; }
+    .artifact .quote { font-size: 24px; line-height: 1.16; font-weight: 850; margin: 20px 0; }
+    .mini { color: var(--dim); font-size: 13px; line-height: 1.35; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="phone">
+      <div class="check">✓</div>
+      <div class="label">Option A · Utility First</div>
+      <h1>Joe knows<br><span style="color:var(--gold)">you’re watching.</span></h1>
+      <p>That’s it for now. We’ll text you Sunday at 9pm.</p>
+      <div class="vow">
+        <div class="cap">You’re watching</div>
+        <div class="text">No alcohol, 2 weeks.</div>
+        <div class="grid"><div><b>On the line</b><span>$20</span></div><div><b>If broken</b><span>ALS</span></div></div>
+      </div>
+      <div class="timeline">
+        <div class="step"><i class="dot"></i><div><small>Now</small><div>Joe gets the green light.</div></div></div>
+        <div class="step"><i class="dot"></i><div><small>24h before</small><div>We text you a heads-up.</div></div></div>
+        <div class="step"><i class="dot"></i><div><small>Sun · 9pm</small><div>One tap: kept or broken.</div></div></div>
+      </div>
+      <button class="cta">Text Joe: I’m watching</button>
+      <div class="secondary">Make your own vow →</div>
+    </section>
+    <section class="phone">
+      <div class="check">✓</div>
+      <div class="label">Option B · Share Moment</div>
+      <h1>You’re the judge.<br><span style="color:var(--gold)">Make it official.</span></h1>
+      <p>Joe picked you for a reason. Send the text that makes this real.</p>
+      <div class="artifact">
+        <div class="mini">JOE’S VOW</div>
+        <div class="quote">“No alcohol, 2 weeks.”</div>
+        <div class="mini">$20 on the line · ALS if broken · verdict Sunday</div>
+      </div>
+      <button class="cta">Send the first nudge</button>
+      <div class="secondary">Skip for now · Make your own vow</div>
+    </section>
+  </div>
+</body>
+</html>
