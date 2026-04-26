@@ -13,15 +13,16 @@ import {
 import { palette } from '@/constants/unbreakable';
 
 export default function ModalScreen() {
+  const close = () => router.replace('/dashboard');
   console.log('[ModalScreen] rendering');
   return (
     <Modal
       animationType="fade"
       transparent={true}
       visible={true}
-      onRequestClose={() => router.back()}
+      onRequestClose={close}
     >
-      <Pressable style={styles.overlay} onPress={() => router.back()}>
+      <Pressable style={styles.overlay} onPress={close}>
         <View style={styles.modalContent}>
           <Text style={styles.title}>Info</Text>
           <Text style={styles.description}>
@@ -29,7 +30,7 @@ export default function ModalScreen() {
           </Text>
           <Pressable
             style={styles.closeButton}
-            onPress={() => router.back()}
+            onPress={close}
           >
             <Text style={styles.closeButtonText}>Close</Text>
           </Pressable>

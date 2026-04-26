@@ -72,12 +72,12 @@ export function HeaderBadge() {
   );
 }
 
-export function BackButton() {
+export function BackButton({ fallback = '/' }: { fallback?: string } = {}) {
   return (
     <Pressable
       onPress={() => {
         void Haptics.selectionAsync();
-        router.back();
+        router.replace(fallback as any);
       }}
       style={({ pressed }) => [styles.backButton, pressed ? styles.backButtonPressed : null]}
       testID="back-button"
