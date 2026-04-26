@@ -51,7 +51,7 @@ export default function SettingsScreen() {
     <RitualScreen>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <BackButton />
+        <BackButton fallback="/dashboard" />
         <AppMenuButton />
       </View>
       <TitleBlock

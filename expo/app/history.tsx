@@ -52,7 +52,7 @@ export default function HistoryScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <BackButton />
+        <BackButton fallback="/dashboard" />
         <AppMenuButton />
       </View>
       <TitleBlock

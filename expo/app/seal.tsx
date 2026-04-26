@@ -353,7 +353,7 @@ export default function SealScreen() {
       <Stack.Screen options={{ headerShown: false }} />
       {!sealed ? (
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <BackButton />
+          <BackButton fallback="/witness" />
           <AppMenuButton />
         </View>
       ) : null}

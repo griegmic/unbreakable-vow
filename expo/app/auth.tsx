@@ -423,7 +423,7 @@ export default function AuthScreen() {
   return (
     <RitualScreen>
       <Stack.Screen options={{ headerShown: false }} />
-      <BackButton />
+      <BackButton fallback="/" />
 
       <TitleBlock
         title="Almost done."

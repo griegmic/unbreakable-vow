@@ -211,7 +211,7 @@ export default function SelfResolveScreen() {
       <View style={styles.content}>
         <View style={styles.topSection}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <BackButton />
+            <BackButton fallback="/dashboard" />
             <AppMenuButton />
           </View>
           <View style={styles.oathSymbol}>

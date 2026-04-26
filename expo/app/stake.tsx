@@ -72,7 +72,7 @@ export default function StakeScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <BackButton />
+        <BackButton fallback="/refine" />
         <AppMenuButton />
       </View>
       <TitleBlock

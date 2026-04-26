@@ -89,7 +89,7 @@ export default function RefineScreen() {
     >
       <Stack.Screen options={{ headerShown: false }} />
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <BackButton />
+        <BackButton fallback="/" />
         <AppMenuButton />
       </View>
       <TitleBlock

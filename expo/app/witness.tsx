@@ -103,7 +103,7 @@ export default function WitnessScreen() {
       <RitualScreen>
         <Stack.Screen options={{ headerShown: false }} />
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <BackButton />
+          <BackButton fallback="/stake" />
           <AppMenuButton />
         </View>
         <TitleBlock
