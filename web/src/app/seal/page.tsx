@@ -52,13 +52,14 @@ export default function SealPage() {
   const sealingRef = useRef(false);
   const authCompletedRef = useRef(false);
   const [isDevBypass, setIsDevBypass] = useState(false);
+  const [isQuickSeal, setIsQuickSeal] = useState(false);
   const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   // Phone auth state
   const [phone, setPhone] = useState('');
   const [phoneBusy, setPhoneBusy] = useState(false);
   const [phoneError, setPhoneError] = useState('');
-  const [phoneStep, setPhoneStep] = useState<'name' | 'input' | 'otp'>('name');
+  const [phoneStep, setPhoneStep] = useState<'input' | 'otp' | 'name'>('input');
   const [makerName, setMakerName] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpCooldown, setOtpCooldown] = useState(0);
@@ -66,6 +67,7 @@ export default function SealPage() {
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const paymentVowIdRef = useRef<string | null>(null);
   const witnessShareAttemptedRef = useRef(false);
+  const quickAutoSealAttemptedRef = useRef(false);
 
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
@@ -78,6 +80,7 @@ export default function SealPage() {
       window.location.hostname === '127.0.0.1'
     );
     setIsDevBypass(isLocal);
+    setIsQuickSeal(new URLSearchParams(window.location.search).get('quick') === '1');
   }, []);
 
   useEffect(() => {
@@ -458,6 +461,13 @@ export default function SealPage() {
     }
   };
 
+  useEffect(() => {
+    if (!isQuickSeal || quickAutoSealAttemptedRef.current || authLoading || !vow.rawInput) return;
+    quickAutoSealAttemptedRef.current = true;
+    handleSealTap();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isQuickSeal, authLoading, vow.rawInput]);
+
   const handleDevBypass = useCallback(async () => {
     if (sealing) return;
     setSealing(true);
@@ -681,16 +691,14 @@ export default function SealPage() {
     setMakerName(cleanName);
     try { localStorage.setItem('unbreakable-maker-name', cleanName); } catch {}
     setPhoneError('');
-    setPhoneStep('input');
-  }, [makerName]);
+    if (isAuthenticated) {
+      handleAuthSuccess();
+    } else {
+      setPhoneStep('input');
+    }
+  }, [handleAuthSuccess, isAuthenticated, makerName]);
 
   const handlePhoneContinue = useCallback(async () => {
-    const cleanName = makerName.trim().replace(/\s+/g, ' ');
-    if (cleanName.length < 2) {
-      setPhoneStep('name');
-      setPhoneError('Enter the name your witness will recognize.');
-      return;
-    }
     const digits = phone.replace(/\D/g, '');
     if (digits.length < 10) {
       setPhoneError('Please enter a valid 10-digit phone number.');
@@ -751,10 +759,20 @@ export default function SealPage() {
       return;
     }
 
+    const cleanName = makerName.trim().replace(/\s+/g, ' ');
+    if (cleanName.length < 2) {
+      setPhoneBusy(false);
+      setPhoneStep('name');
+      setTimeout(() => {
+        const input = document.querySelector<HTMLInputElement>('.uv-auth-name-input');
+        input?.focus();
+      }, 100);
+      return;
+    }
+
     // Save phone to public.users — wrapped in try/catch so it NEVER blocks sealing
     try {
       if (data.user) {
-        const cleanName = makerName.trim().replace(/\s+/g, ' ');
         if (cleanName) {
           try {
             await supabase.auth.updateUser({ data: { full_name: cleanName } });
@@ -992,8 +1010,8 @@ export default function SealPage() {
                 setPhoneStep('input');
                 setPhoneError('');
                 setOtp(['', '', '', '', '', '']);
-              } else if (phoneStep === 'input') {
-                setPhoneStep('name');
+              } else if (phoneStep === 'name') {
+                setPhoneStep('input');
                 setPhoneError('');
               } else {
                 setStep('review');
@@ -1021,26 +1039,26 @@ export default function SealPage() {
             fontFamily: 'var(--uv-font-sans)', fontSize: 26, fontWeight: 600,
             color: 'var(--uv-text)', margin: '0 0 6px', textAlign: 'center',
           }}>
-            {phoneStep === 'name'
-              ? 'What should we call you?'
-              : phoneStep === 'otp'
+            {phoneStep === 'otp'
                 ? 'Enter the code.'
-                : 'What’s your number?'}
+                : phoneStep === 'name'
+                  ? 'What should we call you?'
+                  : 'What’s your number?'}
           </h1>
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 14,
             color: 'var(--uv-text-muted)', margin: '0 auto 28px', textAlign: 'center',
             maxWidth: 280, lineHeight: 1.45,
           }}>
-            {phoneStep === 'name'
-              ? 'Your witness needs to know who they’re holding accountable.'
-              : phoneStep === 'otp'
+            {phoneStep === 'otp'
                 ? `We texted a 6-digit code to (${phone.slice(0,3)}) ${phone.slice(3,6)}-${phone.slice(6)}`
-                : 'We’ll text the code that seals your vow. No password.'}
+                : phoneStep === 'name'
+                  ? 'Your witness needs to know who they’re holding accountable.'
+                  : 'We’ll text the code that seals your vow. No password.'}
           </p>
 
           <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginBottom: 28 }}>
-            {['name', 'input', 'otp'].map((s) => (
+            {['input', 'otp', 'name'].map((s) => (
               <span
                 key={s}
                 aria-hidden="true"
@@ -1068,7 +1086,7 @@ export default function SealPage() {
                 }}
               >
                 <input
-                  className="uv-auth-text-input"
+                  className="uv-auth-text-input uv-auth-name-input"
                   type="text"
                   autoComplete="off"
                   autoCorrect="off"
@@ -1202,6 +1220,7 @@ export default function SealPage() {
                 </span>
                 <input
                   type="tel" inputMode="numeric" autoComplete="tel-national"
+                  className="uv-auth-text-input"
                   placeholder="(555) 867-5309"
                   value={formatPhoneDisplay(phone)}
                   onChange={handlePhoneChange}
@@ -1212,6 +1231,7 @@ export default function SealPage() {
                     flex: 1, border: 'none', outline: 'none', background: 'transparent',
                     fontSize: 18, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
                     padding: '17px 0', WebkitAppearance: 'none',
+                    textDecoration: 'none', WebkitTextDecorationLine: 'none',
                   }}
                 />
               </div>
@@ -1258,7 +1278,7 @@ export default function SealPage() {
       )}
       <RitualScreen>
         {/* Progress indicator */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+        <div style={{ display: isQuickSeal ? 'none' : 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
           <span style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 600,
             color: 'var(--uv-text-muted)', fontFeatureSettings: '"tnum"',

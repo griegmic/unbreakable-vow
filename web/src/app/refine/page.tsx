@@ -132,6 +132,29 @@ export default function RefinePage() {
           zIndex: 10,
         }}
       >
+        <button
+          type="button"
+          onClick={() => router.back()}
+          aria-label="Go back"
+          style={{
+            position: 'absolute',
+            top: 14,
+            left: 14,
+            minHeight: 40,
+            minWidth: 48,
+            border: 'none',
+            background: 'transparent',
+            color: 'var(--uv-text-muted)',
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: 13,
+            fontWeight: 650,
+            cursor: 'pointer',
+            padding: 0,
+            textAlign: 'left',
+          }}
+        >
+          &larr; Back
+        </button>
         {/* Drag handle */}
         <div
           style={{

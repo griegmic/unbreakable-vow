@@ -13,7 +13,7 @@ import { inferDeadline } from '@/lib/vow-logic';
  *
  * Returning-user power flow: card-based vow input with inline meta-pills
  * (deadline, stake, witness), one-tap suggestion chips, and dual CTA footer.
- * Routes to /seal -> /sent -> /live. Same seal-vow edge function as first-time flow.
+ * Routes to /seal?quick=1 so returning users skip the redundant review page.
  */
 
 type DeadlineId = 'eow' | 'tomorrow' | '7days' | '30days' | 'custom';
@@ -152,7 +152,7 @@ export default function QuickVowPage() {
       destination,
     });
 
-    router.push('/seal');
+    router.push('/seal?quick=1');
   };
 
   const handleDeadlineClick = (id: DeadlineId) => {
@@ -458,6 +458,25 @@ export default function QuickVowPage() {
             }}
           >
             If broken, <span style={{ color: 'var(--uv-text)', fontWeight: 600 }}>${stakeAmount}</span> &rarr; <span style={{ color: 'var(--uv-text)', fontWeight: 600 }}>{destination}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/?guided=1')}
+            style={{
+              alignSelf: 'center',
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              padding: '7px 10px',
+              margin: '0 auto 2px',
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 12.5,
+              fontWeight: 600,
+              color: 'var(--uv-text-dim)',
+              textAlign: 'center',
+            }}
+          >
+            Need the guided flow?
           </button>
 
           {/* Spacer to push footer to bottom */}

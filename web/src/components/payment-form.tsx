@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { Elements, ExpressCheckoutElement, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -9,6 +9,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, mode = 'payment' }: { onSuc
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const [walletReady, setWalletReady] = useState(false);
   const [skipping, setSkipping] = useState(false);
   const [error, setError] = useState('');
 
@@ -68,12 +69,81 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, mode = 'payment' }: { onSuc
     }
   };
 
+  const handleExpressConfirm = async () => {
+    if (!stripe || !elements) return;
+    setLoading(true);
+    setError('');
+
+    if (mode === 'setup') {
+      const result = await stripe.confirmSetup({
+        elements,
+        confirmParams: { return_url: window.location.origin + '/sent' },
+        redirect: 'if_required',
+      });
+
+      if (result.error) {
+        setError(result.error.message || 'Apple Pay could not save this card. Please try again.');
+        setLoading(false);
+      } else if (result.setupIntent && result.setupIntent.status === 'succeeded') {
+        onSuccess();
+      } else {
+        setError('Apple Pay could not finish. Please try again.');
+        setLoading(false);
+      }
+    } else {
+      const result = await stripe.confirmPayment({
+        elements,
+        confirmParams: { return_url: window.location.origin + '/sent' },
+        redirect: 'if_required',
+      });
+
+      if (result.error) {
+        setError(result.error.message || 'Apple Pay could not process this payment. Please try again.');
+        setLoading(false);
+      } else if (result.paymentIntent && (result.paymentIntent.status === 'succeeded' || result.paymentIntent.status === 'requires_capture')) {
+        onSuccess();
+      } else {
+        setError('Apple Pay could not finish. Please try again.');
+        setLoading(false);
+      }
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <div style={{ display: walletReady ? 'block' : 'none' }}>
+        <ExpressCheckoutElement
+          options={{
+            wallets: {
+              applePay: 'always',
+              googlePay: 'auto',
+            },
+            buttonTheme: { applePay: 'white-outline', googlePay: 'black' },
+            buttonHeight: 52,
+          }}
+          onReady={(event) => {
+            const methods = event.availablePaymentMethods;
+            setWalletReady(!!methods && Object.values(methods).some(Boolean));
+          }}
+          onConfirm={handleExpressConfirm}
+          onLoadError={() => setWalletReady(false)}
+        />
+      </div>
+
+      {walletReady && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '1px 0' }}>
+          <div style={{ flex: 1, height: 1, background: 'var(--uv-border-soft)' }} />
+          <span style={{ fontSize: 11, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-dim)', fontWeight: 650, letterSpacing: '0.12em', textTransform: 'uppercase' }}>
+            or card
+          </span>
+          <div style={{ flex: 1, height: 1, background: 'var(--uv-border-soft)' }} />
+        </div>
+      )}
+
       <PaymentElement
         options={{
           layout: 'tabs',
-          wallets: { applePay: 'auto', googlePay: 'auto' },
+          wallets: { applePay: 'never', googlePay: 'never' },
           defaultValues: { billingDetails: { address: { country: 'US' } } },
         }}
       />
@@ -92,7 +162,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, mode = 'payment' }: { onSuc
         {loading ? (
           <div className="w-5 h-5 border-2 border-[#0B0D11] border-t-transparent rounded-full animate-spin" />
         ) : (
-          <span className="text-[15px] font-bold" style={{ color: 'var(--uv-text-on-gold)' }}>{mode === 'setup' ? 'Save card' : 'Lock it in'}</span>
+          <span className="text-[15px] font-bold" style={{ color: 'var(--uv-text-on-gold)' }}>{mode === 'setup' ? 'Save card instead' : 'Use card instead'}</span>
         )}
       </button>
       {onSkip && (

@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
-import { FrauncesH1, FrauncesSub, GoldCTA, MutedSecondary, TimelineCard } from '@/components/primitives';
+import { FrauncesSub, GoldCTA, MutedSecondary, TimelineCard } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 
@@ -342,11 +342,11 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               </div>
 
               <div style={{ textAlign: 'center' }}>
-                <FrauncesH1 italic size="page">
+                <h1 style={{ margin: 0, fontFamily: 'var(--uv-font-sans)', fontSize: 34, lineHeight: 1.02, fontWeight: 850, color: 'var(--uv-text)', letterSpacing: 0 }}>
                   {needsMakerToFinish
-                    ? <>{makerFirstName} still needs<br/>to <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>stake it.</em></>
-                    : <>{makerFirstName} knows<br/>you&apos;ve got <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>them.</em></>}
-                </FrauncesH1>
+                    ? <>{makerFirstName} still needs<br/><span style={{ color: 'var(--uv-gold)' }}>to stake it.</span></>
+                    : <>{makerFirstName} knows<br/><span style={{ color: 'var(--uv-gold)' }}>you&apos;re watching.</span></>}
+                </h1>
               </div>
 
               <div style={{ textAlign: 'center', maxWidth: 290 }}>
@@ -473,10 +473,10 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             Judge invite
           </div>
           <h1 style={{ fontFamily: 'var(--uv-font-sans)', fontWeight: 800, fontSize: 42, lineHeight: 0.98, letterSpacing: 0, margin: '0 0 12px', color: 'var(--uv-text)' }}>
-            {makerFirstName} needs you to hold the line.
+            {makerFirstName} asked you to be their judge.
           </h1>
           <p style={{ fontFamily: 'var(--uv-font-sans)', fontWeight: 500, fontSize: 17, color: 'var(--uv-text-muted)', lineHeight: 1.42, margin: 0 }}>
-            They put cash on a promise. Your job is simple: nudge if needed, then call it kept or broken.
+            They put {stakeDisplay || 'their word'} on a promise. Accept, keep them honest, then call it kept or broken.
           </p>
         </section>
 

@@ -209,7 +209,7 @@ function VowDetailContent() {
         celebTimersRef.current.push(t1);
       } else {
         const t1 = setTimeout(() => setCelebPhase('text'), 300);
-        // After 1.8s in 'text' phase, decide: share or fade
+        // Give the seal moment room to land before asking them to text the witness.
         const t2 = setTimeout(() => {
           if (!textTransitionDoneRef.current) {
             textTransitionDoneRef.current = true;
@@ -222,7 +222,7 @@ function VowDetailContent() {
               return 'text'; // stay in text, let the effect pick it up
             });
           }
-        }, 2100);
+        }, 3300);
         celebTimersRef.current.push(t1, t2);
       }
     }
@@ -236,7 +236,7 @@ function VowDetailContent() {
   useEffect(() => {
     if (!showCelebration || celebPhase !== 'text' || textTransitionDoneRef.current) return;
 
-    // Wait for the text to display for at least 1.8s total (300ms seal + 1500ms text = 1800ms)
+    // Wait long enough that the success state feels intentional, not like a flash.
     const minTextTime = setTimeout(() => {
       if (textTransitionDoneRef.current) return;
       textTransitionDoneRef.current = true;
@@ -253,7 +253,7 @@ function VowDetailContent() {
         }, 500);
         celebTimersRef.current.push(t1);
       }
-    }, 1500); // 1.5s after entering 'text' phase
+    }, 2800);
 
     celebTimersRef.current.push(minTextTime);
   // eslint-disable-next-line react-hooks/exhaustive-deps
