@@ -50,6 +50,20 @@ export default function AuthCallbackPage() {
       //         → vow flow state check
       //         → dashboard
       const redirectTo = (() => {
+        // 0. If payment/sealing finished but auth callback/default routing
+        // races, recover the exact vow instead of falling back to My Vows.
+        try {
+          const raw = sessionStorage.getItem('uv-post-seal-target') || localStorage.getItem('uv-post-seal-target');
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (parsed?.id && Date.now() - Number(parsed.ts || 0) < 5 * 60 * 1000) {
+              sessionStorage.removeItem('uv-post-seal-target');
+              localStorage.removeItem('uv-post-seal-target');
+              return `/vow/${parsed.id}?sealed=1`;
+            }
+          }
+        } catch {}
+
         // 1. FIRST: check for in-progress vow flow — this is the most reliable
         // signal because it's on the same domain and survives cross-origin redirects
         try {

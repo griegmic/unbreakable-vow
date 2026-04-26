@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+    --green: #4ade80;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 30px 22px 24px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; padding: 0 4px;
+  }
+  .back { font-size: 22px; color: var(--text-mute); }
+  .live-pulse {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--green); font-weight: 500;
+  }
+  .live-pulse::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+  }
+  .more { font-size: 18px; color: var(--text-mute); letter-spacing: 0.2em; }
+
+  /* Vow card — quieter */
+  .vow-card {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 14px; padding: 14px 18px 12px; margin-bottom: 14px;
+    position: relative;
+  }
+  .vow-card::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .vc-label {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 6px;
+  }
+  .vc-text {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 18px; line-height: 1.18; letter-spacing: -0.005em;
+    color: var(--text); margin-bottom: 8px;
+  }
+  .vc-text em { font-style: italic; color: var(--gold); }
+  .vc-meta {
+    display: flex; gap: 16px; padding-top: 8px;
+    border-top: 1px dashed var(--rule);
+  }
+  .mc { display: flex; flex-direction: column; gap: 2px; }
+  .mc-k {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .mc-v {
+    font-family: var(--serif); font-weight: 500; font-size: 13px;
+    color: var(--text); font-feature-settings: "tnum";
+  }
+  .mc-v.gold { color: var(--gold-bright); }
+  .mc-v.green::before {
+    content: ""; display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--green); margin-right: 6px; vertical-align: middle;
+  }
+
+  /* Streak hero */
+  .streak {
+    background: var(--surface-2);
+    border: 1px solid var(--gold-line);
+    border-radius: 14px;
+    padding: 18px 18px 16px;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .streak-num {
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 64px; line-height: 0.95; letter-spacing: -0.04em;
+    color: var(--gold-bright);
+    text-shadow: 0 0 24px rgba(200,155,60,0.3);
+    font-feature-settings: "tnum";
+    margin-bottom: 4px;
+  }
+  .streak-label {
+    font-family: var(--serif); font-style: italic;
+    font-size: 13px; color: var(--text-mute);
+    margin-bottom: 14px;
+  }
+  .streak-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+  .day {
+    aspect-ratio: 1;
+    border-radius: 5px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 10px; font-weight: 500;
+    color: var(--text-dim);
+  }
+  .day.done {
+    background: var(--gold-soft);
+    border-color: var(--gold-line);
+    color: var(--gold-bright);
+  }
+  .day.today {
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    border-color: var(--gold);
+    color: #1A1205;
+    box-shadow: 0 0 12px rgba(200,155,60,0.4);
+  }
+  .day.future {
+    background: transparent; opacity: 0.4;
+  }
+  .streak-foot {
+    margin-top: 10px;
+    font-size: 11px; color: var(--text-dim);
+    font-family: var(--serif); font-style: italic;
+  }
+  .streak-foot b { color: var(--text); font-style: normal; font-weight: 500; }
+
+  /* Today's check-in */
+  .today-check {
+    width: 100%; height: 56px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.25) inset, 0 8px 24px rgba(200,155,60,0.18);
+  }
+
+  .row-2 {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 14px;
+  }
+  .tile {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 12px 14px;
+    display: flex; flex-direction: column; gap: 2px;
+    min-height: 70px;
+  }
+  .tile-glyph {
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--gold);
+  }
+  .tile-h {
+    font-family: var(--serif); font-weight: 500; font-size: 13.5px;
+    color: var(--text);
+  }
+  .tile-sub {
+    font-size: 10.5px; color: var(--text-mute); line-height: 1.35;
+  }
+
+  .section-h {
+    font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin: 4px 4px 8px;
+  }
+  .activity {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 4px 16px;
+  }
+  .act-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0;
+  }
+  .act-row + .act-row { border-top: 1px dashed var(--rule); }
+  .act-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-dim); margin-top: 7px; flex-shrink: 0;
+  }
+  .act-row.gold .act-dot { background: var(--gold); }
+  .act-row.green .act-dot { background: var(--green); }
+  .act-text { flex: 1; }
+  .act-when {
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .act-what {
+    font-family: var(--sans); font-size: 12.5px; color: var(--text);
+    margin-top: 1px;
+  }
+  .act-what em { font-style: italic; color: var(--text-mute); }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="live-pulse">Day 4 of 7</div>
+    <div class="more">···</div>
+  </div>
+
+  <div class="vow-card">
+    <div class="vc-label">— The Vow —</div>
+    <div class="vc-text"><em>I'll</em> walk 10,000 steps every day.</div>
+    <div class="vc-meta">
+      <div class="mc">
+        <div class="mc-k">On hold</div>
+        <div class="mc-v gold">$50</div>
+      </div>
+      <div class="mc">
+        <div class="mc-k">Until</div>
+        <div class="mc-v">Sun</div>
+      </div>
+      <div class="mc">
+        <div class="mc-k">Judge</div>
+        <div class="mc-v green">Maya</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="streak">
+    <div class="streak-num">3</div>
+    <div class="streak-label">in a row</div>
+    <div class="streak-grid">
+      <div class="day done">M</div>
+      <div class="day done">T</div>
+      <div class="day done">W</div>
+      <div class="day today">T</div>
+      <div class="day future">F</div>
+      <div class="day future">S</div>
+      <div class="day future">S</div>
+    </div>
+    <div class="streak-foot">Today: <b>6,420 / 10,000</b> · 3 hrs of daylight left</div>
+  </div>
+
+  <div class="today-check">Mark today done</div>
+
+  <div class="row-2">
+    <div class="tile">
+      <div class="tile-glyph">→</div>
+      <div class="tile-h">Text Maya</div>
+      <div class="tile-sub">Check in with her</div>
+    </div>
+    <div class="tile">
+      <div class="tile-glyph">⌁</div>
+      <div class="tile-h">Share</div>
+      <div class="tile-sub">Brag a little</div>
+    </div>
+  </div>
+
+  <div class="section-h">This week</div>
+  <div class="activity">
+    <div class="act-row green">
+      <div class="act-dot"></div>
+      <div class="act-text">
+        <div class="act-when">Yesterday, 9:14 pm</div>
+        <div class="act-what">Maya: <em>"keep going! 🔥"</em></div>
+      </div>
+    </div>
+    <div class="act-row gold">
+      <div class="act-dot"></div>
+      <div class="act-text">
+        <div class="act-when">Yesterday, 6:30 pm</div>
+        <div class="act-what">Day 3 done · 11,240 steps</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

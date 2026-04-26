@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Unicase:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080607;
+    --surface: #100D0C;
+    --surface-2: #18120F;
+    --paper: #EEE8DE;
+    --paper-mute: #B8AE9A;
+    --paper-dim: #7A746A;
+    --rule: #2A211B;
+    --oxblood: #8C1C1C;
+    --oxblood-bright: #B22A2A;
+    --oxblood-soft: rgba(140,28,28,0.16);
+    --display: "Cormorant Unicase", Georgia, serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(238,232,222,0.012) 0 1px, transparent 1px 3px);
+    color: var(--paper); font-family: var(--mono);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 50px 26px 28px; overflow: hidden; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 10px; border-bottom: 2px solid var(--paper);
+    margin-bottom: 22px;
+  }
+  .back {
+    font-family: var(--mono); font-size: 14px; color: var(--paper);
+    font-weight: 600;
+  }
+  .step {
+    font-family: var(--mono); font-size: 10px; letter-spacing: 0.22em;
+    color: var(--paper-dim); font-weight: 600; text-transform: uppercase;
+  }
+  .step b { color: var(--oxblood-bright); }
+
+  .ann {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.32em; text-transform: uppercase; color: var(--oxblood-bright);
+    margin-bottom: 8px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 700;
+    font-size: 42px; line-height: 0.95; letter-spacing: -0.005em;
+    text-transform: uppercase;
+    margin-bottom: 24px; color: var(--paper);
+  }
+  h1 .red { color: var(--oxblood-bright); }
+
+  .label {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.22em; text-transform: uppercase; color: var(--paper-dim);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .label::before { content: "//"; color: var(--oxblood-bright); }
+
+  /* Amount — punch-card stencil */
+  .amounts {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+    margin-bottom: 24px;
+  }
+  .amount {
+    aspect-ratio: 1;
+    border: 1.5px solid var(--rule);
+    background: transparent;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--display); font-weight: 700;
+    font-size: 22px;
+    color: var(--paper);
+    font-feature-settings: "tnum";
+    position: relative;
+  }
+  .amount .d { font-size: 12px; vertical-align: top; opacity: 0.6; margin-right: 1px; }
+  .amount.sel {
+    background: var(--paper); color: var(--bg);
+    border-color: var(--paper);
+    box-shadow: 3px 3px 0 var(--oxblood-bright);
+  }
+  .amount.sel::after {
+    content: ""; position: absolute; top: 6px; right: 6px;
+    width: 6px; height: 6px; background: var(--oxblood-bright);
+    border-radius: 50%;
+  }
+
+  /* Destination — vs. cards */
+  .dest-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 6px;
+    margin-bottom: 18px;
+  }
+  .dest {
+    border: 1.5px solid var(--rule);
+    padding: 14px 14px 18px;
+    position: relative;
+    background: transparent;
+  }
+  .dest .num {
+    font-family: var(--display); font-weight: 700; font-size: 16px;
+    color: var(--paper-dim);
+    margin-bottom: 6px;
+  }
+  .dest .name {
+    font-family: var(--display); font-weight: 700; font-size: 22px;
+    text-transform: uppercase; line-height: 0.95; color: var(--paper);
+    margin-bottom: 6px;
+  }
+  .dest .desc {
+    font-family: var(--mono); font-size: 10.5px; line-height: 1.45;
+    color: var(--paper-mute); font-weight: 400;
+  }
+  .dest.sel-charity {
+    border-color: var(--paper);
+    background: var(--paper); color: var(--bg);
+    box-shadow: 3px 3px 0 var(--oxblood-bright);
+  }
+  .dest.sel-charity .num { color: var(--oxblood-bright); }
+  .dest.sel-charity .name { color: var(--bg); }
+  .dest.sel-charity .desc { color: rgba(8,6,7,0.7); }
+
+  /* Selected line */
+  .selected {
+    border: 1px dashed var(--rule);
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .selected .left {
+    font-family: var(--mono); font-size: 10px;
+    color: var(--paper-dim); font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase;
+  }
+  .selected .name {
+    font-family: var(--display); font-weight: 700; font-size: 16px;
+    color: var(--paper); text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .selected .change {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    color: var(--oxblood-bright); letter-spacing: 0.18em; text-transform: uppercase;
+  }
+
+  .footer { margin-top: auto; padding-top: 6px; }
+  .pre-cta {
+    font-family: var(--mono); font-size: 10.5px; line-height: 1.5;
+    color: var(--paper-mute); margin-bottom: 12px; text-align: center;
+    letter-spacing: 0.02em; font-weight: 500;
+  }
+  .pre-cta b {
+    color: var(--paper); font-weight: 700;
+    background: var(--oxblood-bright); padding: 1px 6px;
+    color: var(--paper);
+  }
+
+  .cta {
+    width: 100%; height: 58px;
+    background: var(--oxblood-bright); color: var(--paper);
+    font-family: var(--display); font-weight: 700;
+    font-size: 17px; letter-spacing: 0.14em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    border: 0;
+    box-shadow: 4px 4px 0 var(--paper);
+  }
+  .cta .amt {
+    font-family: var(--mono); font-weight: 700; letter-spacing: 0;
+    font-feature-settings: "tnum";
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="step"><b>03</b> / 04 · STAKE</div>
+  </div>
+
+  <div class="ann">— Skin in the game —</div>
+  <h1>How much<br/>does <span class="red">your word</span><br/>cost?</h1>
+
+  <div class="label">Ante</div>
+  <div class="amounts">
+    <div class="amount"><span class="d">$</span>10</div>
+    <div class="amount sel"><span class="d">$</span>25</div>
+    <div class="amount"><span class="d">$</span>50</div>
+    <div class="amount"><span class="d">$</span>100</div>
+  </div>
+
+  <div class="label">Where it goes if you fold</div>
+  <div class="dest-grid">
+    <div class="dest sel-charity">
+      <div class="num">A.</div>
+      <div class="name">Charity</div>
+      <div class="desc">A cause you believe in.<br/>Your loss = their win.</div>
+    </div>
+    <div class="dest">
+      <div class="num">B.</div>
+      <div class="name">Anti-cause</div>
+      <div class="desc">A cause you hate.<br/>Maximum sting.</div>
+    </div>
+  </div>
+
+  <div class="selected">
+    <div>
+      <div class="left">// selected</div>
+      <div class="name">St. Jude Children's</div>
+    </div>
+    <div class="change">CHANGE ›</div>
+  </div>
+
+  <div class="footer">
+    <div class="pre-cta">// <b>$25</b> on the line. Refunded the second your witness calls it kept.</div>
+    <div class="cta">Ante up <span class="amt">$25</span> <span>→</span></div>
+  </div>
+</div>
+</body>
+</html>

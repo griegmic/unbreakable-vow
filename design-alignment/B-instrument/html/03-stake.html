@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0B0C;
+    --surface: #141418;
+    --surface-2: #1A1A1F;
+    --text: #E8E8EA;
+    --text-mute: #7A7A80;
+    --text-dim: #4A4A52;
+    --green: #00D084;
+    --green-soft: rgba(0,208,132,0.10);
+    --green-line: rgba(0,208,132,0.25);
+    --red: #FF4A4A;
+    --red-soft: rgba(255,74,74,0.10);
+    --red-line: rgba(255,74,74,0.25);
+    --rule: rgba(232,232,234,0.06);
+    --rule-2: rgba(232,232,234,0.10);
+    --sans: "Inter", -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.005em;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; }
+
+  /* Progress bar + back */
+  .topbar {
+    display: flex; align-items: center; gap: 14px;
+    padding: 50px 20px 10px;
+  }
+  .back {
+    width: 32px; height: 32px; border: 1px solid var(--rule-2);
+    border-radius: 6px; display: flex; align-items: center; justify-content: center;
+    color: var(--text-mute); font-family: var(--mono); font-size: 13px;
+  }
+  .progress {
+    flex: 1; display: flex; gap: 3px;
+  }
+  .progress .seg {
+    flex: 1; height: 3px; background: var(--surface); border-radius: 2px;
+  }
+  .progress .seg.done { background: var(--text-mute); }
+  .progress .seg.active { background: var(--green); }
+  .step {
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.04em; font-weight: 500;
+  }
+
+  .content { flex: 1; display: flex; flex-direction: column; padding: 20px 20px 20px; overflow: hidden; }
+
+  .section-label {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--sans); font-weight: 600;
+    font-size: 32px; line-height: 1.05; letter-spacing: -0.03em;
+    margin-bottom: 6px;
+  }
+  .subhead {
+    font-size: 13.5px; color: var(--text-mute); margin-bottom: 26px;
+    line-height: 1.4;
+  }
+  .subhead b { color: var(--text); font-weight: 500; }
+
+  /* Amount — data-grid feel */
+  .grid-label {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 8px;
+  }
+  .grid-label .k {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .grid-label .meta {
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.02em;
+  }
+
+  .amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 22px; }
+  .amount {
+    background: var(--surface); border: 1px solid var(--rule-2);
+    border-radius: 6px;
+    padding: 16px 0 14px;
+    display: flex; flex-direction: column; align-items: center;
+    font-family: var(--mono);
+  }
+  .amount .n {
+    font-size: 22px; font-weight: 600; color: var(--text);
+    letter-spacing: -0.02em; font-feature-settings: "tnum";
+  }
+  .amount .l {
+    font-size: 9px; font-weight: 500; color: var(--text-dim);
+    letter-spacing: 0.08em; text-transform: uppercase;
+    margin-top: 4px;
+  }
+  .amount.sel {
+    background: var(--green-soft); border: 1px solid var(--green);
+  }
+  .amount.sel .n { color: var(--green); }
+  .amount.sel .l { color: var(--green); }
+
+  /* Destination — two-column trade cards */
+  .dest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 18px; }
+  .dest {
+    background: var(--surface); border: 1px solid var(--rule-2);
+    border-radius: 6px;
+    padding: 14px 14px 16px;
+    position: relative;
+  }
+  .dest .tag {
+    display: inline-block;
+    font-family: var(--mono); font-size: 9px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+  .dest .name {
+    font-size: 15px; font-weight: 600; color: var(--text);
+    letter-spacing: -0.01em; line-height: 1.15;
+  }
+  .dest .desc {
+    font-size: 11.5px; color: var(--text-mute); line-height: 1.4;
+    margin-top: 6px;
+  }
+  .dest.sel-charity { background: var(--green-soft); border-color: var(--green-line); }
+  .dest.sel-charity .tag { color: var(--green); }
+  .dest.sel-charity .check {
+    position: absolute; top: 10px; right: 10px;
+    width: 16px; height: 16px; border-radius: 50%; background: var(--green);
+    display: flex; align-items: center; justify-content: center;
+    color: #001A0C; font-family: var(--mono); font-size: 10px; font-weight: 700;
+  }
+  .dest.anti .tag { color: var(--text-mute); }
+
+  /* Ledger-style selected destination */
+  .ledger {
+    background: var(--surface); border: 1px solid var(--rule-2);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .ledger-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    font-family: var(--mono); font-size: 12px;
+  }
+  .ledger-row .k { color: var(--text-dim); font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; font-weight: 500; }
+  .ledger-row .v { color: var(--text); font-weight: 500; font-feature-settings: "tnum"; }
+  .ledger-row .v.green { color: var(--green); }
+  .ledger-row .v .change {
+    font-family: var(--mono); font-size: 9.5px; color: var(--green);
+    letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500;
+    margin-left: 8px;
+  }
+
+  .footer { margin-top: auto; padding-top: 10px; }
+  .disclosure {
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    line-height: 1.5; letter-spacing: 0.01em;
+    margin-bottom: 10px; text-align: left;
+  }
+  .disclosure b { color: var(--text-mute); font-weight: 500; }
+  .cta {
+    width: 100%; height: 56px; border-radius: 6px;
+    background: var(--green); color: #001A0C;
+    font-family: var(--sans); font-size: 14.5px; font-weight: 600;
+    letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    border: 0;
+  }
+  .cta .l { display: flex; align-items: center; gap: 8px; }
+  .cta .r {
+    font-family: var(--mono); font-weight: 600;
+    font-feature-settings: "tnum"; font-size: 16px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="progress">
+      <div class="seg done"></div>
+      <div class="seg done"></div>
+      <div class="seg active"></div>
+      <div class="seg"></div>
+    </div>
+    <div class="step">03/04</div>
+  </div>
+
+  <div class="content">
+    <div class="section-label">Stake</div>
+    <h1>Position size.</h1>
+    <div class="subhead">The amount you're risking. <b>Charged on seal,</b> refunded if the vow is kept.</div>
+
+    <div class="grid-label">
+      <div class="k">Amount</div>
+      <div class="meta">USD · 4 presets</div>
+    </div>
+    <div class="amounts">
+      <div class="amount"><span class="n">$10</span><span class="l">SMALL</span></div>
+      <div class="amount sel"><span class="n">$25</span><span class="l">MED</span></div>
+      <div class="amount"><span class="n">$50</span><span class="l">LARGE</span></div>
+      <div class="amount"><span class="n">$100</span><span class="l">MAX</span></div>
+    </div>
+
+    <div class="grid-label">
+      <div class="k">If broken, proceeds to</div>
+      <div class="meta">pick one</div>
+    </div>
+    <div class="dest-grid">
+      <div class="dest sel-charity">
+        <div class="check">✓</div>
+        <div class="tag">OPTION A</div>
+        <div class="name">Charity</div>
+        <div class="desc">Your loss becomes someone's gain.</div>
+      </div>
+      <div class="dest anti">
+        <div class="tag">OPTION B</div>
+        <div class="name">Anti-cause</div>
+        <div class="desc">Money goes where you'd hate it to.</div>
+      </div>
+    </div>
+
+    <div class="ledger">
+      <div class="ledger-row">
+        <span class="k">Beneficiary</span>
+        <span class="v">St. Jude Children's Hospital <span class="change">CHANGE</span></span>
+      </div>
+      <div class="ledger-row">
+        <span class="k">Hold</span>
+        <span class="v green">$25.00</span>
+      </div>
+      <div class="ledger-row">
+        <span class="k">Refund if kept</span>
+        <span class="v">$25.00</span>
+      </div>
+    </div>
+
+    <div class="footer">
+      <div class="disclosure">// <b>$25.00</b> authorized on seal. Full refund issued at verdict if vow is kept. Card never charged if voided before active.</div>
+      <div class="cta"><span class="l">Confirm &amp; continue <span>→</span></span><span class="r">$25.00</span></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

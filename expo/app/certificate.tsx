@@ -56,8 +56,12 @@ export default function CertificateScreen() {
 
   const handleContinue = useCallback(() => {
     void Haptics.selectionAsync();
-    router.push('/live');
-  }, []);
+    if (vow.vowId) {
+      router.replace({ pathname: '/vow-detail', params: { vowId: vow.vowId } });
+      return;
+    }
+    router.replace('/dashboard');
+  }, [vow.vowId]);
 
   return (
     <RitualScreen

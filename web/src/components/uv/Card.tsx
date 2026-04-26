@@ -20,7 +20,7 @@ export function Card({ variant = 'default', children, className, onClick }: Card
   };
 
   if (variant === 'elevated') {
-    baseStyles.background = 'var(--uv-bg-elev)';
+    baseStyles.background = 'var(--uv-bg-elevated)';
     baseStyles.boxShadow = 'var(--uv-shadow-md)';
   } else if (variant === 'warn') {
     baseStyles.background = 'var(--uv-warn-bg)';

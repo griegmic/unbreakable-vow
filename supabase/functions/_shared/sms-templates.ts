@@ -10,9 +10,9 @@
 
 export function sealMessage(stake: number, witnessUrl: string): string {
   if (stake === 0) {
-    return `I just made a vow — hold me to it! ${witnessUrl}`;
+    return `I made an Unbreakable Vow and picked you to hold me to it. Takes 5 sec: ${witnessUrl}`;
   }
-  return `I just made a vow and put $${stake} on it — hold me to it!  ${witnessUrl}`;
+  return `I made an Unbreakable Vow and put $${stake} on it. I picked you to hold me to it: ${witnessUrl}`;
 }
 
 export function witnessReminderMessage(makerName: string, witnessUrl: string): string {
@@ -29,6 +29,10 @@ export function witness24hMessage(makerName: string): string {
 
 export function verdictRequestMessage(makerName: string, verdictUrl: string): string {
   return `Time to judge: did ${makerName} keep the vow? One tap: ${verdictUrl}`;
+}
+
+export function earlyCompletionRequestMessage(makerName: string, verdictUrl: string): string {
+  return `${makerName} says the vow is already done. If that's true, release them here: ${verdictUrl}`;
 }
 
 export function outcomeMessage(makerName: string, verdict: 'kept' | 'broken', stake: number, destination: string): string {
@@ -84,7 +88,10 @@ export function makerOutcomeMessage(verdict: 'kept' | 'broken', stake: number, d
 // ─── CAST / DARE — target-side ───
 
 export function challengeMessage(challengerName: string, stake: number, acceptUrl: string): string {
-  return `${challengerName} dared you to keep an oath. $${stake} is on you doing it. See: ${acceptUrl}`;
+  if (stake > 0) {
+    return `${challengerName} dared you. Accept it, stake $${stake}, and make them judge the result: ${acceptUrl}`;
+  }
+  return `${challengerName} dared you. Accept it, stake your word, and make them judge the result: ${acceptUrl}`;
 }
 
 // ─── CAST / DARE — maker-side (the darer) ───

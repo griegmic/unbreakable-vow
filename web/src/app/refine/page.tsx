@@ -71,10 +71,10 @@ export default function RefinePage() {
         <h1
           style={{
             fontFamily: 'var(--uv-font-serif)',
-            fontWeight: 400,
-            fontSize: 52,
-            lineHeight: 0.98,
-            letterSpacing: '-0.02em',
+            fontWeight: 450,
+            fontSize: 48,
+            lineHeight: 1.04,
+            letterSpacing: '-0.015em',
             color: 'var(--uv-text)',
             marginTop: 100,
           }}
@@ -171,8 +171,8 @@ export default function RefinePage() {
         <div
           style={{
             fontFamily: 'var(--uv-font-serif)',
-            fontWeight: 400,
-            fontVariationSettings: '"opsz" 144',
+            fontWeight: 450,
+            fontVariationSettings: '"opsz" 120, "SOFT" 24',
             fontSize: 24,
             lineHeight: 1.15,
             letterSpacing: '-0.01em',

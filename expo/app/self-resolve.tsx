@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Check, CircleDollarSign, Hand, ShieldCheck } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -18,16 +18,35 @@ import { AppMenuButton } from '@/components/app-menu';
 import { BackButton, RitualCard, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
 import { supabase } from '@/lib/supabase';
+import { getVowDetail } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
 type VerdictChoice = 'kept' | 'broken' | null;
 
+type SelfResolveVow = {
+  id: string;
+  refined_text: string;
+  witness_invite_token: string | null;
+  stake_amount: number;
+  destination: string | null;
+};
+
 export default function SelfResolveScreen() {
+  const { vowId: routeVowId } = useLocalSearchParams<{ vowId?: string }>();
   const { activeVowText, vow, setVowId } = useVowFlow();
 
-  const destination = vow.stake.destination;
+  const [loadedVow, setLoadedVow] = useState<SelfResolveVow | null>(null);
+  const [loadError, setLoadError] = useState(false);
+
+  const resolvedVowId = vow.vowId || routeVowId || loadedVow?.id || null;
+  const resolvedToken = vow.witnessInviteToken || loadedVow?.witness_invite_token || null;
+  const displayText = loadedVow?.refined_text || activeVowText || vow.rawInput || 'Your vow';
+  const stakeAmount = loadedVow?.stake_amount != null
+    ? Math.round(loadedVow.stake_amount / 100)
+    : vow.stake.amount;
+  const destination = loadedVow?.destination || vow.stake.destination || 'your destination';
 
   console.log('[SelfResolveScreen] rendering');
 
@@ -39,6 +58,23 @@ export default function SelfResolveScreen() {
   const checkboxScale = useRef(new Animated.Value(1)).current;
   const swearGlow = useRef(new Animated.Value(0)).current;
   const oathPulse = useRef(new Animated.Value(0.6)).current;
+
+  useEffect(() => {
+    if (!routeVowId) return;
+    getVowDetail(routeVowId)
+      .then((data) => {
+        if (!data) {
+          setLoadError(true);
+          return;
+        }
+        const resolved = data as unknown as SelfResolveVow;
+        setLoadedVow(resolved);
+        if (resolved.witness_invite_token) {
+          setVowId(resolved.id, resolved.witness_invite_token);
+        }
+      })
+      .catch(() => setLoadError(true));
+  }, [routeVowId, setVowId]);
 
   useEffect(() => {
     Animated.loop(
@@ -84,17 +120,17 @@ export default function SelfResolveScreen() {
       console.log('[SelfResolve] Expo Go dev mode — skipping backend, simulating verdict:', selectedVerdict);
     } else {
       // Fetch token from DB if missing from in-memory state
-      let token = vow.witnessInviteToken;
-      if (!token && vow.vowId) {
-        console.log('[SelfResolve] token missing, fetching from DB for vowId:', vow.vowId);
+      let token = resolvedToken;
+      if (!token && resolvedVowId) {
+        console.log('[SelfResolve] token missing, fetching from DB for vowId:', resolvedVowId);
         const { data: vowData } = await supabase
           .from('vows')
           .select('witness_invite_token')
-          .eq('id', vow.vowId)
+          .eq('id', resolvedVowId)
           .single();
         token = vowData?.witness_invite_token ?? null;
         if (token) {
-          setVowId(vow.vowId, token);
+          setVowId(resolvedVowId, token);
         }
       }
 
@@ -151,7 +187,7 @@ export default function SelfResolveScreen() {
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
       router.push('/vow-broken');
     }
-  }, [selectedVerdict, submitting, vow.witnessInviteToken, vow.vowId, setVowId]);
+  }, [selectedVerdict, submitting, resolvedToken, resolvedVowId, setVowId]);
 
   const handleCancel = useCallback(() => {
     if (submitting) return;
@@ -186,16 +222,16 @@ export default function SelfResolveScreen() {
           </View>
 
           <TitleBlock
-            title="Time to be honest."
-            subtitle="No one knows but you."
+            title={loadError ? 'Vow not found.' : 'Time to be honest.'}
+            subtitle={loadError ? 'Head back to your dashboard and try again.' : 'No one knows but you.'}
           />
 
           <RitualCard>
-            <Text style={styles.vowText}>{activeVowText}</Text>
+            <Text style={styles.vowText}>{displayText}</Text>
             <View style={styles.rule} />
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>At stake</Text>
-              <Text style={styles.metaValue}>${vow.stake.amount}</Text>
+              <Text style={styles.metaValue}>${stakeAmount}</Text>
             </View>
             <View style={styles.metaRow}>
               <Text style={styles.metaLabel}>If broken</Text>
@@ -236,7 +272,7 @@ export default function SelfResolveScreen() {
                 </View>
                 <View style={styles.verdictCopy}>
                   <Text style={styles.verdictTitle}>I kept my vow.</Text>
-                  <Text style={styles.verdictDesc}>${vow.stake.amount} stays safe.</Text>
+                  <Text style={styles.verdictDesc}>${stakeAmount} stays safe.</Text>
                 </View>
               </Pressable>
 
@@ -250,7 +286,7 @@ export default function SelfResolveScreen() {
                 </View>
                 <View style={styles.verdictCopy}>
                   <Text style={styles.verdictTitle}>I broke it.</Text>
-                  <Text style={styles.verdictDesc}>${vow.stake.amount} goes to {destination}.</Text>
+                  <Text style={styles.verdictDesc}>${stakeAmount} goes to {destination}.</Text>
                 </View>
               </Pressable>
             </View>
@@ -278,7 +314,7 @@ export default function SelfResolveScreen() {
                 </View>
                 <Text style={styles.modalTitle}>You kept your word.</Text>
                 <Text style={styles.modalBody}>
-                  ${vow.stake.amount} stays safe. No charge.
+                  ${stakeAmount} stays safe. No charge.
                 </Text>
               </>
             ) : (
@@ -288,7 +324,7 @@ export default function SelfResolveScreen() {
                 </View>
                 <Text style={styles.modalTitle}>Honest. Respect.</Text>
                 <Text style={styles.modalBody}>
-                  ${vow.stake.amount} will be donated to {destination}.
+                  ${stakeAmount} will be donated to {destination}.
                 </Text>
               </>
             )}

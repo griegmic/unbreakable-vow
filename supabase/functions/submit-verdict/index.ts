@@ -2,6 +2,7 @@ import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
 import { outcomeMessage, makerOutcomeMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
+import { upsertSettlement, recordSettlementEvent } from '../_shared/settlements.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 
@@ -13,13 +14,15 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY')!;
 
-async function stripePost(endpoint: string, params: Record<string, string>) {
+async function stripePost(endpoint: string, params: Record<string, string>, idempotencyKey?: string) {
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
   const res = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
     method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
+    headers,
     body: new URLSearchParams(params).toString(),
   });
   const data = await res.json();
@@ -76,17 +79,20 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date().toISOString();
+    const payerUserId = (vow.vow_type === 'challenge' && vow.target_user_id) ? vow.target_user_id : vow.user_id;
+    const settlementVow = { ...vow, user_id: payerUserId };
 
     // === NEW: SetupIntent flow ===
     const hasSetupIntent = !!vow.stripe_payment_method_id;
     if (hasSetupIntent && verdict === 'broken') {
+      await upsertSettlement(supabase, settlementVow, { status: 'pending_charge' });
       // Charge the saved card off-session
       try {
         // Look up stripe_customer_id from users table
         const { data: userRow } = await supabase
           .from('users')
           .select('stripe_customer_id')
-          .eq('id', vow.user_id)
+          .eq('id', payerUserId)
           .single();
 
         if (!userRow?.stripe_customer_id) {
@@ -101,21 +107,34 @@ Deno.serve(async (req) => {
           off_session: 'true',
           confirm: 'true',
           'metadata[vow_id]': vow.id,
-          'metadata[user_id]': vow.user_id,
+          'metadata[user_id]': payerUserId,
           'metadata[verdict]': 'broken',
-        });
+        }, `broken-charge-${vow.id}`);
 
         // Save the new PI to the vow
         await supabase.from('vows').update({
           stripe_payment_intent_id: pi.id,
+          refund_failed: false,
         }).eq('id', vow.id);
+
+        await upsertSettlement(supabase, settlementVow, {
+          status: 'pending_manual_settlement',
+          stripe_payment_intent_id: pi.id,
+          stripe_charge_id: pi.latest_charge || null,
+          failure_reason: null,
+        });
 
         console.log(`[submit-verdict] SetupIntent flow: charge created ${pi.id}`);
         await createAuditEvent(supabase, vow.id, 'charge_created', 'system', null, { payment_intent_id: pi.id });
+        await recordSettlementEvent(supabase, vow, 'settlement_pending_manual', { payment_intent_id: pi.id });
       } catch (chargeErr) {
         console.error('[submit-verdict] SetupIntent charge failed:', chargeErr);
         const errorMessage = chargeErr instanceof Error ? chargeErr.message : String(chargeErr);
         await supabase.from('vows').update({ refund_failed: true }).eq('id', vow.id);
+        await upsertSettlement(supabase, settlementVow, {
+          status: 'payment_due',
+          failure_reason: errorMessage,
+        });
         await createAuditEvent(supabase, vow.id, 'charge_failed', 'system', null, { error: errorMessage });
         // Continue to finalize verdict even if charge fails — flag is set for retry
       }
@@ -196,6 +215,57 @@ Deno.serve(async (req) => {
         }), {
           status: 502,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    if (verdict === 'broken' && vow.stake_amount > 0 && !hasSetupIntent) {
+      if (hasRealStripePI) {
+        try {
+          const piRes = await fetch(`https://api.stripe.com/v1/payment_intents/${vow.stripe_payment_intent_id}`, {
+            headers: { 'Authorization': `Bearer ${STRIPE_SECRET_KEY}` },
+          });
+          if (!piRes.ok) throw new Error(`Failed to fetch PI status: HTTP ${piRes.status}`);
+          const piData = await piRes.json();
+          const status = piData.status === 'requires_capture' ? 'charged' : piData.status;
+          if (piData.status === 'requires_capture') {
+            const captured = await stripePost(
+              `payment_intents/${vow.stripe_payment_intent_id}/capture`,
+              {},
+              `legacy-broken-capture-${vow.id}`,
+            );
+            await upsertSettlement(supabase, settlementVow, {
+              status: 'pending_manual_settlement',
+              stripe_payment_intent_id: captured.id,
+              stripe_charge_id: captured.latest_charge || null,
+              failure_reason: null,
+            });
+          } else if (piData.status === 'succeeded') {
+            await upsertSettlement(supabase, settlementVow, {
+              status: 'pending_manual_settlement',
+              stripe_payment_intent_id: piData.id,
+              stripe_charge_id: piData.latest_charge || null,
+              failure_reason: null,
+            });
+          } else {
+            await upsertSettlement(supabase, settlementVow, {
+              status: 'payment_due',
+              stripe_payment_intent_id: piData.id,
+              failure_reason: `legacy payment intent in ${status} state`,
+            });
+          }
+        } catch (settlementErr) {
+          const errorMessage = settlementErr instanceof Error ? settlementErr.message : String(settlementErr);
+          await upsertSettlement(supabase, settlementVow, {
+            status: 'payment_due',
+            failure_reason: errorMessage,
+          });
+          await createAuditEvent(supabase, vow.id, 'charge_failed', 'system', null, { error: errorMessage });
+        }
+      } else {
+        await upsertSettlement(supabase, settlementVow, {
+          status: 'payment_due',
+          failure_reason: 'No saved card or Stripe payment intent on vow',
         });
       }
     }
@@ -308,7 +378,7 @@ Deno.serve(async (req) => {
         user_id: vow.user_id,
         title: challengerTitle,
         body: challengerBody,
-        data: { vow_id: vow.id, verdict, event: `vow_verdict_${verdict}` },
+        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict, event: `vow_verdict_${verdict}` },
         send_after: now,
       });
     } else {
@@ -329,7 +399,7 @@ Deno.serve(async (req) => {
         user_id: vow.user_id,
         title: pushTitle,
         body: pushBody,
-        data: { vow_id: vow.id, verdict, event: `vow_verdict_${verdict}` },
+        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict, event: `vow_verdict_${verdict}` },
         send_after: now,
       });
     }
@@ -347,7 +417,7 @@ Deno.serve(async (req) => {
         user_id: vow.target_user_id,
         title: targetPushTitle,
         body: targetPushBody,
-        data: { vow_id: vow.id, verdict, event: `challenge_verdict_${verdict}` },
+        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict, event: `challenge_verdict_${verdict}` },
         send_after: now,
       });
     }

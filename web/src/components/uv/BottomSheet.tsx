@@ -52,7 +52,7 @@ export function BottomSheet({ open, onClose, children }: BottomSheetProps) {
           left: 0,
           right: 0,
           zIndex: 'var(--uv-z-modal)' as any,
-          background: 'var(--uv-bg-elev)',
+          background: 'var(--uv-bg-elevated)',
           border: '1px solid var(--uv-border-strong)',
           borderRadius: '22px 22px 0 0',
           padding: '16px 16px 14px',

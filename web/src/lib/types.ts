@@ -23,7 +23,20 @@ export type ChallengeStatus = 'pending' | 'accepted' | 'declined';
 
 export type ActorType = 'maker' | 'witness' | 'target' | 'system';
 
-export type SmsMessageType = 'seal' | 'warmup' | 'verdict_request' | 'outcome';
+export type SmsMessageType =
+  | 'seal'
+  | 'warmup'
+  | 'witness_reminder'
+  | 'witness_24h'
+  | 'witness_accept_confirm'
+  | 'verdict_request'
+  | 'early_completion_request'
+  | 'outcome'
+  | 'maker_seal_confirm'
+  | 'maker_witness_accepted'
+  | 'maker_24h'
+  | 'maker_verdict_time'
+  | 'maker_outcome';
 
 export interface Database {
   public: {

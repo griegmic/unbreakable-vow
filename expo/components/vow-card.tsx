@@ -1,12 +1,10 @@
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Check, X } from 'lucide-react-native';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { palette } from '@/constants/unbreakable';
-import { acceptChallenge, declineChallenge } from '@/lib/vow-api';
 import type { VowRow } from '@/lib/vow-api';
 
 interface VowCardProps {
@@ -95,7 +93,6 @@ function getStakeLabel(vow: VowRow): string {
 }
 
 export default React.memo(function VowCard({ vow, role }: VowCardProps) {
-  const queryClient = useQueryClient();
   const scaleAnim = useRef(new Animated.Value(1)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -138,22 +135,14 @@ export default React.memo(function VowCard({ vow, role }: VowCardProps) {
     router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
   }, [vow.id]);
 
-  const acceptMutation = useMutation({
-    mutationFn: () => acceptChallenge(vow.challenge_invite_token!),
-    onSuccess: () => {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      void queryClient.invalidateQueries({ queryKey: ['challenges'] });
-      void queryClient.invalidateQueries({ queryKey: ['myVows'] });
-    },
-  });
-
-  const declineMutation = useMutation({
-    mutationFn: () => declineChallenge(vow.challenge_invite_token!),
-    onSuccess: () => {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-      void queryClient.invalidateQueries({ queryKey: ['challenges'] });
-    },
-  });
+  const handleOpenChallenge = useCallback(() => {
+    if (!vow.challenge_invite_token) return;
+    void Haptics.selectionAsync();
+    router.push({
+      pathname: '/external-web',
+      params: { url: encodeURIComponent(`https://unbreakablevow.app/c/${vow.challenge_invite_token}`) },
+    } as never);
+  }, [vow.challenge_invite_token]);
 
   return (
     <Animated.View style={[{ opacity: fadeAnim, transform: [{ scale: scaleAnim }] }]}>
@@ -194,21 +183,10 @@ export default React.memo(function VowCard({ vow, role }: VowCardProps) {
           <View style={styles.challengeActions}>
             <Pressable
               style={[styles.challengeBtn, styles.acceptBtn]}
-              onPress={() => acceptMutation.mutate()}
-              disabled={acceptMutation.isPending}
-              testID={`accept-challenge-${vow.id}`}
+              onPress={handleOpenChallenge}
+              testID={`open-challenge-${vow.id}`}
             >
-              <Check color="#0B0D11" size={14} />
-              <Text style={styles.acceptText}>Accept</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.challengeBtn, styles.declineBtn]}
-              onPress={() => declineMutation.mutate()}
-              disabled={declineMutation.isPending}
-              testID={`decline-challenge-${vow.id}`}
-            >
-              <X color="#FF7B7B" size={14} />
-              <Text style={styles.declineText}>Decline</Text>
+              <Text style={styles.acceptText}>Open dare</Text>
             </Pressable>
           </View>
         )}

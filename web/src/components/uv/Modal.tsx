@@ -70,7 +70,7 @@ export function Modal({ open, onClose, children, title }: ModalProps) {
         style={{
           position: 'fixed',
           zIndex: 'var(--uv-z-modal)' as any,
-          background: 'var(--uv-bg-elev)',
+          background: 'var(--uv-bg-elevated)',
           border: '1px solid var(--uv-border-strong)',
           boxShadow: 'var(--uv-shadow-lg)',
           // Mobile: bottom sheet style

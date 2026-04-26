@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #1A1612; --surface-2: #221D17;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 600px 400px at 50% 30%, rgba(200,155,60,0.10), transparent 70%),
+      radial-gradient(ellipse 800px 500px at 50% 100%, rgba(200,155,60,0.06), transparent 70%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 44px 22px 24px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 0 6px; }
+  .back { font-size: 22px; color: var(--text-mute); }
+  .pulse {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500;
+  }
+  .pulse::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold-bright); box-shadow: 0 0 8px var(--gold);
+  }
+
+  /* Hero card — vow restated */
+  .vow-card {
+    background: var(--surface);
+    border: 1px solid var(--gold-line);
+    border-radius: 18px;
+    padding: 16px 22px 16px;
+    margin-bottom: 22px;
+    position: relative;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+  }
+  .vow-card::before {
+    content: ""; position: absolute; top: 0; left: 28px; right: 28px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .vow-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .vow-label {
+    font-size: 9.5px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .need-idea {
+    font-family: var(--serif); font-style: italic; font-size: 12px;
+    color: var(--gold);
+  }
+  .vow-text {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 22px; line-height: 1.15; letter-spacing: -0.012em;
+    color: var(--text); margin-bottom: 12px;
+  }
+  .vow-text em { font-style: italic; color: var(--gold); }
+  .vow-meta {
+    display: flex; gap: 0;
+    border-top: 1px solid var(--rule); padding-top: 10px;
+  }
+  .meta-cell {
+    flex: 1;
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .meta-cell.mid { border-left: 1px solid var(--rule); padding-left: 14px; }
+  .meta-cell:not(.mid) { padding-right: 14px; }
+  .meta-k {
+    font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .meta-v {
+    font-family: var(--serif); font-weight: 500; font-size: 13.5px;
+    color: var(--text); letter-spacing: -0.005em;
+    font-feature-settings: "tnum";
+  }
+
+  /* Stake tiles — copy-rich */
+  .stake-h {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 14px; color: var(--text-mute);
+    margin-bottom: 4px;
+  }
+  .stake-sub {
+    text-align: center;
+    font-size: 9.5px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 14px;
+  }
+  .stake-tiles {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 7px; margin-bottom: 14px;
+  }
+  .tile {
+    aspect-ratio: 0.86;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 6px 4px 8px;
+    position: relative;
+    text-align: center;
+  }
+  .tile-amt {
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 22px; letter-spacing: -0.02em;
+    color: var(--text-mute);
+    font-feature-settings: "tnum";
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+  .tile-cap {
+    font-family: var(--serif); font-style: italic;
+    font-size: 10.5px; line-height: 1.15;
+    color: var(--text-dim);
+    padding: 0 2px;
+  }
+  .tile.selected {
+    background: linear-gradient(180deg, rgba(200,155,60,0.18), rgba(200,155,60,0.08));
+    border: 1px solid var(--gold);
+    box-shadow: 0 0 24px rgba(200,155,60,0.18), 0 1px 0 rgba(232,182,86,0.25) inset;
+  }
+  .tile.selected .tile-amt { color: var(--gold-bright); }
+  .tile.selected .tile-cap { color: var(--text); font-style: italic; }
+  .tile.custom { padding-top: 14px; }
+  .tile.custom .tile-amt { font-size: 16px; font-style: italic; color: var(--text-dim); }
+  .tile.custom .tile-cap { font-style: normal; color: var(--text-dim); margin-top: 4px; }
+
+  /* Destination row — locked, no love/hate toggle */
+  .dest-row {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 12.5px; color: var(--text-mute);
+    line-height: 1.4;
+    margin-bottom: 4px;
+  }
+  .dest-row b {
+    color: var(--text); font-style: normal; font-weight: 500;
+    border-bottom: 1px dotted var(--gold-line);
+    padding-bottom: 1px;
+  }
+  .dest-change {
+    display: inline-block;
+    font-style: normal;
+    font-size: 10.5px; color: var(--text-dim);
+    border-bottom: 1px dotted var(--rule);
+    margin-left: 6px;
+  }
+
+  .footer { margin-top: auto; }
+  .reassure {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 11.5px; color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .cta {
+    width: 100%; height: 60px; border-radius: 999px;
+    background: #F4ECDB;
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 17px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; padding: 0 24px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.4) inset, 0 18px 40px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .cta .amt {
+    font-feature-settings: "tnum";
+    color: #1A1205;
+    opacity: 0.7;
+  }
+  .cta .arrow-pill {
+    position: absolute; right: 8px; top: 8px; bottom: 8px;
+    width: 44px;
+    border-radius: 999px;
+    background: #1A1205;
+    color: #F4ECDB;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="pulse">Set the weight</div>
+  </div>
+
+  <div class="vow-card">
+    <div class="vow-head">
+      <div class="vow-label">The Vow</div>
+      <div class="need-idea">edit</div>
+    </div>
+    <div class="vow-text"><em>I'll</em> go to the gym Mon, Wed &amp; Fri this week.</div>
+    <div class="vow-meta">
+      <div class="meta-cell">
+        <div class="meta-k">Verdict</div>
+        <div class="meta-v">Sun, Apr 26 · 9pm</div>
+      </div>
+      <div class="meta-cell mid">
+        <div class="meta-k">Judge</div>
+        <div class="meta-v">Pick next →</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stake-h">How much does this <em style="font-style:italic;color:var(--gold-bright);">cost</em> you?</div>
+  <div class="stake-sub">— pick the burn —</div>
+  <div class="stake-tiles">
+    <div class="tile">
+      <div class="tile-amt">$25</div>
+      <div class="tile-cap">a nudge</div>
+    </div>
+    <div class="tile selected">
+      <div class="tile-amt">$50</div>
+      <div class="tile-cap">a week of thinking about this</div>
+    </div>
+    <div class="tile">
+      <div class="tile-amt">$100</div>
+      <div class="tile-cap">you'll remember</div>
+    </div>
+    <div class="tile custom">
+      <div class="tile-amt">$$$</div>
+      <div class="tile-cap">won't break it</div>
+    </div>
+  </div>
+  <div class="dest-row">
+    If you break it, $50 goes to <b>One Tree Planted</b><span class="dest-change">change</span>
+  </div>
+
+  <div class="footer">
+    <div class="reassure">Nothing charges unless you break it.</div>
+    <div class="cta">
+      Pick your judge <span class="amt">— $50</span>
+      <span class="arrow-pill">→</span>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+    --crimson: #C84A4A; --crimson-bright: #E58383;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 600px 500px at 50% 35%, rgba(200,74,74,0.08), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+  }
+  /* Dimmed prompt behind */
+  .behind {
+    position: absolute; inset: 0;
+    padding: 30px 24px;
+    opacity: 0.16;
+    filter: blur(2px);
+    pointer-events: none;
+  }
+  .behind h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 34px; line-height: 1.05;
+    text-align: center; margin-top: 80px;
+    color: var(--text);
+  }
+  .behind h1 em { font-style: italic; color: var(--gold); }
+
+  .backdrop {
+    position: absolute; inset: 0;
+    background: rgba(15,13,10,0.72);
+  }
+
+  .sheet {
+    position: absolute; left: 16px; right: 16px; bottom: 24px;
+    background: var(--surface);
+    border: 1px solid rgba(200,74,74,0.3);
+    border-radius: 18px;
+    padding: 28px 24px 22px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  }
+  .sheet::before {
+    content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 32px; height: 3px; border-radius: 2px;
+    background: var(--rule);
+  }
+
+  .gavel {
+    width: 54px; height: 54px;
+    border-radius: 50%;
+    border: 1px solid rgba(200,74,74,0.4);
+    background: rgba(200,74,74,0.08);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 26px; font-style: italic;
+    color: var(--crimson-bright);
+    margin: 4px auto 16px;
+  }
+
+  .stamp {
+    text-align: center;
+    font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--crimson-bright); font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .h {
+    text-align: center;
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 26px; line-height: 1.15; letter-spacing: -0.01em;
+    margin-bottom: 12px;
+  }
+  .h em { font-style: italic; color: var(--crimson-bright); }
+
+  .body {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 14.5px; line-height: 1.5;
+    color: var(--text-mute);
+    margin: 0 6px 18px;
+  }
+  .body b { color: var(--text); font-style: normal; font-weight: 500; }
+
+  /* Consequence preview */
+  .preview {
+    background: rgba(200,74,74,0.05);
+    border: 1px solid rgba(200,74,74,0.2);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 22px;
+  }
+  .pv-l {
+    font-family: var(--serif); font-style: italic;
+    font-size: 13.5px; color: var(--text);
+  }
+  .pv-r {
+    font-family: var(--serif); font-weight: 600; font-size: 18px;
+    color: var(--crimson-bright);
+    font-feature-settings: "tnum";
+  }
+
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+  .btn-primary {
+    width: 100%; height: 54px; border-radius: 13px;
+    background: linear-gradient(180deg, #D85555, #A03535);
+    color: #fff; font-family: var(--serif); font-weight: 500;
+    font-size: 16px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    box-shadow: 0 1px 0 rgba(255,180,180,0.25) inset, 0 10px 24px rgba(200,74,74,0.18);
+  }
+  .btn-secondary {
+    width: 100%; height: 46px; border-radius: 13px;
+    background: transparent; border: 1px solid var(--rule);
+    color: var(--text-mute); font-family: var(--sans);
+    font-weight: 500; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+  <div class="behind">
+    <h1>Joey's vow<br/>is <em>up.</em></h1>
+  </div>
+
+  <div class="backdrop"></div>
+
+  <div class="sheet">
+    <div class="gavel">⚖</div>
+    <div class="stamp">— You're calling it broken —</div>
+    <div class="h">This <em>locks</em> right after.</div>
+    <div class="body">Joey's $100 will go to <b>NRA</b>. He'll be told it was you who called it. Be sure.</div>
+
+    <div class="preview">
+      <div class="pv-l">Charge to NRA</div>
+      <div class="pv-r">$100</div>
+    </div>
+
+    <div class="actions">
+      <div class="btn-primary">Yes — he broke it</div>
+      <div class="btn-secondary">Wait, I want to check first</div>
+    </div>
+  </div>
+</body>
+</html>

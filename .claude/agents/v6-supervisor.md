@@ -178,9 +178,9 @@ After merge: enter monitoring mode (see post-merge section).
 
 ---
 
-## The 7-question designer self-eval
+## The 8-question designer self-eval
 
-For every visual PR, answer these 7 questions per affected screen. **All 7 must be yes to ship.**
+For every visual PR, answer these 8 questions per affected screen. **All 8 must be yes to ship.**
 
 1. Does the screen render the same primitives as the mock? (No surprise components, no missing components.)
 2. Is the visual hierarchy — what your eye lands on first, second, third — the same as the mock?
@@ -188,9 +188,68 @@ For every visual PR, answer these 7 questions per affected screen. **All 7 must 
 4. Are spacing/padding values within token-allowed values per the mock?
 5. Are colors within ΔE 5 of mock values?
 6. Does interactive behavior (hover, focus, press states) match what's specified or implied by the mock?
-7. **Would I send this screenshot to a designer friend without a disclaimer?** (Disclaimers are the tell of a hedge. If you'd add "looks a bit off but..." or "the spacing is close enough..." — that's a no.)
+7. **Navigation chrome present and correct?** (See navigation chrome audit below — this is non-negotiable.)
+8. **Would I send this screenshot to a designer friend without a disclaimer?** (Disclaimers are the tell of a hedge. If you'd add "looks a bit off but..." or "the spacing is close enough..." — that's a no.)
 
 Document each answer with one sentence of reasoning. No vibes.
+
+---
+
+## Navigation chrome audit (part of every visual PR)
+
+Every screen must have navigation chrome that matches the mock and behaves correctly. This is both a visual check (is the chrome present and styled correctly) and a behavioral check (does the back button actually go back one step).
+
+### Presence check — what chrome should be on this screen?
+
+Open the corresponding mock in `design-alignment/v1v2/flow/html/*.html`. Look at the topbar. Does it show:
+
+- **Back arrow (←)** — screen is mid-flow; user should be able to step back one screen
+- **Hamburger / menu icon** — screen is a top-level destination (dashboard, history, settings, home-for-returning-user)
+- **Close icon (×)** — screen is a modal-like detour (e.g., certificate share, cast setup)
+- **Nothing** — screen is terminal (e.g., /sent post-handoff) or intentionally chromeless per mock
+- **Both back and menu** — rare; only if mock explicitly shows both
+
+Verify the production screen matches the mock's chrome exactly. A missing back button on a mid-flow screen is a P0-grade defect regardless of the screen's tier. A hamburger on a mid-flow screen where the mock shows a back arrow is also a defect.
+
+### Behavior check — does the back button work correctly?
+
+For every screen that has a back button, trace the flow it's embedded in:
+
+- `/refine` back → `/`
+- `/stake` back → `/refine`
+- `/witness` back → `/stake`
+- `/seal` back → `/witness`
+- `/sent` back → none (terminal handoff; mock shows no back button)
+- `/vow/[id]` back → `/dashboard` (if user has multiple vows) or `/` (if signed-out legacy)
+- `/history` back → `/dashboard`
+- `/settings` back → `/dashboard`
+- `/certificate/[vowId]` back → `/vow/[id]`
+- `/witnessing` back → `/dashboard`
+- `/cast` back → `/dashboard` (or `/` if first-time dare)
+- `/quick-vow` back → `/` or `/dashboard` per routing context
+
+The back button must:
+1. Return the user to the previous logical step in the flow, not `history.back()` into a random prior route.
+2. Preserve VowFlowProvider state when stepping backward through the creation flow (user shouldn't lose their draft vow text on back).
+3. Never leave the user on a broken or inaccessible route (e.g., back from /stake to /refine when /refine requires state the user no longer has).
+
+For every PR that modifies a screen with a back button: explicitly test the back behavior in checkpoint (c) and document the destination route. If the destination requires state that's not preserved on back, flag it as a regression even if the screen itself renders correctly.
+
+### Hamburger check — does the menu work?
+
+If the screen shows a hamburger, verify:
+1. Tapping opens the expected menu (check mock for menu contents).
+2. Menu items route to the expected destinations.
+3. Menu is dismissible by tapping outside or by a close action.
+
+A hamburger that renders visually but does nothing on tap is a ship-blocker defect, not a polish item.
+
+### Where this fits in the checkpoint flow
+
+- **Plan checkpoint (a):** list the chrome each touched screen requires per the mock, and the expected back destination.
+- **Build checkpoint (b):** confirm chrome is implemented and back routing is wired.
+- **Self-eval checkpoint (c):** answer Question 7 with explicit yes/no + reasoning for presence and behavior. If behavior can't be tested in headless screenshot, document the manual verification step for Joey's smoke test.
+- **Merge checkpoint (d):** navigation chrome failures are auto-ping-Joey regardless of tier — a silently-broken back button is worse than a pixel drift.
 
 ---
 
@@ -208,6 +267,7 @@ Document each answer with one sentence of reasoning. No vibes.
 10. Frozen list respected (vow-ui.tsx, expo/lib/supabase.ts, /live, /self-resolve, /auth/callback, share-button, auth-modal, providers/auth-provider, lib/supabase.ts, lib/vow-logic.ts, all existing migrations, create-payment-intent, send-sms, verdict-page)
 11. Concurrent PR limit: max 1 in-flight at a time
 12. Branch name follows convention `v6/pr3X-{slug}`
+13. Navigation chrome check: for every modified screen, the topbar chrome (back arrow / hamburger / close / none) matches the mock, and the back button (if present) routes to the correct previous step in the flow. No silently-broken back buttons. No mid-flow screens missing a back affordance. See navigation chrome audit section.
 
 ---
 

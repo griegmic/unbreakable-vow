@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1E1C1F;
+    --bg-soft: #231F22;
+    --surface: #2A272A;
+    --surface-2: #322F32;
+    --text: #ECE3D6;
+    --text-mute: #9B9283;
+    --text-dim: #66625A;
+    --rose: #C58B79;
+    --rose-soft: rgba(197,139,121,0.10);
+    --rose-line: rgba(197,139,121,0.30);
+    --sage: #8CA690;
+    --sage-soft: rgba(140,166,144,0.12);
+    --terra: #B85450;
+    --terra-soft: rgba(184,84,80,0.10);
+    --terra-line: rgba(184,84,80,0.28);
+    --rule: rgba(236,227,214,0.07);
+    --display: "Marcellus", Georgia, serif;
+    --sans: "Instrument Sans", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 100% 60% at 50% 0%, rgba(197,139,121,0.05), transparent);
+    color: var(--text); font-family: var(--sans);
+    font-size: 15px; font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 54px 28px 30px; overflow: hidden; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .back {
+    width: 36px; height: 36px; border-radius: 50%;
+    border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-mute); font-size: 16px;
+  }
+  .step-wrap {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .step {
+    font-family: var(--sans); font-size: 10px; font-style: italic;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .dots { display: flex; gap: 5px; }
+  .dots .d {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--rule);
+  }
+  .dots .d.on { background: var(--rose); }
+  .dots .d.done { background: var(--text-dim); }
+
+  .eyebrow {
+    font-family: var(--sans); font-size: 10px; font-style: italic;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--rose); font-weight: 500;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 400;
+    font-size: 36px; line-height: 1.1; letter-spacing: -0.005em;
+    margin-bottom: 30px;
+  }
+  h1 .soft { color: var(--rose); }
+
+  .section-label {
+    font-family: var(--sans); font-size: 10px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 14px;
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .section-label .hint {
+    font-family: var(--sans); font-style: italic; font-size: 11.5px;
+    color: var(--text-dim); letter-spacing: 0; text-transform: none;
+    font-weight: 400;
+  }
+
+  /* Amount — rounded pills */
+  .amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 30px; }
+  .amount {
+    height: 76px; border-radius: 16px;
+    background: var(--surface); border: 1px solid var(--rule);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: var(--display);
+    color: var(--text);
+  }
+  .amount .d { font-size: 12px; color: var(--text-dim); }
+  .amount .n {
+    font-size: 24px; letter-spacing: -0.01em;
+    font-feature-settings: "tnum";
+  }
+  .amount.sel {
+    background: var(--rose-soft);
+    border: 1px solid var(--rose);
+    color: var(--rose);
+  }
+  .amount.sel .d { color: var(--rose); }
+  .amount.sel .n { color: var(--rose); }
+
+  /* Destination — soft pillar cards */
+  .dest-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+  .dest {
+    border-radius: 16px;
+    background: var(--surface); border: 1px solid var(--rule);
+    padding: 18px 16px 18px;
+    display: flex; flex-direction: column; gap: 6px;
+    position: relative;
+  }
+  .dest .soft-label {
+    font-family: var(--sans); font-style: italic; font-size: 11.5px;
+    color: var(--text-mute); font-weight: 400;
+  }
+  .dest .name {
+    font-family: var(--display); font-size: 20px; line-height: 1.1;
+    color: var(--text); letter-spacing: -0.005em;
+  }
+  .dest .desc {
+    font-family: var(--sans); font-size: 12px; color: var(--text-mute);
+    line-height: 1.45; margin-top: 6px; font-weight: 400;
+  }
+  .dest.sel-charity {
+    background: var(--rose-soft);
+    border: 1px solid var(--rose-line);
+  }
+  .dest.sel-charity .soft-label { color: var(--rose); font-style: italic; }
+  .dest.sel-charity::before {
+    content: "✓";
+    position: absolute; top: 12px; right: 14px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: var(--rose); color: #1F1714;
+    font-family: var(--sans); font-size: 11px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* Selected — quiet row */
+  .selected {
+    border-radius: 10px;
+    padding: 14px 16px;
+    background: var(--bg-soft); border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .selected .left .k {
+    font-family: var(--sans); font-size: 10px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .selected .left .name {
+    font-family: var(--display); font-size: 15px;
+    color: var(--text); letter-spacing: -0.003em;
+  }
+  .selected .change {
+    font-family: var(--sans); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--rose);
+  }
+
+  .footer { margin-top: auto; padding-top: 6px; }
+  .pre-cta {
+    text-align: center; font-family: var(--sans); font-style: italic;
+    font-size: 12.5px; color: var(--text-dim); font-weight: 400;
+    line-height: 1.5; margin-bottom: 14px;
+  }
+  .pre-cta b { color: var(--text-mute); font-style: normal; font-weight: 500; }
+
+  .cta {
+    width: 100%; height: 56px; border-radius: 28px;
+    background: var(--rose); color: #1F1714;
+    font-family: var(--display); font-size: 16px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    border: 0;
+  }
+  .cta .amt {
+    font-family: var(--display); letter-spacing: 0; font-feature-settings: "tnum";
+    font-size: 17px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="step-wrap">
+      <div class="dots"><span class="d done"></span><span class="d done"></span><span class="d on"></span><span class="d"></span></div>
+      <div class="step">Stake</div>
+    </div>
+    <div style="width:36px"></div>
+  </div>
+
+  <div class="eyebrow">— Set the weight —</div>
+  <h1>How much is<br/>your <span class="soft">word</span> worth?</h1>
+
+  <div class="section-label">
+    <span>Stake</span>
+    <span class="hint">charged on seal · refunded if kept</span>
+  </div>
+  <div class="amounts">
+    <div class="amount"><span class="d">$</span><span class="n">10</span></div>
+    <div class="amount sel"><span class="d">$</span><span class="n">25</span></div>
+    <div class="amount"><span class="d">$</span><span class="n">50</span></div>
+    <div class="amount"><span class="d">$</span><span class="n">100</span></div>
+  </div>
+
+  <div class="section-label">
+    <span>If broken, goes to…</span>
+    <span class="hint">pick one</span>
+  </div>
+  <div class="dest-grid">
+    <div class="dest sel-charity">
+      <div class="soft-label">a cause you</div>
+      <div class="name">believe in</div>
+      <div class="desc">Your word, used for good.</div>
+    </div>
+    <div class="dest">
+      <div class="soft-label">a cause you</div>
+      <div class="name">resist</div>
+      <div class="desc">Loss aversion.<br/>Maximum motivation.</div>
+    </div>
+  </div>
+
+  <div class="selected">
+    <div class="left">
+      <div class="k">Selected</div>
+      <div class="name">St. Jude Children's Hospital</div>
+    </div>
+    <div class="change">Change</div>
+  </div>
+
+  <div class="footer">
+    <div class="pre-cta"><b>$25</b> held on seal — returned the moment you keep your word.</div>
+    <div class="cta">Continue · <span class="amt">$25</span></div>
+  </div>
+</div>
+</body>
+</html>

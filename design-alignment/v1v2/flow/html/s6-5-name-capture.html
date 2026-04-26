@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S6.5 · Name capture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 600px 460px at 50% 30%, rgba(200,155,60,0.10), transparent 62%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 110px 32px 28px;
+    align-items: center; text-align: center;
+  }
+
+  /* Eyebrow */
+  .eyebrow {
+    font-family: var(--sans); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.36em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 30px;
+  }
+
+  /* H1 */
+  h1 {
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 38px; line-height: 1.05; letter-spacing: -0.025em;
+    color: var(--text);
+    margin-bottom: 14px;
+    max-width: 320px;
+  }
+
+  /* Sub */
+  .sub {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 16px; line-height: 1.4;
+    color: var(--text-mute);
+    margin-bottom: 38px;
+    max-width: 280px;
+  }
+
+  /* Text input */
+  .input-wrap {
+    width: 100%;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .input {
+    width: 100%; height: 64px;
+    background: var(--surface);
+    border: 1px solid var(--gold-line);
+    border-radius: 14px;
+    padding: 0 18px;
+    color: var(--text);
+    font-family: var(--serif); font-style: italic;
+    font-variation-settings: "opsz" 144;
+    font-size: 22px;
+    text-align: center;
+    letter-spacing: -0.005em;
+    outline: none;
+    box-shadow:
+      0 1px 0 rgba(232,182,86,0.12) inset,
+      0 0 0 3px rgba(200,155,60,0.06);
+  }
+  .input::placeholder {
+    color: var(--text-dim); font-style: italic;
+  }
+  .caret-hint {
+    position: absolute; right: 18px; top: 50%; transform: translateY(-50%);
+    width: 1.5px; height: 22px; background: var(--gold-bright);
+    opacity: 0.7;
+    display: none; /* would animate in production */
+  }
+
+  /* Helper text under input */
+  .input-hint {
+    font-family: var(--serif); font-style: italic;
+    font-size: 11.5px; color: var(--text-dim);
+    margin-bottom: 32px;
+  }
+
+  .spacer { flex: 1; }
+
+  /* Primary CTA — gold */
+  .cta {
+    width: 100%; height: 60px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    box-shadow:
+      0 1px 0 rgba(255,220,140,0.3) inset,
+      0 12px 32px rgba(200,155,60,0.26);
+    margin-bottom: 18px;
+  }
+
+  /* Skip text link */
+  .skip {
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    color: var(--text-mute); letter-spacing: 0.01em;
+    text-align: center;
+  }
+  .skip span {
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <div class="eyebrow">One more thing</div>
+
+  <h1>What should your witness call you?</h1>
+
+  <div class="sub">
+    Goes on the contract.<br/>
+    Goes in the text we send.
+  </div>
+
+  <div class="input-wrap">
+    <input class="input" type="text" placeholder="Joey" value="Joey" />
+  </div>
+
+  <div class="spacer"></div>
+
+  <div class="cta">
+    <span>That's me</span>
+    <span>→</span>
+  </div>
+
+  <div class="skip">Skip — they'll see <span>"a friend"</span></div>
+
+</div>
+</body>
+</html>

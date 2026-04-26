@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M11 · Vow Kept · Charity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --green: #4ade80; --green-soft: rgba(74,222,128,0.12);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 700px 500px at 50% 28%, rgba(232,182,86,0.18), transparent 62%),
+      radial-gradient(ellipse 900px 480px at 50% 100%, rgba(200,155,60,0.05), transparent 70%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 70px 28px 28px;
+    align-items: center; text-align: center;
+  }
+
+  /* Confetti dots — subtle gold particles */
+  .confetti { position: absolute; pointer-events: none; }
+  .confetti span {
+    position: absolute; display: block;
+    width: 4px; height: 4px; border-radius: 50%;
+    background: var(--gold-bright); opacity: 0.55;
+  }
+  .c1 { top: 90px; left: 64px; }
+  .c2 { top: 132px; left: 312px; transform: rotate(20deg); width: 5px; height: 2px; border-radius: 1px; }
+  .c3 { top: 178px; left: 48px; width: 3px; height: 3px; }
+  .c4 { top: 102px; left: 248px; width: 5px; height: 5px; opacity: 0.4; }
+  .c5 { top: 218px; left: 332px; width: 3px; height: 3px; opacity: 0.5; }
+  .c6 { top: 64px; left: 168px; width: 4px; height: 4px; opacity: 0.35; }
+  .c7 { top: 200px; left: 90px; width: 3px; height: 3px; opacity: 0.4; }
+  .c8 { top: 156px; left: 358px; width: 4px; height: 4px; opacity: 0.45; }
+
+  /* Trophy SVG container with halo */
+  .trophy-wrap {
+    position: relative;
+    width: 96px; height: 96px;
+    margin-bottom: 24px;
+  }
+  .trophy-halo {
+    position: absolute; inset: -32px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,182,86,0.26), transparent 62%);
+  }
+  .trophy {
+    position: relative; width: 96px; height: 96px;
+    display: flex; align-items: center; justify-content: center;
+    filter: drop-shadow(0 14px 28px rgba(200,155,60,0.35));
+  }
+
+  h1 {
+    font-family: var(--serif); font-weight: 500; font-style: italic;
+    font-variation-settings: "opsz" 144;
+    font-size: 36px; line-height: 1.04; letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .sub {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 16px; line-height: 1.45;
+    color: var(--text-mute);
+    margin-bottom: 24px;
+    max-width: 300px;
+  }
+  .sub b { color: var(--text); font-weight: 500; font-style: italic; }
+
+  /* Receipt card */
+  .receipt {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 16px 18px 14px;
+    margin-bottom: 20px;
+    position: relative;
+    text-align: left;
+  }
+  .receipt::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .r-label {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 8px;
+  }
+  .r-vow {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 16px; line-height: 1.25; color: var(--text);
+    margin-bottom: 12px;
+  }
+  .r-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0;
+    border-top: 1px dashed var(--rule);
+  }
+  .r-k {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .r-v {
+    font-family: var(--serif); font-weight: 500; font-size: 14px;
+    color: var(--text); font-feature-settings: "tnum";
+    display: flex; align-items: center; gap: 6px;
+  }
+  .r-v.green { color: var(--green); }
+  .r-check {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--green-soft);
+    color: var(--green); font-size: 9px; font-weight: 700;
+  }
+  .r-flame {
+    display: inline-block; width: 12px; height: 14px;
+  }
+
+  .spacer { flex: 1; }
+
+  /* Primary CTA — gold */
+  .cta {
+    width: 100%; height: 60px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 17px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    box-shadow:
+      0 1px 0 rgba(255,220,140,0.3) inset,
+      0 12px 32px rgba(200,155,60,0.26);
+    margin-bottom: 18px;
+  }
+
+  /* Secondary text-link row */
+  .secondaries {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .sec-link {
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    color: var(--text-mute); letter-spacing: 0.01em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+  }
+  .sec-link.gold { color: var(--gold-bright); }
+  .sec-link .glyph { font-style: italic; }
+
+  /* Footer micro */
+  .footer-micro {
+    font-size: 11px; color: var(--text-dim);
+    font-family: var(--serif); font-style: italic;
+    text-align: center;
+  }
+  .footer-micro a {
+    color: var(--text-mute);
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Confetti particles (subtle, gold) -->
+  <div class="confetti">
+    <span class="c1"></span><span class="c2"></span><span class="c3"></span><span class="c4"></span>
+    <span class="c5"></span><span class="c6"></span><span class="c7"></span><span class="c8"></span>
+  </div>
+
+  <!-- Trophy hero -->
+  <div class="trophy-wrap">
+    <div class="trophy-halo"></div>
+    <div class="trophy">
+      <svg viewBox="0 0 64 64" width="80" height="80" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="tg1" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F2C766"/>
+            <stop offset="50%" stop-color="#E8B656"/>
+            <stop offset="100%" stop-color="#8B6820"/>
+          </linearGradient>
+          <linearGradient id="tg2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#C89B3C"/>
+            <stop offset="100%" stop-color="#8B6820"/>
+          </linearGradient>
+        </defs>
+        <!-- Cup -->
+        <path d="M18 8 h28 v18 c0 9 -6 16 -14 16 s-14 -7 -14 -16 z"
+              fill="url(#tg1)" stroke="#5C4514" stroke-width="0.6"/>
+        <!-- Handles -->
+        <path d="M18 12 c-6 0 -8 4 -8 8 c0 6 4 9 8 9" fill="none" stroke="url(#tg2)" stroke-width="2.2" stroke-linecap="round"/>
+        <path d="M46 12 c6 0 8 4 8 8 c0 6 -4 9 -8 9" fill="none" stroke="url(#tg2)" stroke-width="2.2" stroke-linecap="round"/>
+        <!-- Inner rim -->
+        <ellipse cx="32" cy="9" rx="14" ry="2" fill="#5C4514" opacity="0.45"/>
+        <!-- Stem -->
+        <rect x="29" y="42" width="6" height="6" fill="url(#tg2)"/>
+        <!-- Base -->
+        <path d="M20 48 h24 v3 h-24 z" fill="url(#tg2)"/>
+        <path d="M16 51 h32 v5 c0 1 -1 2 -2 2 h-28 c-1 0 -2 -1 -2 -2 z" fill="url(#tg1)" stroke="#5C4514" stroke-width="0.5"/>
+        <!-- Star on cup -->
+        <path d="M32 18 l1.5 4.5 h4.7 l-3.8 2.8 l1.5 4.5 l-3.9 -2.8 l-3.9 2.8 l1.5 -4.5 l-3.8 -2.8 h4.7 z"
+              fill="#5C4514" opacity="0.55"/>
+      </svg>
+    </div>
+  </div>
+
+  <h1>You actually did it.</h1>
+  <div class="sub">Sarah confirmed.<br/>Your word is <b>gold</b>.</div>
+
+  <!-- Receipt -->
+  <div class="receipt">
+    <div class="r-label">— The Receipt —</div>
+    <div class="r-vow">Go to the gym 3x.</div>
+    <div class="r-row">
+      <span class="r-k">Money</span>
+      <span class="r-v green">$25 returned <span class="r-check">✓</span></span>
+    </div>
+    <div class="r-row">
+      <span class="r-k">Streak</span>
+      <span class="r-v">
+        <svg class="r-flame" viewBox="0 0 12 14" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 0 c1.5 3 4 4 4 7.5 c0 3.5 -2 5.5 -4 5.5 s-4 -2 -4 -5.5 c0 -2 1 -3 2 -3.5 c0 1 0 2 1 2.5 c0 -2 0 -4 1 -6 z"
+                fill="#E8B656"/>
+        </svg>
+        3 vows kept
+      </span>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- PRIMARY CTA — share is the moment. Bier rule: one screen, one emotion. -->
+  <div class="cta">
+    <span>Share your win</span>
+    <span>→</span>
+  </div>
+
+  <!-- ONE secondary, no more. -->
+  <div class="secondaries">
+    <div class="sec-link gold">
+      <svg width="11" height="13" viewBox="0 0 12 14" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6 0 c1.5 3 4 4 4 7.5 c0 3.5 -2 5.5 -4 5.5 s-4 -2 -4 -5.5 c0 -2 1 -3 2 -3.5 c0 1 0 2 1 2.5 c0 -2 0 -4 1 -6 z"
+              fill="#E8B656"/>
+      </svg>
+      Dare a friend
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

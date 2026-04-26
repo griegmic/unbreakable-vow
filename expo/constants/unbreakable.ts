@@ -69,10 +69,7 @@ export const charities: string[] = [
 
 export const antiCauses: string[] = [
   'NRA',
-  'Donald Trump',
-  'Planned Parenthood',
-  'Kamala Harris',
-  'Ted Cruz',
+  'PETA',
 ];
 
 export interface HistoryEntry {

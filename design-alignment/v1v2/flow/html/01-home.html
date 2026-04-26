@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(200,155,60,0.04), transparent 70%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+    font-feature-settings: "ss01", "cv11";
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 54px 28px 36px; position: relative; }
+
+  .brand { display: flex; align-items: center; justify-content: space-between; margin-bottom: 44px; }
+  .mark { display: flex; align-items: center; gap: 10px; }
+  .seal {
+    width: 24px; height: 24px; border: 1px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    transform: rotate(45deg);
+  }
+  .seal::before { content: ""; width: 6px; height: 6px; background: var(--gold); }
+  .wordmark {
+    font-family: var(--serif); font-size: 15px; font-weight: 500;
+    letter-spacing: 0.01em; color: var(--text);
+  }
+  .wordmark em { color: var(--gold); font-style: italic; font-weight: 400; }
+  .nav-menu {
+    font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+
+  .hero-label {
+    font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500; margin-bottom: 12px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    font-size: 52px; line-height: 0.98; letter-spacing: -0.02em; margin-bottom: 18px;
+    color: var(--text);
+  }
+  h1 em {
+    font-style: italic; font-variation-settings: "opsz" 144, "SOFT" 50;
+    color: var(--gold);
+  }
+
+  .sub {
+    font-family: var(--sans); font-size: 14px; line-height: 1.5;
+    color: var(--text-mute); margin-bottom: 28px; max-width: 320px;
+  }
+
+  .input-label {
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--gold); margin-bottom: 8px; letter-spacing: 0.01em;
+  }
+  .input {
+    font-family: var(--serif); font-size: 21px; font-weight: 400;
+    color: var(--text);
+    background: transparent;
+    border: 0; border-bottom: 1px solid var(--gold-line);
+    padding: 4px 0 12px; width: 100%; outline: none;
+    letter-spacing: -0.005em;
+  }
+  .input::placeholder { color: var(--text-dim); font-style: italic; }
+
+  /* Inline date pill — date is a property of the vow */
+  .verdict-pill {
+    display: inline-flex; align-items: center; gap: 10px;
+    margin-top: 16px;
+    padding: 8px 14px 8px 12px;
+    border: 1px solid var(--gold-line);
+    background: var(--gold-soft);
+    border-radius: 999px;
+    font-family: var(--serif); font-size: 13px;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+  .verdict-pill::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold);
+    box-shadow: 0 0 6px var(--gold);
+  }
+  .verdict-pill .v-label {
+    color: var(--text-mute); font-style: italic; font-weight: 400;
+  }
+  .verdict-pill .v-date {
+    color: var(--text); font-weight: 500;
+  }
+  .verdict-pill .v-change {
+    color: var(--text-dim); font-style: italic; font-size: 11.5px;
+    border-left: 1px solid var(--rule);
+    padding-left: 10px; margin-left: 2px;
+  }
+
+  .chips-label {
+    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); margin: 24px 0 10px; font-weight: 500;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    font-family: var(--sans); font-size: 13px; font-weight: 400;
+    color: var(--text); background: var(--surface);
+    border: 1px solid var(--rule); border-radius: 999px;
+    padding: 9px 13px; letter-spacing: -0.005em;
+  }
+
+  .footer { margin-top: auto; }
+  .cta {
+    width: 100%; height: 58px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 17px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; border: 0;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.25) inset, 0 10px 30px rgba(200,155,60,0.18);
+  }
+  .cta .arrow { font-family: var(--sans); font-weight: 500; }
+  .foot-note {
+    text-align: center; font-size: 11px; color: var(--text-dim);
+    margin-top: 14px; font-family: var(--sans);
+  }
+  .foot-note em { font-style: italic; color: var(--text-mute); }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="brand">
+    <div class="mark">
+      <div class="seal"></div>
+      <div class="wordmark">Unbreakable <em>Vow</em></div>
+    </div>
+    <div class="nav-menu">Sign in</div>
+  </div>
+
+  <div class="hero-label">Yesterday, you said tomorrow.</div>
+  <h1>Make a vow.<br/><em>Mean it.</em></h1>
+
+  <div class="sub">Tell a friend. Put money on it. Keep your word, win it back — or lose it somewhere it hurts.</div>
+
+  <div class="input-label">I vow to…</div>
+  <input class="input" placeholder="ship the thing by Friday" readonly>
+
+  <div class="verdict-pill">
+    <span class="v-label">Verdict by</span>
+    <span class="v-date">Sun, Apr 26</span>
+    <span class="v-change">change</span>
+  </div>
+
+  <div class="chips-label">Or start with</div>
+  <div class="chips">
+    <div class="chip">Gym 3x this week</div>
+    <div class="chip">Delete TikTok for a week</div>
+    <div class="chip">No texting my ex</div>
+    <div class="chip">No DoorDash this week</div>
+    <div class="chip">No alcohol, 2 weeks</div>
+  </div>
+
+  <div class="footer">
+    <div class="cta">Make my vow <span class="arrow">→</span></div>
+    <div class="foot-note"><em>60 seconds.</em> No account needed yet.</div>
+  </div>
+</div>
+</body>
+</html>

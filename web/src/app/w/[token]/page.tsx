@@ -8,6 +8,18 @@ interface Props {
   params: Promise<{ token: string }>;
 }
 
+function isPhoneLikeName(value: string | null | undefined): boolean {
+  if (!value) return false;
+  const digits = value.replace(/\D/g, '');
+  return digits.length >= 7 && digits.length >= value.replace(/\s/g, '').length - 2;
+}
+
+function cleanMakerName(value: string | null | undefined, fallback = 'Your friend'): string {
+  const trimmed = value?.trim();
+  if (!trimmed || isPhoneLikeName(trimmed)) return fallback;
+  return trimmed;
+}
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { token } = await params;
   // Use service role key — RLS witness policies were removed for security.
@@ -33,13 +45,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       .select('display_name')
       .eq('id', vow.user_id)
       .single();
-    if (user?.display_name) makerFirst = user.display_name.split(' ')[0];
+    makerFirst = cleanMakerName(user?.display_name, 'Someone').split(' ')[0];
   }
 
-  const title = vow.stake_amount > 0
-    ? `${makerFirst} put $${Math.round(vow.stake_amount / 100)} on the line. Will you hold them to it?`
-    : `${makerFirst} made a vow. Will you hold them to it?`;
-  const description = `"${vow.refined_text}"`;
+  const title = `${makerFirst} picked you as judge.`;
+  const description = vow.stake_amount > 0
+    ? `"${vow.refined_text}" · $${Math.round(vow.stake_amount / 100)} on the line. No mercy. Just the truth.`
+    : `"${vow.refined_text}" · No mercy. Just the truth.`;
 
   return {
     title,
@@ -92,7 +104,7 @@ export default async function WitnessInvitePage({ params }: Props) {
       .eq('id', vow.user_id)
       .single();
     if (user?.display_name) {
-      makerName = user.display_name;
+      makerName = cleanMakerName(user.display_name);
     }
     if (user?.phone) {
       makerPhone = user.phone;

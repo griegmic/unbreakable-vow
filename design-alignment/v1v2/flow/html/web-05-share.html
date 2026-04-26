@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+    --green: #25D366;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.08), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 44px 22px 22px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding: 0 6px; }
+  .pulse {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500;
+  }
+  .pulse::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold-bright); box-shadow: 0 0 8px var(--gold);
+  }
+  .web-tag {
+    font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+
+  .heading-label {
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--gold); margin-bottom: 8px;
+    padding: 0 6px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 30px; line-height: 1.05; letter-spacing: -0.018em;
+    margin-bottom: 12px;
+    padding: 0 6px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+  .lede {
+    font-size: 13.5px; line-height: 1.55; color: var(--text-mute);
+    max-width: 320px; margin-bottom: 22px;
+    padding: 0 6px;
+  }
+  .lede b { color: var(--text); font-weight: 500; }
+
+  /* Mini receipt — what they just paid */
+  .mini {
+    background: var(--surface);
+    border: 1px solid var(--gold-line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 22px;
+    position: relative;
+  }
+  .mini::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .mini-l {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 6px;
+  }
+  .mini-vow {
+    font-family: var(--serif); font-weight: 400; font-style: italic;
+    font-variation-settings: "opsz" 144;
+    font-size: 16px; line-height: 1.25; color: var(--text);
+    margin-bottom: 10px;
+  }
+  .mini-meta {
+    display: flex; gap: 14px; padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--serif); font-size: 12px; color: var(--text-mute);
+  }
+  .mini-meta b {
+    color: var(--gold-bright); font-weight: 500; font-feature-settings: "tnum";
+  }
+
+  /* Big iMessage send button */
+  .send-cta {
+    width: 100%; height: 64px; border-radius: 16px;
+    background: var(--green); color: #fff;
+    font-family: -apple-system, "SF Pro Text", sans-serif;
+    font-weight: 600; font-size: 18px; letter-spacing: -0.01em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.2) inset, 0 12px 28px rgba(37,211,102,0.22);
+  }
+  .send-cta .glyph {
+    font-size: 22px; line-height: 1; margin-top: -2px;
+  }
+
+  /* Preview of pre-filled message */
+  .preview {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 18px;
+  }
+  .preview-l {
+    font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .preview-text {
+    font-family: var(--serif); font-style: italic;
+    font-size: 12.5px; line-height: 1.5; color: var(--text-mute);
+  }
+  .preview-text b { color: var(--text); font-style: italic; font-weight: 400; }
+
+  /* Other share options — quieter */
+  .alts-label {
+    font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin: 0 6px 10px;
+  }
+  .alts {
+    display: flex; gap: 6px;
+    margin-bottom: 18px;
+  }
+  .alt-btn {
+    flex: 1;
+    height: 44px; border-radius: 10px;
+    background: var(--surface); border: 1px solid var(--rule);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 1px;
+    font-size: 10.5px; color: var(--text-mute);
+    font-family: var(--sans); font-weight: 500;
+  }
+  .alt-btn .ic { font-size: 14px; line-height: 1; color: var(--text-dim); }
+
+  .footer { margin-top: auto; padding: 0 6px; }
+  .reassurance {
+    text-align: center; font-family: var(--serif); font-style: italic;
+    font-size: 11.5px; color: var(--text-dim); line-height: 1.5;
+  }
+  .reassurance b { color: var(--text-mute); font-style: normal; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="pulse">Locked in</div>
+    <div class="web-tag">Mobile Web</div>
+  </div>
+
+  <div class="heading-label">$50 on hold. Now name your judge.</div>
+  <h1>Send it to<br/>someone <em>honest.</em></h1>
+  <div class="lede">Pick whoever in your contacts will tell you the truth Sunday. <b>Until they tap the link, no one's deciding.</b></div>
+
+  <div class="mini">
+    <div class="mini-l">Your vow</div>
+    <div class="mini-vow">"I'll go to the gym Mon, Wed &amp; Fri this week."</div>
+    <div class="mini-meta">
+      <span>On hold <b>$50</b></span>
+      <span>Verdict <b>Sun, 9pm</b></span>
+    </div>
+  </div>
+
+  <div class="send-cta">
+    <span class="glyph"></span>Open Messages →
+  </div>
+
+  <div class="preview">
+    <div class="preview-l">— Pre-filled —</div>
+    <div class="preview-text">
+      <b>"Hey — I just put $50 on going to the gym Mon/Wed/Fri this week. You're calling it Sunday. Tap: vow.so/n/k7q3"</b>
+    </div>
+  </div>
+
+  <div class="alts-label">Other ways</div>
+  <div class="alts">
+    <div class="alt-btn"><span class="ic">⌘</span>Copy link</div>
+    <div class="alt-btn"><span class="ic">@</span>Email</div>
+    <div class="alt-btn"><span class="ic">⌁</span>WhatsApp</div>
+    <div class="alt-btn"><span class="ic">···</span>More</div>
+  </div>
+
+  <div class="footer">
+    <div class="reassurance">Whoever taps the link <b>becomes your judge.</b></div>
+  </div>
+</div>
+</body>
+</html>

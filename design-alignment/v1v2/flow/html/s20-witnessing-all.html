@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S20-WITNESSING-ALL · All vows you're witnessing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --green: #4ade80;
+    --amber: #F1A93C;
+    --red: #C8443A;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse 600px 300px at 50% 0%, rgba(200,155,60,0.04), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 14px 16px 24px;
+    overflow-y: auto;
+  }
+
+  /* Header */
+  .header {
+    display: grid; grid-template-columns: 32px 1fr 32px;
+    align-items: center;
+    padding: 8px 0 16px;
+  }
+  .back {
+    font-family: var(--sans); font-size: 22px; color: var(--text-mute);
+    line-height: 1;
+  }
+  .page-title {
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 22px; letter-spacing: -0.015em;
+    color: var(--text); text-align: center;
+  }
+
+  /* Segmented control — gold underline */
+  .tabs {
+    display: flex; align-items: stretch;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 14px;
+  }
+  .tab {
+    flex: 1;
+    padding: 12px 0 11px;
+    text-align: center;
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    color: var(--text-dim); letter-spacing: 0.02em;
+    position: relative;
+  }
+  .tab.active {
+    color: var(--text);
+  }
+  .tab.active::after {
+    content: ""; position: absolute;
+    bottom: -1px; left: 25%; right: 25%;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--gold-bright), transparent);
+  }
+  .tab .count {
+    color: var(--text-dim); font-weight: 400;
+    margin-left: 4px;
+    font-feature-settings: "tnum";
+  }
+  .tab.active .count { color: var(--gold-bright); }
+
+  /* List rows — RitualCard compact variant */
+  .row {
+    display: flex; align-items: flex-start; gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .row::before {
+    content: ""; position: absolute; top: 0; left: 18px; right: 18px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+    opacity: 0.6;
+  }
+  .row.urgent::before {
+    background: linear-gradient(90deg, transparent, rgba(241,169,60,0.5), transparent);
+    opacity: 1;
+  }
+  .avatar {
+    flex-shrink: 0;
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-mute); font-family: var(--serif); font-weight: 500;
+    font-size: 14px;
+    margin-top: 2px;
+  }
+  .body { flex: 1; min-width: 0; }
+  .top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 3px;
+    gap: 10px;
+  }
+  .maker {
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    color: var(--text);
+  }
+  .pill {
+    flex-shrink: 0;
+    font-size: 8.5px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold-bright); font-weight: 500;
+    padding: 2px 7px; border-radius: 999px;
+    background: var(--gold-soft);
+    border: 1px solid var(--gold-line);
+  }
+  .pill.amber { color: var(--amber); background: rgba(241,169,60,0.10); border-color: rgba(241,169,60,0.22); }
+  .pill.kept { color: var(--green); background: rgba(74,222,128,0.10); border-color: rgba(74,222,128,0.22); }
+  .pill.broken { color: var(--red); background: rgba(200,68,58,0.10); border-color: rgba(200,68,58,0.22); }
+  .pill.muted { color: var(--text-dim); background: transparent; border-color: var(--rule); }
+  .vow {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 14.5px; line-height: 1.2; color: var(--text);
+    margin-bottom: 6px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .meta-row {
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .when {
+    font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-mute); font-feature-settings: "tnum";
+  }
+  .when.urgent { color: var(--amber); font-style: normal; font-weight: 500; }
+  .when.urgent::before {
+    content: ""; display: inline-block; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--amber); margin-right: 5px; vertical-align: middle;
+    box-shadow: 0 0 6px var(--amber);
+  }
+  .stake {
+    font-family: var(--serif); font-weight: 500; font-size: 12.5px;
+    color: var(--gold-bright); font-feature-settings: "tnum";
+  }
+
+  /* Section divider */
+  .section-h {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin: 14px 6px 8px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="back">←</div>
+    <div class="page-title">Witnessing</div>
+    <div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active">Active <span class="count">7</span></div>
+    <div class="tab">Recent <span class="count">12</span></div>
+  </div>
+
+  <!-- Section: Verdict day (urgent, sorted first) -->
+  <div class="section-h">— Verdict day —</div>
+
+  <div class="row urgent">
+    <div class="avatar">S</div>
+    <div class="body">
+      <div class="top">
+        <span class="maker">Sarah</span>
+        <span class="pill amber">Awaiting</span>
+      </div>
+      <div class="vow">No alcohol for 14 days.</div>
+      <div class="meta-row">
+        <span class="when urgent">Reply in 6 hrs</span>
+        <span class="stake">$100</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row urgent">
+    <div class="avatar">D</div>
+    <div class="body">
+      <div class="top">
+        <span class="maker">Devon</span>
+        <span class="pill amber">Awaiting</span>
+      </div>
+      <div class="vow">Cold plunge every morning this week.</div>
+      <div class="meta-row">
+        <span class="when urgent">Reply in 18 hrs</span>
+        <span class="stake">$25</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section: Active -->
+  <div class="section-h">— Active —</div>
+
+  <div class="row">
+    <div class="avatar">M</div>
+    <div class="body">
+      <div class="top">
+        <span class="maker">Marcus</span>
+        <span class="pill">Active</span>
+      </div>
+      <div class="vow">Run 5k three times this week.</div>
+      <div class="meta-row">
+        <span class="when">2 days left</span>
+        <span class="stake">$25</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="avatar">A</div>
+    <div class="body">
+      <div class="top">
+        <span class="maker">Alex</span>
+        <span class="pill">Active</span>
+      </div>
+      <div class="vow">Write every morning before email.</div>
+      <div class="meta-row">
+        <span class="when">5 days left</span>
+        <span class="stake">$50</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="avatar">P</div>
+    <div class="body">
+      <div class="top">
+        <span class="maker">Priya</span>
+        <span class="pill">Active</span>
+      </div>
+      <div class="vow">Read 30 min before bed every night.</div>
+      <div class="meta-row">
+        <span class="when">8 days left</span>
+        <span class="stake">$15</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="avatar">N</div>
+    <div class="body">
+      <div class="top">
+        <span class="maker">Nick</span>
+        <span class="pill">Active</span>
+      </div>
+      <div class="vow">No takeout for two weeks.</div>
+      <div class="meta-row">
+        <span class="when">11 days left</span>
+        <span class="stake">$200</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="avatar">J</div>
+    <div class="body">
+      <div class="top">
+        <span class="maker">Jordan</span>
+        <span class="pill">Active</span>
+      </div>
+      <div class="vow">Meditate 10 min daily this month.</div>
+      <div class="meta-row">
+        <span class="when">19 days left</span>
+        <span class="stake">$40</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

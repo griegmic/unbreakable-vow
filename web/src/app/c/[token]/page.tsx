@@ -42,13 +42,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const firstName = makerName.split(' ')[0];
-  const description = `${firstName} doesn't think you can ${truncate(vow.refined_text, 60)}. Prove them wrong.`;
+  const description = vow.stake_amount > 0
+    ? `${truncate(vow.refined_text, 60)} · $${Math.round(vow.stake_amount / 100)} on you keeping it. Prove them wrong, or pay the price.`
+    : `${truncate(vow.refined_text, 60)}. Prove them wrong, or pass.`;
 
   return {
-    title: `${firstName} doesn't think you can`,
+    title: `${firstName} dared you.`,
     description,
     openGraph: {
-      title: `${firstName} doesn't think you can`,
+      title: `${firstName} dared you.`,
       description,
       images: [{ url: `/c/${token}/og`, width: 1200, height: 630 }],
       type: 'website',
@@ -56,7 +58,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${firstName} doesn't think you can`,
+      title: `${firstName} dared you.`,
       description,
       images: [`/c/${token}/og`],
     },
@@ -72,7 +74,7 @@ export default async function ChallengeInvitePage({ params }: Props) {
 
   const { data: vow, error: vowError } = await supabase
     .from('vows')
-    .select('id, refined_text, stake_amount, suggested_stake_amount, destination, witness_name, ends_at, starts_at, sealed_at, status, user_id, challenge_status, witness_invite_token')
+    .select('id, refined_text, stake_amount, suggested_stake_amount, destination, witness_name, ends_at, starts_at, sealed_at, status, user_id, challenge_status, witness_invite_token, target_phone')
     .eq('challenge_invite_token', token)
     .single();
 

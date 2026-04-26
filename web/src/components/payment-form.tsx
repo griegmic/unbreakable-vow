@@ -5,7 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-function CheckoutForm({ onSuccess, onCancel, onSkip, amount, mode = 'payment' }: { onSuccess: () => void; onCancel: () => void; onSkip?: () => void; amount?: number; mode?: 'payment' | 'setup' }) {
+function CheckoutForm({ onSuccess, onCancel, onSkip, mode = 'payment' }: { onSuccess: () => void; onCancel: () => void; onSkip?: () => void; amount?: number; mode?: 'payment' | 'setup' }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);

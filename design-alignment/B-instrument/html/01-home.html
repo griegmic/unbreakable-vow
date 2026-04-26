@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0B0C;
+    --surface: #141418;
+    --surface-2: #1A1A1F;
+    --text: #E8E8EA;
+    --text-mute: #7A7A80;
+    --text-dim: #4A4A52;
+    --green: #00D084;
+    --green-soft: rgba(0,208,132,0.10);
+    --green-line: rgba(0,208,132,0.22);
+    --red: #FF4A4A;
+    --red-soft: rgba(255,74,74,0.08);
+    --rule: rgba(232,232,234,0.06);
+    --rule-2: rgba(232,232,234,0.10);
+    --sans: "Inter", -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 14px; font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: -0.005em;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; }
+
+  /* Terminal-style status bar */
+  .status {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 48px 20px 12px;
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    color: var(--text-dim); letter-spacing: 0.02em;
+  }
+  .status .left { display: flex; align-items: center; gap: 8px; }
+  .status .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+  }
+  .status .right { display: flex; align-items: center; gap: 14px; }
+
+  .content { flex: 1; display: flex; flex-direction: column; padding: 20px 20px 20px; }
+
+  /* Ticker row — live feel */
+  .ticker {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px; background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 6px; margin-bottom: 28px;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.02em; color: var(--text-mute);
+  }
+  .ticker .live {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--green); font-weight: 600;
+  }
+  .ticker .live::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+  .ticker .sep { color: var(--text-dim); }
+  .ticker .stat b { color: var(--text); font-weight: 600; }
+
+  h1 {
+    font-family: var(--sans); font-weight: 600;
+    font-size: 40px; line-height: 1.02; letter-spacing: -0.035em;
+    margin-bottom: 14px;
+  }
+  h1 .accent { color: var(--green); font-weight: 600; }
+
+  .sub {
+    font-size: 15px; line-height: 1.5; color: var(--text-mute);
+    margin-bottom: 28px; max-width: 320px; font-weight: 400;
+  }
+  .sub b { color: var(--text); font-weight: 500; }
+
+  /* Input — terminal */
+  .input-label {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-dim); margin-bottom: 8px;
+  }
+  .input-label .req { color: var(--green); margin-left: 6px; }
+  .input-frame {
+    background: var(--surface); border: 1px solid var(--rule-2);
+    border-radius: 6px; padding: 14px 16px;
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .input-frame:focus-within { border-color: var(--green-line); }
+  .prompt-mark {
+    font-family: var(--mono); font-size: 14px; color: var(--green); font-weight: 600;
+  }
+  .input {
+    flex: 1; background: transparent; border: 0; color: var(--text);
+    font-family: var(--sans); font-size: 15px; font-weight: 400;
+    outline: none; letter-spacing: -0.005em;
+  }
+  .input::placeholder { color: var(--text-dim); }
+  .helper {
+    font-family: var(--mono); font-size: 10px; font-weight: 400;
+    color: var(--text-dim); letter-spacing: 0.02em;
+    margin-bottom: 22px;
+  }
+
+  /* Example rows — data-rows */
+  .examples-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .examples-label {
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+  }
+  .examples-meta {
+    font-family: var(--mono); font-size: 9.5px; color: var(--text-dim);
+    letter-spacing: 0.02em;
+  }
+  .rows {
+    border: 1px solid var(--rule); border-radius: 6px; overflow: hidden;
+    background: var(--surface);
+  }
+  .row {
+    display: grid; grid-template-columns: 28px 1fr auto 18px;
+    align-items: center; gap: 10px;
+    padding: 11px 12px;
+    border-bottom: 1px solid var(--rule);
+    font-size: 13.5px; color: var(--text);
+  }
+  .row:last-child { border-bottom: 0; }
+  .row .idx {
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    font-weight: 500;
+  }
+  .row .name { font-weight: 500; letter-spacing: -0.005em; }
+  .row .tag {
+    font-family: var(--mono); font-size: 9.5px; color: var(--green);
+    letter-spacing: 0.04em; text-transform: uppercase;
+    background: var(--green-soft); padding: 2px 6px; border-radius: 3px;
+    font-weight: 500;
+  }
+  .row .plus {
+    font-family: var(--mono); color: var(--text-dim);
+    font-size: 15px; font-weight: 400; text-align: center;
+  }
+
+  .footer { margin-top: auto; padding-top: 18px; }
+  .cta {
+    width: 100%; height: 54px; border-radius: 6px;
+    background: var(--green); color: #001A0C;
+    font-family: var(--sans); font-size: 14px; font-weight: 600;
+    letter-spacing: 0.01em;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    border: 0;
+  }
+  .cta .arrow { font-family: var(--mono); font-weight: 600; }
+  .cta .kbd {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    background: rgba(0,0,0,0.12); padding: 2px 6px; border-radius: 3px;
+    margin-left: auto; margin-right: -4px;
+  }
+  .foot {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-top: 10px;
+    font-family: var(--mono); font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.02em;
+  }
+  .foot .l b { color: var(--text-mute); font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="status">
+    <div class="left"><span class="dot"></span><span>UNBREAKABLE.VOW</span></div>
+    <div class="right"><span>v2.1</span><span>· MAINNET</span></div>
+  </div>
+
+  <div class="content">
+    <div class="ticker">
+      <span class="live">LIVE</span>
+      <span class="sep">·</span>
+      <span class="stat"><b>1,247</b> active vows</span>
+      <span class="sep">·</span>
+      <span class="stat"><b>$312K</b> staked</span>
+    </div>
+
+    <h1>Open a position<br/>on <span class="accent">yourself.</span></h1>
+    <div class="sub">Commit to a thing. <b>Stake real money.</b> Name a witness. Keep your word, it settles. Break it, money flows to charity — or a cause you hate.</div>
+
+    <div class="input-label">Commitment <span class="req">*</span></div>
+    <div class="input-frame">
+      <span class="prompt-mark">›</span>
+      <input class="input" placeholder="What are you putting on the line?" readonly>
+    </div>
+    <div class="helper">// specific. binary. verifiable by sunday.</div>
+
+    <div class="examples-header">
+      <div class="examples-label">Preset</div>
+      <div class="examples-meta">4 options</div>
+    </div>
+    <div class="rows">
+      <div class="row"><span class="idx">01</span><span class="name">Gym three times this week</span><span class="tag">fitness</span><span class="plus">+</span></div>
+      <div class="row"><span class="idx">02</span><span class="name">No alcohol for two weeks</span><span class="tag">habit</span><span class="plus">+</span></div>
+      <div class="row"><span class="idx">03</span><span class="name">Delete TikTok for a week</span><span class="tag">focus</span><span class="plus">+</span></div>
+      <div class="row"><span class="idx">04</span><span class="name">Ship the side project</span><span class="tag">work</span><span class="plus">+</span></div>
+    </div>
+
+    <div class="footer">
+      <div class="cta">Open position <span class="arrow">→</span> <span class="kbd">⏎</span></div>
+      <div class="foot">
+        <div class="l"><b>60s</b> to seal · no account required</div>
+        <div class="r">secure · stripe</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

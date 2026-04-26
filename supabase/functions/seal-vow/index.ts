@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
           user_id: user.id,
           title: 'Challenge text failed',
           body: `We couldn't text the challenge target. Share the link manually.`,
-          data: { route: '/live', vow_id, event: 'sms_failed' },
+          data: { route: `/vow-detail?vowId=${vow_id}`, vow_id, event: 'sms_failed' },
           send_after: now,
         });
       }
@@ -268,7 +268,7 @@ Deno.serve(async (req) => {
           user_id: user.id,
           title: 'Witness text failed',
           body: `We couldn't text ${vow.witness_name}. Share the link manually.`,
-          data: { route: '/live', vow_id, event: 'sms_failed' },
+          data: { route: `/vow-detail?vowId=${vow_id}`, vow_id, event: 'sms_failed' },
           send_after: now,
         });
       }
@@ -280,7 +280,7 @@ Deno.serve(async (req) => {
       user_id: user.id,
       title: 'Vow sealed',
       body: "It's done. No turning back.",
-      data: { route: '/live', vow_id, event: 'vow_sealed' },
+      data: { route: `/vow-detail?vowId=${vow_id}`, vow_id, event: 'vow_sealed' },
       send_after: now,
     });
 

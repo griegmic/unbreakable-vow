@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-line: rgba(200,155,60,0.22);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 14.5px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 48px 24px 28px; }
+
+  .brand { display: flex; align-items: center; justify-content: space-between; margin-bottom: 40px; }
+  .mark { display: flex; align-items: center; gap: 9px; }
+  .seal {
+    width: 20px; height: 20px; border: 1px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    transform: rotate(45deg);
+  }
+  .seal::before { content: ""; width: 5px; height: 5px; background: var(--gold); }
+  .wordmark {
+    font-family: var(--serif); font-size: 14px; font-weight: 500;
+    letter-spacing: 0.01em; color: var(--text);
+  }
+  .wordmark em { color: var(--gold); font-style: italic; font-weight: 400; }
+  .nav {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+
+  .eyebrow {
+    font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500; margin-bottom: 12px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144, "SOFT" 30;
+    font-size: 48px; line-height: 0.98; letter-spacing: -0.02em; margin-bottom: 16px;
+  }
+  h1 em {
+    font-style: italic; font-variation-settings: "opsz" 144, "SOFT" 50;
+    color: var(--gold);
+  }
+
+  .sub {
+    font-size: 14px; line-height: 1.5; color: var(--text-mute);
+    margin-bottom: 28px; max-width: 320px;
+  }
+
+  .input-label {
+    font-family: var(--serif); font-style: italic; font-size: 12.5px;
+    color: var(--gold); margin-bottom: 8px;
+  }
+  .input {
+    font-family: var(--serif); font-size: 20px;
+    color: var(--text); background: transparent;
+    border: 0; border-bottom: 1px solid var(--gold-line);
+    padding: 4px 0 12px; width: 100%; outline: none;
+  }
+  .input::placeholder { color: var(--text-dim); font-style: italic; }
+
+  .chips-label {
+    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); margin: 20px 0 10px; font-weight: 500;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 12.5px;
+    color: var(--text); background: var(--surface);
+    border: 1px solid var(--rule); border-radius: 999px;
+    padding: 8px 12px;
+  }
+
+  .footer { margin-top: auto; }
+  .cta {
+    width: 100%; height: 58px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 17px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.25) inset, 0 10px 30px rgba(200,155,60,0.18);
+  }
+  .foot-note {
+    text-align: center; font-size: 11px; color: var(--text-dim);
+    margin-top: 12px;
+  }
+  .foot-note em { font-style: italic; color: var(--text-mute); }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="brand">
+    <div class="mark">
+      <div class="seal"></div>
+      <div class="wordmark">Unbreakable <em>Vow</em></div>
+    </div>
+    <div class="nav">Sign in</div>
+  </div>
+
+  <div class="eyebrow">A vow, made binding</div>
+  <h1>Make a vow.<br/><em>Mean it.</em></h1>
+
+  <div class="sub">Tell a friend what you're committing to. Put money on it. Break it, money goes to charity — or a cause you hate.</div>
+
+  <div class="input-label">I vow to…</div>
+  <input class="input" placeholder="finish the side project this week" readonly>
+
+  <div class="chips-label">Or start with</div>
+  <div class="chips">
+    <div class="chip">Gym 3x this week</div>
+    <div class="chip">No alcohol 2 weeks</div>
+    <div class="chip">Delete TikTok</div>
+    <div class="chip">Ship the side project</div>
+  </div>
+
+  <div class="footer">
+    <div class="cta">Continue <span>→</span></div>
+    <div class="foot-note"><em>60 seconds.</em> No account needed yet.</div>
+  </div>
+</div>
+</body>
+</html>

@@ -89,7 +89,12 @@ export function HamburgerMenu() {
   return (
     <>
       <button
-        onClick={() => setOpen(!open)}
+        type="button"
+        onPointerDown={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((current) => !current);
+        }}
         aria-label={open ? 'Close menu' : 'Open menu'}
         className="w-10 h-10 rounded-full flex items-center justify-center transition-opacity active:opacity-80 shrink-0"
         style={{

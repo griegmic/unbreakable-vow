@@ -5,7 +5,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppMenuButton } from '@/components/app-menu';
-import ContactPickerModal from '@/components/contact-picker-modal';
 import {
   BackButton,
   RitualScreen,
@@ -126,7 +125,7 @@ export default function WitnessScreen() {
           </View>
           <View style={styles.heroCopy}>
             <Text style={styles.heroTitle}>Pick your witness</Text>
-            <Text style={styles.heroSubtitle}>They'll decide if you kept your word</Text>
+            <Text style={styles.heroSubtitle}>They decide if you kept your word</Text>
           </View>
           <ChevronRight color={palette.goldBright} size={18} />
         </Pressable>

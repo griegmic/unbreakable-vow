@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 700px 500px at 50% 30%, rgba(200,155,60,0.10), transparent 65%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 80px 28px 32px; align-items: center; }
+
+  .checkmark {
+    width: 78px; height: 78px;
+    border-radius: 50%;
+    border: 1px solid var(--gold);
+    background: radial-gradient(circle at 35% 35%, rgba(200,155,60,0.25), transparent 70%);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 32px;
+    box-shadow: 0 0 40px rgba(200,155,60,0.2);
+  }
+  .checkmark svg { width: 36px; height: 36px; }
+
+  .stamp {
+    font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 38px; line-height: 1.05; letter-spacing: -0.02em;
+    text-align: center; margin-bottom: 16px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+
+  .lede {
+    text-align: center; font-family: var(--serif); font-style: italic;
+    font-size: 15px; line-height: 1.5; color: var(--text-mute);
+    max-width: 290px; margin-bottom: 36px;
+  }
+  .lede b { color: var(--text); font-style: normal; font-weight: 500; }
+
+  /* What happens next — timeline */
+  .timeline {
+    width: 100%; max-width: 320px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 18px 18px 18px;
+    margin-bottom: 28px;
+  }
+  .tl-label {
+    font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 14px;
+  }
+  .tl-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 8px 0;
+  }
+  .tl-row + .tl-row { border-top: 1px dashed var(--rule); }
+  .tl-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-dim); flex-shrink: 0;
+    margin-top: 7px;
+  }
+  .tl-row.now .tl-dot { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+  .tl-text { flex: 1; }
+  .tl-when {
+    font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 2px;
+  }
+  .tl-row.now .tl-when { color: var(--gold); }
+  .tl-what {
+    font-family: var(--serif); font-size: 14.5px; font-weight: 400;
+    color: var(--text); letter-spacing: -0.005em;
+    line-height: 1.35;
+  }
+  .tl-row.future .tl-what { color: var(--text-mute); }
+
+  .footer { margin-top: auto; width: 100%; }
+  .text-cta {
+    width: 100%; height: 56px; border-radius: 14px;
+    background: #25D366; color: #000;
+    font-family: -apple-system, "SF Pro Text", sans-serif;
+    font-weight: 600; font-size: 17px; letter-spacing: -0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 24px rgba(37,211,102,0.18);
+  }
+  .text-cta .glyph {
+    font-family: -apple-system, "SF Pro Text", sans-serif;
+    font-size: 18px; line-height: 1;
+  }
+  .preview {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-dim); line-height: 1.5;
+    margin-bottom: 4px;
+  }
+  .preview b { color: var(--text-mute); font-style: italic; font-weight: 400; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="checkmark">
+    <svg viewBox="0 0 36 36" fill="none">
+      <path d="M8 18.5 L15 25.5 L28 11" stroke="#E8B656" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </div>
+
+  <div class="stamp">— You're in —</div>
+  <h1>Joey knows<br/>you've got <em>him.</em></h1>
+  <div class="lede"><b>That's it for now.</b> We'll text you Sunday at 9pm.</div>
+
+  <div class="timeline">
+    <div class="tl-label">What happens next</div>
+    <div class="tl-row now">
+      <div class="tl-dot"></div>
+      <div class="tl-text">
+        <div class="tl-when">Now</div>
+        <div class="tl-what">Joey gets the green light.</div>
+      </div>
+    </div>
+    <div class="tl-row future">
+      <div class="tl-dot"></div>
+      <div class="tl-text">
+        <div class="tl-when">Sat — 24h before</div>
+        <div class="tl-what">We'll text you a heads-up.</div>
+      </div>
+    </div>
+    <div class="tl-row future">
+      <div class="tl-dot"></div>
+      <div class="tl-text">
+        <div class="tl-when">Sun, 9pm</div>
+        <div class="tl-what">One tap: did he keep it?</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="text-cta">
+      <span class="glyph"></span>Text Joey: I've got you
+    </div>
+    <div class="preview">Opens Messages with: <b>"I've got you. See you Sunday."</b></div>
+  </div>
+</div>
+</body>
+</html>

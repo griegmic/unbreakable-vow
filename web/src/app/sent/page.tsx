@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { WaxSeal, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, DeliveredPill, EyebrowTag } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
+import { HamburgerMenu } from '@/components/hamburger-menu';
 
 /**
  * S8 · Sealed (state A) + S9 · Sealed (state B — returned from Messages)
@@ -24,6 +25,7 @@ export default function SentPage() {
   const [stateB, setStateB] = useState(false);
   const [deliveredAt, setDeliveredAt] = useState<Date | null>(null);
   const [showDonePrompt, setShowDonePrompt] = useState(false);
+  const [recoveredVowId, setRecoveredVowId] = useState('');
   // Desktop detection after mount to avoid hydration mismatch.
   // SSR default is mobile (S8/S9). Desktop (S-WEB3) activates after useEffect.
   const [isDesktop, setIsDesktop] = useState(false);
@@ -35,6 +37,7 @@ export default function SentPage() {
   const stake = vow.stake?.amount ?? 0;
   const stakeDollars = Math.round(stake / 100);
   const vowId = vow.vowId || '';
+  const targetVowId = vowId || recoveredVowId;
   const witnessInviteToken = vow.witnessInviteToken || '';
 
   const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
@@ -48,6 +51,16 @@ export default function SentPage() {
   // Redirect if no vow state
   useEffect(() => {
     if (!vow.rawInput) {
+      try {
+        const raw = sessionStorage.getItem('uv-post-seal-target') || localStorage.getItem('uv-post-seal-target');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed?.id && Date.now() - Number(parsed.ts || 0) < 10 * 60 * 1000) {
+            setRecoveredVowId(parsed.id);
+            return;
+          }
+        }
+      } catch {}
       try {
         const stored = localStorage.getItem('unbreakable-vow-flow');
         if (stored) {
@@ -69,6 +82,30 @@ export default function SentPage() {
       }
     }
   }, [vowId]);
+
+  useEffect(() => {
+    if (vowId) return;
+    try {
+      const raw = sessionStorage.getItem('uv-post-seal-target') || localStorage.getItem('uv-post-seal-target');
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed?.id && Date.now() - Number(parsed.ts || 0) < 10 * 60 * 1000) {
+        setRecoveredVowId(parsed.id);
+      }
+    } catch {}
+  }, [vowId]);
+
+  const goToVow = useCallback(() => {
+    if (targetVowId) {
+      try {
+        sessionStorage.removeItem('uv-post-seal-target');
+        localStorage.removeItem('uv-post-seal-target');
+      } catch {}
+      router.push(`/vow/${targetVowId}`);
+    } else {
+      router.push('/dashboard');
+    }
+  }, [router, targetVowId]);
 
   // Listen for visibilitychange — A→B transition (§3.1 S9)
   useEffect(() => {
@@ -264,7 +301,7 @@ export default function SentPage() {
         <div style={{ width: '100%' }}>
           <GoldCTA
             label="See your vow live →"
-            onPress={() => router.push(vowId ? `/vow/${vowId}` : '/dashboard')}
+            onPress={goToVow}
           />
           <div style={{
             display: 'flex',
@@ -312,6 +349,30 @@ export default function SentPage() {
         textAlign: 'center',
       }}
     >
+      <div style={{ position: 'fixed', top: 14, left: 18, right: 18, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'space-between', pointerEvents: 'none' }}>
+        <button
+          type="button"
+          onClick={goToVow}
+          style={{
+            pointerEvents: 'auto',
+            background: 'none',
+            border: 'none',
+            color: 'var(--uv-text-muted)',
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: 13,
+            fontWeight: 650,
+            cursor: 'pointer',
+            padding: 8,
+          }}
+        >
+          See vow
+        </button>
+        {isAuthenticated && (
+          <div style={{ pointerEvents: 'auto' }}>
+            <HamburgerMenu />
+          </div>
+        )}
+      </div>
       {/* Wax Seal */}
       <div style={{ marginBottom: 40, position: 'relative' }}>
         <WaxSeal size="lg" showHalo showCheck={stateB} />
@@ -349,7 +410,7 @@ export default function SentPage() {
       {stateB ? (
         <OutlinedGoldCTA
           label="See your vow →"
-          onPress={() => router.push(vowId ? `/vow/${vowId}` : '/dashboard')}
+          onPress={goToVow}
         />
       ) : (
         <>

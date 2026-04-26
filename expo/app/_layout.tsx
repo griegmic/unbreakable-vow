@@ -39,8 +39,6 @@ function RootLayoutNav() {
       <Stack.Screen name="dashboard" />
       <Stack.Screen name="vow-detail" />
       <Stack.Screen name="live" />
-      <Stack.Screen name="witness-invite" />
-      <Stack.Screen name="witness-verdict" />
       <Stack.Screen name="vow-kept" />
       <Stack.Screen name="vow-broken" />
       <Stack.Screen name="self-resolve" />
@@ -48,6 +46,7 @@ function RootLayoutNav() {
       <Stack.Screen name="settings" />
       <Stack.Screen name="quick-vow" />
       <Stack.Screen name="cast" />
+      <Stack.Screen name="external-web" />
     </Stack>
   );
 }
@@ -89,7 +88,15 @@ export default function RootLayout() {
         // Only route to protected screens if user has a session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          router.push(data.route as never);
+          const route = data.route;
+          if (route.startsWith('/w/') || route.startsWith('/c/')) {
+            router.push({
+              pathname: '/external-web',
+              params: { url: encodeURIComponent(`https://unbreakablevow.app${route}`) },
+            } as never);
+          } else {
+            router.push(route as never);
+          }
         } else {
           router.push('/' as never);
         }

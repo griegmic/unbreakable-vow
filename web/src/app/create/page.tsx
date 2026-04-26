@@ -72,7 +72,8 @@ export default function CreatePage() {
   }, [goToStep]);
 
   const handleIfBrokenClose = useCallback(() => {
-    window.history.back(); // go back to step 3 via browser history
+    setStep(3);
+    window.history.replaceState({ step: 3 }, '', '/create');
   }, []);
 
   // Step 3 "Seal my vow" — save to VowFlowProvider and go to /seal
@@ -131,7 +132,10 @@ export default function CreatePage() {
         destinationKind={destinationKind}
         onIfBroken={handleIfBroken}
         onNext={handleReview}
-        onBack={() => window.history.back()}
+        onBack={() => {
+          setStep(1);
+          window.history.replaceState({ step: 1 }, '', '/create');
+        }}
         vowText={vowText}
         witnessName="TBD"
         endsAt={endsAt}

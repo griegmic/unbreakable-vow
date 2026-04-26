@@ -129,7 +129,7 @@ export default function CertificateClient({ vow, makerName }: { vow: CertVow; ma
         padding: '4px 4px 12px',
       }}>
         <button
-          onClick={() => { window.history.back(); }}
+          onClick={() => { window.location.href = `/vow/${vow.id}`; }}
           aria-label="Close"
           style={{
             background: 'none', border: 'none', cursor: 'pointer',

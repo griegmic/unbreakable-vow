@@ -132,35 +132,33 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Create PaymentIntent
-    console.log('[create-payment-intent] creating payment intent');
-    const paymentIntent = await stripePost('payment_intents', {
-      amount: String(amount),
-      currency: 'usd',
+    // Create SetupIntent. The function name is legacy; new vows save a card
+    // and charge off-session only if the vow is broken.
+    console.log('[create-payment-intent] creating setup intent');
+    const setupIntent = await stripePost('setup_intents', {
       customer: customerId,
-      capture_method: 'manual',
-      'payment_method_types[0]': 'card',
-      'payment_method_types[1]': 'link',
+      'automatic_payment_methods[enabled]': 'true',
+      usage: 'off_session',
       'metadata[vow_id]': vow_id,
       'metadata[user_id]': user.id,
     });
-    console.log('[create-payment-intent] PI created:', paymentIntent.id);
+    console.log('[create-payment-intent] SI created:', setupIntent.id);
 
-    // Save PI ID to vow
+    // Save SI ID to vow
     const patchRes = await supaRest(
       `vows?id=eq.${vow_id}&user_id=eq.${user.id}`,
-      { method: 'PATCH', body: { stripe_payment_intent_id: paymentIntent.id } }
+      { method: 'PATCH', body: { stripe_setup_intent_id: setupIntent.id } }
     );
     if (!patchRes.ok) {
-      console.error('[create-payment-intent] Failed to save PI to vow:', await patchRes.text());
-      return new Response(JSON.stringify({ error: 'Failed to link payment to vow' }), {
+      console.error('[create-payment-intent] Failed to save SI to vow:', await patchRes.text());
+      return new Response(JSON.stringify({ error: 'Failed to link card setup to vow' }), {
         status: 500, headers: corsHeaders,
       });
     }
 
     return new Response(JSON.stringify({
-      clientSecret: paymentIntent.client_secret,
-      paymentIntentId: paymentIntent.id,
+      clientSecret: setupIntent.client_secret,
+      setupIntentId: setupIntent.id,
     }), {
       headers: corsHeaders,
     });

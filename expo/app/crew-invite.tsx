@@ -35,7 +35,7 @@ export default function CrewInviteScreen() {
       footer={
         <PrimaryButton
           label="Got it"
-          onPress={() => router.push('/live')}
+          onPress={() => router.replace('/dashboard')}
           testID="crew-invite-accept"
         />
       }
@@ -45,13 +45,13 @@ export default function CrewInviteScreen() {
       <View style={styles.badgeWrap}>
         <View style={styles.badge}>
           <Users color={palette.goldBright} size={16} />
-          <Text style={styles.badgeText}>YOU'VE BEEN ADDED TO THE CREW</Text>
+          <Text style={styles.badgeText}>YOU HAVE BEEN ADDED TO THE CREW</Text>
         </View>
       </View>
 
       <TitleBlock
         title={`${makerName} made a vow and added you to keep them honest.`}
-        subtitle={`${vow.witnessName} delivers the final verdict — you're just here for accountability.`}
+        subtitle={`${vow.witnessName} delivers the final verdict. You are just here for accountability.`}
       />
 
       <RitualCard>
@@ -76,7 +76,7 @@ export default function CrewInviteScreen() {
         <Text style={styles.whatTitle}>Your role</Text>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>1</Text></View>
-          <Text style={styles.stepText}>You're in the group chat with {makerName}, {vow.witnessName}, and Vowkeeper.</Text>
+          <Text style={styles.stepText}>You are in the group chat with {makerName}, {vow.witnessName}, and Vowkeeper.</Text>
         </View>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>2</Text></View>
@@ -84,7 +84,7 @@ export default function CrewInviteScreen() {
         </View>
         <View style={styles.stepRow}>
           <View style={styles.stepDot}><Text style={styles.stepNum}>3</Text></View>
-          <Text style={styles.stepText}>On {dates.endLabel}, {vow.witnessName} makes the final call. You don't vote — you just watch.</Text>
+          <Text style={styles.stepText}>On {dates.endLabel}, {vow.witnessName} makes the final call. You do not vote. You just watch.</Text>
         </View>
       </RitualCard>
     </RitualScreen>

@@ -43,6 +43,17 @@ html {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
+/* Dashboard content breathes without a floating CTA covering vow cards. */
+.dashboard-screen-with-cta {
+  padding-bottom: calc(34px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 640px) {
+  .dashboard-screen-with-cta {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 /* Gold gradient text helper */
 .gold-gradient-text {
   background: linear-gradient(135deg, var(--uv-gold-bright), var(--uv-gold), var(--uv-gold-deep));
@@ -76,6 +87,25 @@ html {
     --uv-bg-input: #1A1612;
     --uv-bg-selected: #2A2015;
     --uv-bg-overlay: rgba(5, 4, 4, 0.72);
+
+    /* Legacy aliases for older screens/components still in the product surface. */
+    --bg: var(--uv-bg);
+    --surface: var(--uv-bg-card);
+    --surface-elevated: var(--uv-bg-elevated);
+    --surface-input: var(--uv-bg-input);
+    --text: var(--uv-text);
+    --text-secondary: var(--uv-text-muted);
+    --text-muted: var(--uv-text-dim);
+    --gold: var(--uv-gold);
+    --gold-bright: var(--uv-gold-bright);
+    --gold-deep: var(--uv-gold-deep);
+    --gold-glow: var(--uv-gold-glow);
+    --border: var(--uv-border-soft);
+    --border-strong: var(--uv-border-strong);
+    --success: var(--uv-success);
+    --danger: var(--uv-danger);
+    --danger-bg: var(--uv-danger-bg);
+    --danger-muted: var(--uv-danger-bg);
 
     /* ── Borders ── */
     --uv-border: #322D24;

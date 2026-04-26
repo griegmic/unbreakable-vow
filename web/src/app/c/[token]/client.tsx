@@ -100,13 +100,21 @@ function PaymentForm({
   const [cardError, setCardError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Standard confirmation — used by the card form submit button.
-  const confirmPayment = async () => {
+  const confirmSetupIntent = async ({ submitElements }: { submitElements: boolean }) => {
     if (!stripe || !elements || submitting) return;
     setCardError('');
     setSubmitting(true);
 
     try {
+      if (submitElements) {
+        const { error: submitError } = await elements.submit();
+        if (submitError) {
+          setCardError(submitError.message || 'Payment details could not be submitted.');
+          setSubmitting(false);
+          return;
+        }
+      }
+
       const { error: confirmError } = await stripe.confirmSetup({
         elements,
         confirmParams: {
@@ -129,36 +137,13 @@ function PaymentForm({
     }
   };
 
-  // Express Checkout (Apple Pay / Google Pay) — onConfirm fires after the
-  // user authorises in the wallet sheet.  elements.submit() has already been
-  // called internally by ExpressCheckoutElement, so we must NOT call it again.
   const handleExpressConfirm = async () => {
-    if (!stripe || !elements || submitting) return;
-    setCardError('');
-    setSubmitting(true);
-
-    try {
-      const { error: confirmError } = await stripe.confirmSetup({
-        elements,
-        confirmParams: { return_url: window.location.href },
-        redirect: 'if_required',
-      });
-      if (confirmError) {
-        setCardError(confirmError.message || 'Payment failed. Please try again.');
-        setSubmitting(false);
-        return;
-      }
-      await onConfirmed();
-    } catch (err) {
-      setCardError(err instanceof Error ? err.message : 'Payment failed. Please try again.');
-    } finally {
-      setSubmitting(false);
-    }
+    await confirmSetupIntent({ submitElements: false });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await confirmPayment();
+    await confirmSetupIntent({ submitElements: true });
   };
 
   const isLoading = loading || submitting;
@@ -181,10 +166,18 @@ function PaymentForm({
           Apple Pay shows first when available. Card is the backup.
         </p>
       </div>
-      <ExpressCheckoutElement onConfirm={handleExpressConfirm} />
+      <ExpressCheckoutElement
+        onConfirm={handleExpressConfirm}
+        options={{
+          wallets: {
+            applePay: 'always',
+            googlePay: 'always',
+          },
+        }}
+      />
       <PaymentElement options={{
         layout: 'tabs',
-        wallets: { applePay: 'auto', googlePay: 'auto' },
+        wallets: { applePay: 'never', googlePay: 'never' },
       }} />
       {cardError && (
         <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-danger)', margin: 0 }}>

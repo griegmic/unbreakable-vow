@@ -5,6 +5,8 @@ import { Users, Link2, Check } from 'lucide-react';
 import { RitualScreen, FrauncesH1, FrauncesSub } from '@/components/primitives';
 import { useVowFlow } from '@/providers/vow-flow';
 import { formalizeVow } from '@/lib/vow-logic';
+import { useAuth } from '@/providers/auth-provider';
+import { supabase } from '@/lib/supabase';
 
 /**
  * S4 · Witness pick — §3.4
@@ -20,12 +22,16 @@ import { formalizeVow } from '@/lib/vow-logic';
 
 export default function WitnessPage() {
   const router = useRouter();
-  const { vow, setWitnessName, setWitnessType, setWitnessInviteToken, switchToSolo } = useVowFlow();
+  const { vow, activeVowText, setWitnessName, setWitnessType, setWitnessInviteToken, setVowId, switchToSolo } = useVowFlow();
+  const { isAuthenticated, session } = useAuth();
 
   // Device detection: SSR = mobile (safe default), client = feature check
-  const [canShare, setCanShare] = useState(true);
+  const [canShare, setCanShare] = useState<boolean | null>(null);
   useEffect(() => {
-    setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
+    const frame = requestAnimationFrame(() => {
+      setCanShare(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
+    });
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   // Desktop copy feedback state
@@ -41,8 +47,60 @@ export default function WitnessPage() {
     }
   }, [vow.rawInput, router]);
 
+  const ensureDraftForWitness = useCallback(async (token: string): Promise<boolean> => {
+    const s = session || (await supabase.auth.getSession()).data.session;
+    if (!s) return false;
+
+    await supabase.from('users').upsert(
+      { id: s.user.id, display_name: (s.user.user_metadata?.full_name as string) || s.user.email?.split('@')[0] || null },
+      { onConflict: 'id', ignoreDuplicates: true },
+    );
+
+    const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
+    const payload = {
+      refined_text: activeVowText,
+      witness_name: 'Your witness',
+      witness_phone: vow.witnessPhone || null,
+      witness_invite_token: token,
+      stake_amount: vow.stake.amount * 100,
+      consequence: vow.stake.consequence,
+      destination: vow.stake.destination,
+      ends_at: endDate.toISOString(),
+    };
+
+    if (vow.vowId) {
+      const { data, error } = await supabase.from('vows')
+        .update(payload)
+        .eq('id', vow.vowId)
+        .eq('status', 'draft')
+        .select('id, witness_invite_token')
+        .maybeSingle();
+
+      if (!error && data?.id) {
+        setVowId(data.id, data.witness_invite_token || token);
+        return true;
+      }
+    }
+
+    const { data, error } = await supabase.from('vows').insert({
+      user_id: s.user.id,
+      raw_input: vow.rawInput,
+      status: 'draft',
+      starts_at: new Date().toISOString(),
+      ...payload,
+    }).select('id, witness_invite_token').single();
+
+    if (error || !data) {
+      console.error('[witness] draft creation failed before share:', error);
+      return false;
+    }
+
+    setVowId(data.id, data.witness_invite_token || token);
+    return true;
+  }, [activeVowText, session, setVowId, vow]);
+
   // Shared: generate invite text + URL, set witness state
-  const prepareWitness = useCallback(() => {
+  const prepareWitness = useCallback(async () => {
     const token = vow.witnessInviteToken || crypto.randomUUID();
     setWitnessName('Your witness');
     setWitnessType('friend');
@@ -53,12 +111,27 @@ export default function WitnessPage() {
     const stakeHook = vow.stake.amount > 0 ? ` and put $${vow.stake.amount} on it` : '';
     const shareText = `I just made a vow to ${vowText.toLowerCase()}${stakeHook}. You're my witness: ${witnessUrl}`;
 
+    if (isAuthenticated) {
+      const ready = await ensureDraftForWitness(token);
+      if (!ready) {
+        try { localStorage.setItem('uv-share-witness-after-auth', '1'); } catch {}
+        router.push('/seal?shareWitness=1');
+        return null;
+      }
+    } else {
+      try { localStorage.setItem('uv-share-witness-after-auth', '1'); } catch {}
+      router.push('/seal?shareWitness=1');
+      return null;
+    }
+
     return { shareText, witnessUrl };
-  }, [vow, setWitnessName, setWitnessType, setWitnessInviteToken]);
+  }, [ensureDraftForWitness, isAuthenticated, router, vow, setWitnessName, setWitnessType, setWitnessInviteToken]);
 
   // Mobile: share sheet → push /seal
   const handleMobileShare = useCallback(async () => {
-    const { shareText } = prepareWitness();
+    const prepared = await prepareWitness();
+    if (!prepared) return;
+    const { shareText } = prepared;
     if (navigator.share) {
       navigator.share({ text: shareText }).catch(() => {});
     }
@@ -68,7 +141,9 @@ export default function WitnessPage() {
   // Desktop: copy to clipboard → show confirmation → auto-push /seal after 1.5s
   const handleDesktopCopy = useCallback(async () => {
     if (copied) return; // Already in copied state
-    const { shareText } = prepareWitness();
+    const prepared = await prepareWitness();
+    if (!prepared) return;
+    const { shareText } = prepared;
     try {
       await navigator.clipboard.writeText(shareText);
     } catch {
@@ -84,21 +159,23 @@ export default function WitnessPage() {
   };
 
   // Card content based on device + copy state
-  const primaryIcon = canShare
+  const shareAvailable = canShare ?? true;
+
+  const primaryIcon = shareAvailable
     ? <Users style={{ width: 22, height: 22, color: 'var(--uv-gold-bright)' }} />
     : copied
       ? <Check style={{ width: 22, height: 22, color: 'var(--uv-success)' }} />
       : <Link2 style={{ width: 22, height: 22, color: 'var(--uv-gold-bright)' }} />;
 
-  const primaryTitle = canShare
+  const primaryTitle = shareAvailable
     ? 'Text a friend'
     : copied ? 'Link copied ✓' : 'Copy invite link';
 
-  const primarySub = canShare
+  const primarySub = shareAvailable
     ? "They'll decide if you kept your word"
     : copied ? 'Now send it to them however you want' : 'Paste it anywhere to send to your witness';
 
-  const primaryHandler = canShare ? handleMobileShare : handleDesktopCopy;
+  const primaryHandler = shareAvailable ? handleMobileShare : handleDesktopCopy;
 
   const primaryBorder = copied
     ? '1.5px solid var(--uv-success-border)'
@@ -111,7 +188,7 @@ export default function WitnessPage() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20, paddingBottom: 40 }}>
         {/* Back */}
         <button
-          onClick={() => router.back()}
+          onClick={() => router.push('/stake')}
           aria-label="Go back"
           style={{
             background: 'none', border: 'none',
@@ -125,6 +202,22 @@ export default function WitnessPage() {
 
         <FrauncesH1 italic size="page">Who&apos;s holding you to it?</FrauncesH1>
         <FrauncesSub>Pick someone who won&apos;t let you off the hook.</FrauncesSub>
+
+        <div style={{
+          borderLeft: '2px solid var(--uv-gold-line)',
+          padding: '2px 0 2px 12px',
+          marginTop: -4,
+        }}>
+          <p style={{
+            margin: 0,
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: 13,
+            lineHeight: 1.45,
+            color: 'var(--uv-text-dim)',
+          }}>
+            They get the invite now and the verdict link when your deadline hits.
+          </p>
+        </div>
 
         {/* Primary option — device-aware */}
         <button
@@ -154,9 +247,9 @@ export default function WitnessPage() {
           </div>
           <div style={{ flex: 1 }}>
             <span style={{
-              fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 700,
+              fontFamily: 'var(--uv-font-sans)', fontSize: 17, fontWeight: 700,
               color: primaryTitleColor, display: 'block',
-              letterSpacing: '-0.2px',
+              letterSpacing: '0',
             }}>
               {primaryTitle}
             </span>

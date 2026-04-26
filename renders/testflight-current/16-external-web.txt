@@ -1,0 +1,61 @@
+Opening the invite.
+Witness and dare invites open in browser so anyone can answer, app or not.
+Continue in browser
+Back to my vows
+One vow.
+One witness.
+Money on the line.
+!
+Failed to execute 'open' on 'Window': The provided callback is no longer runnable.
+Log 1 of 1
+Uncaught Error
+Failed to execute 'open' on 'Window': The provided callback is no longer runnable.
+Source
+ 
+ 23 |
+     
+if
+ (opened) 
+return
+;
+ 
+ 24 |
+     setOpened(
+true
+)
+;
+>
+ 25 |
+     
+void
+ 
+WebBrowser
+.
+openBrowserAsync(url)
+;
+ 
+    |
+                     
+^
+ 
+ 26 |
+   }
+,
+ [opened
+,
+ url])
+;
+ 
+ 27 |
+ 
+ 28 |
+   
+return
+ (
+app/external-web.tsx (25:21)
+Call Stack
+useEffect$argument_0
+app/external-web.tsx:25:21
+See 34 more frames
+Dismiss
+Minimize

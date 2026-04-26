@@ -212,12 +212,22 @@ export function getTapTarget(item: SortedVow): { pathname: string; params?: Reco
   const { vow, state } = item;
   switch (state) {
     case 'M1': return { pathname: '/self-resolve', params: { vowId: vow.id } };
-    case 'M4': return { pathname: '/live', params: { vowId: vow.id } };
-    case 'M5': return { pathname: '/live', params: { vowId: vow.id } };
-    case 'M6': return { pathname: '/live', params: { vowId: vow.id } };
+    case 'M4': return { pathname: '/vow-detail', params: { vowId: vow.id } };
+    case 'M5': return { pathname: '/vow-detail', params: { vowId: vow.id } };
+    case 'M6': return { pathname: '/vow-detail', params: { vowId: vow.id } };
     case 'M8': return { pathname: '/seal', params: { vowId: vow.id } };
-    case 'W1': return { pathname: '/witness-verdict', params: { vowId: vow.id } };
-    case 'T1': return { pathname: '/vow-detail', params: { vowId: vow.id } };
+    case 'W1':
+      return vow.witness_invite_token
+        ? { pathname: '/external-web', params: { url: encodeURIComponent(`https://unbreakablevow.app/w/${vow.witness_invite_token}/verdict`) } }
+        : { pathname: '/vow-detail', params: { vowId: vow.id } };
+    case 'W2':
+      return vow.witness_invite_token
+        ? { pathname: '/external-web', params: { url: encodeURIComponent(`https://unbreakablevow.app/w/${vow.witness_invite_token}`) } }
+        : { pathname: '/vow-detail', params: { vowId: vow.id } };
+    case 'T1':
+      return vow.challenge_invite_token
+        ? { pathname: '/external-web', params: { url: encodeURIComponent(`https://unbreakablevow.app/c/${vow.challenge_invite_token}`) } }
+        : { pathname: '/vow-detail', params: { vowId: vow.id } };
     default: return { pathname: '/vow-detail', params: { vowId: vow.id } };
   }
 }

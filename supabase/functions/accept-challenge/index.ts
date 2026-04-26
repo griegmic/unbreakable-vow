@@ -251,7 +251,7 @@ Deno.serve(async (req) => {
         'metadata[vow_id]': vow.id,
         'metadata[user_id]': targetUserId,
         'metadata[type]': 'challenge_acceptance',
-      }, `challenge-prepare-${vow.id}-${targetUserId}`);
+      }, `challenge-prepare-${vow.id}-${targetUserId}-${Date.now()}`);
 
       return jsonResponse({
         success: true,

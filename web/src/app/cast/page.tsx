@@ -106,6 +106,7 @@ export default function CastPage() {
   const [dareText, setDareText] = useState('');
   const [deadlineLabel, setDeadlineLabel] = useState('7 days');
   const [taunt, setTaunt] = useState('');
+  const [showTaunt, setShowTaunt] = useState(false);
 
   // Flow state
   const [sending, setSending] = useState(false);
@@ -233,8 +234,8 @@ export default function CastPage() {
       // Auto-trigger share sheet
       const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
       const shareText = senderName
-        ? `${senderName} dared you to make an Unbreakable Vow: ${vowPart} -> ${link}`
-        : `You've been dared to make an Unbreakable Vow: ${vowPart} -> ${link}`;
+        ? `${senderName} dared you: ${vowPart}. Accept it, stake your word, and make them judge the result: ${link}`
+        : `You've been dared: ${vowPart}. Accept it, stake your word, and make them judge the result: ${link}`;
       if (typeof navigator !== 'undefined' && navigator.share) {
         try {
           await navigator.share({ text: shareText });
@@ -254,9 +255,9 @@ export default function CastPage() {
   const getShareText = () => {
     const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
     if (senderName) {
-      return `${senderName} dared you to make an Unbreakable Vow: ${vowPart} -> ${dareLink}`;
+      return `${senderName} dared you: ${vowPart}. Accept it, stake your word, and make them judge the result: ${dareLink}`;
     }
-    return `You've been dared to make an Unbreakable Vow: ${vowPart} -> ${dareLink}`;
+    return `You've been dared: ${vowPart}. Accept it, stake your word, and make them judge the result: ${dareLink}`;
   };
 
   const handleShare = async () => {
@@ -295,6 +296,7 @@ export default function CastPage() {
     setDareText('');
     setTargetName('');
     setTaunt('');
+    setShowTaunt(false);
     setVowId(null);
     setChallengeAccepted(false);
     setAcceptedVowDetails(null);
@@ -469,13 +471,33 @@ export default function CastPage() {
           </div>
 
           {/* Taunt (optional) */}
-          <DareTextarea
-            value={taunt}
-            onChange={setTaunt}
-            placeholder="Optional taunt message..."
-            label="Add a taunt (optional)"
-            rows={2}
-          />
+          {showTaunt ? (
+            <DareTextarea
+              value={taunt}
+              onChange={setTaunt}
+              placeholder="Optional taunt message..."
+              label="Taunt"
+              rows={2}
+            />
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowTaunt(true)}
+              style={{
+                minHeight: 44,
+                borderRadius: 14,
+                border: '1px solid var(--uv-border-soft)',
+                background: 'var(--uv-bg-card)',
+                color: 'var(--uv-text-muted)',
+                fontFamily: 'var(--uv-font-sans)',
+                fontSize: 14,
+                fontWeight: 650,
+                cursor: 'pointer',
+              }}
+            >
+              Add a taunt
+            </button>
+          )}
 
           {/* Error */}
           {error && (

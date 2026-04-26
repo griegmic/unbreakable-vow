@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --imsg: #34C759; --imsg-deep: #2AA84A;
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 700px 500px at 50% 18%, rgba(200,155,60,0.09), transparent 65%),
+      radial-gradient(ellipse 800px 400px at 50% 100%, rgba(200,155,60,0.04), transparent 70%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 48px 24px 20px; }
+
+  /* Status pip — live vow signal, top-right */
+  .topbar { display: flex; justify-content: flex-end; margin-bottom: 22px; }
+  .status {
+    display: inline-flex; align-items: center; gap: 8px;
+    font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500;
+  }
+  .status::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--gold-bright);
+    box-shadow: 0 0 0 3px rgba(232,182,86,0.12), 0 0 10px var(--gold);
+    animation: breathe 2.4s ease-in-out infinite;
+  }
+  @keyframes breathe {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.92); }
+  }
+
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 36px; line-height: 1.02; letter-spacing: -0.022em;
+    margin-bottom: 20px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+
+  .vow {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 18.5px; line-height: 1.36; letter-spacing: -0.005em;
+    color: var(--text);
+    border-left: 2px solid var(--gold);
+    padding: 3px 0 3px 14px;
+    margin-bottom: 18px;
+  }
+
+  /* Meta row — the three facts, one line, tabular */
+  .meta {
+    display: flex; flex-wrap: wrap; align-items: center;
+    font-size: 12px; color: var(--text-mute);
+    line-height: 1.5; margin-bottom: 24px;
+    font-feature-settings: "tnum";
+    letter-spacing: -0.005em;
+  }
+  .meta b { color: var(--text); font-weight: 500; }
+  .meta .sep { color: var(--text-dim); margin: 0 7px; }
+
+  /* SMS preview — the body, visible, trustworthy */
+  .preview-label {
+    font-size: 9.5px; letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .preview-label .to { color: var(--text-mute); letter-spacing: 0.04em; text-transform: none; font-size: 11px; }
+  .preview-label .to b { color: var(--text); font-weight: 500; }
+
+  .imsg-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 16px;
+    padding: 14px 14px 12px;
+    margin-bottom: 22px;
+  }
+  .bubble-row { display: flex; justify-content: flex-end; }
+  .bubble {
+    background: linear-gradient(180deg, #1AA9FF, #0A84E8);
+    color: white;
+    padding: 10px 14px 11px;
+    border-radius: 18px;
+    border-bottom-right-radius: 5px;
+    font-size: 13.5px; line-height: 1.38;
+    max-width: 88%;
+    font-family: -apple-system, "SF Pro Text", sans-serif;
+    letter-spacing: -0.005em;
+  }
+  .bubble a {
+    color: white;
+    text-decoration: underline;
+    text-decoration-color: rgba(255,255,255,0.55);
+    text-underline-offset: 2px;
+  }
+  .bubble-time {
+    text-align: right;
+    font-size: 10px; color: var(--text-dim);
+    margin-top: 7px; letter-spacing: 0.02em;
+    font-family: -apple-system, sans-serif;
+  }
+
+  /* Primary CTA — iMessage green, because it OPENS iMessage */
+  .cta {
+    width: 100%; height: 60px; border-radius: 14px;
+    background: linear-gradient(180deg, var(--imsg), var(--imsg-deep));
+    color: white;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 17px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.2) inset,
+      0 10px 28px rgba(52,199,89,0.22);
+  }
+  .cta .chev { font-size: 16px; }
+
+  .cta-help {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-dim);
+    margin-top: 10px;
+    line-height: 1.4;
+  }
+
+  /* Tiny fallback — doesn't compete */
+  .other {
+    text-align: center;
+    font-size: 10.5px; color: var(--text-dim);
+    margin-top: 14px;
+    letter-spacing: 0.03em;
+  }
+  .other a {
+    color: var(--text-mute);
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 1px;
+  }
+
+  .footer { margin-top: auto; padding-top: 14px; }
+  .micro {
+    text-align: center;
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.06em; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="status">Vow is live</div>
+  </div>
+
+  <h1>Your <em>word</em><br/>is on the line.</h1>
+
+  <div class="vow">"I'll go to the gym Mon, Wed &amp; Fri this week."</div>
+
+  <div class="meta">
+    <b>$50 on hold</b><span class="sep">·</span>refunded if you keep it<span class="sep">·</span><b>Sun, Apr 26 · 9pm</b><span class="sep">·</span>Nick decides
+  </div>
+
+  <div class="preview-label">
+    <span>Ready to send</span>
+    <span class="to">to <b>Nick</b> · (415) 555-0142</span>
+  </div>
+  <div class="imsg-card">
+    <div class="bubble-row">
+      <div class="bubble">
+        Hey — I made a vow and put $50 on it. You're the one who decides Sunday if I kept it. Tap here: <a>unbroken.vow/n7k2x</a>
+      </div>
+    </div>
+    <div class="bubble-time">iMessage · ready to send</div>
+  </div>
+
+  <div class="cta">
+    <span>Text Nick now</span>
+    <span class="chev">→</span>
+  </div>
+  <div class="cta-help">Nick doesn't know yet. One tap sends it.</div>
+
+  <div class="other"><a>Other ways to send</a></div>
+
+  <div class="footer">
+    <div class="micro">Nothing charges unless you break it.</div>
+  </div>
+</div>
+</body>
+</html>

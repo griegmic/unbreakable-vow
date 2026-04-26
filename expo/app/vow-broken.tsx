@@ -2,7 +2,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { AlertTriangle, Share2 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Animated, Platform, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
 
 import { AppMenuButton } from '@/components/app-menu';
@@ -72,7 +72,7 @@ export default function VowBrokenScreen() {
     return "Broken. But you told the truth.";
   })();
 
-  const getShareText = () => {
+  const getShareText = useCallback(() => {
     if (isZeroStake) {
       return `I couldn't even keep a free vow: "${activeVowText}" — unbreakablevow.app`;
     }
@@ -80,7 +80,7 @@ export default function VowBrokenScreen() {
       return `I broke my vow and just donated $${amount} to ${destination}. Don't be like me → unbreakablevow.app`;
     }
     return `I broke my vow: "${activeVowText}" — $${amount} donated to ${destination}. unbreakablevow.app`;
-  };
+  }, [activeVowText, amount, antiCause, destination, isZeroStake]);
 
   const handleShare = useCallback(async () => {
     if (sharing) return;
@@ -109,7 +109,7 @@ export default function VowBrokenScreen() {
     } finally {
       setSharing(false);
     }
-  }, [sharing, activeVowText, amount, destination, antiCause, isZeroStake]);
+  }, [sharing, getShareText]);
 
   return (
     <RitualScreen

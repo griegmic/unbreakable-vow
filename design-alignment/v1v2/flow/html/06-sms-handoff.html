@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+    --imessage-bg: #1C1C1E;
+    --imessage-bubble: #248BF5;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 54px 28px 28px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .back { font-size: 22px; color: var(--text-mute); }
+  .step {
+    font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .step b { color: var(--gold); font-weight: 500; }
+
+  .heading-label {
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--gold); margin-bottom: 10px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 30px; line-height: 1.05; letter-spacing: -0.018em;
+    margin-bottom: 12px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+  .lede {
+    font-size: 13.5px; line-height: 1.5; color: var(--text-mute);
+    max-width: 320px; margin-bottom: 20px;
+  }
+
+  /* To: chip */
+  .to-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px;
+    background: var(--surface-2); border: 1px solid var(--rule);
+    border-radius: 12px;
+    margin-bottom: 14px;
+  }
+  .to-label {
+    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .to-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 5px 11px 5px 6px;
+    background: var(--gold-soft); border: 1px solid var(--gold-line);
+    border-radius: 999px;
+  }
+  .to-avatar {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 11px; font-weight: 500;
+    color: var(--gold-bright);
+  }
+  .to-name {
+    font-family: var(--serif); font-weight: 500; font-size: 13.5px;
+    color: var(--text);
+  }
+
+  /* iMessage preview */
+  .imessage-window {
+    background: var(--imessage-bg);
+    border-radius: 16px;
+    padding: 14px 12px 16px;
+    margin-bottom: 14px;
+    border: 1px solid var(--rule);
+  }
+  .imessage-header {
+    text-align: center;
+    font-size: 11px; color: #8e8e93;
+    margin-bottom: 12px;
+    font-family: -apple-system, "SF Pro Text", sans-serif;
+  }
+  .bubble-wrap { display: flex; justify-content: flex-end; }
+  .bubble {
+    max-width: 80%;
+    background: var(--imessage-bubble);
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 18px;
+    font-family: -apple-system, "SF Pro Text", sans-serif;
+    font-size: 14.5px;
+    line-height: 1.32;
+    letter-spacing: -0.01em;
+  }
+  .bubble .link {
+    color: #fff;
+    text-decoration: underline;
+    text-decoration-color: rgba(255,255,255,0.5);
+  }
+  .bubble-time {
+    text-align: right; font-size: 10px; color: #8e8e93;
+    margin-top: 4px;
+    font-family: -apple-system, "SF Pro Text", sans-serif;
+  }
+
+  /* Edit row */
+  .edit-msg {
+    text-align: center;
+    font-size: 12px; color: var(--text-dim);
+    margin-bottom: 18px;
+  }
+  .edit-msg a {
+    color: var(--text-mute);
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 1px;
+  }
+
+  .footer { margin-top: auto; }
+
+  /* Send via Messages — primary */
+  .cta-send {
+    width: 100%; height: 60px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 17px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.25) inset, 0 10px 30px rgba(200,155,60,0.18);
+  }
+  .cta-send .glyph {
+    width: 22px; height: 22px;
+    border-radius: 6px;
+    background: #34C759;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 13px;
+  }
+
+  /* Other channels */
+  .other-row {
+    display: flex; gap: 8px; margin-bottom: 14px;
+  }
+  .other-btn {
+    flex: 1;
+    height: 44px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    color: var(--text-mute);
+    font-family: var(--sans);
+    font-size: 12.5px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+  }
+
+  .reassurance {
+    text-align: center; font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-dim); line-height: 1.5;
+  }
+  .reassurance b { color: var(--text-mute); font-style: normal; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="step"><b>5</b> · Send the link</div>
+  </div>
+
+  <div class="heading-label">Last step.</div>
+  <h1>Tell Nick<br/>he's <em>on the hook.</em></h1>
+  <div class="lede">We can't send for you (legal stuff). One tap → opens Messages, ready to send.</div>
+
+  <div class="to-row">
+    <div class="to-label">To</div>
+    <div class="to-pill">
+      <div class="to-avatar">N</div>
+      <div class="to-name">Nick</div>
+    </div>
+  </div>
+
+  <div class="imessage-window">
+    <div class="imessage-header">iMessage · Today 9:41 AM</div>
+    <div class="bubble-wrap">
+      <div>
+        <div class="bubble">Hey — I made a vow and put $100 on it. You're the one who decides if I kept it. Read it: <span class="link">unbroken.vow/n7k2x</span></div>
+        <div class="bubble-time">Ready to send</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="edit-msg"><a>Edit message</a></div>
+
+  <div class="footer">
+    <div class="cta-send">
+      <span class="glyph">✓</span>
+      Open Messages
+    </div>
+
+    <div class="other-row">
+      <div class="other-btn">WhatsApp</div>
+      <div class="other-btn">Copy link</div>
+      <div class="other-btn">More…</div>
+    </div>
+
+    <div class="reassurance">Vow is already <b>locked</b>. This just lets Nick know.</div>
+  </div>
+</div>
+</body>
+</html>

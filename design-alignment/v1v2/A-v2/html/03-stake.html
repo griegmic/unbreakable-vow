@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656;
+    --gold-soft: rgba(200,155,60,0.10);
+    --gold-line: rgba(200,155,60,0.22);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 55%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 58px 32px 36px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+  .back { font-size: 22px; color: var(--text-mute); }
+  .step {
+    font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .step b { color: var(--gold); font-weight: 500; }
+
+  .eyebrow {
+    font-family: var(--serif); font-style: italic; font-size: 14px;
+    color: var(--gold); margin-bottom: 12px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 36px; line-height: 1.05; letter-spacing: -0.02em;
+    margin-bottom: 32px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+
+  .section-label {
+    font-size: 10px; letter-spacing: 0.26em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 14px;
+  }
+
+  .amounts { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 32px; }
+  .amount {
+    aspect-ratio: 1 / 1;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 24px; font-weight: 500;
+    color: var(--text);
+    font-feature-settings: "tnum";
+  }
+  .amount.sel {
+    background: var(--gold-soft);
+    border: 1px solid var(--gold);
+    color: var(--gold-bright);
+  }
+  .amount .dollar { font-size: 13px; font-weight: 400; opacity: 0.6; margin-right: 1px; vertical-align: top; }
+
+  .dest-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 18px; }
+  .dest {
+    border-radius: 12px; padding: 14px 10px 16px;
+    background: var(--surface); border: 1px solid var(--rule);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .dest .glyph {
+    font-family: var(--serif); font-style: italic; font-size: 12px;
+    color: var(--text-dim);
+  }
+  .dest .name {
+    font-family: var(--serif); font-size: 17px; font-weight: 500; line-height: 1.1;
+    color: var(--text);
+  }
+  .dest .desc {
+    font-size: 11px; color: var(--text-mute); line-height: 1.4; margin-top: 5px;
+  }
+  .dest.sel {
+    background: var(--gold-soft); border: 1px solid var(--gold-line);
+  }
+  .dest.sel .glyph { color: var(--gold); }
+
+  .selected-box {
+    background: transparent;
+    border: 1px solid var(--gold-line);
+    border-left: 2px solid var(--gold);
+    border-radius: 2px;
+    padding: 14px 16px 12px; margin-bottom: 18px;
+  }
+  .sel-label {
+    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500; margin-bottom: 4px;
+  }
+  .sel-name {
+    font-family: var(--serif); font-size: 17px; font-weight: 500;
+    color: var(--text);
+  }
+  .sel-name .change {
+    font-family: var(--sans); font-size: 12px; color: var(--text-dim);
+    font-weight: 400; margin-left: 8px;
+  }
+
+  .footer { margin-top: auto; }
+  .pre-cta {
+    text-align: center; font-family: var(--serif); font-style: italic;
+    font-size: 13.5px; color: var(--text-mute); margin-bottom: 14px;
+  }
+  .pre-cta b { color: var(--text); font-style: normal; font-weight: 500; }
+  .cta {
+    width: 100%; height: 60px; border-radius: 16px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 18px;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.25) inset, 0 14px 40px rgba(200,155,60,0.22);
+  }
+  .cta .amt { font-feature-settings: "tnum"; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="step"><b>3</b> · Stake</div>
+  </div>
+
+  <div class="eyebrow">Skin in the game.</div>
+  <h1>Put weight<br/>on your <em>word.</em></h1>
+
+  <div class="section-label">Amount</div>
+  <div class="amounts">
+    <div class="amount"><span class="dollar">$</span>10</div>
+    <div class="amount sel"><span class="dollar">$</span>25</div>
+    <div class="amount"><span class="dollar">$</span>50</div>
+    <div class="amount"><span class="dollar">$</span>100</div>
+  </div>
+
+  <div class="section-label">If broken, goes to…</div>
+  <div class="dest-grid">
+    <div class="dest sel">
+      <div class="glyph">a cause you</div>
+      <div class="name">believe in</div>
+      <div class="desc">Your word, used for good.</div>
+    </div>
+    <div class="dest">
+      <div class="glyph">a cause you</div>
+      <div class="name">hate</div>
+      <div class="desc">You hate them. Max motivation.</div>
+    </div>
+    <div class="dest">
+      <div class="glyph">charity of</div>
+      <div class="name">their choice</div>
+      <div class="desc">Your witness picks it.</div>
+    </div>
+  </div>
+
+  <div class="selected-box">
+    <div class="sel-label">Selected</div>
+    <div class="sel-name">St. Jude Children's Hospital <span class="change">change</span></div>
+  </div>
+
+  <div class="footer">
+    <div class="pre-cta"><b>$25</b> held until verdict. Full refund if you keep your word.</div>
+    <div class="cta">Continue with <span class="amt">$25</span> <span>→</span></div>
+  </div>
+</div>
+</body>
+</html>

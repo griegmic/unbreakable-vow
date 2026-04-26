@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 54px 22px 24px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; padding: 0 4px;
+  }
+  .live-pulse {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500;
+  }
+  .live-pulse::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: #4ade80; box-shadow: 0 0 6px #4ade80;
+  }
+  .topbar-r {
+    display: flex; gap: 14px;
+    font-size: 13px; color: var(--text-mute);
+  }
+  .topbar-r .ic {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface); border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 500; font-size: 12px;
+    color: var(--gold);
+  }
+
+  /* Hero card — primary input */
+  .vow-card {
+    background: var(--surface);
+    border: 1px solid var(--gold-line);
+    border-radius: 18px;
+    padding: 18px 20px 18px;
+    margin-bottom: 18px;
+    position: relative;
+    box-shadow: 0 18px 40px rgba(0,0,0,0.35);
+  }
+  .vow-card::before {
+    content: ""; position: absolute; top: 0; left: 26px; right: 26px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .vc-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 8px;
+  }
+  .vc-label {
+    font-size: 9.5px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .vc-need {
+    font-family: var(--serif); font-style: italic; font-size: 12px;
+    color: var(--gold);
+  }
+  .vc-input {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 23px; line-height: 1.18; letter-spacing: -0.01em;
+    color: var(--text);
+    background: transparent; border: 0;
+    width: 100%; outline: none;
+    padding: 0; margin-bottom: 12px;
+  }
+  .vc-input::placeholder { color: var(--text-dim); font-style: italic; }
+  .vc-meta-row {
+    display: flex; gap: 8px; align-items: center;
+    flex-wrap: wrap;
+    padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+  }
+  .meta-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 11px;
+    background: var(--gold-soft); border: 1px solid var(--gold-line);
+    border-radius: 999px;
+    font-family: var(--serif); font-size: 12px;
+    color: var(--text);
+  }
+  .meta-pill::before {
+    content: ""; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--gold);
+  }
+  .meta-pill .lab { color: var(--text-mute); font-style: italic; }
+  .meta-pill .val { color: var(--text); font-weight: 500; }
+  .meta-pill.judge::before { background: #4ade80; }
+
+  /* Quick chips */
+  .chips-label {
+    font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); margin: 14px 4px 10px; font-weight: 500;
+  }
+  .chips {
+    display: flex; flex-direction: column; gap: 6px;
+    margin-bottom: 14px;
+  }
+  .chip-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 11px 14px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+  }
+  .chip-text {
+    flex: 1;
+    font-family: var(--serif); font-size: 14.5px; font-weight: 400;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+  .chip-amt {
+    font-family: var(--serif); font-weight: 500; font-size: 14.5px;
+    color: var(--gold-bright);
+    font-feature-settings: "tnum";
+    border-left: 1px solid var(--rule);
+    padding-left: 12px;
+    letter-spacing: -0.005em;
+  }
+  .chip-row.featured {
+    border-color: var(--gold-line);
+    background: linear-gradient(180deg, var(--surface), var(--surface));
+    background-image: linear-gradient(135deg, rgba(200,155,60,0.06), transparent 60%), linear-gradient(0deg, var(--surface), var(--surface));
+  }
+
+  .footer { margin-top: auto; padding: 0 2px; }
+  .cta-row {
+    display: flex; gap: 8px;
+  }
+  .cta {
+    flex: 2.2;
+    height: 60px; border-radius: 999px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 16px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; padding: 0 18px 0 22px; position: relative;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.25) inset, 0 10px 30px rgba(200,155,60,0.18);
+  }
+  .cta .amt { color: #1A1205; opacity: 0.7; font-feature-settings: "tnum"; }
+  .cta-dare {
+    flex: 1;
+    height: 60px; border-radius: 999px;
+    background: var(--surface);
+    border: 1px solid var(--gold-line);
+    color: var(--gold-bright);
+    font-family: var(--serif); font-weight: 500;
+    font-size: 14.5px; letter-spacing: 0.005em;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 0;
+  }
+  .cta-dare .top { line-height: 1.05; }
+  .cta-dare .sub {
+    font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; font-family: var(--sans);
+    margin-top: 2px; font-style: normal;
+  }
+  .micro {
+    text-align: center;
+    font-size: 11px; color: var(--text-dim);
+    margin-top: 12px; font-family: var(--sans);
+  }
+  .micro em { color: var(--text-mute); font-style: italic; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="live-pulse">2 vows live</div>
+    <div class="topbar-r">
+      <div class="ic">J</div>
+    </div>
+  </div>
+
+  <div class="vow-card">
+    <div class="vc-head">
+      <div class="vc-label">A new vow</div>
+      <div class="vc-need">need an idea?</div>
+    </div>
+    <input class="vc-input" placeholder="walk 10,000 steps every day" readonly>
+    <div class="vc-meta-row">
+      <div class="meta-pill"><span class="lab">verdict</span> <span class="val">Sun, Apr 26</span></div>
+      <div class="meta-pill"><span class="lab">on the line</span> <span class="val">$50</span></div>
+      <div class="meta-pill judge"><span class="lab">judge</span> <span class="val">Nick</span></div>
+    </div>
+  </div>
+
+  <div class="chips-label">Or one-tap</div>
+  <div class="chips">
+    <div class="chip-row featured">
+      <div class="chip-text">Gym 3x this week</div>
+      <div class="chip-amt">$50 · Sun</div>
+    </div>
+    <div class="chip-row">
+      <div class="chip-text">Delete TikTok for a week</div>
+      <div class="chip-amt">$25 · Mon</div>
+    </div>
+    <div class="chip-row">
+      <div class="chip-text">No texting my ex</div>
+      <div class="chip-amt">$75 · 30d</div>
+    </div>
+    <div class="chip-row">
+      <div class="chip-text">No DoorDash this week</div>
+      <div class="chip-amt">$25 · Sun</div>
+    </div>
+    <div class="chip-row">
+      <div class="chip-text">In bed by 11pm</div>
+      <div class="chip-amt">$25 · 7d</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="cta-row">
+      <div class="cta">
+        Make my vow <span class="amt">— $50</span> →
+      </div>
+      <div class="cta-dare">
+        <span class="top">Dare a friend</span>
+        <span class="sub">→ them</span>
+      </div>
+    </div>
+    <div class="micro"><em>Held by Stripe.</em> Released Sunday if Nick says you kept it.</div>
+  </div>
+</div>
+</body>
+</html>

@@ -14,7 +14,7 @@ interface IfBrokenSheetProps {
 type Tab = 'anti' | 'charity' | 'witness';
 
 const ANTI_CAUSES = [
-  { name: 'The NRA', sub: 'National Rifle Association' },
+  { name: 'NRA', sub: 'National Rifle Association' },
   { name: 'PETA', sub: 'People for the Ethical Treatment of Animals' },
 ];
 

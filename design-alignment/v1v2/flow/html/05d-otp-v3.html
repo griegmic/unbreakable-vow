@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.06), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 44px 22px 24px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 38px; padding: 0 6px; }
+  .back { font-size: 22px; color: var(--text-mute); }
+  .step-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .step-pill .dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--gold-bright);
+    box-shadow: 0 0 6px var(--gold);
+  }
+
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 36px; line-height: 1.0; letter-spacing: -0.02em;
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+  .sub {
+    text-align: center;
+    font-family: var(--sans); font-size: 13.5px; line-height: 1.5;
+    color: var(--text-mute);
+    margin-bottom: 36px;
+    padding: 0 16px;
+  }
+  .sub b { color: var(--text); font-weight: 500; font-feature-settings: "tnum"; }
+  .sub a { color: var(--text-mute); border-bottom: 1px dotted var(--rule); padding-bottom: 1px; }
+
+  /* OTP cells — outlined like inspiration, but UV gold-on-oxblood */
+  .otp-row {
+    display: flex; gap: 10px; justify-content: space-between;
+    margin: 0 6px 16px;
+  }
+  .otp-cell {
+    flex: 1; aspect-ratio: 0.8;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 32px; letter-spacing: -0.005em;
+    color: var(--text); font-feature-settings: "tnum";
+  }
+  .otp-cell.filled {
+    border-color: var(--gold-line);
+  }
+  .otp-cell.active {
+    border: 1px solid var(--gold);
+    box-shadow: 0 0 0 3px rgba(200,155,60,0.10);
+    color: var(--gold-bright);
+    position: relative;
+  }
+  .otp-cell.active::after {
+    content: ""; position: absolute; bottom: 22%;
+    width: 2px; height: 28px;
+    background: var(--gold-bright);
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .autofill-hint {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 11.5px; color: var(--text-dim);
+    margin-bottom: 28px;
+  }
+
+  .resend-row {
+    display: flex; gap: 18px; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .resend-row a {
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    color: var(--gold-bright);
+    border-bottom: 1px solid var(--gold-line); padding-bottom: 1px;
+  }
+  .resend-row .alt {
+    color: var(--text-mute); border-color: var(--rule);
+  }
+
+  /* Receipt strip — STILL visible so they don't lose context */
+  .receipt {
+    background: transparent;
+    border-left: 2px solid var(--gold);
+    padding: 10px 14px;
+    margin: 0 6px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .receipt-l {
+    font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .receipt-l b {
+    display: block; font-family: var(--serif); font-style: italic;
+    font-weight: 400; font-size: 13px; color: var(--text-mute);
+    letter-spacing: 0; text-transform: none;
+    margin-top: 3px;
+  }
+  .receipt-r {
+    font-family: var(--serif); font-weight: 500; font-size: 26px;
+    color: var(--gold-bright); letter-spacing: -0.02em;
+    font-feature-settings: "tnum";
+  }
+
+  .footer { margin-top: auto; padding: 0 6px; }
+  .micro {
+    text-align: center;
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.04em; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="step-pill"><span class="dot"></span>Step 2 of 2</div>
+  </div>
+
+  <h1>Just so it's <em>you.</em></h1>
+  <div class="sub">We texted a 6-digit code to <b>(415) 555-0182</b>.<br/><a>Wrong number?</a></div>
+
+  <div class="otp-row">
+    <div class="otp-cell filled">8</div>
+    <div class="otp-cell filled">2</div>
+    <div class="otp-cell filled">4</div>
+    <div class="otp-cell active"></div>
+    <div class="otp-cell"></div>
+    <div class="otp-cell"></div>
+  </div>
+
+  <div class="autofill-hint">Auto-fills from your texts on iOS.</div>
+
+  <div class="resend-row">
+    <a>Resend code</a>
+    <a class="alt">Use a different number</a>
+  </div>
+
+  <div class="receipt">
+    <div class="receipt-l">On hold<b>"Gym Mon, Wed &amp; Fri"</b></div>
+    <div class="receipt-r">$50</div>
+  </div>
+
+  <div class="footer">
+    <div class="micro">Apple Pay opens once we know it's you.</div>
+  </div>
+</div>
+</body>
+</html>

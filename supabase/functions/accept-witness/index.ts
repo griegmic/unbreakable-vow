@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
         user_id: vow.user_id,
         title: `${vow.witness_name} declined`,
         body: 'Your witness can\'t do it. Tap to switch to a new witness or go solo.',
-        data: { vow_id: vow.id, event: 'witness_declined' },
+        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'witness_declined' },
         send_after: new Date().toISOString(),
       });
 
@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
       user_id: vow.user_id,
       title: `${vow.witness_name} accepted!`,
       body: 'Your witness is locked in. They\'ll deliver the verdict when the time comes.',
-      data: { vow_id: vow.id, event: 'witness_accepted' },
+      data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'witness_accepted' },
       send_after: now,
     });
 

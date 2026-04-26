@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S19-OUTCOME-RESOLVED · Witness sees a finished vow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --green: #4ade80;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 700px 460px at 50% 26%, rgba(200,155,60,0.12), transparent 62%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 96px 30px 32px;
+    align-items: center; text-align: center;
+  }
+
+  /* Wax seal — present-tense, full opacity (the vow is sealed and resolved) */
+  .seal-wrap {
+    position: relative;
+    width: 92px; height: 92px;
+    margin-bottom: 22px;
+  }
+  .seal-halo {
+    position: absolute; inset: -28px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,182,86,0.18), transparent 60%);
+  }
+  .seal {
+    position: relative;
+    width: 92px; height: 92px; border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 22%, #F2C766 0%, #E8B656 30%, #C89B3C 62%, #8B6820 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow:
+      0 2px 0 rgba(255,228,150,0.35) inset,
+      0 -2px 8px rgba(139,104,32,0.65) inset,
+      0 8px 22px rgba(200,155,60,0.32),
+      0 0 0 1px rgba(139,104,32,0.45);
+    font-family: var(--serif); font-weight: 600;
+    font-variation-settings: "opsz" 144;
+    font-size: 36px; color: #1A1205;
+    letter-spacing: -0.03em; font-style: italic;
+  }
+  .seal::before {
+    content: ""; position: absolute; inset: 4px;
+    border-radius: 50%;
+    border: 1px solid rgba(139,104,32,0.30);
+    pointer-events: none;
+  }
+  /* Tiny check overlay — bottom-right, signals 'resolved' */
+  .seal-check {
+    position: absolute;
+    bottom: -2px; right: -2px;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 2px solid var(--gold-bright);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--gold-bright);
+    font-size: 14px; font-weight: 700;
+  }
+
+  /* Gold eyebrow — the verdict, not "expired" */
+  .eyebrow {
+    font-family: var(--sans); font-size: 10.5px; font-weight: 500;
+    letter-spacing: 0.36em; text-transform: uppercase;
+    color: var(--gold-bright); margin-bottom: 18px;
+  }
+
+  h1 {
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 38px; line-height: 1.04; letter-spacing: -0.025em;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+
+  .sub {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 15.5px; line-height: 1.45;
+    color: var(--text-mute);
+    margin-bottom: 28px;
+    max-width: 300px;
+  }
+  .sub b { color: var(--text); font-weight: 500; font-style: italic; }
+
+  /* The vow recap card */
+  .vow-card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 14px 16px 12px;
+    margin-bottom: 22px;
+    text-align: left;
+    position: relative;
+  }
+  .vow-card::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .vc-label {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 6px;
+  }
+  .vc-vow {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 16px; line-height: 1.25; color: var(--text);
+    margin-bottom: 8px;
+  }
+  .vc-meta {
+    display: flex; gap: 16px; padding-top: 8px;
+    border-top: 1px dashed var(--rule);
+    font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-mute);
+    font-feature-settings: "tnum";
+  }
+  .vc-meta b { color: var(--text); font-weight: 500; font-style: normal; }
+
+  .spacer { flex: 1; }
+
+  /* Primary CTA — gold, points to outcome page */
+  .cta {
+    width: 100%; height: 60px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    box-shadow:
+      0 1px 0 rgba(255,220,140,0.3) inset,
+      0 12px 32px rgba(200,155,60,0.26);
+    margin-bottom: 14px;
+  }
+
+  .tertiary {
+    font-family: var(--serif); font-style: italic;
+    font-size: 13.5px; color: var(--text-mute);
+    text-align: center;
+  }
+  .tertiary a {
+    color: var(--gold-bright); font-weight: 500;
+    font-style: italic;
+    border-bottom: 1px dotted var(--gold-line);
+    padding-bottom: 1px;
+    margin-left: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <div class="seal-wrap">
+    <div class="seal-halo"></div>
+    <div class="seal">UV</div>
+    <div class="seal-check">✓</div>
+  </div>
+
+  <div class="eyebrow">Verdict sealed</div>
+
+  <h1>His word held.</h1>
+
+  <div class="sub">
+    <b>Joey</b> kept his vow.<br/>
+    Witnessed by <b>Maya</b> on Apr 22.
+  </div>
+
+  <!-- Vow recap -->
+  <div class="vow-card">
+    <div class="vc-label">— The vow —</div>
+    <div class="vc-vow">Walk 10,000 steps every day for one week.</div>
+    <div class="vc-meta">
+      Stake <b>$50</b> &nbsp;·&nbsp; Returned to <b>Joey</b>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- CTA goes to public outcome / certificate -->
+  <div class="cta">
+    <span>See the full record</span>
+    <span>→</span>
+  </div>
+
+  <div class="tertiary">
+    Want one of your own?<a>Make a vow →</a>
+  </div>
+
+</div>
+</body>
+</html>

@@ -33,7 +33,7 @@ const initialState: VowState = {
   witnessName: '',
   witnessPhone: '',
   stake: {
-    amount: 25,
+    amount: 20,
     consequence: 'charity',
     destination: 'ALS Association',
   },
@@ -90,7 +90,7 @@ export function VowFlowProvider({ children }: { children: React.ReactNode }) {
   }, [vow]);
 
   const setRawInput = useCallback((value: string) => {
-    setVow((c) => ({ ...c, rawInput: value, refinedText: '' }));
+    setVow({ ...initialState, rawInput: value });
   }, []);
 
   const setRefinedText = useCallback((value: string) => {

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Certificate · /certificate/[vowId]</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.35);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --green: #4ade80;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+    --paper: #14110D;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse 700px 500px at 50% 30%, rgba(200,155,60,0.10), transparent 62%);
+    color: var(--text); font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 16px 16px 22px;
+  }
+
+  /* Top bar — share + close */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 4px 4px 12px;
+  }
+  .close {
+    font-family: var(--sans); font-size: 22px; color: var(--text-mute);
+  }
+  .share-btn {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 13px; border-radius: 999px;
+    background: var(--gold-soft); border: 1px solid var(--gold-line);
+    color: var(--gold-bright);
+    font-family: var(--sans); font-size: 12px; font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  /* Certificate paper */
+  .cert {
+    flex: 1;
+    background: var(--paper);
+    border: 1px solid var(--gold-line);
+    border-radius: 6px;
+    padding: 28px 22px 24px;
+    position: relative;
+    text-align: center;
+    box-shadow:
+      0 1px 0 rgba(232,182,86,0.15) inset,
+      0 0 0 4px rgba(200,155,60,0.05),
+      0 24px 60px rgba(0,0,0,0.55);
+  }
+
+  /* Single clean gold frame — modern museum placard, not 1987 plaque */
+  .cert::before {
+    content: "";
+    position: absolute;
+    inset: 10px;
+    border: 1px solid rgba(200,155,60,0.32);
+    border-radius: 3px;
+    pointer-events: none;
+  }
+
+  /* Eyebrow — small caps */
+  .eyebrow {
+    font-family: var(--sans); font-size: 9.5px; font-weight: 500;
+    letter-spacing: 0.42em; text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 14px;
+  }
+
+  /* Wax seal (smaller, monogram) */
+  .seal-wrap {
+    position: relative;
+    width: 76px; height: 76px;
+    margin: 0 auto 18px;
+  }
+  .seal {
+    width: 76px; height: 76px; border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 22%, #F2C766 0%, #E8B656 30%, #C89B3C 62%, #8B6820 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow:
+      0 2px 0 rgba(255,228,150,0.35) inset,
+      0 -2px 8px rgba(139,104,32,0.65) inset,
+      0 8px 22px rgba(200,155,60,0.32),
+      0 0 0 1px rgba(139,104,32,0.45);
+    font-family: var(--serif); font-weight: 600;
+    font-variation-settings: "opsz" 144;
+    font-size: 30px; color: #1A1205;
+    letter-spacing: -0.03em; font-style: italic;
+    position: relative;
+  }
+  .seal::before {
+    content: ""; position: absolute; inset: 4px;
+    border-radius: 50%;
+    border: 1px solid rgba(139,104,32,0.30);
+    pointer-events: none;
+  }
+
+  /* "Be it known that" — small, italic, sets the voice but doesn't compete */
+  .cert-h {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 13px; letter-spacing: 0.01em;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+
+  /* Maker name — italic Fraunces, gold, the human signature */
+  .maker-name {
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 22px; letter-spacing: -0.01em;
+    color: var(--gold-bright);
+    margin-bottom: 14px;
+  }
+
+  /* Action prefix — small, muted, intro voice */
+  .vow-prefix {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 13px; color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+
+  /* THE COMMITMENT — bold sans, the screenshot moment */
+  .vow-action {
+    font-family: var(--sans); font-weight: 600;
+    font-size: 26px; line-height: 1.16; letter-spacing: -0.018em;
+    color: var(--text);
+    margin: 0 4px 22px;
+  }
+  .vow-action em {
+    color: var(--gold-bright); font-style: normal; font-weight: 700;
+  }
+
+  /* Decorative divider */
+  .divider {
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    margin-bottom: 18px;
+    color: var(--gold);
+  }
+  .divider .line {
+    flex: 1; max-width: 70px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .divider .diamond {
+    font-size: 8px; color: var(--gold-bright); transform: translateY(-1px);
+  }
+
+  /* KEPT stamp — filled gold badge, Roman, 32px, unmissable at thumbnail zoom */
+  .stamp {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 8px 26px;
+    background: linear-gradient(180deg, #E8B656, #B88930);
+    border: 1.5px solid #5C4514;
+    border-radius: 5px;
+    color: #1A1205;
+    font-family: var(--sans); font-weight: 700;
+    font-size: 28px; letter-spacing: 0.18em;
+    transform: rotate(-2.5deg);
+    margin-bottom: 22px;
+    box-shadow:
+      0 1px 0 rgba(255,228,150,0.45) inset,
+      0 0 28px rgba(232,182,86,0.32),
+      0 6px 16px rgba(140,90,20,0.30);
+  }
+
+  /* Attribution block */
+  .attrib {
+    text-align: center;
+    margin-bottom: 14px;
+  }
+  .attrib-row {
+    display: flex; justify-content: center; gap: 22px;
+    margin-bottom: 6px;
+  }
+  .attrib-cell {
+    text-align: center;
+  }
+  .attrib-k {
+    font-size: 8.5px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 3px;
+  }
+  .attrib-v {
+    font-family: var(--serif); font-weight: 500; font-size: 13px;
+    color: var(--text); font-feature-settings: "tnum";
+  }
+  .attrib-v.italic { font-style: italic; font-weight: 400; }
+
+  /* Wordmark at bottom of cert */
+  .cert-foot {
+    margin-top: 14px;
+    font-family: var(--serif); font-style: italic;
+    font-size: 11px; color: var(--text-dim);
+    letter-spacing: 0.04em;
+  }
+
+  /* Bottom action row */
+  .actions {
+    display: flex; gap: 8px; margin-top: 14px;
+  }
+  .act {
+    flex: 1; height: 50px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 14px;
+  }
+  .act.primary {
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+    box-shadow:
+      0 1px 0 rgba(255,220,140,0.3) inset,
+      0 8px 22px rgba(200,155,60,0.22);
+  }
+  .act.secondary {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    color: var(--text);
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <div class="close">×</div>
+    <div class="share-btn">
+      <svg width="13" height="13" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+        <path d="M8 1 L8 11" stroke="#E8B656" stroke-width="1.6" stroke-linecap="round"/>
+        <path d="M4 5 L8 1 L12 5" stroke="#E8B656" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        <path d="M3 9 L3 14 L13 14 L13 9" stroke="#E8B656" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      </svg>
+      Share
+    </div>
+  </div>
+
+  <!-- Certificate -->
+  <div class="cert">
+
+    <div class="eyebrow">Certificate of Vow</div>
+
+    <div class="seal-wrap">
+      <div class="seal">UV</div>
+    </div>
+
+    <div class="cert-h">Be it known that</div>
+    <div class="maker-name">Joey Schwartz</div>
+    <div class="vow-prefix">pledged his word, on stake, to</div>
+    <div class="vow-action">
+      <em>walk 10,000 steps</em><br/>
+      every day for one week.
+    </div>
+
+    <div class="divider">
+      <span class="line"></span><span class="diamond">◆</span><span class="line"></span>
+    </div>
+
+    <div class="stamp">KEPT</div>
+
+    <div class="attrib">
+      <div class="attrib-row">
+        <div class="attrib-cell">
+          <div class="attrib-k">Witnessed by</div>
+          <div class="attrib-v">Maya Lin</div>
+        </div>
+        <div class="attrib-cell">
+          <div class="attrib-k">Stake</div>
+          <div class="attrib-v">$50</div>
+        </div>
+      </div>
+      <div class="attrib-row">
+        <div class="attrib-cell">
+          <div class="attrib-k">Sealed</div>
+          <div class="attrib-v italic">Apr 15, 2026</div>
+        </div>
+        <div class="attrib-cell">
+          <div class="attrib-k">Verdict</div>
+          <div class="attrib-v italic">Apr 22, 2026</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cert-foot">— Unbreakable Vow —</div>
+  </div>
+
+  <!-- Bottom actions -->
+  <div class="actions">
+    <div class="act secondary">Save image</div>
+    <div class="act primary">Share <span>→</span></div>
+  </div>
+
+</div>
+</body>
+</html>

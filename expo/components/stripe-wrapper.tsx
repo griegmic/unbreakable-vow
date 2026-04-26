@@ -11,7 +11,7 @@ function StripeWrapperInner({ children }: { children: React.ReactNode }) {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { StripeProvider } = require('@stripe/stripe-react-native');
 
     const publishableKey =

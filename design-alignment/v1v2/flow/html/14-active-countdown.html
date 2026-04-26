@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+    --green: #4ade80;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 30px 22px 24px; overflow: hidden; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; padding: 0 4px;
+  }
+  .back { font-size: 22px; color: var(--text-mute); }
+  .live-pulse {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--green); font-weight: 500;
+  }
+  .live-pulse::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green);
+  }
+  .more { font-size: 18px; color: var(--text-mute); letter-spacing: 0.2em; }
+
+  /* Vow card — quieter than pitch */
+  .vow-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 16px 18px 14px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .vow-card::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .vc-label {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .vc-text {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 19px; line-height: 1.18; letter-spacing: -0.005em;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .vc-text em { font-style: italic; color: var(--gold); }
+  .vc-meta {
+    display: flex; gap: 16px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+  }
+  .mc { display: flex; flex-direction: column; gap: 2px; }
+  .mc-k {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .mc-v {
+    font-family: var(--serif); font-weight: 500; font-size: 13px;
+    color: var(--text); font-feature-settings: "tnum";
+  }
+  .mc-v.gold { color: var(--gold-bright); }
+  .mc-v.green::before {
+    content: ""; display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--green); margin-right: 6px; vertical-align: middle;
+  }
+
+  /* Countdown */
+  .countdown {
+    background: var(--surface-2);
+    border: 1px solid var(--gold-line);
+    border-radius: 14px;
+    padding: 18px 16px 14px;
+    margin-bottom: 16px;
+    text-align: center;
+  }
+  .cd-label {
+    font-size: 9.5px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 10px;
+  }
+  .cd-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .cd-cell {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+  }
+  .cd-num {
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 30px; line-height: 1; letter-spacing: -0.02em;
+    color: var(--gold-bright); font-feature-settings: "tnum";
+  }
+  .cd-unit {
+    font-size: 9.5px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .cd-when {
+    margin-top: 12px;
+    font-family: var(--serif); font-style: italic; font-size: 12px;
+    color: var(--text-mute);
+    padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+  }
+
+  /* Section: jobs to be done — chat + check-in */
+  .row-2 {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 14px;
+  }
+  .tile {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 14px 14px;
+    display: flex; flex-direction: column; gap: 4px;
+    min-height: 84px;
+  }
+  .tile.primary {
+    background: var(--gold-soft); border-color: var(--gold-line);
+  }
+  .tile-glyph {
+    font-family: var(--serif); font-style: italic; font-size: 14px;
+    color: var(--gold); margin-bottom: 2px;
+  }
+  .tile-h {
+    font-family: var(--serif); font-weight: 500; font-size: 14px;
+    color: var(--text); letter-spacing: -0.005em;
+  }
+  .tile-sub {
+    font-size: 11px; color: var(--text-mute); line-height: 1.35;
+  }
+  .tile.primary .tile-glyph { color: var(--gold-bright); }
+
+  /* Activity / timeline */
+  .section-h {
+    font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin: 6px 4px 10px;
+  }
+  .activity {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 4px 16px;
+  }
+  .act-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 10px 0;
+  }
+  .act-row + .act-row { border-top: 1px dashed var(--rule); }
+  .act-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-dim); margin-top: 7px; flex-shrink: 0;
+  }
+  .act-row.gold .act-dot { background: var(--gold); }
+  .act-row.green .act-dot { background: var(--green); }
+  .act-text { flex: 1; }
+  .act-when {
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .act-what {
+    font-family: var(--sans); font-size: 13px; color: var(--text);
+    margin-top: 1px;
+  }
+  .act-what em { font-style: italic; color: var(--text-mute); }
+
+  /* Check-in CTA */
+  .checkin {
+    margin-top: 12px;
+    width: 100%;
+    height: 50px; border-radius: 12px;
+    background: transparent;
+    border: 1px solid var(--gold-line);
+    color: var(--gold);
+    font-family: var(--serif); font-weight: 500;
+    font-size: 14px; font-style: italic;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="live-pulse">Vow live</div>
+    <div class="more">···</div>
+  </div>
+
+  <div class="vow-card">
+    <div class="vc-label">— The Vow —</div>
+    <div class="vc-text"><em>I'll</em> deep clean my apartment by Sunday.</div>
+    <div class="vc-meta">
+      <div class="mc">
+        <div class="mc-k">On hold</div>
+        <div class="mc-v gold">$50</div>
+      </div>
+      <div class="mc">
+        <div class="mc-k">Goes to</div>
+        <div class="mc-v">NRA</div>
+      </div>
+      <div class="mc">
+        <div class="mc-k">Judge</div>
+        <div class="mc-v green">Nick</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="countdown">
+    <div class="cd-label">— Time until verdict —</div>
+    <div class="cd-grid">
+      <div class="cd-cell"><div class="cd-num">3</div><div class="cd-unit">Days</div></div>
+      <div class="cd-cell"><div class="cd-num">11</div><div class="cd-unit">Hrs</div></div>
+      <div class="cd-cell"><div class="cd-num">42</div><div class="cd-unit">Min</div></div>
+      <div class="cd-cell"><div class="cd-num">08</div><div class="cd-unit">Sec</div></div>
+    </div>
+    <div class="cd-when">Sun, Apr 26 at 9:00 PM</div>
+  </div>
+
+  <div class="row-2">
+    <div class="tile primary">
+      <div class="tile-glyph">→</div>
+      <div class="tile-h">Text Nick</div>
+      <div class="tile-sub">Check in with him</div>
+    </div>
+    <div class="tile">
+      <div class="tile-glyph">⌁</div>
+      <div class="tile-h">Share</div>
+      <div class="tile-sub">Brag a little</div>
+    </div>
+  </div>
+
+  <div class="section-h">Activity</div>
+  <div class="activity">
+    <div class="act-row green">
+      <div class="act-dot"></div>
+      <div class="act-text">
+        <div class="act-when">Today, 11:14 am</div>
+        <div class="act-what">Nick said <em>"Looking good, keep it up"</em></div>
+      </div>
+    </div>
+    <div class="act-row gold">
+      <div class="act-dot"></div>
+      <div class="act-text">
+        <div class="act-when">Yesterday, 8:02 pm</div>
+        <div class="act-what">You texted Nick: <em>"halfway there"</em></div>
+      </div>
+    </div>
+    <div class="act-row">
+      <div class="act-dot"></div>
+      <div class="act-text">
+        <div class="act-when">Apr 23, 2:30 pm</div>
+        <div class="act-what">Nick accepted as judge</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -3,10 +3,7 @@ import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Check, Sparkles, Star } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Pressable, Share, StyleSheet, Text, View } from 'react-native';
-
-const IS_EXPO_GO = Constants.appOwnership === 'expo';
-
+import { Alert, Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { AppMenuButton } from '@/components/app-menu';
 import AuthSheet from '@/components/auth-sheet';
 import { BackButton, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
@@ -17,6 +14,8 @@ import { createVow, voidVowV2 } from '@/lib/vow-api';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
+
+const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
 function formatE164(phone: string): string {
   const digits = phone.replace(/\D/g, '');
@@ -78,7 +77,7 @@ export default function SealScreen() {
   const sealLabel = loading
     ? 'Sealing...'
     : vow.stake.amount > 0
-      ? `Seal my vow — $${vow.stake.amount}`
+      ? `Stake $${vow.stake.amount} →`
       : 'Seal my vow';
 
   const registerPush = useCallback(async () => {
@@ -92,7 +91,7 @@ export default function SealScreen() {
     }
   }, []);
 
-  const playSealAnimation = () => {
+  const playSealAnimation = (resolvedVowId?: string | null) => {
     Animated.timing(glow, {
       toValue: 1,
       duration: 500,
@@ -117,18 +116,11 @@ export default function SealScreen() {
 
       setTimeout(async () => {
         void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        // Auto-share witness invite link (same as QuickVow)
-        if (!isSelfWitness && vow.witnessInviteToken) {
-          const inviteUrl = `https://unbreakablevow.app/w/${vow.witnessInviteToken}`;
-          try {
-            await Share.share({
-              message: vow.stake.amount > 0
-                ? `I made a vow: "${activeVowText.replace(/\.$/, '').slice(0, 60)}" — $${vow.stake.amount} on the line and you're the judge → ${inviteUrl}`
-                : `I made a vow: "${activeVowText.replace(/\.$/, '').slice(0, 60)}" — and named you the judge → ${inviteUrl}`,
-            });
-          } catch {}
-        }
-        router.push({ pathname: '/live', params: { justSealed: '1' } });
+        void registerPush();
+        router.replace({
+          pathname: '/vow-detail',
+          params: { vowId: resolvedVowId || vow.vowId || '', justSealed: '1' },
+        });
       }, 700);
     });
   };
@@ -151,13 +143,13 @@ export default function SealScreen() {
     try {
       await invokeSealEdgeFunction(vowId);
       setLoading(false);
-      playSealAnimation();
+      playSealAnimation(vowId);
     } catch (err) {
       console.error('[SealScreen] retry seal error:', err);
       setLoading(false);
       Alert.alert(
         'Still having trouble',
-        'Your payment was captured. Please try again or contact support.',
+        'Your card was saved. Please try again or contact support.',
         [
           { text: 'Try again', onPress: () => retrySeal(vowId) },
           { text: 'OK' },
@@ -172,6 +164,8 @@ export default function SealScreen() {
     setLoading(true);
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     console.log('[SealScreen] Dev bypass — creating real vow, skipping payment');
+    let devVowId = 'dev-' + Date.now();
+    let devToken: string | null = 'dev-token-' + Date.now();
     try {
       const vowRecord = await createVow({
         rawInput: vow.rawInput,
@@ -188,13 +182,15 @@ export default function SealScreen() {
         status: 'active',
         sealed_at: new Date().toISOString(),
       }).eq('id', vowRecord.id);
-      setVowId(vowRecord.id, vowRecord.witness_invite_token);
+      devVowId = vowRecord.id;
+      devToken = vowRecord.witness_invite_token;
+      setVowId(devVowId, devToken);
     } catch (err) {
       console.error('[SealScreen] Dev bypass vow creation failed:', err);
-      setVowId('dev-' + Date.now(), 'dev-token-' + Date.now());
+      setVowId(devVowId, devToken);
     }
     setLoading(false);
-    playSealAnimation();
+    playSealAnimation(devVowId);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading, vow, activeVowText]);
 
@@ -252,7 +248,7 @@ export default function SealScreen() {
       console.log('[SealScreen] step 2 done, got clientSecret');
 
       console.log('[SealScreen] step 3: setup payment sheet for card save');
-      await setupPaymentSheetForSetup(clientSecret);
+      await setupPaymentSheetForSetup(clientSecret, vow.stake.amount * 100);
       console.log('[SealScreen] step 3 done');
 
       console.log('[SealScreen] step 4: showing payment sheet (save card)');
@@ -271,7 +267,7 @@ export default function SealScreen() {
       await invokeSealEdgeFunction(vowId);
 
       setLoading(false);
-      playSealAnimation();
+      playSealAnimation(vowId);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[SealScreen] seal flow error:', errMsg);
@@ -282,7 +278,7 @@ export default function SealScreen() {
         setPaidVowId(vowId || paidVowId);
         Alert.alert(
           'Almost there',
-          `Your payment went through but we couldn't finish sealing. Tap "${sealLabel}" to try again.`,
+          `Your card was saved, but we couldn't finish sealing. Tap "${sealLabel}" to try again.`,
         );
       } else {
         if (vowId) {
@@ -318,7 +314,6 @@ export default function SealScreen() {
   const handleAuthSuccess = useCallback(async () => {
     console.log('[SealScreen] auth success, proceeding to seal');
     setAuthSheetVisible(false);
-    await registerPush();
     // Mark intent to seal — the useEffect on isAuthenticated will trigger
     // handleSealFlow once the Supabase session has fully propagated.
     // If already authenticated, trigger directly.
@@ -327,7 +322,7 @@ export default function SealScreen() {
     } else {
       pendingSealRef.current = true;
     }
-  }, [registerPush, handleSealFlow, isAuthenticated]);
+  }, [handleSealFlow, isAuthenticated]);
 
   const handleAuthDismiss = useCallback(() => {
     pendingSealRef.current = false;
@@ -405,7 +400,7 @@ export default function SealScreen() {
         <View style={styles.smsPreviewCard}>
           <Pressable onPress={() => setSmsExpanded(!smsExpanded)} style={styles.smsPreviewRow}>
             <Text style={styles.smsPreviewSummary}>
-              We'll text {vow.witnessName} your vow and a link to accept
+              We will text {vow.witnessName} your vow and a link to accept
             </Text>
             <Text style={styles.smsExpandToggle}>{smsExpanded ? 'Hide' : 'Preview'}</Text>
           </Pressable>

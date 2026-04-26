@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
     console.log('[save-card] creating setup intent');
     const setupIntent = await stripePost('setup_intents', {
       customer: customerId,
-      'payment_method_types[0]': 'card',
+      'automatic_payment_methods[enabled]': 'true',
       usage: 'off_session',
       'metadata[vow_id]': vow_id,
       'metadata[user_id]': user.id,

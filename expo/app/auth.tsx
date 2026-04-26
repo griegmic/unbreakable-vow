@@ -1,14 +1,13 @@
 import Constants from 'expo-constants';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Mail, MoveRight, SkipForward } from 'lucide-react-native';
+import { ArrowLeft, Mail, SkipForward } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { BackButton, PrimaryButton, RitualScreen, TitleBlock } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
 import { type AuthResult, GOOGLE_SIGN_IN_AVAILABLE, sendEmailOtp, sendPhoneOtp, signInWithGoogle, verifyEmailOtp, verifyPhoneOtp } from '@/lib/auth';
-import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { useVowFlow } from '@/providers/vow-flow';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
@@ -40,19 +39,7 @@ export default function AuthScreen() {
     }, 1000);
   };
 
-  const registerPush = async () => {
-    try {
-      const token = await registerForPushNotifications();
-      if (token) {
-        await savePushToken(token);
-      }
-    } catch (err) {
-      console.log('[AuthScreen] push registration failed:', err);
-    }
-  };
-
   const handleSuccess = async () => {
-    await registerPush();
     router.push('/seal');
   };
 
@@ -379,7 +366,7 @@ export default function AuthScreen() {
         </View>
 
         <Text style={styles.autofillHint}>
-          We'll only use this to verify your identity.
+          {"We'll only use this to verify your identity."}
         </Text>
       </RitualScreen>
     );
@@ -426,7 +413,7 @@ export default function AuthScreen() {
         </View>
 
         <Text style={styles.autofillHint}>
-          We'll text you a code. No password ever.
+          {"We'll text you a code. No password ever."}
         </Text>
       </RitualScreen>
     );
@@ -475,7 +462,7 @@ export default function AuthScreen() {
       />
 
       <Text style={styles.reassurance}>
-        We'll text you a code. No password ever.
+        {"We'll text you a code. No password ever."}
       </Text>
 
       {/* Divider */}

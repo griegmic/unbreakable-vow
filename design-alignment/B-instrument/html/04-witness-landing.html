@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B0B0C;
+    --surface: #141418;
+    --surface-2: #1A1A1F;
+    --text: #E8E8EA;
+    --text-mute: #7A7A80;
+    --text-dim: #4A4A52;
+    --green: #00D084;
+    --green-soft: rgba(0,208,132,0.10);
+    --green-line: rgba(0,208,132,0.25);
+    --red: #FF4A4A;
+    --red-soft: rgba(255,74,74,0.10);
+    --red-line: rgba(255,74,74,0.25);
+    --amber: #FFB547;
+    --rule: rgba(232,232,234,0.06);
+    --rule-2: rgba(232,232,234,0.10);
+    --sans: "Inter", -apple-system, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); font-size: 14px;
+    -webkit-font-smoothing: antialiased; letter-spacing: -0.005em;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; }
+
+  .status {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 30px 20px 10px;
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    color: var(--text-dim); letter-spacing: 0.02em;
+  }
+  .status .left { display: flex; align-items: center; gap: 8px; }
+  .status .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--amber);
+    box-shadow: 0 0 8px var(--amber);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+
+  .content { flex: 1; display: flex; flex-direction: column; padding: 14px 18px 18px; overflow: hidden; }
+
+  .incoming {
+    font-family: var(--mono); font-size: 10px; color: var(--amber);
+    letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600;
+    margin-bottom: 8px; text-align: center;
+  }
+  h1 {
+    font-family: var(--sans); font-weight: 600;
+    font-size: 26px; line-height: 1.1; letter-spacing: -0.025em;
+    text-align: center; margin-bottom: 6px;
+  }
+  h1 .name { color: var(--green); }
+  .ask-sub {
+    text-align: center; font-size: 13px; color: var(--text-mute);
+    margin-bottom: 22px; line-height: 1.45;
+  }
+
+  /* Terminal-style vow block */
+  .block {
+    background: var(--surface); border: 1px solid var(--rule-2);
+    border-radius: 8px; overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .block-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--rule);
+    font-family: var(--mono); font-size: 10px; font-weight: 500;
+    color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .block-head .id {
+    color: var(--text-mute); font-weight: 500;
+    font-feature-settings: "tnum";
+  }
+  .block-body { padding: 18px 16px 16px; }
+
+  .vow-quote {
+    font-size: 18px; line-height: 1.35; color: var(--text); font-weight: 500;
+    letter-spacing: -0.015em;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 14px;
+  }
+  .vow-quote::before {
+    content: "›";
+    font-family: var(--mono); color: var(--green);
+    font-weight: 600; margin-right: 8px;
+  }
+
+  .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .meta-cell .k {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .meta-cell .v {
+    font-family: var(--mono); font-size: 14px; font-weight: 600;
+    color: var(--text); letter-spacing: -0.01em;
+    font-feature-settings: "tnum";
+  }
+  .meta-cell .v.red { color: var(--red); }
+  .meta-cell .v .sub {
+    display: block; font-family: var(--sans); font-size: 11px;
+    color: var(--text-mute); font-weight: 400; margin-top: 3px;
+    letter-spacing: 0;
+  }
+
+  /* Parties row */
+  .parties {
+    display: grid; grid-template-columns: 1fr 12px 1fr; gap: 8px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+  .party {
+    background: var(--surface); border: 1px solid var(--rule-2);
+    border-radius: 6px; padding: 10px 12px;
+  }
+  .party .k {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .party .v { font-size: 13px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .party .role {
+    font-family: var(--mono); font-size: 9px; color: var(--text-dim);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    margin-top: 2px; font-weight: 500;
+  }
+  .arrow {
+    font-family: var(--mono); color: var(--text-dim);
+    font-size: 14px; text-align: center; font-weight: 400;
+  }
+
+  .role-line {
+    font-family: var(--mono); font-size: 10.5px; color: var(--text-mute);
+    letter-spacing: 0.04em; line-height: 1.55;
+    padding: 10px 12px;
+    background: var(--surface); border: 1px solid var(--rule-2);
+    border-left: 2px solid var(--green);
+    border-radius: 4px;
+    margin-bottom: 14px;
+  }
+  .role-line b { color: var(--text); font-weight: 600; }
+
+  .footer { margin-top: auto; }
+  .actions { display: flex; gap: 6px; margin-bottom: 8px; }
+  .cta-primary {
+    flex: 2; height: 50px; border-radius: 6px;
+    background: var(--green); color: #001A0C;
+    font-family: var(--sans); font-size: 13.5px; font-weight: 600;
+    letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    border: 0;
+  }
+  .cta-secondary {
+    flex: 1; height: 50px; border-radius: 6px;
+    background: transparent; border: 1px solid var(--rule-2);
+    color: var(--text-mute); font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .what-is {
+    text-align: center; font-family: var(--mono); font-size: 10px;
+    color: var(--text-dim); line-height: 1.55; letter-spacing: 0.02em;
+  }
+  .what-is a { color: var(--green); text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="status">
+    <div class="left"><span class="dot"></span><span>INCOMING · WITNESS REQUEST</span></div>
+    <div class="right"><span>APR 21 · 14:32</span></div>
+  </div>
+
+  <div class="content">
+    <div class="incoming">You've been named a witness.</div>
+    <h1><span class="name">Joey</span> opened a vow.<br/>You're the counterparty.</h1>
+    <div class="ask-sub">Confirm kept or broken on verdict day. One tap. Binary call.</div>
+
+    <div class="block">
+      <div class="block-head">
+        <span>// THE VOW</span>
+        <span class="id">ID · 0x4A92C8</span>
+      </div>
+      <div class="block-body">
+        <div class="vow-quote">I will go to the gym three times this week — Mon, Wed, Fri.</div>
+        <div class="meta-grid">
+          <div class="meta-cell">
+            <div class="k">Stake</div>
+            <div class="v red">$100.00<span class="sub">to NRA, if broken</span></div>
+          </div>
+          <div class="meta-cell">
+            <div class="k">Verdict by</div>
+            <div class="v">Sun Apr 26<span class="sub">21:00 EDT</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="parties">
+      <div class="party">
+        <div class="k">Maker</div>
+        <div class="v">Joey R.</div>
+        <div class="role">on the line</div>
+      </div>
+      <div class="arrow">→</div>
+      <div class="party">
+        <div class="k">Witness</div>
+        <div class="v">You</div>
+        <div class="role">call it</div>
+      </div>
+    </div>
+
+    <div class="role-line">
+      // <b>Your job:</b> call it kept or broken on Sunday.<br/>// No proof uploads. Just your word.
+    </div>
+
+    <div class="footer">
+      <div class="actions">
+        <div class="cta-primary">Accept witness role →</div>
+        <div class="cta-secondary">Pass</div>
+      </div>
+      <div class="what-is">unbreakable.vow · <a href="#">what is this?</a></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

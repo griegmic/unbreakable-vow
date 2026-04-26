@@ -190,7 +190,7 @@ Deno.serve(async (req) => {
         user_id: vow.witness_user_id,
         title: 'Vow withdrawn',
         body: 'A vow you were witnessing was withdrawn.',
-        data: { vow_id: vow.id, event: 'vow_voided' },
+        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'vow_voided' },
         send_after: new Date().toISOString(),
       });
     }

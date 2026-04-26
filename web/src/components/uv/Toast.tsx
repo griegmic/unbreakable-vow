@@ -45,7 +45,7 @@ export function Toast({ message, variant = 'neutral', duration, onDismiss }: Toa
           left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 'var(--uv-z-toast)' as any,
-          background: 'var(--uv-bg-elev)',
+          background: 'var(--uv-bg-elevated)',
           border: '1px solid var(--uv-border-strong)',
           borderRadius: 'var(--uv-radius-md)',
           padding: '12px 16px',

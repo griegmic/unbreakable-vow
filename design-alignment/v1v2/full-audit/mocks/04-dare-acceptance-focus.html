@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dare acceptance focus mock</title>
+  <style>
+    :root{--bg:#0f0d0a;--card:#181512;--line:rgba(240,233,219,.1);--gold:#d8aa43;--gold2:#e8bd5d;--text:#f0e9db;--muted:#a49a85;--dim:#716958;--orange:#fb923c;font-family:"Inter Tight",-apple-system,BlinkMacSystemFont,sans-serif}
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text)} .screen{min-height:100dvh;max-width:430px;margin:0 auto;padding:22px;display:flex;flex-direction:column;background:radial-gradient(460px 340px at 88% 3%,rgba(251,146,60,.13),transparent 58%),var(--bg)}.top{display:flex;justify-content:space-between;margin-bottom:34px}.brand{font:600 14px Georgia,serif;color:var(--muted)}.brand em{color:var(--gold)}.badge{display:inline-flex;color:var(--orange);border:1px solid rgba(251,146,60,.36);border-radius:999px;padding:7px 11px;letter-spacing:.18em;text-transform:uppercase;font-size:10px;font-weight:850;margin-bottom:15px}h1{font-size:44px;line-height:.98;margin:0 0 12px;font-weight:850}h1 span{color:var(--orange)}.sub{margin:0 0 18px;color:var(--muted);font-size:17px;line-height:1.4;font-weight:550}.card{border:1px solid var(--line);background:linear-gradient(180deg,rgba(240,233,219,.055),rgba(240,233,219,.025));border-radius:18px;padding:18px;margin-bottom:16px}.label{color:var(--dim);text-transform:uppercase;letter-spacing:.22em;font-size:10px;font-weight:850;margin-bottom:8px}.vow{font-size:28px;font-weight:850;line-height:1.08;margin-bottom:14px}.from{color:var(--muted);font-size:14px}.stakes{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0}.stake{height:52px;border:1px solid var(--line);border-radius:14px;background:rgba(240,233,219,.025);color:var(--muted);font-size:18px;font-weight:750}.stake.on{border-color:rgba(216,170,67,.42);background:rgba(216,170,67,.13);color:var(--gold2)}.spacer{flex:1}.cta{height:58px;width:100%;border:0;border-radius:999px;background:linear-gradient(180deg,var(--gold2),var(--gold));color:#15100a;font-size:17px;font-weight:850}.secondary{height:44px;width:100%;border:1px solid var(--line);border-radius:999px;background:transparent;color:var(--muted);font-weight:750;margin-top:9px}.micro{text-align:center;color:var(--dim);font-size:12px;margin-top:12px}
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <div class="top"><div class="brand">Unbreakable <em>Vow</em></div><div style="color:var(--gold);font-weight:800">Make a vow</div></div>
+    <div class="badge">Dare received</div>
+    <h1>Joseph dared <span>you.</span></h1>
+    <p class="sub">Accept it. Stake your word. Follow through and you lose nothing. Flake, and you pay.</p>
+    <section class="card">
+      <div class="label">The dare</div>
+      <div class="vow">No phone for a week.</div>
+      <div class="from">By Sat, May 2. Joseph makes the verdict.</div>
+    </section>
+    <div class="label">What are you willing to lose?</div>
+    <div class="stakes"><button class="stake">$10</button><button class="stake">$25</button><button class="stake on">$50</button><button class="stake">$100</button></div>
+    <p class="sub" style="font-size:15px">If you miss, $50 goes to ALS Association. If you keep it, Joseph has to call it clean.</p>
+    <div class="spacer"></div>
+    <button class="cta">Accept the dare - stake $50</button>
+    <button class="secondary">Back down</button>
+    <div class="micro">No charge unless Joseph rules that you broke it.</div>
+  </main>
+</body>
+</html>

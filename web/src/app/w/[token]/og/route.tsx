@@ -3,20 +3,43 @@ import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'edge';
 
+const frauncesFont = fetch(
+  'https://fonts.gstatic.com/s/fraunces/v38/6NUh8FyLNQOQZAnv9bYEvDiIdE9Ea92uemAk_WBq8U_9v0c2Wa0K7iN7hzFUPJH58njr1603gg7S2nfgRYIctxujDg.ttf'
+).then(res => res.arrayBuffer()).catch(() => null);
+
 function truncate(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength).trimEnd() + '\u2026';
 }
 
-function renderImage(
+function firstName(value: string | null | undefined, fallback = 'Your friend'): string {
+  const trimmed = value?.trim();
+  if (!trimmed) return fallback;
+  return trimmed.split(/\s+/)[0] || fallback;
+}
+
+function formatDeadline(value: string | null | undefined): string {
+  if (!value) return 'Verdict soon';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Verdict soon';
+  return `Verdict ${date.toLocaleDateString('en-US', { weekday: 'short' })} at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+}
+
+async function renderImage(
   makerName: string | null,
   vowText: string | null,
   stakeAmount: number,
+  destination?: string | null,
+  endsAt?: string | null,
 ) {
-  const headline = stakeAmount > 0
-    ? `${makerName || 'Someone'} put $${Math.round(stakeAmount / 100)} on the line.`
-    : `${makerName || 'Someone'} made a vow.`;
-  const subline = 'Will you hold them to it?';
+  const fraunces = await frauncesFont;
+  const maker = firstName(makerName, 'Your friend');
+  const stake = stakeAmount > 0 ? `$${Math.round(stakeAmount / 100)}` : 'Their word';
+  const consequence = stakeAmount > 0 && destination
+    ? `${stake} \u2192 ${destination} if broken`
+    : stakeAmount > 0
+      ? `${stake} on the line`
+      : 'No cash, just accountability';
 
   return new ImageResponse(
     (
@@ -26,74 +49,133 @@ function renderImage(
           height: '100%',
           display: 'flex',
           flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          backgroundColor: '#0A0A0F',
-          padding: '50px 80px',
+          justifyContent: 'space-between',
+          backgroundColor: '#0D0B08',
+          backgroundImage: 'radial-gradient(circle at 18% 18%, rgba(218,174,78,0.18), transparent 30%), linear-gradient(180deg, #14110D 0%, #080706 100%)',
+          padding: '58px 68px',
+          fontFamily: 'Inter, Arial, sans-serif',
         }}
       >
-        {/* Brand mark — small */}
         <div
           style={{
-            color: '#C8A84E',
-            fontSize: 18,
-            fontWeight: 700,
-            letterSpacing: '0.15em',
-            textAlign: 'center',
-            marginBottom: 32,
             display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            width: '100%',
           }}
         >
-          UNBREAKABLE VOW
-        </div>
-
-        {/* Headline — hero text */}
-        <div
-          style={{
-            color: '#FFFFFF',
-            fontSize: 36,
-            fontWeight: 700,
-            textAlign: 'center',
-            marginBottom: 10,
-            display: 'flex',
-          }}
-        >
-          {headline}
-        </div>
-
-        {/* Subline */}
-        <div
-          style={{
-            color: '#C8A84E',
-            fontSize: 28,
-            textAlign: 'center',
-            marginBottom: 28,
-            display: 'flex',
-          }}
-        >
-          {subline}
-        </div>
-
-        {/* Vow text */}
-        {vowText && (
-          <div
-            style={{
-              color: '#AAAAAA',
-              fontSize: 24,
-              textAlign: 'center',
-              maxWidth: 900,
-              lineHeight: 1.4,
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div style={{
+              width: 34,
+              height: 34,
+              borderRadius: 8,
+              background: 'linear-gradient(135deg, #F0C85B, #C79A34)',
               display: 'flex',
-            }}
-          >
-            {`\u201C${vowText}\u201D`}
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#090806',
+              fontSize: 14,
+              fontWeight: 900,
+            }}>
+              UV
+            </div>
+            <div style={{
+              color: '#B8AD98',
+              fontSize: 20,
+              fontWeight: 650,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              display: 'flex',
+            }}>
+              Unbreakable Vow
+            </div>
           </div>
-        )}
+
+          <div style={{
+            border: '1px solid rgba(218,174,78,0.42)',
+            borderRadius: 999,
+            padding: '10px 18px',
+            color: '#E6B94C',
+            fontSize: 18,
+            fontWeight: 800,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            display: 'flex',
+          }}>
+            Judge invite
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', width: '100%', maxWidth: 940 }}>
+          <div style={{
+            color: '#F3EEE3',
+            fontFamily: 'Fraunces',
+            fontSize: 66,
+            fontWeight: 400,
+            lineHeight: 0.96,
+            letterSpacing: 0,
+            display: 'flex',
+            marginBottom: 22,
+          }}>
+            {maker} needs you to hold the line.
+          </div>
+          <div style={{
+            color: '#D9CDB8',
+            fontFamily: 'Fraunces',
+            fontSize: 35,
+            fontWeight: 400,
+            lineHeight: 1.18,
+            display: 'flex',
+            maxWidth: 980,
+            marginBottom: 18,
+          }}>
+            {vowText ? `\u201C${truncate(vowText, 92)}\u201D` : 'Hold them to their word.'}
+          </div>
+          <div style={{
+            color: '#B8AD98',
+            fontSize: 24,
+            fontWeight: 700,
+            lineHeight: 1.2,
+            display: 'flex',
+          }}>
+            Nudge if needed. Call it kept or broken.
+          </div>
+        </div>
+
+        <div style={{
+          width: '100%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderTop: '1px solid rgba(218,174,78,0.24)',
+          paddingTop: 28,
+          gap: 28,
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ color: '#E6B94C', fontSize: 34, fontWeight: 850, display: 'flex' }}>{consequence}</div>
+            <div style={{ color: '#9D927F', fontSize: 24, fontWeight: 600, display: 'flex' }}>{formatDeadline(endsAt)}</div>
+          </div>
+          <div style={{
+            background: 'linear-gradient(180deg, #EAC157, #C79631)',
+            color: '#090806',
+            borderRadius: 999,
+            padding: '20px 30px',
+            fontSize: 28,
+            fontWeight: 900,
+            display: 'flex',
+            whiteSpace: 'nowrap',
+          }}>
+            Hold them to it →
+          </div>
+        </div>
       </div>
     ),
     {
       width: 1200,
       height: 630,
+      fonts: fraunces
+        ? [{ name: 'Fraunces', data: fraunces, style: 'normal', weight: 400 }]
+        : undefined,
       headers: {
         'Cache-Control': 'public, max-age=86400',
       },
@@ -115,11 +197,11 @@ export async function GET(
       return renderImage(null, null, 0);
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { data: vow } = await supabase
-      .from('vows')
-      .select('refined_text, stake_amount, user_id')
+      const { data: vow } = await supabase
+        .from('vows')
+        .select('refined_text, stake_amount, destination, ends_at, user_id')
       .eq('witness_invite_token', token)
       .single();
 
@@ -146,6 +228,8 @@ export async function GET(
       makerName,
       vowText,
       vow.stake_amount || 0,
+      vow.destination,
+      vow.ends_at,
     );
   } catch {
     return renderImage(null, null, 0);

@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.06), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; position: relative; }
+
+  /* DIMMED UV BACKGROUND — what's behind the Apple sheet */
+  .uv-bg {
+    position: absolute; inset: 0;
+    padding: 44px 24px 24px;
+    display: flex; flex-direction: column;
+    opacity: 0.35;
+    filter: blur(0.5px);
+  }
+  .uv-bg .topbar { display: flex; justify-content: space-between; margin-bottom: 28px; }
+  .uv-bg .back { font-size: 22px; color: var(--text-mute); }
+  .uv-bg .step-pill {
+    font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .uv-bg h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;
+    margin-bottom: 8px;
+  }
+  .uv-bg h1 em { font-style: italic; color: var(--gold); }
+  .uv-bg .sub {
+    font-size: 13.5px; color: var(--text-mute); margin-bottom: 20px;
+  }
+  .uv-bg .otp-stub {
+    display: flex; gap: 10px; margin-bottom: 20px;
+  }
+  .uv-bg .otp-stub .c {
+    flex: 1; aspect-ratio: 0.82; border: 1px solid var(--gold-line); border-radius: 12px;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 28px; color: var(--text);
+    font-feature-settings: "tnum";
+  }
+  .uv-bg .receipt {
+    border-left: 2px solid var(--gold);
+    padding: 10px 14px; display: flex; justify-content: space-between;
+  }
+  .uv-bg .receipt-l { font-size: 10.5px; color: var(--text-dim); }
+  .uv-bg .receipt-r { font-family: var(--serif); font-size: 24px; color: var(--gold-bright); }
+
+  /* SCRIM — black gradient under the sheet */
+  .scrim {
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.85));
+  }
+
+  /* APPLE PAY SHEET — pixel-honest rendering of system UI */
+  .apple-sheet {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: #1C1C1E;
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+    padding: 10px 0 28px;
+    color: #fff;
+    font-family: -apple-system, "SF Pro Text", "SF Pro Display", sans-serif;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.5);
+  }
+  .grabber {
+    width: 36px; height: 5px; border-radius: 3px;
+    background: rgba(255,255,255,0.3);
+    margin: 0 auto 18px;
+  }
+
+  /* Header row: Cancel · APPLE PAY logo · "" */
+  .ap-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 18px 16px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  }
+  .ap-cancel {
+    font-size: 17px; font-weight: 400; color: #0A84FF;
+  }
+  .ap-logo {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 19px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .ap-logo .apple { font-size: 20px; }
+  .ap-spacer { width: 56px; }
+
+  /* Merchant block */
+  .ap-merchant {
+    display: flex; align-items: center; gap: 12px;
+    padding: 16px 18px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  }
+  .ap-merchant-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: linear-gradient(135deg, #C89B3C, #8a6620);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 500; font-size: 18px; color: #1A1205;
+  }
+  .ap-merchant-info {
+    flex: 1;
+  }
+  .ap-merchant-name {
+    font-size: 17px; font-weight: 600; letter-spacing: -0.01em;
+  }
+  .ap-merchant-sub {
+    font-size: 13px; color: rgba(235,235,245,0.6); margin-top: 1px;
+  }
+
+  /* Pay-to row */
+  .ap-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  }
+  .ap-row-l { font-size: 17px; color: #fff; }
+  .ap-row-r {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 17px; color: rgba(235,235,245,0.6);
+  }
+  .ap-row-r .chev { font-size: 14px; color: rgba(235,235,245,0.4); }
+
+  /* Card row */
+  .ap-card {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  }
+  .ap-card-icon {
+    width: 30px; height: 22px; border-radius: 4px;
+    background: linear-gradient(135deg, #1A1F71, #4759C7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: #fff; letter-spacing: 0.5px;
+  }
+  .ap-card-info { flex: 1; }
+  .ap-card-name { font-size: 17px; }
+  .ap-card-sub { font-size: 13px; color: rgba(235,235,245,0.6); margin-top: 1px; }
+  .ap-card-chev { font-size: 14px; color: rgba(235,235,245,0.4); }
+
+  /* Line items */
+  .ap-items {
+    padding: 14px 18px 16px;
+  }
+  .ap-item {
+    display: flex; justify-content: space-between;
+    font-size: 17px; padding: 4px 0;
+  }
+  .ap-item-l { color: rgba(235,235,245,0.7); }
+  .ap-item-r { font-weight: 400; }
+  .ap-item.total {
+    margin-top: 10px; padding-top: 12px;
+    border-top: 0.5px solid rgba(255,255,255,0.12);
+  }
+  .ap-item.total .ap-item-l {
+    color: #fff; font-weight: 500;
+  }
+  .ap-item.total .ap-item-r {
+    font-weight: 600;
+  }
+
+  /* Pay confirmation footer */
+  .ap-confirm {
+    padding: 14px 18px 0;
+    text-align: center;
+  }
+  .ap-confirm-icon {
+    font-size: 26px; margin-bottom: 4px;
+    letter-spacing: 4px;
+  }
+  .ap-confirm-text {
+    font-size: 13px; color: rgba(235,235,245,0.7);
+  }
+
+  /* Annotation overlays — gold pull-out callouts */
+  .annot {
+    position: absolute;
+    font-family: var(--serif); font-style: italic;
+    font-size: 10px; line-height: 1.3;
+    color: var(--gold-bright);
+    background: rgba(15,13,10,0.92);
+    border: 1px solid var(--gold-line);
+    border-radius: 6px;
+    padding: 5px 8px;
+    max-width: 130px;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+  }
+  .annot::before {
+    content: ""; position: absolute;
+    width: 8px; height: 8px;
+    background: rgba(15,13,10,0.92);
+    border-right: 1px solid var(--gold-line);
+    border-bottom: 1px solid var(--gold-line);
+  }
+  .annot.left::before {
+    right: -5px; top: 50%; transform: translateY(-50%) rotate(-45deg);
+  }
+  .annot.right::before {
+    left: -5px; top: 50%; transform: translateY(-50%) rotate(135deg);
+  }
+
+  .annot-1 { top: 482px; right: 14px; }
+  .annot-1::before { right: -5px; top: 50%; transform: translateY(-50%) rotate(-45deg); }
+
+  .annot-2 { top: 624px; left: 14px; }
+  .annot-2::before { left: -5px; top: 50%; transform: translateY(-50%) rotate(135deg); }
+
+  .annot-3 { top: 720px; right: 14px; }
+  .annot-3::before { right: -5px; top: 50%; transform: translateY(-50%) rotate(-45deg); }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- DIMMED UV BG -->
+  <div class="uv-bg">
+    <div class="topbar">
+      <div class="back">←</div>
+      <div class="step-pill">Step 2 of 2</div>
+    </div>
+    <h1>Just so it's <em>you.</em></h1>
+    <div class="sub">Code verified.</div>
+    <div class="otp-stub">
+      <div class="c">8</div><div class="c">2</div><div class="c">4</div>
+      <div class="c">9</div><div class="c">1</div><div class="c">7</div>
+    </div>
+    <div class="receipt">
+      <div class="receipt-l">ON HOLD</div>
+      <div class="receipt-r">$50</div>
+    </div>
+  </div>
+
+  <div class="scrim"></div>
+
+  <!-- APPLE PAY SHEET -->
+  <div class="apple-sheet">
+    <div class="grabber"></div>
+
+    <div class="ap-header">
+      <div class="ap-cancel">Cancel</div>
+      <div class="ap-logo"><span class="apple"></span><span>Pay</span></div>
+      <div class="ap-spacer"></div>
+    </div>
+
+    <div class="ap-merchant">
+      <div class="ap-merchant-icon">UV</div>
+      <div class="ap-merchant-info">
+        <div class="ap-merchant-name">Unbreakable Vow</div>
+        <div class="ap-merchant-sub">unbreakablevow.com</div>
+      </div>
+    </div>
+
+    <div class="ap-card">
+      <div class="ap-card-icon">VISA</div>
+      <div class="ap-card-info">
+        <div class="ap-card-name">Visa</div>
+        <div class="ap-card-sub">•••• 4242</div>
+      </div>
+      <div class="ap-card-chev">›</div>
+    </div>
+
+    <div class="ap-items">
+      <div class="ap-item">
+        <div class="ap-item-l">Stake on hold</div>
+        <div class="ap-item-r">$50.00</div>
+      </div>
+      <div class="ap-item total">
+        <div class="ap-item-l">Unbreakable Vow</div>
+        <div class="ap-item-r">$50.00</div>
+      </div>
+    </div>
+
+    <div class="ap-confirm">
+      <div class="ap-confirm-icon">‹‹</div>
+      <div class="ap-confirm-text">Double Click to Confirm with Face ID</div>
+    </div>
+  </div>
+
+  <!-- ANNOTATIONS -->
+  <div class="annot annot-1 left">
+    Apple controls "Pay" wordmark — we can't relabel it.
+  </div>
+  <div class="annot annot-2 right">
+    Our line item: "Stake on hold" — Stripe `displayItems` lets us name this.
+  </div>
+  <div class="annot annot-3 left">
+    Total label = merchant name. Apple constraint. The "$50.00" can't say "hold."
+  </div>
+
+</div>
+</body>
+</html>

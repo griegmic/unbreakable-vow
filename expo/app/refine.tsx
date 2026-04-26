@@ -53,12 +53,16 @@ export default function RefineScreen() {
 
   const handleSubmit = useCallback(() => {
     const trimmed = suggestionText.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setVagueError('Make the vow specific enough to judge.');
+      triggerShake();
+      return;
+    }
 
     setVagueError('');
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     continueWith(trimmed);
-  }, [suggestionText, continueWith]);
+  }, [suggestionText, continueWith, triggerShake]);
 
   const handleKeepOriginal = useCallback(() => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

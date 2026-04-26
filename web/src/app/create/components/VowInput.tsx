@@ -344,7 +344,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
             onClick={e => e.stopPropagation()}
             style={{
               width: '100%', maxWidth: 440,
-              background: 'var(--uv-bg-elev)',
+              background: 'var(--uv-bg-elevated)',
               borderRadius: '22px 22px 0 0',
               padding: '16px 20px 32px',
               animation: 'slideUp 240ms ease-out',

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 700px 500px at 50% 35%, rgba(200,155,60,0.14), transparent 60%),
+      radial-gradient(ellipse at 50% 100%, rgba(200,155,60,0.05), transparent 70%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 80px 28px 32px; align-items: center; }
+
+  /* Wax seal */
+  .seal-wrap {
+    position: relative; width: 120px; height: 120px;
+    margin-bottom: 38px;
+  }
+  .seal-glow {
+    position: absolute; inset: -30px;
+    background: radial-gradient(circle, rgba(200,155,60,0.25), transparent 65%);
+    border-radius: 50%;
+  }
+  .seal-disc {
+    width: 120px; height: 120px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 32% 32%, #E8B656, #B88930 60%, #8A6420 100%);
+    border: 2px solid rgba(200,155,60,0.4);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow:
+      inset 0 4px 12px rgba(255,220,140,0.4),
+      inset 0 -8px 18px rgba(80,50,10,0.5),
+      0 20px 40px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .seal-rune {
+    font-family: var(--serif); font-style: italic;
+    font-size: 56px; font-weight: 500;
+    color: rgba(20,12,4,0.85);
+    line-height: 1;
+    text-shadow: 0 1px 0 rgba(255,220,140,0.3);
+    transform: translateY(-2px);
+  }
+
+  .stamp {
+    font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 44px; line-height: 1.0; letter-spacing: -0.02em;
+    text-align: center; margin-bottom: 18px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+
+  .lede {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 16px; line-height: 1.45; color: var(--text-mute);
+    max-width: 300px; margin-bottom: 32px;
+  }
+  .lede b { color: var(--text); font-style: normal; font-weight: 500; }
+
+  /* Mini receipt */
+  .receipt {
+    width: 100%; max-width: 320px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin-bottom: 28px;
+  }
+  .r-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0;
+  }
+  .r-row + .r-row { border-top: 1px dashed var(--rule); }
+  .r-k {
+    font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .r-v {
+    font-family: var(--serif); font-weight: 500; font-size: 14px;
+    color: var(--text); letter-spacing: -0.005em;
+    font-feature-settings: "tnum";
+  }
+  .r-v.pending {
+    color: var(--text-mute); font-style: italic; font-weight: 400; font-size: 12.5px;
+  }
+  .r-v .dot {
+    display: inline-block; width: 5px; height: 5px;
+    border-radius: 50%; background: var(--gold);
+    margin-right: 6px; vertical-align: middle;
+  }
+
+  .footer { margin-top: auto; width: 100%; }
+  .cta {
+    width: 100%; height: 58px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 16.5px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.25) inset, 0 10px 30px rgba(200,155,60,0.18);
+  }
+  .secondary {
+    text-align: center;
+    font-size: 12px; color: var(--text-dim);
+    margin-top: 14px;
+  }
+  .secondary a { color: var(--text-mute); border-bottom: 1px dotted var(--rule); }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="seal-wrap">
+    <div class="seal-glow"></div>
+    <div class="seal-disc">
+      <div class="seal-rune">UV</div>
+    </div>
+  </div>
+
+  <div class="stamp">— Sealed —</div>
+  <h1>It's <em>done.</em></h1>
+  <div class="lede">Your word is on the line. <b>Nick will know in seconds.</b></div>
+
+  <div class="receipt">
+    <div class="r-row">
+      <div class="r-k">The Vow</div>
+      <div class="r-v">Gym 3x this week</div>
+    </div>
+    <div class="r-row">
+      <div class="r-k">On hold</div>
+      <div class="r-v">$100</div>
+    </div>
+    <div class="r-row">
+      <div class="r-k">Verdict</div>
+      <div class="r-v">Sun, Apr 26 · 9pm</div>
+    </div>
+    <div class="r-row">
+      <div class="r-k">Judge</div>
+      <div class="r-v pending"><span class="dot"></span>Waiting on Nick to accept</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="cta">See your vow live →</div>
+    <div class="secondary"><a>Make another</a></div>
+  </div>
+</div>
+</body>
+</html>

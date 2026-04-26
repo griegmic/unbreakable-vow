@@ -1,6 +1,5 @@
-import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import Animated, { useAnimatedStyle, withRepeat, withTiming, Easing } from 'react-native-reanimated';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, View, Text, StyleSheet } from 'react-native';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
 
 interface WaxSealProps {
@@ -15,23 +14,46 @@ const SIZES = { sm: 64, md: 96, lg: 112 } as const;
 export function WaxSeal({ monogram = 'UV', size = 'lg', showHalo = true, showCheck = false }: WaxSealProps) {
   const px = SIZES[size];
   const checkSize = Math.round(px * 0.32);
+  const haloScale = useRef(new Animated.Value(1)).current;
+  const haloOpacity = useRef(new Animated.Value(0.55)).current;
 
-  const haloStyle = useAnimatedStyle(() => ({
-    transform: [
-      {
-        scale: withRepeat(
-          withTiming(1.08, { duration: 1600, easing: Easing.inOut(Easing.ease) }),
-          -1,
-          true
-        ),
-      },
-    ],
-    opacity: withRepeat(
-      withTiming(0.85, { duration: 1600, easing: Easing.inOut(Easing.ease) }),
-      -1,
-      true
-    ),
-  }));
+  useEffect(() => {
+    if (!showHalo) return undefined;
+    const animation = Animated.loop(
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(haloScale, {
+            toValue: 1.08,
+            duration: 1600,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(haloScale, {
+            toValue: 1,
+            duration: 1600,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.sequence([
+          Animated.timing(haloOpacity, {
+            toValue: 0.85,
+            duration: 1600,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+          Animated.timing(haloOpacity, {
+            toValue: 0.55,
+            duration: 1600,
+            easing: Easing.inOut(Easing.ease),
+            useNativeDriver: true,
+          }),
+        ]),
+      ])
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [haloOpacity, haloScale, showHalo]);
 
   return (
     <View style={[styles.container, { width: px, height: px }]}>
@@ -40,7 +62,7 @@ export function WaxSeal({ monogram = 'UV', size = 'lg', showHalo = true, showChe
           style={[
             styles.halo,
             { width: px + 20, height: px + 20, borderRadius: (px + 20) / 2 },
-            haloStyle,
+            { opacity: haloOpacity, transform: [{ scale: haloScale }] },
           ]}
         />
       )}

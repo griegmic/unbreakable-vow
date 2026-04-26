@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,300;1,6..72,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1A1816; --surface: #26231F;
+    --text: #ECE4D5; --text-mute: #938A78; --text-dim: #5F5951;
+    --brass: #D2BC8C; --brass-soft: rgba(210,188,140,0.06);
+    --rule: rgba(236,228,213,0.08);
+    --serif: "Newsreader", Georgia, serif;
+    --sans: "Inter", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--sans);
+    font-size: 15px; font-weight: 300; line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 28px 28px 26px; }
+
+  .masthead {
+    display: flex; align-items: center; justify-content: center;
+    padding-bottom: 12px; border-bottom: 1px solid var(--rule);
+    margin-bottom: 26px;
+  }
+  .wm {
+    font-family: var(--sans); font-size: 10px; letter-spacing: 0.42em;
+    text-transform: uppercase; font-weight: 500; color: var(--text);
+  }
+  .wm .dot { color: var(--brass); margin: 0 8px; }
+
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 72;
+    font-size: 30px; line-height: 1.05; letter-spacing: -0.022em;
+    text-align: center; margin-bottom: 8px;
+  }
+  h1 .name { font-style: italic; color: var(--brass); font-weight: 400; }
+
+  .ask {
+    text-align: center; font-family: var(--serif); font-weight: 300;
+    font-variation-settings: "opsz" 20;
+    font-size: 15px; color: var(--text-mute); line-height: 1.5;
+    margin-bottom: 24px; padding: 0 6px;
+  }
+  .ask b { color: var(--text); font-weight: 500; }
+
+  .pull {
+    position: relative;
+    padding: 22px 18px 22px;
+    border-top: 1px solid var(--rule);
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 16px;
+  }
+  .pull-label {
+    position: absolute; top: -7px; left: 50%; transform: translateX(-50%);
+    background: var(--bg);
+    font-size: 9.5px; letter-spacing: 0.38em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    padding: 0 12px;
+  }
+  .quote {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 48;
+    font-size: 22px; line-height: 1.25; color: var(--text);
+    font-style: italic; letter-spacing: -0.012em; text-align: center;
+  }
+  .quote .marks { color: var(--brass); font-style: normal; }
+  .attr {
+    text-align: center; font-size: 10.5px; letter-spacing: 0.28em;
+    text-transform: uppercase; color: var(--text-dim); font-weight: 500;
+    margin-top: 14px;
+  }
+
+  .meta-table {
+    margin-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 10px 0;
+    border-top: 1px solid var(--rule);
+  }
+  .row .k {
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .row .v {
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 24;
+    font-size: 15px; color: var(--text); letter-spacing: -0.005em;
+    font-feature-settings: "tnum";
+  }
+  .row .v i {
+    font-family: var(--serif); font-style: italic; font-size: 11.5px;
+    font-weight: 300; color: var(--text-dim); margin-left: 6px;
+  }
+
+  .role {
+    font-family: var(--serif); font-weight: 300;
+    font-variation-settings: "opsz" 20;
+    font-size: 14px; color: var(--text-mute); font-style: italic;
+    text-align: center; line-height: 1.55; margin-bottom: 12px;
+  }
+  .role b { color: var(--text); font-style: normal; font-weight: 500; }
+
+  .footer { margin-top: auto; }
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+  .cta {
+    width: 100%; height: 58px; border-radius: 0;
+    background: var(--text); color: var(--bg);
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    letter-spacing: 0.26em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    border: 0;
+  }
+  .secondary {
+    width: 100%; height: 44px;
+    background: transparent; border: 1px solid var(--rule);
+    color: var(--text-mute);
+    font-family: var(--sans); font-size: 12px; font-weight: 500;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .learn {
+    text-align: center; font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-dim); font-weight: 300;
+    margin-top: 12px;
+  }
+  .learn a { color: var(--brass); text-decoration: none; font-style: normal; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="masthead">
+    <div class="wm">Unbreakable <span class="dot">◦</span> Vow</div>
+  </div>
+
+  <h1><span class="name">Joey</span> named you.</h1>
+  <div class="ask">He's made a vow, and you're the one he trusts to <b>call it kept or broken.</b></div>
+
+  <div class="pull">
+    <div class="pull-label">The Vow</div>
+    <div class="quote"><span class="marks">"</span>I will go to the gym three times this week — Mon, Wed, Fri.<span class="marks">"</span></div>
+    <div class="attr">— Joey Rosenfield</div>
+  </div>
+
+  <div class="meta-table">
+    <div class="row"><span class="k">Stake</span><span class="v">$100 <i>to NRA, if broken</i></span></div>
+    <div class="row"><span class="k">Verdict</span><span class="v">Sun, Apr 26 <i>9:00 PM</i></span></div>
+  </div>
+
+  <div class="role">Your job: <b>Call it kept or broken.</b></div>
+
+  <div class="footer">
+    <div class="actions">
+      <div class="cta">I'll Witness</div>
+      <div class="secondary">Pass — Can't do this</div>
+    </div>
+    <div class="learn">
+      What is this? <a href="#">How witnessing works →</a>
+    </div>
+  </div>
+</div>
+</body>
+</html>

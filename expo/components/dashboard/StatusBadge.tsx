@@ -5,12 +5,12 @@ import { uvColors } from '@/lib/uv-tokens';
 type BadgeVariant = 'active' | 'pending' | 'verdict' | 'kept' | 'broken' | 'voided';
 
 const variantStyles: Record<BadgeVariant, { bg: string; text: string }> = {
-  active: { bg: 'rgba(82,214,154,0.14)', text: uvColors.statusActive },
-  pending: { bg: 'rgba(251,146,60,0.14)', text: uvColors.statusPending },
-  verdict: { bg: 'rgba(96,165,250,0.14)', text: uvColors.statusVerdict },
-  kept: { bg: 'rgba(82,214,154,0.18)', text: uvColors.statusActive },
+  active: { bg: uvColors.successBg, text: uvColors.success },
+  pending: { bg: uvColors.warnBg, text: uvColors.warn },
+  verdict: { bg: uvColors.infoBg, text: uvColors.info },
+  kept: { bg: uvColors.successBg, text: uvColors.success },
   broken: { bg: 'rgba(248,113,113,0.14)', text: uvColors.danger },
-  voided: { bg: 'rgba(90,86,80,0.20)', text: uvColors.statusNeutral },
+  voided: { bg: 'rgba(90,86,80,0.20)', text: uvColors.textDim },
 };
 
 interface StatusBadgeProps {

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+    position: relative;
+  }
+  /* Dimmed home behind */
+  .behind {
+    position: absolute; inset: 0;
+    padding: 54px 28px;
+    opacity: 0.18;
+    filter: blur(2px);
+    pointer-events: none;
+  }
+  .behind h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-size: 52px; line-height: 0.98; letter-spacing: -0.02em;
+    color: var(--text); margin-top: 100px;
+  }
+  .behind h1 em { font-style: italic; color: var(--gold); }
+  .behind .sub { color: var(--text-mute); margin-top: 16px; max-width: 320px; }
+  .behind .input-line {
+    margin-top: 36px; padding-bottom: 12px;
+    border-bottom: 1px solid var(--gold-line);
+    font-family: var(--serif); font-size: 21px;
+    color: var(--text);
+  }
+
+  /* Overlay backdrop */
+  .backdrop {
+    position: absolute; inset: 0;
+    background: rgba(15,13,10,0.72);
+  }
+
+  /* Sheet */
+  .sheet {
+    position: absolute; left: 16px; right: 16px; bottom: 24px;
+    background: var(--surface);
+    border: 1px solid var(--gold-line);
+    border-radius: 18px;
+    padding: 26px 24px 22px;
+    box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+  }
+  .sheet::before {
+    content: ""; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+    width: 32px; height: 3px; border-radius: 2px;
+    background: var(--rule);
+  }
+
+  .nudge-glyph {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 1px solid var(--gold-line);
+    background: var(--gold-soft);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-style: italic; font-size: 18px;
+    color: var(--gold);
+    margin: 6px auto 16px;
+  }
+
+  .nudge-h {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 24px; line-height: 1.15; letter-spacing: -0.01em;
+    text-align: center; margin-bottom: 10px;
+  }
+  .nudge-h em { font-style: italic; color: var(--gold); }
+
+  .nudge-body {
+    font-size: 13.5px; line-height: 1.5;
+    color: var(--text-mute); text-align: center;
+    margin: 0 6px 20px; font-family: var(--sans);
+  }
+
+  .quoted {
+    background: var(--surface-2);
+    border-left: 2px solid var(--gold);
+    border-radius: 2px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    font-family: var(--serif); font-style: italic;
+    font-size: 16px; color: var(--text);
+    line-height: 1.4;
+  }
+  .quoted .label {
+    display: block; font-family: var(--sans); font-style: normal;
+    font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--gold); margin-bottom: 6px; font-weight: 500;
+  }
+
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+  .btn-primary {
+    width: 100%; height: 50px; border-radius: 12px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 15px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .btn-secondary {
+    width: 100%; height: 44px; border-radius: 12px;
+    background: transparent; border: 1px solid var(--rule);
+    color: var(--text-mute); font-family: var(--sans);
+    font-weight: 500; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+  <div class="behind">
+    <h1>Make a vow.<br/><em>Mean it.</em></h1>
+    <div class="sub">Tell a friend. Put money on it.</div>
+    <div class="input-line">be better</div>
+  </div>
+
+  <div class="backdrop"></div>
+
+  <div class="sheet">
+    <div class="nudge-glyph">?</div>
+    <div class="nudge-h">Will Nick know if you <em>did it?</em></div>
+    <div class="nudge-body">Vows work best when there's no room to argue. <i>"Be better"</i> is hard to call kept or broken — try one thing, by one date.</div>
+
+    <div class="quoted">
+      <span class="label">Your vow</span>
+      "be better"
+    </div>
+
+    <div class="actions">
+      <div class="btn-primary">Tighten it</div>
+      <div class="btn-secondary">Keep it as-is</div>
+    </div>
+  </div>
+</body>
+</html>

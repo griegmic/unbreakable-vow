@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,300;1,6..72,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1A1816;
+    --surface: #26231F;
+    --surface-2: #2E2A25;
+    --text: #ECE4D5;
+    --text-mute: #938A78;
+    --text-dim: #5F5951;
+    --brass: #D2BC8C;
+    --brass-line: rgba(210,188,140,0.22);
+    --brass-soft: rgba(210,188,140,0.08);
+    --green: #3F5A48;
+    --rule: rgba(236,228,213,0.08);
+    --serif: "Newsreader", Georgia, serif;
+    --sans: "Inter", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    font-weight: 300;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 54px 32px 36px; }
+
+  /* Minimal masthead — letterspaced wordmark, horizontal rule below */
+  .masthead {
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 56px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .wm {
+    font-family: var(--sans);
+    font-size: 10px; letter-spacing: 0.42em;
+    text-transform: uppercase; font-weight: 500;
+    color: var(--text);
+  }
+  .wm .dot { color: var(--brass); margin: 0 8px; }
+  .est {
+    font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-dim); font-weight: 300;
+  }
+
+  /* Hero */
+  .eyebrow {
+    font-family: var(--sans); font-size: 10px; letter-spacing: 0.38em;
+    text-transform: uppercase; font-weight: 500; color: var(--brass);
+    margin-bottom: 22px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 72;
+    font-size: 52px; line-height: 1.0; letter-spacing: -0.025em;
+    margin-bottom: 20px; color: var(--text);
+  }
+  h1 em {
+    font-style: italic; font-weight: 300;
+    color: var(--brass);
+  }
+
+  .sub {
+    font-family: var(--serif); font-weight: 300;
+    font-variation-settings: "opsz" 24;
+    font-size: 17px; line-height: 1.45; color: var(--text-mute);
+    margin-bottom: 36px; max-width: 310px;
+  }
+
+  /* Input as editorial underline */
+  .input-row {
+    border-bottom: 1px solid var(--brass);
+    padding-bottom: 12px; margin-bottom: 8px;
+  }
+  .input-label {
+    font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 10px;
+  }
+  .input {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 36;
+    font-size: 22px; color: var(--text);
+    background: transparent; border: 0; width: 100%;
+    letter-spacing: -0.01em; outline: none;
+  }
+  .input::placeholder { color: var(--text-dim); }
+
+  .helper {
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--text-dim); font-weight: 300;
+    margin-bottom: 28px;
+  }
+
+  /* Example list — editorial, not chips */
+  .examples-label {
+    font-size: 10px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 12px;
+  }
+  .example-list { display: flex; flex-direction: column; }
+  .example {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0; border-bottom: 1px solid var(--rule);
+    font-family: var(--serif); font-size: 15px; color: var(--text);
+    font-weight: 400; letter-spacing: -0.005em;
+  }
+  .example:last-child { border-bottom: 0; }
+  .example .num {
+    font-family: var(--sans); font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.2em; font-variant-numeric: tabular-nums;
+    min-width: 20px; margin-right: 16px; font-weight: 500;
+  }
+  .example .plus { color: var(--brass); font-family: var(--sans); font-size: 14px; font-weight: 300; }
+
+  .footer { margin-top: auto; }
+  .cta {
+    width: 100%; height: 60px; border-radius: 0;
+    background: var(--text);
+    color: var(--bg); font-family: var(--sans);
+    font-size: 14px; font-weight: 500;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+    border: 0;
+  }
+  .cta .arrow {
+    font-weight: 400;
+    letter-spacing: 0;
+  }
+  .foot {
+    text-align: center; font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-dim); font-weight: 300;
+    margin-top: 14px;
+  }
+  .foot b { color: var(--text-mute); font-weight: 500; font-style: normal; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="masthead">
+    <div class="wm">Unbreakable <span class="dot">◦</span> Vow</div>
+    <div class="est">est. 2026</div>
+  </div>
+
+  <div class="eyebrow">Vol. I — For people who mean it</div>
+  <h1>A promise,<br/><em>made binding.</em></h1>
+  <div class="sub">Tell a friend the thing you keep putting off. Put money on it. Keep your word, it comes back. Break it, it goes to charity — or a cause you hate.</div>
+
+  <div class="input-row">
+    <div class="input-label">The vow</div>
+    <input class="input" placeholder="What will you commit to?" readonly>
+  </div>
+  <div class="helper">Be specific. Your witness should know, on sight, whether you kept it.</div>
+
+  <div class="examples-label">Or begin with</div>
+  <div class="example-list">
+    <div class="example"><span class="num">01</span>Gym three times this week<span class="plus">+</span></div>
+    <div class="example"><span class="num">02</span>No alcohol for two weeks<span class="plus">+</span></div>
+    <div class="example"><span class="num">03</span>Delete TikTok for a week<span class="plus">+</span></div>
+    <div class="example"><span class="num">04</span>Ship the side project<span class="plus">+</span></div>
+  </div>
+
+  <div class="footer">
+    <div class="cta">Begin <span class="arrow">→</span></div>
+    <div class="foot"><b>60 seconds</b> · No account until you're ready</div>
+  </div>
+</div>
+</body>
+</html>

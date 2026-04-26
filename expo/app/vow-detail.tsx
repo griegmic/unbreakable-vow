@@ -6,6 +6,8 @@ import {
   Alert,
   Animated,
   Easing,
+  Linking,
+  Platform,
   Pressable,
   SafeAreaView,
   ScrollView,
@@ -30,6 +32,7 @@ type VowRow = {
   vow_type?: string;
   witness_name: string;
   witness_phone: string | null;
+  witness_invite_token: string | null;
   witness_accepted_at: string | null;
   witness_declined: boolean;
   stake_amount: number;
@@ -135,7 +138,7 @@ function getWitnessBadge(vow: VowRow): { label: string; color: string } {
 }
 
 export default function VowDetailScreen() {
-  const { vowId } = useLocalSearchParams<{ vowId: string }>();
+  const { vowId, justSealed } = useLocalSearchParams<{ vowId: string; justSealed?: string }>();
   const { session } = useAuth();
 
   const [vow, setVow] = useState<VowRow | null>(null);
@@ -225,10 +228,56 @@ export default function VowDetailScreen() {
 
   const handleShare = async () => {
     if (!vow) return;
+    const witnessUrl = vow.witness_invite_token
+      ? `https://unbreakablevow.app/w/${vow.witness_invite_token}`
+      : '';
     const stakeText = vow.stake_amount > 0 ? ` with $${vow.stake_amount / 100} on the line` : '';
     await Share.share({
-      message: `I made an Unbreakable Vow: "${vow.refined_text}"${stakeText}. Witness: ${vow.witness_name}.`,
+      message: witnessUrl && !vow.witness_accepted_at && vow.witness_name !== 'Just me'
+        ? `I made an Unbreakable Vow: "${vow.refined_text}"${stakeText}. You are the judge: ${witnessUrl}`
+        : `I made an Unbreakable Vow: "${vow.refined_text}"${stakeText}. Witness: ${vow.witness_name}.`,
     });
+  };
+
+  const handleInviteWitness = async () => {
+    if (!vow?.witness_invite_token) {
+      await handleShare();
+      return;
+    }
+    const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
+    const amount = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} on the line` : 'my word on the line';
+    const message = `I made a vow: "${vow.refined_text}" — ${amount}. You are the judge: ${witnessUrl}`;
+
+    if (vow.witness_phone) {
+      const sep = Platform.OS === 'android' ? '?' : '&';
+      await Linking.openURL(`sms:${vow.witness_phone}${sep}body=${encodeURIComponent(message)}`).catch(() => {});
+      return;
+    }
+
+    await Share.share({ message });
+  };
+
+  const handleEarlyJudgment = async () => {
+    if (!vow) return;
+    void Haptics.selectionAsync();
+
+    if (vow.witness_name === 'Just me') {
+      router.push({ pathname: '/self-resolve', params: { vowId: vow.id } });
+      return;
+    }
+
+    const verdictUrl = vow.witness_invite_token
+      ? `https://unbreakablevow.app/w/${vow.witness_invite_token}/verdict`
+      : '';
+    const message = `I kept my vow early: "${vow.refined_text}". Can you judge it now?${verdictUrl ? ` ${verdictUrl}` : ''}`;
+
+    if (vow.witness_phone) {
+      const sep = Platform.OS === 'android' ? '?' : '&';
+      await Linking.openURL(`sms:${vow.witness_phone}${sep}body=${encodeURIComponent(message)}`).catch(() => {});
+      return;
+    }
+
+    await Share.share({ message });
   };
 
   // --- Render ---
@@ -266,6 +315,15 @@ export default function VowDetailScreen() {
   const statusCfg = getStatusConfig(vow.status);
   const witnessBadge = getWitnessBadge(vow);
   const showWithdraw = isMaker && (vow.status === 'active' || vow.status === 'awaiting_verdict');
+  const canJudgeEarly = isMaker
+    && vow.status === 'active'
+    && !!vow.witness_invite_token
+    && (vow.witness_name === 'Just me' || !!vow.witness_accepted_at);
+  const needsWitnessAction = isMaker
+    && vow.status === 'active'
+    && vow.witness_name !== 'Just me'
+    && !vow.witness_accepted_at
+    && !vow.witness_declined;
 
   // Future verdict marker
   const showFutureVerdict =
@@ -293,6 +351,31 @@ export default function VowDetailScreen() {
           </Pressable>
           <AppMenuButton />
         </View>
+
+        {justSealed === '1' ? (
+          <View style={styles.justSealedCard}>
+            <Text style={styles.justSealedKicker}>SEALED</Text>
+            <Text style={styles.justSealedTitle}>
+              {needsWitnessAction ? `Now get ${vow.witness_name} in.` : 'Your vow is live.'}
+            </Text>
+            <Text style={styles.justSealedBody}>
+              {needsWitnessAction
+                ? 'Your card is saved. The vow starts clean once your witness accepts.'
+                : 'Your card is saved. Nothing charges unless the vow is broken.'}
+            </Text>
+            {needsWitnessAction ? (
+              <Pressable
+                style={({ pressed }) => [styles.justSealedCta, pressed && { opacity: 0.84 }]}
+                onPress={() => void handleInviteWitness()}
+                testID="vow-detail-just-sealed-cta"
+              >
+                <Text style={styles.justSealedCtaText}>
+                  {vow.witness_phone ? `Text ${vow.witness_name}` : 'Share judge link'}
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+        ) : null}
 
         {/* Vow text */}
         <View style={styles.vowTextBlock}>
@@ -408,6 +491,37 @@ export default function VowDetailScreen() {
 
         {/* Actions block */}
         <View style={styles.actionsBlock}>
+          {needsWitnessAction ? (
+            <Pressable
+              style={({ pressed }) => [styles.primaryActionBtn, pressed && { opacity: 0.82 }]}
+              onPress={() => void handleInviteWitness()}
+              testID="vow-detail-invite-witness"
+              accessibilityLabel="Invite witness"
+            >
+              <Text style={styles.primaryActionText}>
+                {vow.witness_phone ? `Text ${vow.witness_name}` : 'Share judge link'}
+              </Text>
+            </Pressable>
+          ) : null}
+
+          {canJudgeEarly ? (
+            <Pressable
+              style={({ pressed }) => [styles.earlyActionBtn, pressed && { opacity: 0.82 }]}
+              onPress={() => void handleEarlyJudgment()}
+              testID="vow-detail-early-judgment"
+              accessibilityLabel="Ask for early judgment"
+            >
+              <Text style={styles.earlyActionText}>
+                {vow.witness_name === 'Just me' ? 'Judge it now' : 'I kept it early'}
+              </Text>
+              <Text style={styles.earlyActionSubtext}>
+                {vow.witness_name === 'Just me'
+                  ? 'Close it honestly, right now.'
+                  : `Ask ${vow.witness_name} to make the call.`}
+              </Text>
+            </Pressable>
+          ) : null}
+
           <Pressable
             style={({ pressed }) => [styles.shareBtn, pressed && { opacity: 0.7 }]}
             onPress={() => void handleShare()}
@@ -486,6 +600,44 @@ const styles = StyleSheet.create({
   backArrow: {
     color: palette.text,
     fontSize: 20,
+  },
+  justSealedCard: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(200,155,60,0.32)',
+    backgroundColor: 'rgba(200,155,60,0.08)',
+    padding: 18,
+    gap: 8,
+  },
+  justSealedKicker: {
+    color: palette.goldBright,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.6,
+  },
+  justSealedTitle: {
+    color: palette.text,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '800',
+  },
+  justSealedBody: {
+    color: palette.textSecondary,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  justSealedCta: {
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: palette.goldBright,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
+  justSealedCtaText: {
+    color: '#0B0D11',
+    fontSize: 15,
+    fontWeight: '800',
   },
   vowTextBlock: {
     flexDirection: 'row',
@@ -681,6 +833,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
+  primaryActionBtn: {
+    minHeight: 54,
+    borderRadius: 16,
+    backgroundColor: palette.goldBright,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'stretch',
+    paddingHorizontal: 18,
+  },
+  primaryActionText: {
+    color: '#0B0D11',
+    fontSize: 16,
+    fontWeight: '800',
+  },
   shareBtn: {
     minHeight: 48,
     borderRadius: 14,
@@ -695,6 +861,27 @@ const styles = StyleSheet.create({
     color: palette.text,
     fontSize: 15,
     fontWeight: '600',
+  },
+  earlyActionBtn: {
+    minHeight: 64,
+    borderRadius: 16,
+    backgroundColor: 'rgba(82,214,154,0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(82,214,154,0.24)',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
+    paddingHorizontal: 18,
+    gap: 2,
+  },
+  earlyActionText: {
+    color: palette.text,
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  earlyActionSubtext: {
+    color: palette.textSecondary,
+    fontSize: 13,
+    lineHeight: 18,
   },
   withdrawBtn: {
     minHeight: 44,

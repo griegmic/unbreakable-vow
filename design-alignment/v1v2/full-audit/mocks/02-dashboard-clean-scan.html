@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard clean scan mock</title>
+  <style>
+    :root { --bg:#0f0d0a; --card:#181512; --line:rgba(240,233,219,.1); --gold:#d8aa43; --gold2:#e8bd5d; --text:#f0e9db; --muted:#a49a85; --dim:#716958; --green:#4ade80; --orange:#fb923c; font-family:"Inter Tight",-apple-system,BlinkMacSystemFont,sans-serif; }
+    *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--text)}
+    .screen{min-height:100dvh;max-width:430px;margin:0 auto;padding:24px 22px 28px;background:var(--bg)}
+    .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px}.menu{font-size:26px;color:var(--muted)}.brand{font:italic 18px Georgia,serif}.avatar{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:rgba(216,170,67,.18);border:1px solid rgba(216,170,67,.38);color:var(--gold2);font-weight:800}
+    .greet{display:flex;align-items:end;justify-content:space-between;margin-bottom:22px;gap:16px} h1{font-size:36px;line-height:1;margin:0;font-weight:850}.smallcta{height:38px;border:1px solid rgba(216,170,67,.34);background:rgba(216,170,67,.1);border-radius:999px;color:var(--gold2);font-weight:800;padding:0 14px;white-space:nowrap}
+    .section{display:flex;align-items:center;gap:8px;border-bottom:1px solid rgba(216,170,67,.25);padding-bottom:9px;margin-bottom:12px;color:var(--gold2);text-transform:uppercase;letter-spacing:.28em;font-size:12px;font-weight:800}
+    .list{display:grid;gap:10px}.card{border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:14px;background:var(--card);padding:15px 16px;text-align:left;color:var(--text)}.row{display:flex;justify-content:space-between;gap:10px;align-items:start}.pill{background:rgba(216,170,67,.12);border-radius:999px;color:var(--gold2);font-size:11px;letter-spacing:.16em;text-transform:uppercase;font-weight:850;padding:7px 10px}.time{color:var(--text);font-weight:800;font-size:15px;white-space:nowrap}.vow{font-size:22px;font-weight:800;line-height:1.15;margin:16px 0 14px}.meta{display:flex;justify-content:space-between;border-top:1px dashed var(--line);padding-top:12px}.k{color:var(--dim);font-size:10px;letter-spacing:.2em;text-transform:uppercase;font-weight:850}.v{margin-top:4px;font-weight:850;color:var(--gold2);font-size:18px}.who{align-self:end;color:var(--muted);font-weight:700}.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-right:6px}.warn{color:var(--orange)}
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <div class="top"><div class="menu">=</div><div class="brand">Unbreakable Vow</div><div class="avatar">J</div></div>
+    <div class="greet"><h1>Hey, Joseph.</h1><button class="smallcta">New vow</button></div>
+    <div class="section">Your vows <span style="color:var(--muted);letter-spacing:0">3</span></div>
+    <div class="list">
+      <button class="card">
+        <div class="row"><span class="pill warn">Needs verdict</span><span class="time">Now</span></div>
+        <div class="vow">Run a 5K this week.</div>
+        <div class="meta"><div><div class="k">On hold</div><div class="v">$50</div></div><div><div class="k">If broken</div><div class="v">NRA</div></div><div class="who"><span class="dot"></span>Maya</div></div>
+      </button>
+      <button class="card">
+        <div class="row"><span class="pill">Day 3 of 14</span><span class="time">12 days left</span></div>
+        <div class="vow">No alcohol for two weeks.</div>
+        <div class="meta"><div><div class="k">On hold</div><div class="v">$25</div></div><div><div class="k">Until</div><div class="v" style="color:var(--text)">Thu, 9pm</div></div><div class="who"><span class="dot"></span>Maya</div></div>
+      </button>
+      <button class="card">
+        <div class="row"><span class="pill warn">Waiting on Sarah</span><span class="time">Sealed 24h</span></div>
+        <div class="vow">Go to the gym Mon, Wed and Fri.</div>
+        <div class="meta"><div><div class="k">On hold</div><div class="v">$50</div></div><div><div class="k">Starts when</div><div class="v warn">Sarah accepts</div></div></div>
+      </button>
+    </div>
+  </main>
+</body>
+</html>

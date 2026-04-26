@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 44px 22px 24px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 22px; padding: 0 6px; }
+  .back { font-size: 22px; color: var(--text-mute); }
+  /* Demoted judge chip — moved to topbar so it doesn't compete with the H1 */
+  .judge-pill {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--gold-soft);
+    border: 1px solid var(--gold-line);
+    border-radius: 999px;
+    padding: 4px 12px 4px 4px;
+  }
+  .judge-pill-av {
+    width: 22px; height: 22px; border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-size: 11px; font-weight: 500;
+    color: var(--gold-bright);
+  }
+  .judge-pill-l {
+    font-family: var(--serif); font-style: italic;
+    font-size: 11.5px; color: var(--text-mute);
+  }
+  .judge-pill-name {
+    font-family: var(--serif); font-weight: 500; font-size: 12px;
+    color: var(--text);
+  }
+
+  /* H1 carries the whole "hold, not pay" message — eyebrow killed */
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 32px; line-height: 1.05; letter-spacing: -0.018em;
+    margin-bottom: 6px;
+    padding: 0 6px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+  /* Sub-line carries ONLY the new fact: phone is for the verdict reminders */
+  .sub {
+    font-family: var(--sans); font-size: 13px; line-height: 1.5;
+    color: var(--text-mute);
+    padding: 0 6px;
+    margin-bottom: 28px;
+  }
+
+  /* Field — phone */
+  .field-label {
+    font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 8px; padding: 0 6px;
+  }
+  .phone-row {
+    display: flex; gap: 8px; margin-bottom: 12px;
+  }
+  .country {
+    width: 64px; height: 56px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 500; font-size: 14px;
+    color: var(--text-mute);
+    gap: 4px;
+  }
+  .phone-input {
+    flex: 1; height: 56px;
+    border: 1px solid var(--gold-line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 0 16px;
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 19px; letter-spacing: 0.005em;
+    color: var(--text);
+    display: flex; align-items: center;
+    box-shadow: 0 0 0 3px rgba(200,155,60,0.08);
+  }
+  .phone-input .typed { color: var(--text); font-feature-settings: "tnum"; }
+  .phone-input .caret {
+    display: inline-block; width: 2px; height: 22px;
+    background: var(--gold-bright); margin-left: 2px;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* Two-step preview — explicitly tells the user what happens next */
+  .next-preview {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 12px;
+    margin: 0 6px 28px;
+    background: transparent;
+    border-left: 2px solid var(--gold-line);
+  }
+  .next-preview .nums {
+    display: flex; gap: 4px;
+  }
+  .next-preview .num-cell {
+    width: 16px; height: 20px; border-radius: 3px;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+  }
+  .next-preview .label {
+    font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-mute); line-height: 1.4;
+  }
+  .next-preview .label b { color: var(--text); font-weight: 500; font-style: normal; }
+
+  /* Receipt strip — the commitment */
+  .receipt {
+    background: transparent;
+    border-left: 2px solid var(--gold);
+    padding: 10px 14px;
+    margin: 0 6px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .receipt-l {
+    font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .receipt-l b {
+    display: block; font-family: var(--serif); font-style: italic;
+    font-weight: 400; font-size: 13px; color: var(--text-mute);
+    letter-spacing: 0; text-transform: none;
+    margin-top: 3px;
+  }
+  .receipt-r {
+    font-family: var(--serif); font-weight: 500; font-size: 26px;
+    color: var(--gold-bright); letter-spacing: -0.02em;
+    font-feature-settings: "tnum";
+  }
+
+  /* Continue CTA — gold (no Apple Pay yet, that's after OTP) */
+  .cta {
+    width: 100%; height: 58px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 17px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.25) inset, 0 10px 30px rgba(200,155,60,0.18);
+    margin: 0 6px 12px;
+  }
+  .alt {
+    text-align: center;
+    font-size: 11.5px; color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .alt a { color: var(--text-mute); border-bottom: 1px dotted var(--rule); padding-bottom: 1px; }
+
+  .footer { margin-top: auto; padding: 0 6px; }
+  .micro {
+    text-align: center;
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.04em; line-height: 1.5;
+  }
+  .micro .stripe { font-weight: 500; color: var(--text-mute); }
+</style>
+</head>
+<body>
+<div class="screen">
+  <!-- Judge chip moved to topbar — same height as back arrow, no longer competes with H1 -->
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="judge-pill">
+      <div class="judge-pill-av">N</div>
+      <div class="judge-pill-l">judge:</div>
+      <div class="judge-pill-name">Nick</div>
+    </div>
+  </div>
+
+  <h1>Put your card<br/>where your <em>word</em> is.</h1>
+  <div class="sub">So Nick can text you Sunday.</div>
+
+  <div class="field-label">Your number</div>
+  <div class="phone-row">
+    <div class="country">🇺🇸 +1</div>
+    <div class="phone-input">
+      <span class="typed">(415) 555&nbsp;</span><span class="caret"></span>
+    </div>
+  </div>
+
+  <!-- Tells the user the OTP step is coming, with a tiny visual of the boxes -->
+  <div class="next-preview">
+    <div class="nums">
+      <div class="num-cell"></div><div class="num-cell"></div><div class="num-cell"></div>
+      <div class="num-cell"></div><div class="num-cell"></div><div class="num-cell"></div>
+    </div>
+    <div class="label">Next: <b>6-digit code</b>, then Apple&nbsp;Pay.</div>
+  </div>
+
+  <div class="receipt">
+    <div class="receipt-l">On hold<b>"Gym Mon, Wed &amp; Fri"</b></div>
+    <div class="receipt-r">$50</div>
+  </div>
+
+  <div class="cta">Send me the code →</div>
+  <div class="alt">On desktop? <a>Use Gmail instead</a></div>
+
+  <div class="footer">
+    <div class="micro">Held by <span class="stripe">Stripe</span> · Nothing charges unless you break it</div>
+  </div>
+</div>
+</body>
+</html>

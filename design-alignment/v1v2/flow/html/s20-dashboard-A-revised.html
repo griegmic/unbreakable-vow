@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S20 · Dashboard — Option A REVISED</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --green: #4ade80;
+    --amber: #F1A93C;
+    --red-dot: #E5564A;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse 600px 400px at 50% 0%, rgba(200,155,60,0.06), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 14px 16px 96px;
+    position: relative;
+    overflow-y: auto;
+  }
+
+  /* Header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 4px 12px;
+  }
+  .hamburger {
+    display: flex; flex-direction: column; gap: 4px;
+    width: 22px; padding: 4px 0;
+  }
+  .hamburger span {
+    height: 1.4px; background: var(--text-mute); width: 100%;
+  }
+  .wordmark {
+    font-family: var(--serif); font-weight: 500;
+    font-style: italic;
+    font-variation-settings: "opsz" 144;
+    font-size: 16px; letter-spacing: -0.005em;
+    color: var(--text); text-align: center;
+  }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    display: flex; align-items: center; justify-content: center;
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 13px;
+  }
+
+  /* Greeting */
+  .greeting {
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 28px; letter-spacing: -0.02em;
+    color: var(--text);
+    margin: 8px 6px 18px;
+  }
+
+  /* Section header — bumped weight + gold under-rule */
+  .section-h {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 22px 6px 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gold-line);
+  }
+  .section-h .title {
+    font-size: 12.5px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--gold-bright); font-weight: 600;
+    font-feature-settings: "tnum";
+  }
+  .section-h .count {
+    color: var(--text-mute); font-weight: 400;
+    margin-left: 6px;
+  }
+
+  /* Vow card (A-revised: 2px gold left border claims ownership) */
+  .vow-card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 2px solid var(--gold);
+    border-radius: 14px; padding: 14px 16px 12px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  /* AWAITING WITNESS — visually recedes (no top hairline glow, dimmer) */
+  .vow-card.pending-witness {
+    border-left-color: var(--gold-deep);
+    background: linear-gradient(180deg, var(--surface), rgba(24,21,18,0.7));
+  }
+  .vow-card.pending-witness .vc-text {
+    color: var(--text-mute);
+  }
+  .vow-card.pending-witness .vc-text em {
+    color: var(--amber);
+  }
+  .vow-card.pending-witness::before { display: none; }
+  .vow-card::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .vc-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .pill {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold-bright); font-weight: 500;
+    padding: 3px 8px; border-radius: 999px;
+    background: var(--gold-soft);
+    border: 1px solid var(--gold-line);
+  }
+  .pill.amber { color: var(--amber); background: rgba(241,169,60,0.10); border-color: rgba(241,169,60,0.22); }
+  .pill.muted { color: var(--text-mute); background: transparent; border-color: var(--rule); }
+  .vc-time {
+    font-size: 10.5px; color: var(--text-mute);
+    font-family: var(--serif); font-style: italic;
+    font-feature-settings: "tnum";
+  }
+  .vc-time b { color: var(--text); font-style: normal; font-weight: 500; }
+  .vc-text {
+    font-family: var(--serif); font-weight: 400;
+    font-style: italic;
+    font-variation-settings: "opsz" 144;
+    font-size: 17px; line-height: 1.28; letter-spacing: -0.005em;
+    color: var(--text);
+    margin: 4px 0 12px;
+  }
+  .vc-text em { font-style: italic; color: var(--gold-bright); font-weight: 500; }
+  /* Meta — 2-col + witness chip on right */
+  .vc-meta {
+    display: flex; gap: 14px; padding-top: 8px;
+    border-top: 1px dashed var(--rule);
+    align-items: center;
+  }
+  .mc { display: flex; flex-direction: column; gap: 1px; }
+  .mc-k {
+    font-size: 8.5px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-mute); font-weight: 500;  /* bumped from --text-dim per Linda */
+  }
+  .mc-v {
+    font-family: var(--serif); font-weight: 500; font-size: 13px;
+    color: var(--text); font-feature-settings: "tnum";
+  }
+  .mc-v.gold { color: var(--gold-bright); }
+  .mc-v.amber { color: var(--amber); }
+  /* Witness chip — name + dot, amber bg on pending */
+  .witness-chip {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-family: var(--sans); font-size: 11px; font-weight: 500;
+    color: var(--text);
+    letter-spacing: 0.005em;
+  }
+  .witness-chip .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+  .witness-chip.pending {
+    color: var(--amber);
+    border-color: rgba(241,169,60,0.25);
+    background: rgba(241,169,60,0.06);
+  }
+  .witness-chip.pending .dot { background: var(--amber); }
+
+  /* Witnessing card — capped at 3 on dashboard, sorted by urgency */
+  .w-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .w-avatar {
+    flex-shrink: 0;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-mute); font-family: var(--serif); font-weight: 500;
+    font-size: 13px;
+  }
+  .w-body { flex: 1; min-width: 0; }
+  .w-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 1px;
+  }
+  .w-name {
+    font-family: var(--sans); font-size: 12px; font-weight: 500;
+    color: var(--text);
+  }
+  .w-when {
+    font-family: var(--serif); font-style: italic;
+    font-size: 11px; color: var(--text-mute); font-feature-settings: "tnum";
+  }
+  .w-when.urgent { color: var(--amber); font-style: normal; font-weight: 500; }
+  .w-vow {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 14px; color: var(--text-mute);
+    line-height: 1.2;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .w-stake {
+    flex-shrink: 0;
+    font-family: var(--serif); font-weight: 500; font-size: 12px;
+    color: var(--gold-bright); font-feature-settings: "tnum";
+  }
+
+  /* See-all → real destination card with count + urgency dot */
+  .see-all {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--gold-soft);
+    border: 1px solid var(--gold-line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin: 4px 0 20px;
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    color: var(--gold-bright);
+    letter-spacing: 0.005em;
+    position: relative;
+  }
+  .see-all-left {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .see-all .urgent-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--red-dot);
+    box-shadow: 0 0 0 3px rgba(229,86,74,0.18);
+    flex-shrink: 0;
+  }
+
+  /* Pending dare */
+  .pending {
+    background: var(--surface-2);
+    border: 1px solid var(--gold-line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+  }
+  .pending-top {
+    font-size: 9.5px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--gold-bright); font-weight: 500;
+    margin-bottom: 6px;
+  }
+  .pending-line {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 14.5px; color: var(--text);
+    margin-bottom: 10px;
+  }
+  .pending-line b { font-style: normal; font-weight: 500; color: var(--gold-bright); }
+  .pending-actions { display: flex; gap: 8px; }
+  .p-accept, .p-decline {
+    flex: 1; height: 36px; border-radius: 10px;
+    font-family: var(--serif); font-weight: 500; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .p-accept {
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+  }
+  .p-decline {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--text-mute);
+  }
+
+  .footer-cta {
+    position: absolute; bottom: 16px; left: 16px; right: 16px;
+    height: 60px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    box-shadow:
+      0 1px 0 rgba(255,220,140,0.3) inset,
+      0 14px 36px rgba(200,155,60,0.30),
+      0 -10px 24px rgba(15,13,10,0.92);
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <div class="header">
+    <div class="hamburger"><span></span><span></span><span></span></div>
+    <div class="wordmark">Unbreakable Vow</div>
+    <div class="avatar">J</div>
+  </div>
+
+  <div class="greeting">Hey, Joey.</div>
+
+  <!-- Section 1: Your vows -->
+  <div class="section-h">
+    <div class="title">Your vows<span class="count"> · 3</span></div>
+  </div>
+
+  <!-- Vow card 1: ACTIVE (gold left border = yours) -->
+  <div class="vow-card">
+    <div class="vc-top">
+      <span class="pill">Active · Day 4 of 7</span>
+      <span class="vc-time"><b>3 days</b> left</span>
+    </div>
+    <div class="vc-text"><em>I'll</em> walk 10,000 steps every day.</div>
+    <div class="vc-meta">
+      <div class="mc"><div class="mc-k">On hold</div><div class="mc-v gold">$50</div></div>
+      <div class="mc"><div class="mc-k">Until</div><div class="mc-v">Sun · 9pm</div></div>
+      <span class="witness-chip"><span class="dot"></span>Maya</span>
+    </div>
+  </div>
+
+  <!-- Vow card 2: AWAITING WITNESS (visually recedes — gold-deep border, muted vow text) -->
+  <div class="vow-card pending-witness">
+    <div class="vc-top">
+      <span class="pill amber">Awaiting Maya</span>
+      <span class="vc-time">Sealed <b>2 hrs</b> ago</span>
+    </div>
+    <div class="vc-text"><em>I'll</em> meditate ten minutes every morning.</div>
+    <div class="vc-meta">
+      <div class="mc"><div class="mc-k">On hold</div><div class="mc-v gold">$30</div></div>
+      <div class="mc"><div class="mc-k">Starts when</div><div class="mc-v amber">Maya accepts</div></div>
+      <span class="witness-chip pending"><span class="dot"></span>Pending</span>
+    </div>
+  </div>
+
+  <!-- Vow card 3: AWAITING VERDICT (gold left border too — action item) -->
+  <div class="vow-card">
+    <div class="vc-top">
+      <span class="pill amber">Awaiting verdict</span>
+      <span class="vc-time">Maya replies in <b>14 hrs</b></span>
+    </div>
+    <div class="vc-text"><em>I'll</em> finish the deck before Friday.</div>
+    <div class="vc-meta">
+      <div class="mc"><div class="mc-k">On hold</div><div class="mc-v gold">$25</div></div>
+      <div class="mc"><div class="mc-k">If broken</div><div class="mc-v">→ Trump</div></div>
+      <span class="witness-chip"><span class="dot"></span>Nick</span>
+    </div>
+  </div>
+
+  <!-- Pending dare -->
+  <div class="pending" style="margin-top: 18px;">
+    <div class="pending-top">— Pending dare —</div>
+    <div class="pending-line"><b>Marcus</b> dared you: <em>"No phone in bed for 7 days, $50 to PETA if you cave."</em></div>
+    <div class="pending-actions">
+      <div class="p-accept">Accept →</div>
+      <div class="p-decline">Decline</div>
+    </div>
+  </div>
+
+  <!-- Section 2: Witnessing — top 3 by urgency -->
+  <div class="section-h">
+    <div class="title">You're witnessing<span class="count"> · 7</span></div>
+  </div>
+
+  <div class="w-row">
+    <div class="w-avatar">S</div>
+    <div class="w-body">
+      <div class="w-top">
+        <span class="w-name">Sarah</span>
+        <span class="w-when urgent">Verdict in 6 hrs</span>
+      </div>
+      <div class="w-vow">No alcohol for 14 days.</div>
+    </div>
+    <div class="w-stake">$100</div>
+  </div>
+
+  <div class="w-row">
+    <div class="w-avatar">M</div>
+    <div class="w-body">
+      <div class="w-top">
+        <span class="w-name">Marcus</span>
+        <span class="w-when">2 days left</span>
+      </div>
+      <div class="w-vow">Run 5k three times this week.</div>
+    </div>
+    <div class="w-stake">$25</div>
+  </div>
+
+  <div class="w-row">
+    <div class="w-avatar">A</div>
+    <div class="w-body">
+      <div class="w-top">
+        <span class="w-name">Alex</span>
+        <span class="w-when">5 days left</span>
+      </div>
+      <div class="w-vow">Write every morning before email.</div>
+    </div>
+    <div class="w-stake">$50</div>
+  </div>
+
+  <!-- See-all → opens /witnessing sheet, red dot when verdict-soon items exist -->
+  <div class="see-all">
+    <div class="see-all-left">
+      <span class="urgent-dot"></span>
+      <span>All 7 you're witnessing</span>
+    </div>
+    <span>→</span>
+  </div>
+
+  <div class="footer-cta">
+    <span>Make a vow</span>
+    <span>→</span>
+  </div>
+
+</div>
+</body>
+</html>

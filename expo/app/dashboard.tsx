@@ -5,7 +5,6 @@ import { ChevronLeft, ChevronRight, Settings } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Animated,
   FlatList,
   Linking,
@@ -25,16 +24,12 @@ import {
   getMyVows,
   getRecentVows,
   getWitnessingVows,
-  acceptChallenge,
-  declineChallenge,
 } from '@/lib/vow-api';
 import { supabase } from '@/lib/supabase';
 
 import {
   buildDashboardList,
   computeStats,
-  classifyCardState,
-  getTier,
   getCountdownText,
   getProgress,
   getProgressColor,
@@ -45,6 +40,13 @@ import {
   type SortedVow,
   type CardState,
 } from '@/lib/dashboard-sort';
+
+function openWebFlow(path: string) {
+  router.push({
+    pathname: '/external-web',
+    params: { url: encodeURIComponent(`https://unbreakablevow.app${path}`) },
+  } as any);
+}
 
 // ---------------------------------------------------------------------------
 // Card visual styles (PRD Section 5.3)
@@ -196,10 +198,6 @@ function hasChevron(state: CardState): boolean {
   }
 }
 
-function hasActionButtons(state: CardState): boolean {
-  return state === 'M1' || state === 'M3' || state === 'M11' || state === 'W1' || state === 'T1';
-}
-
 function shouldShowProgress(state: CardState, vow: DashboardVow): boolean {
   if (state === 'M8' || state === 'M9' || state === 'T1') return false;
   return !!(vow.starts_at && vow.ends_at);
@@ -241,13 +239,9 @@ function PulsingDot({ color, pulse }: { color: string; pulse: boolean }) {
 function DashboardCard({
   item,
   onTap,
-  onAcceptChallenge,
-  onDeclineChallenge,
 }: {
   item: SortedVow;
   onTap: () => void;
-  onAcceptChallenge?: (token: string) => void;
-  onDeclineChallenge?: (token: string) => void;
 }) {
   const { vow, state } = item;
   const scaleAnim = useRef(new Animated.Value(1)).current;
@@ -346,27 +340,26 @@ function DashboardCard({
         {state === 'W1' && (
           <Pressable
             style={styles.blueBtn}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/witness-verdict', params: { vowId: vow.id } }); }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              if (vow.witness_invite_token) openWebFlow(`/w/${vow.witness_invite_token}/verdict`);
+              else router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
+            }}
           >
             <Text style={styles.blueBtnText}>Deliver your verdict →</Text>
           </Pressable>
         )}
 
         {state === 'T1' && vow.challenge_invite_token && (
-          <View style={styles.actionRow}>
-            <Pressable
-              style={styles.goldBtn}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAcceptChallenge?.(vow.challenge_invite_token!); }}
-            >
-              <Text style={styles.goldBtnText}>Accept</Text>
-            </Pressable>
-            <Pressable
-              style={styles.mutedBtn}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onDeclineChallenge?.(vow.challenge_invite_token!); }}
-            >
-              <Text style={styles.mutedBtnText}>Decline</Text>
-            </Pressable>
-          </View>
+          <Pressable
+            style={styles.goldBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              openWebFlow(`/c/${vow.challenge_invite_token}`);
+            }}
+          >
+            <Text style={styles.goldBtnText}>Open dare →</Text>
+          </Pressable>
         )}
       </Pressable>
     </Animated.View>
@@ -379,12 +372,8 @@ function DashboardCard({
 
 function DashboardHero({
   item,
-  onAcceptChallenge,
-  onDeclineChallenge,
 }: {
   item: SortedVow;
-  onAcceptChallenge?: (token: string) => void;
-  onDeclineChallenge?: (token: string) => void;
 }) {
   const { vow, state } = item;
   const progress = getProgress(vow.starts_at, vow.ends_at);
@@ -489,13 +478,13 @@ function DashboardHero({
       <View style={{ flex: 1, minHeight: 40 }} />
 
       {/* Hero CTA */}
-      <HeroCTA state={state} vow={vow} onAcceptChallenge={onAcceptChallenge} onDeclineChallenge={onDeclineChallenge} />
+      <HeroCTA state={state} vow={vow} />
 
       {/* Secondary link */}
       {state !== 'T1' && (
         <Pressable
           style={styles.secondaryLink}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/'); }}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/quick-vow'); }}
         >
           <Text style={styles.secondaryLinkText}>Make a vow →</Text>
         </Pressable>
@@ -507,13 +496,9 @@ function DashboardHero({
 function HeroCTA({
   state,
   vow,
-  onAcceptChallenge,
-  onDeclineChallenge,
 }: {
   state: CardState;
   vow: DashboardVow;
-  onAcceptChallenge?: (token: string) => void;
-  onDeclineChallenge?: (token: string) => void;
 }) {
   const targetName = vow.target_display_name || 'them';
 
@@ -546,7 +531,7 @@ function HeroCTA({
     case 'M2':
       return (
         <View style={{ gap: 8 }}>
-          <GoldButton label="Make a new vow →" onPress={() => router.push('/')} />
+          <GoldButton label="Make a new vow →" onPress={() => router.push('/quick-vow')} />
           {vow.witness_phone && (
             <Pressable style={styles.secondaryLink} onPress={() => Linking.openURL(`sms:${vow.witness_phone}`)}>
               <Text style={styles.secondaryLinkText}>Nudge {vow.witness_name}</Text>
@@ -571,35 +556,32 @@ function HeroCTA({
       return <GoldButton label="Seal this vow" onPress={() => router.push({ pathname: '/seal', params: { vowId: vow.id } })} />;
     case 'M9':
       return <GoldButton label={`Nudge ${targetName}`} onPress={() => { if (vow.target_phone) Linking.openURL(`sms:${vow.target_phone}`); }} />;
-    case 'M10': case 'M11':
-      return <GoldButton label={state === 'M11' ? 'Deliver verdict →' : 'View dare'} onPress={() => router.push({ pathname: '/vow-detail', params: { vowId: vow.id } })} />;
+    case 'M10':
+      return <GoldButton label="View dare" onPress={() => router.push({ pathname: '/vow-detail', params: { vowId: vow.id } })} />;
+    case 'M11':
+      return <GoldButton label="Deliver verdict →" onPress={() => {
+        if (vow.witness_invite_token) openWebFlow(`/w/${vow.witness_invite_token}/verdict`);
+        else router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
+      }} />;
     case 'W1':
       return (
-        <Pressable style={styles.heroBlueBtn} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/witness-verdict', params: { vowId: vow.id } }); }}>
+        <Pressable style={styles.heroBlueBtn} onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          if (vow.witness_invite_token) openWebFlow(`/w/${vow.witness_invite_token}/verdict`);
+          else router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
+        }}>
           <Text style={styles.heroBlueBtnText}>Deliver your verdict →</Text>
         </Pressable>
       );
     case 'W2':
-      return <GoldButton label={`Send ${vow.maker_display_name || 'them'} a message`} onPress={() => router.push({ pathname: '/vow-detail', params: { vowId: vow.id } })} />;
+      return <GoldButton label="Open witness page →" onPress={() => {
+        if (vow.witness_invite_token) openWebFlow(`/w/${vow.witness_invite_token}`);
+        else router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
+      }} />;
     case 'T1':
-      return (
-        <View style={styles.actionRow}>
-          <Pressable
-            style={[styles.heroBtnWrap, { flex: 1 }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); onAcceptChallenge?.(vow.challenge_invite_token!); }}
-          >
-            <LinearGradient colors={[palette.goldBright, palette.gold, palette.goldDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroBtnGradient}>
-              <Text style={styles.heroBtnDarkText}>Accept</Text>
-            </LinearGradient>
-          </Pressable>
-          <Pressable
-            style={[styles.heroMutedBtn, { flex: 1 }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onDeclineChallenge?.(vow.challenge_invite_token!); }}
-          >
-            <Text style={styles.heroMutedBtnText}>Decline</Text>
-          </Pressable>
-        </View>
-      );
+      return <GoldButton label="Open dare →" onPress={() => {
+        if (vow.challenge_invite_token) openWebFlow(`/c/${vow.challenge_invite_token}`);
+      }} />;
     case 'T2': case 'T3':
       return <GoldButton label={state === 'T2' ? 'Check in' : 'View status'} onPress={() => router.push({ pathname: '/vow-detail', params: { vowId: vow.id } })} />;
     default:
@@ -692,39 +674,6 @@ export default function VowDashboard() {
     setRefreshing(true);
     await fetchAll();
     setRefreshing(false);
-  }, [fetchAll]);
-
-  const handleAcceptChallenge = useCallback(async (token: string) => {
-    try {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const result = await acceptChallenge(token);
-      if (result.success) {
-        await fetchAll();
-      } else {
-        Alert.alert('Error', result.error || 'Could not accept challenge.');
-      }
-    } catch {
-      Alert.alert('Error', 'Something went wrong.');
-    }
-  }, [fetchAll]);
-
-  const handleDeclineChallenge = useCallback(async (token: string) => {
-    Alert.alert('Decline challenge?', 'This cannot be undone.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Decline',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            const result = await declineChallenge(token);
-            if (result.success) await fetchAll();
-            else Alert.alert('Error', result.error || 'Could not decline challenge.');
-          } catch {
-            Alert.alert('Error', 'Something went wrong.');
-          }
-        },
-      },
-    ]);
   }, [fetchAll]);
 
   // --- Computed state ---
@@ -849,8 +798,6 @@ export default function VowDashboard() {
             <Header />
             <DashboardHero
               item={myDashboardVows[0]}
-              onAcceptChallenge={handleAcceptChallenge}
-              onDeclineChallenge={handleDeclineChallenge}
             />
           </ScrollView>
         </SafeAreaView>
@@ -876,8 +823,6 @@ export default function VowDashboard() {
             const target = getTapTarget(item.data);
             router.push(target as any);
           }}
-          onAcceptChallenge={item.data.role !== 'witness' ? handleAcceptChallenge : undefined}
-          onDeclineChallenge={item.data.role !== 'witness' ? handleDeclineChallenge : undefined}
         />
       </View>
     );
@@ -901,7 +846,7 @@ export default function VowDashboard() {
       )}
       <Pressable
         style={({ pressed }) => [styles.makeVowBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/'); }}
+        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/quick-vow'); }}
       >
         <LinearGradient
           colors={[palette.goldBright, palette.gold, palette.goldDeep]}

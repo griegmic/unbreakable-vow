@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.22);
+    --imsg: #34C759; --imsg-deep: #2AA84A;
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 620px 480px at 50% 32%, rgba(200,155,60,0.16), transparent 62%),
+      radial-gradient(ellipse 900px 500px at 50% 100%, rgba(200,155,60,0.05), transparent 70%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 120px 36px 30px;
+    align-items: center;
+    text-align: center;
+  }
+
+  /* Wax seal — big, earned, breathing */
+  .seal-wrap {
+    position: relative;
+    width: 112px; height: 112px;
+    margin-bottom: 40px;
+  }
+  .seal-halo {
+    position: absolute; inset: -28px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,182,86,0.22), transparent 62%);
+    animation: halo 3.2s ease-in-out infinite;
+  }
+  @keyframes halo {
+    0%,100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.08); opacity: 0.85; }
+  }
+  .seal {
+    width: 112px; height: 112px; border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 22%, #F2C766 0%, #E8B656 30%, #C89B3C 62%, #8B6820 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow:
+      0 3px 0 rgba(255,228,150,0.35) inset,
+      0 -3px 12px rgba(139,104,32,0.65) inset,
+      0 14px 40px rgba(200,155,60,0.32),
+      0 0 0 1px rgba(139,104,32,0.45);
+    font-family: var(--serif); font-weight: 600;
+    font-variation-settings: "opsz" 144;
+    font-size: 44px; color: #1A1205;
+    letter-spacing: -0.03em;
+    font-style: italic;
+    position: relative;
+  }
+  /* Subtle inner rim to read as wax */
+  .seal::before {
+    content: ""; position: absolute; inset: 6px;
+    border-radius: 50%;
+    border: 1px solid rgba(139,104,32,0.28);
+    pointer-events: none;
+  }
+
+  h1 {
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 52px; line-height: 1; letter-spacing: -0.035em;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .sub {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 17px; line-height: 1.45;
+    color: var(--text-mute);
+    margin-bottom: 40px;
+    max-width: 300px;
+  }
+  .sub b {
+    color: var(--gold);
+    font-weight: 500;
+    font-style: italic;
+  }
+
+  /* Breathing space */
+  .spacer { flex: 1; }
+
+  /* Primary — iMessage green, anchored bottom */
+  .cta {
+    width: 100%; height: 62px; border-radius: 14px;
+    background: linear-gradient(180deg, var(--imsg), var(--imsg-deep));
+    color: white;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 18px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.22) inset,
+      0 12px 32px rgba(52,199,89,0.26);
+  }
+
+  .fallback {
+    margin-top: 18px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+    letter-spacing: 0.02em;
+  }
+  .fallback a {
+    color: var(--text-mute);
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 1px;
+  }
+
+  .footer { margin-top: 24px; }
+  .micro {
+    font-size: 10.5px; color: var(--text-dim);
+    letter-spacing: 0.08em; line-height: 1.5;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="seal-wrap">
+    <div class="seal-halo"></div>
+    <div class="seal">UV</div>
+  </div>
+
+  <h1>Sealed.</h1>
+  <div class="sub">Now tell <b>Nick</b>.<br/>He doesn't know yet.</div>
+
+  <div class="spacer"></div>
+
+  <div class="cta">
+    <span>Tell Nick</span>
+    <span>→</span>
+  </div>
+
+  <div class="fallback"><a>or share link here</a></div>
+
+  <div class="footer">
+    <div class="micro">Nothing charges unless you break it</div>
+  </div>
+</div>
+</body>
+</html>

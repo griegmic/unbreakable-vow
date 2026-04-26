@@ -214,6 +214,26 @@ function VowKeptContent() {
       textAlign: 'center',
       position: 'relative',
     }}>
+      <button
+        type="button"
+        onClick={() => router.push('/dashboard')}
+        style={{
+          position: 'absolute',
+          top: 18,
+          left: 22,
+          background: 'none',
+          border: 'none',
+          color: 'var(--uv-text-faint)',
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 13,
+          fontWeight: 650,
+          cursor: 'pointer',
+          padding: 0,
+        }}
+      >
+        Done
+      </button>
+
       {/* Confetti dots — charity variant only */}
       {!isAnti && (
         <div style={{ position: 'absolute', pointerEvents: 'none', inset: 0 }}>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S19-DECLINED · Witness who passed returns to the link</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.18);
+    --gold-soft: rgba(200,155,60,0.08);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse 580px 380px at 50% 28%, rgba(200,155,60,0.05), transparent 64%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 130px 36px 40px;
+    align-items: center; text-align: center;
+  }
+
+  /* Faded wax seal — past tense, soft */
+  .seal-wrap {
+    position: relative;
+    width: 76px; height: 76px;
+    margin-bottom: 30px;
+    opacity: 0.55;
+  }
+  .seal {
+    width: 76px; height: 76px; border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 22%, #B8954A 0%, #A88840 30%, #8B6820 62%, #5C4514 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow:
+      0 1px 0 rgba(180,150,80,0.25) inset,
+      0 -2px 6px rgba(60,45,15,0.6) inset,
+      0 0 0 1px rgba(80,60,18,0.45);
+    font-family: var(--serif); font-weight: 600;
+    font-variation-settings: "opsz" 144;
+    font-size: 30px; color: #1A1205;
+    letter-spacing: -0.03em; font-style: italic;
+    position: relative;
+  }
+  .seal::before {
+    content: ""; position: absolute; inset: 4px;
+    border-radius: 50%;
+    border: 1px solid rgba(80,60,18,0.30);
+    pointer-events: none;
+  }
+
+  .eyebrow {
+    font-family: var(--sans); font-size: 10px; font-weight: 500;
+    letter-spacing: 0.36em; text-transform: uppercase;
+    color: var(--text-dim); margin-bottom: 20px;
+  }
+
+  h1 {
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 36px; line-height: 1.05; letter-spacing: -0.025em;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .sub {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 16px; line-height: 1.45;
+    color: var(--text-mute);
+    margin-bottom: 28px;
+    max-width: 300px;
+  }
+  .sub b { color: var(--text); font-weight: 500; font-style: italic; }
+
+  .spacer { flex: 1; }
+
+  /* Soft outline secondary — message the maker */
+  .cta-outline {
+    width: 100%; height: 52px; border-radius: 14px;
+    background: transparent;
+    border: 1px solid var(--gold-line);
+    color: var(--gold-bright);
+    font-family: var(--serif); font-weight: 500; font-style: italic;
+    font-size: 14.5px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .cta-outline .arrow { font-style: normal; }
+
+  .tertiary {
+    font-family: var(--serif); font-style: italic;
+    font-size: 13.5px; color: var(--text-mute);
+    text-align: center;
+  }
+  .tertiary a {
+    color: var(--gold-bright); font-weight: 500;
+    font-style: italic;
+    border-bottom: 1px dotted var(--gold-line);
+    padding-bottom: 1px;
+    margin-left: 4px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <div class="seal-wrap">
+    <div class="seal">UV</div>
+  </div>
+
+  <div class="eyebrow">You passed on this one</div>
+
+  <h1>You sat this one out.</h1>
+
+  <div class="sub">
+    <b>Joey</b> knows you declined.<br/>
+    He found someone else, or let the vow go.
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- Soft secondary — change of heart -->
+  <div class="cta-outline">
+    <span>Change of heart? Text Joey</span>
+    <span class="arrow">→</span>
+  </div>
+
+  <div class="tertiary">
+    Make one of your own?<a>Make a vow →</a>
+  </div>
+
+</div>
+</body>
+</html>

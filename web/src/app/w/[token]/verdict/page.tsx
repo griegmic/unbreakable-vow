@@ -1,9 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
+import Link from 'next/link';
 import VerdictClient from './client';
 import VerdictNotFound from './not-found-client';
 
 interface Props {
   params: Promise<{ token: string }>;
+  searchParams?: Promise<{ early?: string }>;
 }
 
 function isPhoneLikeName(value: string | null | undefined): boolean {
@@ -18,8 +20,10 @@ function cleanPersonName(value: string | null | undefined, fallback: string): st
   return trimmed;
 }
 
-export default async function VerdictPage({ params }: Props) {
+export default async function VerdictPage({ params, searchParams }: Props) {
   const { token } = await params;
+  const query = searchParams ? await searchParams : {};
+  const isEarlyCompletion = query.early === '1';
   // Use service role key — RLS witness policies were removed for security.
   // This runs server-side only; SUPABASE_SERVICE_ROLE_KEY is never exposed to browser.
   const supabase = createClient(
@@ -47,6 +51,14 @@ export default async function VerdictPage({ params }: Props) {
           <p style={{ fontSize: 15, color: 'var(--uv-text-muted)' }}>
             This vow hasn&apos;t reached its verdict date yet. You&apos;ll get a notification when it&apos;s time to judge.
           </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginTop: 20 }}>
+            <Link href={`/w/${token}`} style={{ color: 'var(--uv-gold-bright)', fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+              Back to vow
+            </Link>
+            <Link href="/quick-vow" style={{ color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+              Make a vow
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -82,10 +94,18 @@ export default async function VerdictPage({ params }: Props) {
           <p style={{ fontSize: 15, color: 'var(--uv-text-muted)' }}>
             This vow has already been judged: <span style={{ fontWeight: 600, color: vow.verdict === 'kept' ? 'var(--uv-success)' : 'var(--uv-danger)' }}>{vow.verdict}</span>.
           </p>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 18, marginTop: 20 }}>
+            <Link href={`/outcome/${vow.id}`} style={{ color: 'var(--uv-gold-bright)', fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
+              View outcome
+            </Link>
+            <Link href="/quick-vow" style={{ color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
+              Make a vow
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
-  return <VerdictClient vow={vow} token={token} makerName={makerName} targetName={vow.vow_type === 'challenge' ? targetName : undefined} />;
+  return <VerdictClient vow={vow} token={token} makerName={makerName} targetName={vow.vow_type === 'challenge' ? targetName : undefined} isEarlyCompletion={isEarlyCompletion} />;
 }

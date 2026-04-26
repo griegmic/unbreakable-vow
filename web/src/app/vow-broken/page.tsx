@@ -135,7 +135,28 @@ function VowBrokenContent() {
       display: 'flex', flexDirection: 'column', alignItems: 'center',
       padding: isAnti ? '70px 28px 28px' : '84px 28px 28px',
       textAlign: 'center',
+      position: 'relative',
     }}>
+      <button
+        type="button"
+        onClick={() => router.push('/dashboard')}
+        style={{
+          position: 'absolute',
+          top: 18,
+          left: 22,
+          background: 'none',
+          border: 'none',
+          color: 'var(--uv-text-faint)',
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 13,
+          fontWeight: 650,
+          cursor: 'pointer',
+          padding: 0,
+        }}
+      >
+        Done
+      </button>
+
       {/* Hero glyph */}
       <div style={{ marginBottom: isAnti ? 0 : 22 }}>
         {isAnti ? <BrokenSealWithShieldGlyph /> : <BrokenSealGlyph />}
@@ -289,9 +310,9 @@ function VowBrokenContent() {
 
       {/* Primary CTA — forward motion */}
       <div style={{ width: '100%', marginBottom: isAnti ? 14 : 16 }}>
-        <GoldCTA
-          label={isAnti ? "Make a new vow \u2014 let's make this back \u2192" : "Make a new vow \u2192"}
-          onPress={() => router.push('/')}
+          <GoldCTA
+            label={isAnti ? "Make a new vow \u2014 let's make this back \u2192" : "Make a new vow \u2192"}
+          onPress={() => router.push('/quick-vow')}
         />
       </div>
 

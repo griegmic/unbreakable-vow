@@ -1,7 +1,5 @@
 'use client';
 
-import { type ReactNode } from 'react';
-
 interface GoldCTAProps {
   label: string;
   onPress: () => void;
@@ -24,10 +22,10 @@ export function GoldCTA({ label, onPress, disabled = false, variant = 'default',
           border: 'none',
           background: '#F4ECDB',
           color: '#1A1205',
-          fontFamily: 'var(--uv-font-serif)',
-          fontSize: 17,
-          fontWeight: 500,
-          letterSpacing: '0.005em',
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 16,
+          fontWeight: 700,
+          letterSpacing: '0',
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
           transition: 'transform 100ms ease',
@@ -85,10 +83,10 @@ export function GoldCTA({ label, onPress, disabled = false, variant = 'default',
         border: 'none',
         background: disabled ? 'var(--uv-bg-elevated)' : bg,
         color: disabled ? 'var(--uv-text-dim)' : textColor,
-        fontFamily: 'var(--uv-font-serif)',
-        fontSize: 17,
-        fontWeight: 500,
-        letterSpacing: '0.005em',
+        fontFamily: 'var(--uv-font-sans)',
+        fontSize: 16,
+        fontWeight: 700,
+        letterSpacing: '0',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.5 : 1,
         transition: 'transform 100ms ease, opacity 100ms ease',

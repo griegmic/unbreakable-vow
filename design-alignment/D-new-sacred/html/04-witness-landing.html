@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1E1C1F;
+    --bg-soft: #231F22;
+    --surface: #2A272A;
+    --surface-2: #322F32;
+    --text: #ECE3D6;
+    --text-mute: #9B9283;
+    --text-dim: #66625A;
+    --rose: #C58B79;
+    --rose-soft: rgba(197,139,121,0.10);
+    --rose-line: rgba(197,139,121,0.28);
+    --sage: #8CA690;
+    --sage-soft: rgba(140,166,144,0.10);
+    --terra: #B85450;
+    --rule: rgba(236,227,214,0.07);
+    --display: "Marcellus", Georgia, serif;
+    --sans: "Instrument Sans", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 100% 60% at 50% 0%, rgba(197,139,121,0.08), transparent);
+    color: var(--text); font-family: var(--sans);
+    font-size: 15px; font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 34px 26px 28px; overflow: hidden; }
+
+  .brand {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px; margin-bottom: 20px;
+  }
+  .symbol {
+    width: 10px; height: 10px; border-radius: 50%;
+    border: 1px solid var(--rose); position: relative;
+  }
+  .symbol::before {
+    content: ""; position: absolute; inset: 2.5px; border-radius: 50%;
+    background: var(--rose); opacity: 0.6;
+  }
+  .wm {
+    font-family: var(--display); font-size: 11px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-mute); font-weight: 400;
+  }
+
+  .summons {
+    text-align: center; font-family: var(--sans); font-style: italic;
+    font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--rose); font-weight: 500; margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 400;
+    font-size: 32px; line-height: 1.12; letter-spacing: -0.008em;
+    text-align: center; margin-bottom: 6px;
+  }
+  h1 .name { color: var(--rose); }
+  .ask-sub {
+    text-align: center; font-family: var(--sans);
+    font-size: 13.5px; color: var(--text-mute); font-weight: 400;
+    margin-bottom: 24px; line-height: 1.5;
+  }
+
+  /* The vow — soft card w/ embossed gold rule */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 20px;
+    padding: 24px 22px 20px;
+    margin-bottom: 18px;
+    position: relative;
+  }
+  .card::before {
+    content: ""; position: absolute; top: 14px; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--rose-line), transparent);
+  }
+  .doc-label {
+    font-family: var(--sans); font-size: 10px; font-style: italic;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--rose); font-weight: 500;
+    text-align: center; margin-bottom: 14px;
+  }
+  .vow-quote {
+    font-family: var(--display); font-weight: 400;
+    font-size: 22px; line-height: 1.3; color: var(--text);
+    text-align: center; letter-spacing: -0.005em;
+    padding-bottom: 16px; margin-bottom: 14px;
+    border-bottom: 1px solid var(--rule);
+  }
+  .signed {
+    text-align: center; font-family: var(--sans); font-style: italic;
+    font-size: 11.5px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .signed b { color: var(--text-mute); font-style: normal; font-weight: 500; }
+
+  /* Meta — horizontal pair */
+  .meta {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+    margin-bottom: 16px;
+  }
+  .meta-cell {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 14px 16px;
+  }
+  .meta-cell .k {
+    font-family: var(--sans); font-size: 10px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .meta-cell .v {
+    font-family: var(--display); font-size: 18px;
+    color: var(--text); letter-spacing: -0.005em;
+    font-feature-settings: "tnum";
+  }
+  .meta-cell .v.terra { color: var(--terra); }
+  .meta-cell .v .small {
+    display: block; font-family: var(--sans); font-style: italic;
+    font-size: 11.5px; color: var(--text-mute); font-weight: 400;
+    letter-spacing: 0; text-transform: none; margin-top: 2px;
+  }
+
+  .role {
+    font-family: var(--sans); font-style: italic; font-size: 13px;
+    color: var(--text-mute); text-align: center; line-height: 1.55;
+    margin-bottom: 14px; font-weight: 400;
+  }
+  .role b { color: var(--text); font-weight: 500; font-style: normal; }
+
+  .footer { margin-top: auto; }
+  .actions { display: flex; flex-direction: column; gap: 8px; }
+  .cta {
+    width: 100%; height: 56px; border-radius: 28px;
+    background: var(--rose); color: #1F1714;
+    font-family: var(--display); font-size: 16px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    border: 0;
+  }
+  .cta-sec {
+    width: 100%; height: 46px; border-radius: 24px;
+    background: transparent; border: 1px solid var(--rule);
+    color: var(--text-mute);
+    font-family: var(--sans); font-size: 12.5px; font-weight: 500;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .what {
+    text-align: center; font-family: var(--sans); font-style: italic;
+    font-size: 12px; color: var(--text-dim); margin-top: 12px;
+    line-height: 1.5;
+  }
+  .what a { color: var(--rose); text-decoration: none; font-style: normal; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="brand">
+    <div class="symbol"></div>
+    <div class="wm">Unbreakable · Vow</div>
+  </div>
+
+  <div class="summons">— Summoned to witness —</div>
+  <h1><span class="name">Joey</span> named you<br/>as his witness.</h1>
+  <div class="ask-sub">He's made a vow. You hold the final word.</div>
+
+  <div class="card">
+    <div class="doc-label">— The Vow —</div>
+    <div class="vow-quote">I will go to the gym three times this week — Mon, Wed, Fri.</div>
+    <div class="signed">— <b>Joey Rosenfield</b></div>
+  </div>
+
+  <div class="meta">
+    <div class="meta-cell">
+      <div class="k">On the line</div>
+      <div class="v terra">$100<span class="small">to NRA, if broken</span></div>
+    </div>
+    <div class="meta-cell">
+      <div class="k">Verdict by</div>
+      <div class="v">Sun, Apr 26<span class="small">at 9:00 PM</span></div>
+    </div>
+  </div>
+
+  <div class="role">Your part: <b>call it kept or broken.</b><br/>One quiet decision, one Sunday from now.</div>
+
+  <div class="footer">
+    <div class="actions">
+      <div class="cta">I'll witness it <span>→</span></div>
+      <div class="cta-sec">Pass — Can't this time</div>
+    </div>
+    <div class="what">What is this? <a href="#">How Unbreakable Vow works →</a></div>
+  </div>
+</div>
+</body>
+</html>

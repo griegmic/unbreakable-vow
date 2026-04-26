@@ -368,6 +368,48 @@ deno_version = 2
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 
+# Production uses Supabase JWT Signing Keys (ES256). Supabase's implicit Edge
+# Function JWT verifier is not compatible with those tokens, so each deployed
+# function skips gateway verification and enforces its own auth/token checks.
+[functions.accept-challenge]
+verify_jwt = false
+
+[functions.accept-witness]
+verify_jwt = false
+
+[functions.create-payment-intent]
+verify_jwt = false
+
+[functions.cron-runner]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false
+
+[functions.save-card]
+verify_jwt = false
+
+[functions.request-early-completion]
+verify_jwt = false
+
+[functions.seal-vow]
+verify_jwt = false
+
+[functions.send-sms]
+verify_jwt = false
+
+[functions.submit-verdict]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
+
+[functions.verdict-page]
+verify_jwt = false
+
+[functions.void-vow]
+verify_jwt = false
+
 [analytics]
 enabled = true
 port = 54327

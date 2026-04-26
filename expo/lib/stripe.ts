@@ -80,15 +80,30 @@ export async function saveCard(vowId: string): Promise<SaveCardResult> {
 
 // ── Payment sheet: SetupIntent mode (save card, no charge) ──
 
-export async function setupPaymentSheetForSetup(clientSecret: string): Promise<void> {
+export async function setupPaymentSheetForSetup(clientSecret: string, stakeAmountCents?: number): Promise<void> {
   if (Platform.OS === 'web') throw new Error('Stripe is not supported on web');
   const { initPaymentSheet } = await import('@stripe/stripe-react-native');
+  const displayAmount = stakeAmountCents && stakeAmountCents > 0
+    ? (stakeAmountCents / 100).toFixed(2)
+    : undefined;
   const { error } = await initPaymentSheet({
     setupIntentClientSecret: clientSecret, // SetupIntent, not PaymentIntent
     merchantDisplayName: 'Unbreakable Vow',
     style: 'alwaysDark',
-    primaryButtonLabel: 'Save card',
-    googlePay: { merchantCountryCode: 'US', testEnv: false },
+    primaryButtonLabel: 'Save payment method',
+    applePay: {
+      merchantCountryCode: 'US',
+      cartItems: displayAmount
+        ? [{ paymentType: 'Immediate', isPending: true, label: 'If broken', amount: displayAmount }]
+        : undefined,
+    },
+    googlePay: {
+      merchantCountryCode: 'US',
+      currencyCode: 'USD',
+      amount: displayAmount,
+      label: 'If broken',
+      testEnv: false,
+    },
     defaultBillingDetails: { address: { country: 'US' } },
   });
 

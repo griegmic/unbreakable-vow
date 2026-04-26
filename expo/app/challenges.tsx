@@ -83,7 +83,7 @@ export default function ChallengesScreen() {
 
       <View style={styles.bottomNote}>
         <Text style={styles.bottomNoteText}>
-          Challenges launch soon. We'll notify you when they're live.
+          {"Challenges launch soon. We'll notify you when they're live."}
         </Text>
       </View>
     </RitualScreen>

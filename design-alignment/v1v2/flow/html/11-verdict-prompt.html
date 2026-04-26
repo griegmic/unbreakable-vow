@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+    --green: #4ade80;
+    --crimson: #C84A4A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse at top, rgba(200,155,60,0.06), transparent 55%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 30px 24px 28px; }
+
+  .brand { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 18px; }
+  .seal {
+    width: 18px; height: 18px; border: 1px solid var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    transform: rotate(45deg);
+  }
+  .seal::before { content: ""; width: 4px; height: 4px; background: var(--gold); }
+  .wordmark {
+    font-family: var(--serif); font-size: 13px; font-weight: 500;
+    color: var(--text-mute);
+  }
+  .wordmark em { color: var(--gold); font-style: italic; }
+
+  .stamp {
+    text-align: center;
+    font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500;
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 34px; line-height: 1.05; letter-spacing: -0.02em;
+    text-align: center; margin-bottom: 22px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+
+  /* Vow restated — quieter than landing */
+  .doc {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 6px;
+    padding: 18px 20px 16px;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .doc::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .doc-label {
+    font-size: 9.5px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500; margin-bottom: 10px; text-align: center;
+  }
+  .vow-quote {
+    font-family: var(--serif); font-size: 19px; line-height: 1.3;
+    color: var(--text); font-style: italic; font-weight: 400;
+    text-align: center; letter-spacing: -0.005em;
+    padding: 4px 0 12px;
+    border-bottom: 1px dashed var(--rule);
+    margin-bottom: 12px;
+  }
+  .meta {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px 18px;
+  }
+  .meta-k {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 4px;
+  }
+  .meta-v {
+    font-family: var(--serif); font-size: 14px; font-weight: 500;
+    color: var(--text); letter-spacing: -0.005em;
+    font-feature-settings: "tnum";
+  }
+  .meta-v .small { font-size: 11px; color: var(--text-mute); font-weight: 400; font-style: italic; margin-top: 2px; display: block; }
+
+  /* The big ask */
+  .ask-label {
+    text-align: center;
+    font-size: 10px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 14px;
+  }
+  .ask-h {
+    text-align: center;
+    font-family: var(--serif); font-weight: 400;
+    font-style: italic;
+    font-size: 22px; line-height: 1.25; letter-spacing: -0.01em;
+    color: var(--text);
+    margin-bottom: 22px;
+  }
+
+  /* Two big buttons */
+  .verdict-btns {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 18px;
+  }
+  .vb {
+    height: 68px; border-radius: 16px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 17px; letter-spacing: -0.005em;
+    border: 1px solid var(--rule);
+    background: var(--surface);
+    color: var(--text);
+    gap: 2px;
+  }
+  .vb .sub {
+    font-family: var(--sans); font-size: 10px;
+    letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .vb.kept {
+    background: rgba(74,222,128,0.06); border-color: rgba(74,222,128,0.3);
+  }
+  .vb.kept .label { color: var(--green); }
+  .vb.broken {
+    background: rgba(200,74,74,0.05); border-color: rgba(200,74,74,0.25);
+  }
+  .vb.broken .label { color: #E58383; }
+
+  .footer { margin-top: auto; }
+  .think-it-over {
+    text-align: center;
+    font-size: 11px; color: var(--text-dim); line-height: 1.5;
+    margin-bottom: 6px;
+  }
+  .think-it-over a { color: var(--text-mute); border-bottom: 1px dotted var(--rule); }
+  .micro {
+    text-align: center; font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-dim);
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="brand">
+    <div class="seal"></div>
+    <div class="wordmark">Unbreakable <em>Vow</em></div>
+  </div>
+
+  <div class="stamp">— Verdict day —</div>
+  <h1>Joey's vow<br/>is <em>up.</em></h1>
+
+  <div class="doc">
+    <div class="doc-label">— The Vow —</div>
+    <div class="vow-quote">"I'll go to the gym Mon, Wed &amp; Fri this week."</div>
+    <div class="meta">
+      <div>
+        <div class="meta-k">On the line</div>
+        <div class="meta-v">$100<span class="small">to NRA, if broken</span></div>
+      </div>
+      <div>
+        <div class="meta-k">Vow ended</div>
+        <div class="meta-v">2h ago<span class="small">Sun, 9:00 PM</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ask-label">Your call</div>
+  <div class="ask-h">Did Joey <em>keep his word?</em></div>
+
+  <div class="verdict-btns">
+    <div class="vb kept">
+      <div class="label">Yes</div>
+      <div class="sub">Kept it</div>
+    </div>
+    <div class="vb broken">
+      <div class="label">No</div>
+      <div class="sub">Broke it</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="think-it-over">Need to check with him? <a>Open Messages with Joey</a></div>
+    <div class="micro">Be honest. He's counting on it.</div>
+  </div>
+</div>
+</body>
+</html>

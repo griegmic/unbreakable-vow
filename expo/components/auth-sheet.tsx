@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { ArrowLeft, Mail, MoveRight, Phone } from 'lucide-react-native';
+import { ArrowLeft, Mail } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -301,7 +301,7 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
             <ArrowLeft color={palette.textSecondary} size={16} />
           </Pressable>
           <Text style={s.sheetTitle}>Enter your email</Text>
-          <Text style={s.sheetSubtitle}>We'll send a 6-digit code.</Text>
+          <Text style={s.sheetSubtitle}>{"We'll send a 6-digit code."}</Text>
 
           <View style={s.phoneInputShell}>
             <TextInput
@@ -374,7 +374,7 @@ function AuthSheet({ visible, onDismiss, onAuthSuccess }: AuthSheetProps) {
           </Text>
         </Pressable>
 
-        <Text style={s.reassurance}>We'll text you a code. No password ever.</Text>
+        <Text style={s.reassurance}>{"We'll text you a code. No password ever."}</Text>
 
         {/* Secondary options */}
         <View style={s.secondaryDivider}>

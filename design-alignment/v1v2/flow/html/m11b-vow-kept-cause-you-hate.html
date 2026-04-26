@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M11B · Vow Kept · Cause-You-Hate</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --green: #4ade80; --green-soft: rgba(74,222,128,0.12);
+    --red: #C8443A; --red-deep: #8C2D26;
+    --red-soft: rgba(200,68,58,0.14);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 700px 460px at 50% 26%, rgba(232,182,86,0.16), transparent 62%),
+      radial-gradient(ellipse 540px 320px at 50% 26%, rgba(200,68,58,0.10), transparent 62%),
+      radial-gradient(ellipse 900px 480px at 50% 100%, rgba(200,155,60,0.05), transparent 70%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 60px 28px 28px;
+    align-items: center; text-align: center;
+  }
+
+  /* Shield hero */
+  .shield-wrap {
+    position: relative;
+    width: 104px; height: 104px;
+    margin-bottom: 22px;
+  }
+  .shield-halo {
+    position: absolute; inset: -34px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle, rgba(232,182,86,0.22), transparent 60%),
+      radial-gradient(circle, rgba(200,68,58,0.10), transparent 64%);
+  }
+  .shield {
+    position: relative; width: 104px; height: 104px;
+    display: flex; align-items: center; justify-content: center;
+    filter: drop-shadow(0 16px 28px rgba(180,80,40,0.30));
+  }
+
+  h1 {
+    font-family: var(--serif); font-weight: 500; font-style: italic;
+    font-variation-settings: "opsz" 144;
+    font-size: 38px; line-height: 1.04; letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  .saved-line {
+    font-family: var(--serif); font-weight: 500; font-style: italic;
+    font-size: 24px; line-height: 1.18; letter-spacing: -0.01em;
+    color: var(--gold-bright);
+    margin-bottom: 12px;
+  }
+  .saved-line .name {
+    color: #E8B656;
+    text-shadow: 0 0 18px rgba(200,68,58,0.3);
+  }
+  .sub {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 14.5px; line-height: 1.4;
+    color: var(--text-mute);
+    margin-bottom: 22px;
+    max-width: 300px;
+  }
+  .sub b { color: var(--text); font-weight: 500; font-style: italic; }
+
+  /* Receipt */
+  .receipt {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 16px 18px 14px;
+    margin-bottom: 18px;
+    position: relative;
+    text-align: left;
+  }
+  .receipt::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .r-label {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 8px;
+  }
+  .r-vow {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 16px; line-height: 1.25; color: var(--text);
+    margin-bottom: 10px;
+  }
+  .r-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0;
+    border-top: 1px dashed var(--rule);
+  }
+  .r-k {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .r-v {
+    font-family: var(--serif); font-weight: 500; font-size: 13.5px;
+    color: var(--text); font-feature-settings: "tnum";
+    display: flex; align-items: center; gap: 6px;
+  }
+  .r-v.green { color: var(--green); }
+  .r-v.saved-from { color: var(--text); }
+  .r-check {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--green-soft);
+    color: var(--green); font-size: 9px; font-weight: 700;
+  }
+  .ban-glyph {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 14px; height: 14px;
+  }
+
+  .spacer { flex: 1; }
+
+  /* Primary CTA */
+  .cta {
+    width: 100%; min-height: 64px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    box-shadow:
+      0 1px 0 rgba(255,220,140,0.3) inset,
+      0 12px 32px rgba(200,155,60,0.26);
+    margin-bottom: 14px;
+    padding: 14px 18px;
+    text-align: center;
+    line-height: 1.18;
+  }
+  .cta span:first-child { flex: 1; text-align: center; }
+
+  /* Outlined secondary — brag CTA */
+  .cta-outline {
+    width: 100%; height: 52px; border-radius: 14px;
+    background: transparent;
+    border: 1px solid var(--gold-line);
+    color: var(--gold-bright);
+    font-family: var(--serif); font-weight: 500; font-style: italic;
+    font-size: 14.5px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+    margin-bottom: 14px;
+    padding: 0 14px;
+    text-align: center;
+    line-height: 1.15;
+  }
+  .cta-outline .arrow { font-style: normal; }
+
+  /* Tertiary text-link row */
+  .secondaries {
+    display: flex; flex-direction: column; gap: 9px;
+  }
+  .sec-link {
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    color: var(--text-mute); letter-spacing: 0.01em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+  }
+  .sec-link.gold { color: var(--gold-bright); }
+  .sec-link .glyph { font-style: italic; }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Shield hero, gold + heraldic red -->
+  <div class="shield-wrap">
+    <div class="shield-halo"></div>
+    <div class="shield">
+      <svg viewBox="0 0 80 96" width="84" height="100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="sg-gold" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#F2C766"/>
+            <stop offset="55%" stop-color="#E8B656"/>
+            <stop offset="100%" stop-color="#8B6820"/>
+          </linearGradient>
+          <linearGradient id="sg-red" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#D8584C"/>
+            <stop offset="100%" stop-color="#8C2D26"/>
+          </linearGradient>
+          <linearGradient id="sg-gold-line" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#E8B656"/>
+            <stop offset="100%" stop-color="#8B6820"/>
+          </linearGradient>
+        </defs>
+        <!-- Outer shield -->
+        <path d="M40 2 L72 10 L72 50 C72 70 56 84 40 92 C24 84 8 70 8 50 L8 10 Z"
+              fill="url(#sg-gold)" stroke="#5C4514" stroke-width="0.8"/>
+        <!-- Inner red field -->
+        <path d="M40 9 L66 15.5 L66 50 C66 66 53 78 40 84.5 C27 78 14 66 14 50 L14 15.5 Z"
+              fill="url(#sg-red)" stroke="#5C4514" stroke-width="0.5"/>
+        <!-- Horizontal heraldic band (chief) -->
+        <path d="M14 32 L66 32 L66 40 L14 40 Z"
+              fill="url(#sg-gold)" stroke="#5C4514" stroke-width="0.4"/>
+        <!-- Centered cross -->
+        <path d="M37 18 L43 18 L43 28 L53 28 L53 34 L43 34 L43 50 L37 50 L37 34 L27 34 L27 28 L37 28 Z"
+              fill="url(#sg-gold-line)" opacity="0.95"/>
+        <!-- Bottom inscribed star -->
+        <path d="M40 56 L42.5 63 L50 63 L44 67.5 L46.5 75 L40 70.5 L33.5 75 L36 67.5 L30 63 L37.5 63 Z"
+              fill="url(#sg-gold-line)"/>
+        <!-- Inner rim highlight -->
+        <path d="M40 9 L66 15.5 L66 18 L40 12 L14 18 L14 15.5 Z"
+              fill="#F2C766" opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+
+  <h1>Crisis averted.</h1>
+  <div class="saved-line">You saved $25 from <span class="name">Trump</span>.</div>
+  <div class="sub">Sarah confirmed.<br/>Not a single dollar left your wallet.</div>
+
+  <!-- Receipt -->
+  <div class="receipt">
+    <div class="r-label">— The Receipt —</div>
+    <div class="r-vow">Go to the gym 3x.</div>
+    <div class="r-row">
+      <span class="r-k">Money</span>
+      <span class="r-v green">$25 returned <span class="r-check">✓</span></span>
+    </div>
+    <div class="r-row">
+      <span class="r-k">Saved from</span>
+      <span class="r-v saved-from">
+        Trump
+        <span class="ban-glyph">
+          <svg viewBox="0 0 14 14" width="14" height="14" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="7" cy="7" r="6" fill="none" stroke="#C8443A" stroke-width="1.6"/>
+            <line x1="2.8" y1="2.8" x2="11.2" y2="11.2" stroke="#C8443A" stroke-width="1.6" stroke-linecap="round"/>
+          </svg>
+        </span>
+      </span>
+    </div>
+    <div class="r-row">
+      <span class="r-k">Streak</span>
+      <span class="r-v">
+        <svg width="12" height="14" viewBox="0 0 12 14" xmlns="http://www.w3.org/2000/svg">
+          <path d="M6 0 c1.5 3 4 4 4 7.5 c0 3.5 -2 5.5 -4 5.5 s-4 -2 -4 -5.5 c0 -2 1 -3 2 -3.5 c0 1 0 2 1 2.5 c0 -2 0 -4 1 -6 z"
+                fill="#E8B656"/>
+        </svg>
+        3 vows kept
+      </span>
+    </div>
+  </div>
+
+  <div class="spacer"></div>
+
+  <!-- PRIMARY CTA — the brag IS the moment. Bier rule: gold button = the screenshot. -->
+  <div class="cta">
+    <span>Tell everyone you saved $25 from Trump</span>
+    <span>→</span>
+  </div>
+
+  <!-- One secondary, no more. -->
+  <div class="secondaries">
+    <div class="sec-link gold">
+      <svg width="11" height="13" viewBox="0 0 12 14" xmlns="http://www.w3.org/2000/svg">
+        <path d="M6 0 c1.5 3 4 4 4 7.5 c0 3.5 -2 5.5 -4 5.5 s-4 -2 -4 -5.5 c0 -2 1 -3 2 -3.5 c0 1 0 2 1 2.5 c0 -2 0 -4 1 -6 z"
+              fill="#E8B656"/>
+      </svg>
+      Dare a friend
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

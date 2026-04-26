@@ -1,13 +1,23 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Mail, ArrowLeft } from 'lucide-react';
+import { X, Mail, ArrowLeft, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 
-type Step = 'pick' | 'email' | 'otp' | 'name';
+type Step = 'pick' | 'phone' | 'email' | 'otp' | 'name';
+type OtpChannel = 'phone' | 'email';
+
+function formatPhoneDisplay(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
 
 export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean; onDismiss: () => void; onSuccess: () => void }) {
   const [step, setStep] = useState<Step>('pick');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otpChannel, setOtpChannel] = useState<OtpChannel>('phone');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [displayName, setDisplayName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -20,6 +30,8 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
     if (visible) {
       setStep('pick');
       setEmail('');
+      setPhone('');
+      setOtpChannel('phone');
       setOtp(['', '', '', '', '', '']);
       setDisplayName('');
       setError('');
@@ -102,6 +114,29 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
     setTimeout(() => otpRefs.current[0]?.focus(), 100);
   };
 
+  const handleSendPhoneOtp = async () => {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.length < 10 || busy) return;
+    setBusy(true);
+    setError('');
+    const formattedPhone = `+1${digits.slice(-10)}`;
+    const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
+    setBusy(false);
+    if (error) {
+      setError(
+        error.message.toLowerCase().includes('rate limit')
+          ? 'Too many attempts. Please wait a minute and try again.'
+          : error.message
+      );
+      return;
+    }
+    setOtpChannel('phone');
+    startCooldown();
+    setOtp(['', '', '', '', '', '']);
+    setStep('otp');
+    setTimeout(() => otpRefs.current[0]?.focus(), 100);
+  };
+
   const handleGoogleSignIn = async () => {
     if (busy) return;
     setBusy(true);
@@ -147,7 +182,10 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
     if (cooldown > 0 || busy) return;
     setBusy(true);
     setError('');
-    const { error } = await supabase.auth.signInWithOtp({ email: email.trim() });
+    const digits = phone.replace(/\D/g, '');
+    const { error } = otpChannel === 'phone'
+      ? await supabase.auth.signInWithOtp({ phone: `+1${digits.slice(-10)}` })
+      : await supabase.auth.signInWithOtp({ email: email.trim() });
     setBusy(false);
     if (error) {
       setError(
@@ -203,11 +241,18 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
     if (code.length !== 6 || busy) return;
     setBusy(true);
     setError('');
-    const { data, error } = await supabase.auth.verifyOtp({
-      email: email.trim(),
-      token: code,
-      type: 'email',
-    });
+    const digits = phone.replace(/\D/g, '');
+    const { data, error } = otpChannel === 'phone'
+      ? await supabase.auth.verifyOtp({
+          phone: `+1${digits.slice(-10)}`,
+          token: code,
+          type: 'sms',
+        })
+      : await supabase.auth.verifyOtp({
+          email: email.trim(),
+          token: code,
+          type: 'email',
+        });
     setBusy(false);
     if (error) {
       setError(error.message.includes('expired') ? 'Code expired. Please request a new one.' : 'Invalid code. Please try again.');
@@ -255,14 +300,20 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
   if (!visible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center animate-fade-in" onClick={onDismiss}>
+    <div className="fixed inset-0 z-[100000] flex items-end justify-center animate-fade-in" onClick={onDismiss}>
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/60" />
 
       {/* Sheet */}
       <div
         className="relative w-full max-w-[440px] rounded-t-[28px] p-6 pb-8 safe-bottom animate-slide-up"
-        style={{ backgroundColor: 'var(--surface-elevated)' }}
+        style={{
+          backgroundColor: 'var(--surface-elevated)',
+          maxHeight: 'min(88dvh, 680px)',
+          overflowY: 'auto',
+          border: '1px solid var(--border)',
+          boxShadow: '0 -24px 80px rgba(0,0,0,0.6)',
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
@@ -283,15 +334,25 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
         {step === 'pick' && (
           <div className="flex flex-col gap-5">
             <div>
-              <h2 className="text-xl font-bold font-serif" style={{ color: 'var(--text)' }}>Quick sign-in</h2>
+              <h2 className="text-[25px] font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--uv-font-sans)' }}>Sign in with your number.</h2>
               <p className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>
-                Verify your identity before money goes on the line.
+                We&apos;ll text a code. No password, no weird account ceremony.
               </p>
             </div>
             <button
+              onClick={() => setStep('phone')}
+              disabled={busy}
+              className="w-full min-h-[56px] rounded-2xl flex items-center justify-center gap-2.5 transition-opacity active:opacity-80 disabled:opacity-60"
+              style={{ background: 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold))', border: 'none', color: 'var(--uv-text-on-gold)' }}
+            >
+              <Phone className="w-[18px] h-[18px]" />
+              <span className="text-[16px] font-bold">Continue with phone</span>
+            </button>
+
+            <button
               onClick={handleGoogleSignIn}
               disabled={busy}
-              className="w-full min-h-[52px] rounded-2xl flex items-center justify-center gap-2.5 transition-opacity active:opacity-80 disabled:opacity-60"
+              className="w-full min-h-[48px] rounded-2xl flex items-center justify-center gap-2.5 transition-opacity active:opacity-80 disabled:opacity-60"
               style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
             >
               {busy ? (
@@ -309,24 +370,61 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
               )}
             </button>
 
-            {/* Divider */}
-            <div className="flex items-center gap-3">
-              <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
-              <span className="text-[12px] font-medium" style={{ color: 'var(--text-muted)' }}>or</span>
-              <div className="flex-1 h-px" style={{ backgroundColor: 'var(--border)' }} />
-            </div>
-
             <button
               onClick={() => setStep('email')}
               disabled={busy}
-              className="w-full min-h-[52px] rounded-2xl flex items-center justify-center gap-2 transition-opacity active:opacity-80 disabled:opacity-60"
-              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+              className="w-full min-h-[40px] rounded-2xl flex items-center justify-center gap-2 transition-opacity active:opacity-80 disabled:opacity-60"
+              style={{ backgroundColor: 'transparent', border: 'none' }}
             >
-              <Mail className="w-[18px] h-[18px]" style={{ color: 'var(--gold)' }} />
-              <span className="text-[15px] font-semibold" style={{ color: 'var(--text)' }}>Continue with email</span>
+              <Mail className="w-[16px] h-[16px]" style={{ color: 'var(--text-muted)' }} />
+              <span className="text-[14px] font-semibold" style={{ color: 'var(--text-muted)' }}>Use email instead</span>
             </button>
 
             {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
+          </div>
+        )}
+
+        {step === 'phone' && (
+          <div className="flex flex-col gap-5">
+            <div className="flex items-center gap-3">
+              <button onClick={() => setStep('pick')} className="p-1">
+                <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text)' }} />
+              </button>
+              <h2 className="text-xl font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--uv-font-sans)' }}>What&apos;s your number?</h2>
+            </div>
+            <div
+              className="rounded-[18px] px-4 min-h-[58px] flex items-center gap-3"
+              style={{ backgroundColor: 'var(--surface)', border: '1px solid var(--border)' }}
+            >
+              <span className="text-[15px]" style={{ color: 'var(--text-muted)' }}>+1</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                value={formatPhoneDisplay(phone)}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendPhoneOtp()}
+                placeholder="(555) 867-5309"
+                autoFocus
+                className="bg-transparent text-[19px] outline-none flex-1"
+                style={{ color: 'var(--text)', fontFamily: 'var(--uv-font-sans)' }}
+              />
+            </div>
+            <p className="text-[13px] leading-[18px]" style={{ color: 'var(--text-muted)' }}>
+              We only use this for verification and vow updates.
+            </p>
+            {error && <p className="text-sm" style={{ color: 'var(--danger)' }}>{error}</p>}
+            <button
+              onClick={handleSendPhoneOtp}
+              disabled={phone.replace(/\D/g, '').length < 10 || busy}
+              className="w-full min-h-[54px] rounded-2xl flex items-center justify-center transition-transform active:scale-[0.975] disabled:active:scale-100"
+              style={{
+                background: phone.replace(/\D/g, '').length < 10 || busy ? 'var(--surface)' : 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold))',
+                color: phone.replace(/\D/g, '').length < 10 || busy ? 'var(--text-muted)' : 'var(--uv-text-on-gold)',
+              }}
+            >
+              <span className="text-[16px] font-bold">{busy ? 'Sending...' : 'Text me the code'}</span>
+            </button>
           </div>
         )}
 
@@ -379,12 +477,14 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
         {step === 'otp' && (
           <div className="flex flex-col gap-5">
             <div className="flex items-center gap-3">
-              <button onClick={() => { setStep('email'); setError(''); setOtp(['', '', '', '', '', '']); }} className="p-1">
+              <button onClick={() => { setStep(otpChannel === 'phone' ? 'phone' : 'email'); setError(''); setOtp(['', '', '', '', '', '']); }} className="p-1">
                 <ArrowLeft className="w-5 h-5" style={{ color: 'var(--text)' }} />
               </button>
               <div>
-                <h2 className="text-xl font-bold font-serif" style={{ color: 'var(--text)' }}>Enter code</h2>
-                <p className="text-[13px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>Sent to {email}</p>
+                <h2 className="text-xl font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--uv-font-sans)' }}>Enter the code.</h2>
+                <p className="text-[13px] mt-0.5" style={{ color: 'var(--text-secondary)' }}>
+                  Sent to {otpChannel === 'phone' ? `+1 ${formatPhoneDisplay(phone)}` : email}
+                </p>
               </div>
             </div>
 

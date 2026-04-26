@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Unicase:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #080607;
+    --surface: #100D0C;
+    --surface-2: #18120F;
+    --paper: #EEE8DE;
+    --paper-mute: #B8AE9A;
+    --paper-dim: #7A746A;
+    --rule: #2A211B;
+    --oxblood: #8C1C1C;
+    --oxblood-bright: #B22A2A;
+    --oxblood-soft: rgba(140,28,28,0.14);
+    --display: "Cormorant Unicase", Georgia, serif;
+    --mono: "JetBrains Mono", ui-monospace, monospace;
+    --mono-2: "IBM Plex Mono", ui-monospace, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      repeating-linear-gradient(0deg, rgba(238,232,222,0.012) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at top, rgba(140,28,28,0.06), transparent 55%);
+    color: var(--paper); font-family: var(--mono);
+    font-size: 13px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 50px 26px 28px; }
+
+  /* Bottle-top header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--paper);
+    margin-bottom: 22px;
+  }
+  .stamp {
+    border: 1.5px solid var(--paper); padding: 4px 8px;
+    font-family: var(--mono); font-size: 9px; font-weight: 600;
+    letter-spacing: 0.18em; color: var(--paper);
+    transform: rotate(-1deg);
+  }
+  .lot {
+    font-family: var(--mono); font-size: 9.5px; color: var(--paper-dim);
+    letter-spacing: 0.14em; font-weight: 500;
+  }
+  .lot b { color: var(--paper); font-weight: 600; }
+
+  /* Big stencil hero */
+  .ann {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.32em; text-transform: uppercase; color: var(--oxblood-bright);
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 700;
+    font-size: 56px; line-height: 0.92; letter-spacing: -0.01em;
+    text-transform: uppercase;
+    margin-bottom: 14px; color: var(--paper);
+  }
+  h1 .red { color: var(--oxblood-bright); }
+  h1 .strike {
+    text-decoration: line-through;
+    text-decoration-color: var(--oxblood-bright);
+    text-decoration-thickness: 4px;
+    color: var(--paper-dim);
+  }
+
+  .sub {
+    font-family: var(--mono); font-size: 12.5px; line-height: 1.55;
+    color: var(--paper-mute); margin-bottom: 26px;
+    font-weight: 400;
+  }
+  .sub b { color: var(--paper); font-weight: 600; }
+
+  /* Receipt-style input */
+  .receipt {
+    background: transparent;
+    border: 1.5px dashed var(--rule);
+    padding: 14px 14px 14px;
+    margin-bottom: 8px;
+    position: relative;
+  }
+  .receipt-label {
+    position: absolute; top: -8px; left: 12px;
+    background: var(--bg); padding: 0 8px;
+    font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--paper-dim);
+  }
+  .input-row { display: flex; align-items: center; gap: 8px; }
+  .input-row .caret {
+    width: 8px; height: 16px; background: var(--oxblood-bright);
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .input {
+    flex: 1; background: transparent; border: 0; color: var(--paper);
+    font-family: var(--mono); font-size: 14px; font-weight: 500;
+    outline: none; letter-spacing: -0.005em;
+  }
+  .input::placeholder { color: var(--paper-dim); }
+  .helper {
+    font-family: var(--mono); font-size: 10px; font-weight: 400;
+    color: var(--paper-dim); letter-spacing: 0.04em;
+    margin-bottom: 22px; padding-left: 4px;
+  }
+  .helper b { color: var(--oxblood-bright); font-weight: 600; }
+
+  /* Tattoo-flash example list */
+  .or-label {
+    font-family: var(--mono); font-size: 10px; font-weight: 600;
+    letter-spacing: 0.28em; text-transform: uppercase; color: var(--paper-dim);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .or-label::before, .or-label::after {
+    content: ""; flex: 1; height: 1px; background: var(--rule);
+  }
+
+  .flash-list { display: flex; flex-direction: column; }
+  .flash {
+    display: flex; align-items: baseline; gap: 12px;
+    padding: 11px 0;
+    border-bottom: 1px solid var(--rule);
+  }
+  .flash:last-child { border-bottom: 0; }
+  .flash .num {
+    font-family: var(--display); font-weight: 700; font-size: 18px;
+    color: var(--oxblood-bright);
+    min-width: 28px;
+    font-feature-settings: "tnum";
+    line-height: 1;
+  }
+  .flash .text {
+    font-family: var(--mono); font-size: 13px; font-weight: 500;
+    color: var(--paper); flex: 1; letter-spacing: -0.005em;
+  }
+  .flash .pick {
+    font-family: var(--mono); font-size: 9.5px; font-weight: 600;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--paper-dim);
+  }
+  .flash .pick::after { content: " ›"; color: var(--oxblood-bright); }
+
+  .footer { margin-top: auto; }
+  .cta {
+    width: 100%; height: 56px;
+    background: var(--paper); color: var(--bg);
+    font-family: var(--display); font-weight: 700;
+    font-size: 16px; letter-spacing: 0.16em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    border: 0;
+    position: relative;
+    box-shadow: 4px 4px 0 var(--oxblood-bright);
+  }
+  .cta .arrow { font-family: var(--mono); font-weight: 700; }
+  .foot {
+    text-align: center; font-family: var(--mono); font-size: 9.5px;
+    color: var(--paper-dim); margin-top: 16px;
+    letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500;
+  }
+  .foot b { color: var(--paper); font-weight: 600; }
+  .foot .div { color: var(--oxblood-bright); margin: 0 6px; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="header">
+    <div class="stamp">UNBREAKABLE/VOW</div>
+    <div class="lot">LOT <b>№ 0421</b></div>
+  </div>
+
+  <div class="ann">— No takebacks —</div>
+  <h1>Say it.<br/>Mean it.<br/><span class="red">Bleed it.</span></h1>
+
+  <div class="sub">Make a vow. Stake real money. Name a witness who'll call you on it. <b>Keep it, get it back. Break it, the money walks.</b></div>
+
+  <div class="receipt">
+    <div class="receipt-label">// the vow</div>
+    <div class="input-row">
+      <div class="caret"></div>
+      <input class="input" placeholder="WHAT ARE YOU PROMISING?" readonly>
+    </div>
+  </div>
+  <div class="helper">// be specific. <b>your witness should know — yes or no.</b></div>
+
+  <div class="or-label">or pick a fight</div>
+  <div class="flash-list">
+    <div class="flash"><span class="num">01</span><span class="text">Gym 3× this week</span><span class="pick">use</span></div>
+    <div class="flash"><span class="num">02</span><span class="text">No alcohol for 14 days</span><span class="pick">use</span></div>
+    <div class="flash"><span class="num">03</span><span class="text">Delete TikTok for a week</span><span class="pick">use</span></div>
+    <div class="flash"><span class="num">04</span><span class="text">Ship the side project</span><span class="pick">use</span></div>
+  </div>
+
+  <div class="footer">
+    <div class="cta">Ante up <span class="arrow">→</span></div>
+    <div class="foot"><b>60 sec</b><span class="div">×</span>no account<span class="div">×</span>no excuses</div>
+  </div>
+</div>
+</body>
+</html>

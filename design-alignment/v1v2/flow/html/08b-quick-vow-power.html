@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=393, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;1,9..144,500&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<title>08b Quick Vow Power</title>
+<style>
+  :root {
+    --uv-bg: #0F0D0A;
+    --uv-bg-card: #171410;
+    --uv-bg-elevated: #1E1A14;
+    --uv-text: #F0E9DB;
+    --uv-text-muted: #A89E8C;
+    --uv-text-dim: #756D60;
+    --uv-gold: #C89B3C;
+    --uv-gold-bright: #E8B656;
+    --uv-gold-deep: #A67A27;
+    --uv-gold-soft: rgba(200,155,60,0.22);
+    --uv-border: rgba(240,233,219,0.10);
+    --uv-text-on-gold: #15100A;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    width: 393px;
+    height: 852px;
+    overflow: hidden;
+    background: var(--uv-bg);
+    color: var(--uv-text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    background-image:
+      radial-gradient(ellipse at 50% 0%, rgba(200,155,60,0.075), transparent 52%),
+      linear-gradient(180deg, rgba(255,255,255,0.015), transparent 28%);
+  }
+  .screen {
+    height: 100%;
+    padding: 18px 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font: 500 15px/1 var(--serif);
+  }
+  .mark {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--uv-gold);
+    display: grid;
+    place-items: center;
+    transform: rotate(45deg);
+  }
+  .mark::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background: var(--uv-gold);
+  }
+  .brand span:last-child { transform: translateY(1px); }
+  .brand em { color: var(--uv-gold); font-style: italic; }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold));
+    color: var(--uv-text-on-gold);
+    font: 700 15px/1 var(--sans);
+  }
+  .vow-card {
+    background: var(--uv-bg-card);
+    border: 1px solid var(--uv-border);
+    border-radius: 16px;
+    padding: 18px 18px 14px;
+    box-shadow: 0 18px 44px rgba(0,0,0,0.28);
+    margin-bottom: 10px;
+  }
+  .input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    resize: none;
+    background: transparent;
+    color: var(--uv-text);
+    font: 500 26px/1.12 var(--sans);
+    padding: 0 0 13px;
+    min-height: 67px;
+    border-bottom: 1px solid var(--uv-gold-soft);
+  }
+  .input::placeholder {
+    color: var(--uv-text-dim);
+    font-style: italic;
+  }
+  .date {
+    margin-top: 11px;
+    font: 400 13px/1.2 var(--sans);
+    color: var(--uv-text-muted);
+  }
+  .date em { font-style: italic; color: var(--uv-text-dim); }
+  .date strong { color: var(--uv-text); font-weight: 500; }
+  .chips {
+    display: flex;
+    gap: 8px;
+    overflow: hidden;
+    margin: 2px -20px 15px 0;
+    padding-right: 20px;
+  }
+  .chip {
+    white-space: nowrap;
+    border: 1px solid var(--uv-border);
+    background: rgba(240,233,219,0.025);
+    color: var(--uv-text-muted);
+    border-radius: 999px;
+    padding: 8px 12px;
+    font: 500 13px/1 var(--sans);
+  }
+  .stake {
+    text-align: center;
+    font: 500 56px/0.95 var(--serif);
+    color: var(--uv-gold);
+    margin: 6px 0 12px;
+    text-shadow: 0 10px 34px rgba(200,155,60,0.18);
+  }
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 9px;
+    margin-bottom: 10px;
+  }
+  .tile {
+    appearance: none;
+    cursor: pointer;
+    height: 52px;
+    border-radius: 14px;
+    border: 1px solid var(--uv-border);
+    background: rgba(240,233,219,0.025);
+    color: var(--uv-text-muted);
+    display: grid;
+    place-items: center;
+    font: 500 18px/1 var(--sans);
+  }
+  .tile.selected {
+    background: linear-gradient(180deg, rgba(232,182,86,0.22), rgba(200,155,60,0.13));
+    border-color: var(--uv-gold);
+    color: var(--uv-gold-bright);
+    box-shadow: 0 0 0 1px rgba(232,182,86,0.08), 0 16px 34px rgba(200,155,60,0.10);
+  }
+  .stake-note {
+    min-height: 17px;
+    text-align: center;
+    color: var(--uv-text-dim);
+    font: italic 500 13px/1.25 var(--sans);
+    margin-bottom: 12px;
+  }
+  .judge {
+    width: 100%;
+    min-height: 62px;
+    border-radius: 16px;
+    border: 1px solid rgba(200,155,60,0.22);
+    background: var(--uv-bg-card);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 15px;
+    color: var(--uv-text);
+    font: 500 16px/1 var(--sans);
+    margin-bottom: 12px;
+  }
+  .judge .circle {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--uv-gold-bright);
+    background: rgba(200,155,60,0.14);
+    border: 1px solid rgba(200,155,60,0.16);
+    font-weight: 600;
+  }
+  .judge-text {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+  .judge-text strong {
+    font: 600 16px/1 var(--sans);
+    color: var(--uv-text);
+  }
+  .judge-text span {
+    font: 500 12.5px/1.25 var(--sans);
+    color: var(--uv-text-dim);
+  }
+  .consequence {
+    color: var(--uv-text);
+    font: 400 14.5px/1.3 var(--sans);
+    text-align: center;
+    margin-bottom: auto;
+  }
+  .consequence strong {
+    color: var(--uv-text);
+    font-weight: 600;
+  }
+  .cta {
+    width: 100%;
+    height: 56px;
+    border-radius: 999px;
+    border: 0;
+    background: linear-gradient(180deg, #EDC66B, #D6A339 62%, #B88930);
+    color: var(--uv-text-on-gold);
+    font: 700 18px/1 var(--sans);
+    box-shadow: 0 1px 0 rgba(255,244,210,0.35) inset, 0 22px 48px rgba(200,155,60,0.18);
+    margin-top: 14px;
+  }
+</style>
+</head>
+<body>
+  <main class="screen">
+    <header class="topbar">
+      <div class="brand">
+        <span class="mark" aria-hidden="true"></span>
+        <span>Unbreakable <em>Vow</em></span>
+      </div>
+      <div class="avatar">J</div>
+    </header>
+
+    <section class="vow-card">
+      <textarea class="input" rows="2" placeholder="I vow to...">Gym 3x this week</textarea>
+      <div class="date">Verdict <em>by</em> <strong>Sat, May 2</strong></div>
+    </section>
+
+    <div class="chips" aria-label="Vow suggestions">
+      <span class="chip">Gym 3x this week</span>
+      <span class="chip">Delete TikTok for a week</span>
+      <span class="chip">Dry, 2 weeks</span>
+      <span class="chip">No texting my ex</span>
+    </div>
+
+    <div class="stake" data-stake-display>$50</div>
+
+    <div class="tiles" aria-label="Stake amount">
+      <button class="tile" data-stake="10" type="button">$10</button>
+      <button class="tile" data-stake="25" type="button">$25</button>
+      <button class="tile selected" data-stake="50" type="button">$50</button>
+      <button class="tile" data-stake="100" type="button">$100</button>
+    </div>
+    <div class="stake-note" data-stake-note>Enough to sting. Not enough to be stupid.</div>
+
+    <div class="judge">
+      <span class="circle">+</span>
+      <span class="judge-text">
+        <strong>Share judge link after sealing</strong>
+        <span>No number now. Send the link when it is sealed.</span>
+      </span>
+    </div>
+
+    <div class="consequence">If broken, <strong data-stake-inline>$50</strong> → <strong>ALS Association</strong></div>
+
+    <button class="cta" data-stake-cta>Stake $50 →</button>
+  </main>
+  <script>
+    const stakeNotes = {
+      10: 'A little sting. Enough to notice.',
+      25: 'Respectable pain. Still sane.',
+      50: 'Enough to sting. Not enough to be stupid.',
+      100: 'Now your word has teeth.'
+    };
+
+    const display = document.querySelector('[data-stake-display]');
+    const note = document.querySelector('[data-stake-note]');
+    const inline = document.querySelector('[data-stake-inline]');
+    const cta = document.querySelector('[data-stake-cta]');
+    const tiles = Array.from(document.querySelectorAll('[data-stake]'));
+
+    tiles.forEach((tile) => {
+      tile.addEventListener('click', () => {
+        const amount = tile.dataset.stake;
+        tiles.forEach((t) => t.classList.toggle('selected', t === tile));
+        display.textContent = `$${amount}`;
+        note.textContent = stakeNotes[amount] || 'Pick what you would hate to lose.';
+        inline.textContent = `$${amount}`;
+        cta.textContent = `Stake $${amount} →`;
+      });
+    });
+  </script>
+</body>
+</html>

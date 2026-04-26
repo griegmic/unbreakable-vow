@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S20 · Dashboard — Option B (Split Typography)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --green: #4ade80;
+    --amber: #F1A93C;
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse 600px 400px at 50% 0%, rgba(200,155,60,0.06), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 14px 16px 96px;
+    position: relative;
+    overflow-y: auto;
+  }
+
+  /* Header */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 4px 12px;
+  }
+  .hamburger {
+    display: flex; flex-direction: column; gap: 4px;
+    width: 22px; padding: 4px 0;
+  }
+  .hamburger span {
+    height: 1.4px; background: var(--text-mute); width: 100%;
+  }
+  .wordmark {
+    font-family: var(--serif); font-weight: 500;
+    font-style: italic;
+    font-variation-settings: "opsz" 144;
+    font-size: 16px; letter-spacing: -0.005em;
+    color: var(--text); text-align: center;
+  }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    display: flex; align-items: center; justify-content: center;
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 13px;
+  }
+
+  /* Greeting — italic Fraunces stays (this is the only ceremonial moment on the screen) */
+  .greeting {
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 28px; letter-spacing: -0.02em;
+    color: var(--text);
+    margin: 8px 6px 18px;
+  }
+
+  /* Section header — sans, uppercase, gold-bright, anchored with under-rule */
+  .section-h {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 22px 6px 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--gold-line);
+  }
+  .section-h .title {
+    font-family: var(--sans);
+    font-size: 12.5px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--gold-bright); font-weight: 600;
+    font-feature-settings: "tnum";
+  }
+  .section-h .count {
+    color: var(--text-mute); font-weight: 400;
+    margin-left: 6px;
+  }
+
+  /* Vow card */
+  .vow-card {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 14px; padding: 14px 16px 12px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .vow-card::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .vc-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px;
+  }
+  .pill {
+    font-family: var(--sans);
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--gold-bright); font-weight: 600;
+    padding: 3px 8px; border-radius: 999px;
+    background: var(--gold-soft);
+    border: 1px solid var(--gold-line);
+  }
+  .pill.amber { color: var(--amber); background: rgba(241,169,60,0.10); border-color: rgba(241,169,60,0.22); }
+  /* Top-right time → SANS, tabular */
+  .vc-time {
+    font-family: var(--sans);
+    font-size: 11px; color: var(--text-mute);
+    font-feature-settings: "tnum";
+    font-weight: 500;
+  }
+  .vc-time b { color: var(--text); font-weight: 600; }
+  /* THE VOW — Fraunces ROMAN (not italic), weight 500, no gold I'll prefix */
+  .vc-text {
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 36;
+    font-size: 17px; line-height: 1.22; letter-spacing: -0.005em;
+    color: var(--text);
+    margin: 4px 0 12px;
+  }
+  /* Meta — Inter Tight sans, tighter, witness chip on right */
+  .vc-meta {
+    display: flex; gap: 16px; padding-top: 10px;
+    border-top: 1px dashed var(--rule);
+    align-items: center;
+  }
+  .mc { display: flex; flex-direction: column; gap: 2px; }
+  .mc-k {
+    font-family: var(--sans);
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .mc-v {
+    font-family: var(--sans); font-weight: 600; font-size: 13px;
+    color: var(--text); font-feature-settings: "tnum";
+    letter-spacing: -0.005em;
+  }
+  .mc-v.gold { color: var(--gold-bright); }
+  .mc-v.amber { color: var(--amber); }
+  .mc-v .arrow { color: var(--text-mute); font-weight: 400; margin-right: 2px; }
+
+  .witness-chip {
+    margin-left: auto;
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 10px;
+    border: 1px solid var(--rule);
+    border-radius: 999px;
+    font-family: var(--sans); font-size: 11px; font-weight: 500;
+    color: var(--text);
+  }
+  .witness-chip .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green);
+  }
+  .witness-chip.pending .dot { background: var(--amber); }
+  .witness-chip.pending {
+    color: var(--amber);
+    border-color: rgba(241,169,60,0.25);
+    background: rgba(241,169,60,0.06);
+  }
+
+  /* Witnessing list — quieter, not competing with own vows */
+  .w-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .w-avatar {
+    flex-shrink: 0;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-mute); font-family: var(--sans); font-weight: 600;
+    font-size: 12px;
+    letter-spacing: 0.02em;
+  }
+  .w-body { flex: 1; min-width: 0; }
+  .w-top {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 2px;
+  }
+  .w-name {
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.005em;
+  }
+  .w-when {
+    font-family: var(--sans);
+    font-size: 11px; color: var(--text-mute); font-feature-settings: "tnum";
+    font-weight: 500;
+  }
+  .w-when.urgent { color: var(--amber); font-weight: 600; }
+  /* Witnessing vow text → roman serif, smaller, dim — distinct from own vows */
+  .w-vow {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 14;
+    font-size: 13.5px; color: var(--text-mute);
+    line-height: 1.25;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .w-stake {
+    flex-shrink: 0;
+    font-family: var(--sans); font-weight: 600; font-size: 12px;
+    color: var(--gold-bright); font-feature-settings: "tnum";
+  }
+
+  .see-all {
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--gold-soft);
+    border: 1px solid var(--gold-line);
+    border-radius: 12px;
+    padding: 11px 14px;
+    margin: 4px 0 20px;
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    color: var(--gold-bright);
+    letter-spacing: 0.005em;
+  }
+
+  /* Pending dare — italic stays here because it's a quote of someone else's words */
+  .pending {
+    background: var(--surface-2);
+    border: 1px solid var(--gold-line);
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+  }
+  .pending-top {
+    font-family: var(--sans);
+    font-size: 9.5px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--gold-bright); font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .pending-line {
+    font-family: var(--sans);
+    font-weight: 500; font-size: 13.5px;
+    color: var(--text);
+    line-height: 1.35;
+    margin-bottom: 12px;
+  }
+  .pending-line b { color: var(--gold-bright); font-weight: 600; }
+  .pending-line em {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    color: var(--text-mute); font-size: 13.5px;
+  }
+  .pending-actions { display: flex; gap: 8px; }
+  .p-accept, .p-decline {
+    flex: 1; height: 38px; border-radius: 10px;
+    font-family: var(--sans); font-weight: 600; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    letter-spacing: -0.005em;
+  }
+  .p-accept {
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+  }
+  .p-decline {
+    background: transparent;
+    border: 1px solid var(--rule);
+    color: var(--text-mute);
+  }
+
+  .footer-cta {
+    position: absolute; bottom: 16px; left: 16px; right: 16px;
+    height: 60px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    box-shadow:
+      0 1px 0 rgba(255,220,140,0.3) inset,
+      0 14px 36px rgba(200,155,60,0.30),
+      0 -10px 24px rgba(15,13,10,0.92);
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <div class="header">
+    <div class="hamburger"><span></span><span></span><span></span></div>
+    <div class="wordmark">Unbreakable Vow</div>
+    <div class="avatar">J</div>
+  </div>
+
+  <div class="greeting">Hey, Joey.</div>
+
+  <!-- Section 1: Your vows -->
+  <div class="section-h">
+    <div class="title">Your vows<span class="count"> · 3</span></div>
+  </div>
+
+  <!-- Vow card 1: ACTIVE -->
+  <div class="vow-card">
+    <div class="vc-top">
+      <span class="pill">Active · Day 4 of 7</span>
+      <span class="vc-time"><b>3 days</b> left</span>
+    </div>
+    <div class="vc-text">Walk 10,000 steps every day.</div>
+    <div class="vc-meta">
+      <div class="mc"><div class="mc-k">On hold</div><div class="mc-v gold">$50</div></div>
+      <div class="mc"><div class="mc-k">Until</div><div class="mc-v">Sun · 9pm</div></div>
+      <span class="witness-chip"><span class="dot"></span>Maya</span>
+    </div>
+  </div>
+
+  <!-- Vow card 2: AWAITING WITNESS -->
+  <div class="vow-card">
+    <div class="vc-top">
+      <span class="pill amber">Awaiting Maya</span>
+      <span class="vc-time">Sealed <b>2 hrs</b> ago</span>
+    </div>
+    <div class="vc-text">Meditate ten minutes every morning.</div>
+    <div class="vc-meta">
+      <div class="mc"><div class="mc-k">On hold</div><div class="mc-v gold">$30</div></div>
+      <div class="mc"><div class="mc-k">Starts when</div><div class="mc-v amber">Maya accepts</div></div>
+      <span class="witness-chip pending"><span class="dot"></span>Pending</span>
+    </div>
+  </div>
+
+  <!-- Vow card 3: AWAITING VERDICT -->
+  <div class="vow-card">
+    <div class="vc-top">
+      <span class="pill amber">Awaiting verdict</span>
+      <span class="vc-time">Maya replies in <b>14 hrs</b></span>
+    </div>
+    <div class="vc-text">Finish the deck before Friday.</div>
+    <div class="vc-meta">
+      <div class="mc"><div class="mc-k">On hold</div><div class="mc-v gold">$25</div></div>
+      <div class="mc"><div class="mc-k">If broken</div><div class="mc-v"><span class="arrow">→</span>Trump</div></div>
+      <span class="witness-chip"><span class="dot"></span>Nick</span>
+    </div>
+  </div>
+
+  <!-- Pending dare -->
+  <div class="pending" style="margin-top: 18px;">
+    <div class="pending-top">— Pending dare —</div>
+    <div class="pending-line"><b>Marcus</b> dared you: <em>"No phone in bed for 7 days, $50 to PETA if you cave."</em></div>
+    <div class="pending-actions">
+      <div class="p-accept">Accept →</div>
+      <div class="p-decline">Decline</div>
+    </div>
+  </div>
+
+  <!-- Section 2: Witnessing -->
+  <div class="section-h">
+    <div class="title">You're witnessing<span class="count"> · 7</span></div>
+  </div>
+
+  <div class="w-row">
+    <div class="w-avatar">S</div>
+    <div class="w-body">
+      <div class="w-top">
+        <span class="w-name">Sarah</span>
+        <span class="w-when urgent">Verdict in 6 hrs</span>
+      </div>
+      <div class="w-vow">No alcohol for 14 days.</div>
+    </div>
+    <div class="w-stake">$100</div>
+  </div>
+
+  <div class="w-row">
+    <div class="w-avatar">M</div>
+    <div class="w-body">
+      <div class="w-top">
+        <span class="w-name">Marcus</span>
+        <span class="w-when">2 days left</span>
+      </div>
+      <div class="w-vow">Run 5k three times this week.</div>
+    </div>
+    <div class="w-stake">$25</div>
+  </div>
+
+  <div class="see-all">
+    <span>See all 5 more</span>
+    <span>→</span>
+  </div>
+
+  <div class="footer-cta">
+    <span>Make a vow</span>
+    <span>→</span>
+  </div>
+
+</div>
+</body>
+</html>

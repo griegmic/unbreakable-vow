@@ -16,7 +16,7 @@ export default function ChallengeNotFound({ token }: { token: string }) {
           This link may have expired or is invalid. Ask the person who sent it to share it again.
         </FrauncesSub>
         <a
-          href="/"
+          href="/quick-vow"
           style={{
             marginTop: 8, padding: '10px 20px', borderRadius: 12,
             fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 600,

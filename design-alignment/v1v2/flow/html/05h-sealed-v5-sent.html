@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.08);
+    --imsg: #34C759; --imsg-deep: #2AA84A;
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 600px 420px at 50% 28%, rgba(200,155,60,0.15), transparent 62%),
+      radial-gradient(ellipse 900px 500px at 50% 100%, rgba(200,155,60,0.06), transparent 70%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 60px 30px 24px;
+    align-items: center;
+  }
+
+  .seal-wrap {
+    position: relative;
+    width: 84px; height: 84px;
+    margin-bottom: 22px;
+  }
+  .seal-halo {
+    position: absolute; inset: -16px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(232,182,86,0.22), transparent 65%);
+  }
+  .seal {
+    width: 84px; height: 84px; border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 25%, #E8B656 0%, #C89B3C 45%, #8B6820 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow:
+      0 2px 0 rgba(255,220,140,0.35) inset,
+      0 -2px 8px rgba(139,104,32,0.6) inset,
+      0 10px 30px rgba(200,155,60,0.3),
+      0 0 0 1px rgba(139,104,32,0.4);
+    font-family: var(--serif); font-weight: 600;
+    font-variation-settings: "opsz" 144;
+    font-size: 32px; color: #1A1205;
+    letter-spacing: -0.02em;
+    font-style: italic;
+  }
+  .seal-check {
+    position: absolute;
+    bottom: -4px; right: -4px;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--imsg);
+    color: white;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    border: 3px solid var(--bg);
+    box-shadow: 0 4px 12px rgba(52,199,89,0.4);
+  }
+
+  h1 {
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 44px; line-height: 1; letter-spacing: -0.03em;
+    color: var(--text);
+    margin-bottom: 10px;
+    text-align: center;
+  }
+
+  .sub {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 15.5px; line-height: 1.45;
+    color: var(--text-mute);
+    text-align: center;
+    margin-bottom: 30px;
+    max-width: 280px;
+  }
+  .sub b { color: var(--gold-bright); font-weight: 500; font-style: italic; }
+
+  /* SMS card — sent treatment */
+  .sms-card {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid rgba(52,199,89,0.25);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 24px;
+    box-shadow: 0 0 0 3px rgba(52,199,89,0.06);
+  }
+  .sms-meta {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 10px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--imsg); font-weight: 500;
+    margin-bottom: 10px;
+    padding: 0 2px;
+  }
+  .sms-meta .state {
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .sms-meta .state::before {
+    content: "✓"; font-size: 11px; font-weight: 700;
+  }
+  .sms-meta .to {
+    color: var(--text-dim);
+  }
+  .sms-meta .to b {
+    color: var(--text-mute); font-weight: 500;
+    letter-spacing: 0.02em; text-transform: none;
+    font-size: 11px; margin-left: 4px;
+  }
+  .bubble-row { display: flex; justify-content: flex-end; }
+  .bubble {
+    background: linear-gradient(180deg, #1AA9FF, #0A84E8);
+    color: white;
+    padding: 11px 14px 12px;
+    border-radius: 18px;
+    border-bottom-right-radius: 5px;
+    font-size: 13.5px; line-height: 1.4;
+    max-width: 90%;
+    font-family: -apple-system, "SF Pro Text", sans-serif;
+    letter-spacing: -0.005em;
+  }
+  .bubble a {
+    color: white;
+    text-decoration: underline;
+    text-decoration-color: rgba(255,255,255,0.55);
+    text-underline-offset: 2px;
+  }
+
+  /* CTA — outlined gold now, because destination is back in UV */
+  .cta {
+    width: 100%; height: 60px; border-radius: 14px;
+    background: transparent;
+    border: 1.5px solid var(--gold);
+    color: var(--gold-bright);
+    font-family: var(--serif); font-weight: 500;
+    font-size: 17px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    box-shadow: 0 0 0 4px rgba(200,155,60,0.06);
+  }
+
+  .nudge-line {
+    text-align: center;
+    margin-top: 14px;
+    font-family: var(--serif); font-style: italic;
+    font-size: 12.5px; color: var(--text-dim);
+    line-height: 1.4;
+  }
+  .nudge-line b {
+    font-style: normal; font-weight: 500;
+    color: var(--text-mute);
+    font-feature-settings: "tnum";
+  }
+
+  .footer { margin-top: auto; padding-top: 20px; }
+  .micro {
+    text-align: center;
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.06em; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="seal-wrap">
+    <div class="seal-halo"></div>
+    <div class="seal">UV</div>
+    <div class="seal-check">✓</div>
+  </div>
+
+  <h1>Sealed.</h1>
+  <div class="sub"><b>Nick</b> has it.<br/>He's got 24 hours to accept.</div>
+
+  <div class="sms-card">
+    <div class="sms-meta">
+      <span class="state">Delivered · 9:41 am</span>
+      <span class="to">to<b>Nick · (415) 555-0142</b></span>
+    </div>
+    <div class="bubble-row">
+      <div class="bubble">I just made a vow: "I'll go to the gym Mon, Wed &amp; Fri this week." $50 on the line — you're the judge if I break it. Sunday 9pm. Tap here: <a>unbroken.vow/n7k2x</a></div>
+    </div>
+  </div>
+
+  <div class="cta">
+    <span>See your vow</span>
+    <span>→</span>
+  </div>
+
+  <div class="nudge-line">We'll nudge <b>Nick</b> at 24h if he hasn't accepted.</div>
+
+  <div class="footer">
+    <div class="micro">Nothing charges unless you break it.</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #1E1C1F;
+    --bg-soft: #231F22;
+    --surface: #2A272A;
+    --surface-2: #322F32;
+    --text: #ECE3D6;
+    --text-mute: #9B9283;
+    --text-dim: #66625A;
+    --rose: #C58B79;
+    --rose-soft: rgba(197,139,121,0.08);
+    --rose-line: rgba(197,139,121,0.28);
+    --sage: #8CA690;
+    --sage-soft: rgba(140,166,144,0.10);
+    --terra: #B85450;
+    --rule: rgba(236,227,214,0.07);
+    --display: "Marcellus", Georgia, serif;
+    --sans: "Instrument Sans", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 100% 60% at 50% 0%, rgba(197,139,121,0.07), transparent),
+      radial-gradient(ellipse 120% 50% at 50% 100%, rgba(140,166,144,0.05), transparent);
+    color: var(--text); font-family: var(--sans);
+    font-size: 15px; font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 56px 30px 32px; }
+
+  /* Minimal brand — symbol + spaced wordmark */
+  .brand {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; margin-bottom: 42px;
+  }
+  .symbol {
+    width: 12px; height: 12px; border-radius: 50%;
+    border: 1px solid var(--rose);
+    position: relative;
+  }
+  .symbol::before {
+    content: ""; position: absolute; inset: 3px; border-radius: 50%;
+    background: var(--rose); opacity: 0.6;
+  }
+  .wm {
+    font-family: var(--display); font-size: 13px;
+    letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-mute); font-weight: 400;
+  }
+
+  /* Zen-letterspaced eyebrow */
+  .eyebrow {
+    font-family: var(--sans); font-size: 10px; font-style: italic;
+    letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--rose); font-weight: 500;
+    text-align: center; margin-bottom: 20px;
+  }
+  h1 {
+    font-family: var(--display); font-weight: 400;
+    font-size: 44px; line-height: 1.1; letter-spacing: -0.005em;
+    text-align: center;
+    margin-bottom: 18px;
+  }
+  h1 .soft { color: var(--rose); }
+
+  .sub {
+    font-family: var(--sans); font-weight: 400;
+    font-size: 14.5px; line-height: 1.55;
+    color: var(--text-mute);
+    text-align: center; max-width: 320px; margin: 0 auto 36px;
+  }
+  .sub b { color: var(--text); font-weight: 500; }
+
+  /* Ritual card — soft-edged field */
+  .field {
+    background: var(--surface);
+    border-radius: 14px;
+    padding: 20px 20px 18px;
+    margin-bottom: 18px;
+    border: 1px solid var(--rule);
+  }
+  .field-label {
+    font-family: var(--sans); font-size: 10px;
+    letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 12px;
+  }
+  .input {
+    background: transparent; border: 0; color: var(--text);
+    font-family: var(--display); font-size: 20px;
+    letter-spacing: -0.005em;
+    width: 100%; outline: none; padding: 0;
+  }
+  .input::placeholder { color: var(--text-dim); font-family: var(--display); }
+  .field-hint {
+    margin-top: 12px;
+    font-family: var(--sans); font-style: italic; font-size: 12px;
+    color: var(--text-dim); line-height: 1.5; font-weight: 400;
+  }
+
+  /* Divider */
+  .divider {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 16px;
+  }
+  .divider::before, .divider::after {
+    content: ""; flex: 1; height: 1px; background: var(--rule);
+  }
+  .divider span {
+    font-family: var(--sans); font-size: 10px; font-style: italic;
+    letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+
+  /* Example list — serene rows */
+  .examples { display: flex; flex-direction: column; gap: 1px; background: var(--rule); border-radius: 12px; overflow: hidden; border: 1px solid var(--rule); }
+  .example {
+    background: var(--bg);
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 18px;
+  }
+  .example .dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--rose); flex-shrink: 0;
+  }
+  .example .name {
+    flex: 1;
+    font-family: var(--display); font-size: 15px; color: var(--text);
+    letter-spacing: -0.003em;
+  }
+  .example .arrow {
+    font-family: var(--sans); color: var(--rose);
+    font-size: 16px; font-weight: 400;
+  }
+
+  .footer { margin-top: auto; }
+  .cta {
+    width: 100%; height: 56px; border-radius: 28px;
+    background: var(--rose); color: #1F1714;
+    font-family: var(--display); font-size: 16px;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    display: flex; align-items: center; justify-content: center; gap: 14px;
+    border: 0;
+  }
+  .cta .arrow { font-weight: 400; letter-spacing: 0; }
+  .foot {
+    text-align: center; font-family: var(--sans); font-style: italic;
+    font-size: 12px; color: var(--text-dim); font-weight: 400;
+    margin-top: 14px;
+  }
+  .foot b { color: var(--text-mute); font-style: normal; font-weight: 500; }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="brand">
+    <div class="symbol"></div>
+    <div class="wm">Unbreakable · Vow</div>
+  </div>
+
+  <div class="eyebrow">— A practice for what you mean —</div>
+  <h1>Name the thing.<br/><span class="soft">Carry it.</span></h1>
+  <div class="sub">Make a quiet promise. Name one person to witness it. Put something on the line, then <b>meet yourself there.</b></div>
+
+  <div class="field">
+    <div class="field-label">Your intention</div>
+    <input class="input" placeholder="What will you commit to?" readonly>
+    <div class="field-hint">Be specific. Your witness should know, on sight, whether it was kept.</div>
+  </div>
+
+  <div class="divider"><span>or begin with</span></div>
+
+  <div class="examples">
+    <div class="example"><span class="dot"></span><span class="name">Move my body three times this week</span><span class="arrow">→</span></div>
+    <div class="example"><span class="dot"></span><span class="name">No alcohol for two weeks</span><span class="arrow">→</span></div>
+    <div class="example"><span class="dot"></span><span class="name">One week without TikTok</span><span class="arrow">→</span></div>
+    <div class="example"><span class="dot"></span><span class="name">Ship the side project</span><span class="arrow">→</span></div>
+  </div>
+
+  <div class="footer">
+    <div class="cta">Begin <span class="arrow">→</span></div>
+    <div class="foot"><b>60 seconds</b> · No account until you're ready</div>
+  </div>
+</div>
+</body>
+</html>

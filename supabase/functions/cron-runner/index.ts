@@ -7,6 +7,7 @@ import {
   maker24hMessage, makerVerdictTimeMessage, makerOutcomeMessage,
 } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
+import { upsertSettlement } from '../_shared/settlements.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
 
@@ -25,6 +26,22 @@ async function sendPushNotification(pushToken: string, title: string, body: stri
     body: JSON.stringify({ to: pushToken, title, body, sound: 'default', data }),
   });
   return response.json();
+}
+
+async function stripePost(endpoint: string, params: Record<string, string>, idempotencyKey?: string) {
+  const headers: Record<string, string> = {
+    'Authorization': `Bearer ${STRIPE_SECRET_KEY}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+  if (idempotencyKey) headers['Idempotency-Key'] = idempotencyKey;
+  const response = await fetch(`https://api.stripe.com/v1/${endpoint}`, {
+    method: 'POST',
+    headers,
+    body: new URLSearchParams(params).toString(),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error?.message || `Stripe error: ${response.status}`);
+  return data;
 }
 
 Deno.serve(async (req) => {
@@ -89,7 +106,7 @@ Deno.serve(async (req) => {
           user_id: vow.user_id,
           title: `${vow.witness_name} hasn't responded`,
           body: 'Your witness hasn\'t accepted yet. You can resend, switch witnesses, or go solo.',
-          data: { vow_id: vow.id, event: 'witness_no_response' },
+          data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'witness_no_response' },
           send_after: now.toISOString(),
         });
 
@@ -179,7 +196,7 @@ Deno.serve(async (req) => {
             user_id: vow.target_user_id,
             title: 'Time\'s up',
             body: `Your vow deadline has passed. ${vow.witness_name || 'Your challenger'} will decide the verdict.`,
-            data: { vow_id: vow.id, event: 'challenge_verdict_pending' },
+            data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'challenge_verdict_pending' },
             send_after: now.toISOString(),
           });
         }
@@ -290,7 +307,7 @@ Deno.serve(async (req) => {
           body: noRealPayment
             ? 'No verdict was received, so the vow was auto-resolved as kept.'
             : `No verdict was received, so the vow was auto-resolved as kept. $${amountDollars} refunded.`,
-          data: { vow_id: vow.id, verdict: 'kept' },
+          data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict: 'kept' },
           send_after: now.toISOString(),
         });
 
@@ -302,7 +319,7 @@ Deno.serve(async (req) => {
             body: noRealPayment
               ? 'No verdict was received, so your vow was auto-resolved as kept.'
               : `No verdict was received, so your vow was auto-resolved as kept. $${amountDollars} refunded.`,
-            data: { vow_id: vow.id, verdict: 'kept' },
+            data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict: 'kept' },
             send_after: now.toISOString(),
           });
         }
@@ -334,7 +351,7 @@ Deno.serve(async (req) => {
             user_id: vow.user_id,
             title: 'Witness invite failed',
             body: `We couldn't text your witness. Share the link manually.`,
-            data: { route: '/live', vowId: vow.id },
+            data: { route: `/vow-detail?vowId=${vow.id}`, vowId: vow.id },
             send_after: new Date().toISOString(),
           });
           await supabase.from('vows').update({ sms_failed: false }).eq('id', vow.id);
@@ -374,7 +391,7 @@ Deno.serve(async (req) => {
       results.errors.push(`sms_retry: ${msg}`);
     }
 
-    // === TASK 6: Retry failed refunds ===
+    // === TASK 6: Retry failed refunds / failed broken-vow charges ===
     try {
       const { data: refundFailed } = await supabase
         .from('vows')
@@ -382,6 +399,69 @@ Deno.serve(async (req) => {
         .eq('refund_failed', true);
 
       for (const vow of refundFailed || []) {
+        const { data: paymentDueSettlement } = await supabase
+          .from('settlements')
+          .select('*')
+          .eq('vow_id', vow.id)
+          .eq('status', 'payment_due')
+          .maybeSingle();
+
+        if (paymentDueSettlement && vow.status === 'broken') {
+          try {
+            if (!vow.stripe_payment_method_id) {
+              throw new Error('No saved payment method for retry');
+            }
+            const payerUserId = (vow.vow_type === 'challenge' && vow.target_user_id) ? vow.target_user_id : vow.user_id;
+            const settlementVow = { ...vow, user_id: payerUserId };
+
+            const { data: userRow } = await supabase
+              .from('users')
+              .select('stripe_customer_id')
+              .eq('id', payerUserId)
+              .single();
+
+            if (!userRow?.stripe_customer_id) {
+              throw new Error('No Stripe customer found for retry');
+            }
+
+            const pi = await stripePost('payment_intents', {
+              amount: String(vow.stake_amount),
+              currency: 'usd',
+              customer: userRow.stripe_customer_id,
+              payment_method: vow.stripe_payment_method_id,
+              off_session: 'true',
+              confirm: 'true',
+              'metadata[vow_id]': vow.id,
+              'metadata[user_id]': payerUserId,
+              'metadata[verdict]': 'broken',
+              'metadata[retry]': 'true',
+            }, `broken-charge-retry-${vow.id}-${new Date().toISOString().slice(0, 10)}`);
+
+            await supabase.from('vows').update({
+              stripe_payment_intent_id: pi.id,
+              refund_failed: false,
+            }).eq('id', vow.id);
+
+            await upsertSettlement(supabase, settlementVow, {
+              status: 'pending_manual_settlement',
+              stripe_payment_intent_id: pi.id,
+              stripe_charge_id: pi.latest_charge || null,
+              failure_reason: null,
+            });
+            await createAuditEvent(supabase, vow.id, 'charge_retry_succeeded', 'system', null, { payment_intent_id: pi.id });
+            results.refund_retry++;
+          } catch (chargeErr) {
+            const message = chargeErr instanceof Error ? chargeErr.message : String(chargeErr);
+            const payerUserId = (vow.vow_type === 'challenge' && vow.target_user_id) ? vow.target_user_id : vow.user_id;
+            await upsertSettlement(supabase, { ...vow, user_id: payerUserId }, {
+              status: 'payment_due',
+              failure_reason: message,
+            });
+            results.errors.push(`charge_retry ${vow.id}: ${message}`);
+          }
+          continue;
+        }
+
         if (!vow.stripe_payment_intent_id || !vow.stripe_payment_intent_id.startsWith('pi_')) {
           // No real Stripe PI — clear the flag (dev/test bypass)
           await supabase.from('vows').update({ refund_failed: false }).eq('id', vow.id);
@@ -474,7 +554,7 @@ Deno.serve(async (req) => {
             user_id: userId,
             title,
             body,
-            data: { vow_id: vow.id, event: eventType },
+            data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: eventType },
             send_after: sendAfter.toISOString(),
           });
           results.vow_lifecycle++;

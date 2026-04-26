@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+    --amber: #E8B656;
+    --amber-bg: rgba(232,182,86,0.06);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(232,182,86,0.06), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 30px 22px 24px; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; padding: 0 4px;
+  }
+  .back { font-size: 22px; color: var(--text-mute); }
+  .pulse-warn {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+    color: var(--amber); font-weight: 500;
+  }
+  .pulse-warn::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--amber); box-shadow: 0 0 6px var(--amber);
+  }
+  .more { font-size: 18px; color: var(--text-mute); letter-spacing: 0.2em; }
+
+  /* Vow card — slightly subdued */
+  .vow-card {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 14px; padding: 14px 18px 12px; margin-bottom: 16px;
+    position: relative;
+    opacity: 0.92;
+  }
+  .vow-card::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold-line), transparent);
+  }
+  .vc-label {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 6px;
+  }
+  .vc-text {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 18px; line-height: 1.18; letter-spacing: -0.005em;
+    color: var(--text); margin-bottom: 8px;
+  }
+  .vc-text em { font-style: italic; color: var(--gold); }
+  .vc-meta {
+    display: flex; gap: 16px; padding-top: 8px;
+    border-top: 1px dashed var(--rule);
+  }
+  .mc { display: flex; flex-direction: column; gap: 2px; }
+  .mc-k {
+    font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .mc-v {
+    font-family: var(--serif); font-weight: 500; font-size: 13px;
+    color: var(--text); font-feature-settings: "tnum";
+  }
+  .mc-v.gold { color: var(--gold-bright); }
+  .mc-v.amber::before {
+    content: ""; display: inline-block; width: 6px; height: 6px;
+    border-radius: 50%; background: var(--amber); margin-right: 6px; vertical-align: middle;
+    box-shadow: 0 0 4px var(--amber);
+  }
+
+  /* Big nudge card — the hero of this state */
+  .nudge {
+    background: var(--amber-bg);
+    border: 1px solid rgba(232,182,86,0.3);
+    border-radius: 16px;
+    padding: 22px 22px 20px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+  .nudge::before {
+    content: ""; position: absolute; top: 0; left: 26px; right: 26px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  }
+  .nudge-stamp {
+    font-size: 9.5px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--amber); font-weight: 500;
+    margin-bottom: 12px;
+    text-align: center;
+  }
+  .nudge-h {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 26px; line-height: 1.1; letter-spacing: -0.015em;
+    text-align: center; margin-bottom: 10px;
+  }
+  .nudge-h em { font-style: italic; color: var(--amber); }
+  .nudge-body {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 13.5px; line-height: 1.5; color: var(--text-mute);
+    margin: 0 6px 18px;
+  }
+  .nudge-body b { color: var(--text); font-style: normal; font-weight: 500; }
+
+  /* Avatar with pulse */
+  .who {
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    background: rgba(15,13,10,0.4);
+    border-radius: 999px;
+    padding: 10px 16px;
+    margin-bottom: 18px;
+    border: 1px solid rgba(240,233,219,0.04);
+  }
+  .who-av {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 500; font-size: 12px;
+    color: var(--text-mute);
+  }
+  .who-name {
+    font-family: var(--serif); font-weight: 500; font-size: 13.5px;
+    color: var(--text);
+  }
+  .who-status {
+    font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-mute);
+    margin-left: 4px;
+  }
+
+  .nudge-cta {
+    width: 100%; height: 56px; border-radius: 14px;
+    background: linear-gradient(180deg, #E8B656, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 16px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.3) inset, 0 10px 24px rgba(232,182,86,0.2);
+    margin-bottom: 8px;
+  }
+
+  .alt-row {
+    display: flex; gap: 6px; justify-content: center;
+    flex-wrap: wrap;
+    margin-bottom: 4px;
+  }
+  .alt-link {
+    font-size: 11px; color: var(--text-dim);
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 1px;
+  }
+
+  /* Status timeline */
+  .section-h {
+    font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin: 8px 4px 8px;
+  }
+  .activity {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 4px 16px;
+  }
+  .act-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 9px 0;
+  }
+  .act-row + .act-row { border-top: 1px dashed var(--rule); }
+  .act-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--text-dim); margin-top: 7px; flex-shrink: 0;
+  }
+  .act-row.amber .act-dot { background: var(--amber); }
+  .act-row.gold .act-dot { background: var(--gold); }
+  .act-text { flex: 1; }
+  .act-when {
+    font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .act-what {
+    font-family: var(--sans); font-size: 12.5px; color: var(--text);
+    margin-top: 1px;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="pulse-warn">Waiting on Nick</div>
+    <div class="more">···</div>
+  </div>
+
+  <div class="vow-card">
+    <div class="vc-label">— The Vow —</div>
+    <div class="vc-text"><em>I'll</em> deep clean my apartment by Sunday.</div>
+    <div class="vc-meta">
+      <div class="mc">
+        <div class="mc-k">On hold</div>
+        <div class="mc-v gold">$50</div>
+      </div>
+      <div class="mc">
+        <div class="mc-k">Verdict</div>
+        <div class="mc-v">Sun, 9pm</div>
+      </div>
+      <div class="mc">
+        <div class="mc-k">Judge</div>
+        <div class="mc-v amber">Pending</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="nudge">
+    <div class="nudge-stamp">— Not live yet —</div>
+    <div class="nudge-h">Your vow needs<br/><em>a witness.</em></div>
+    <div class="nudge-body">Nick hasn't tapped the link yet. Until he does, the vow's <b>on hold</b> — no one's deciding.</div>
+
+    <div class="who">
+      <div class="who-av">N</div>
+      <div class="who-name">Nick</div>
+      <div class="who-status">· sent 3 hrs ago</div>
+    </div>
+
+    <div class="nudge-cta">Nudge Nick →</div>
+
+    <div class="alt-row">
+      <div class="alt-link">Resend the link</div>
+      <div class="alt-link">·</div>
+      <div class="alt-link">Pick someone else</div>
+    </div>
+  </div>
+
+  <div class="section-h">Status</div>
+  <div class="activity">
+    <div class="act-row gold">
+      <div class="act-dot"></div>
+      <div class="act-text">
+        <div class="act-when">Today, 11:14 am</div>
+        <div class="act-what">You sent Nick the link</div>
+      </div>
+    </div>
+    <div class="act-row gold">
+      <div class="act-dot"></div>
+      <div class="act-text">
+        <div class="act-when">Today, 11:13 am</div>
+        <div class="act-what">$50 placed on hold</div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

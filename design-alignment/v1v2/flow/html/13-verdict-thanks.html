@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse 700px 500px at 50% 30%, rgba(200,155,60,0.10), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 60px 22px 22px; align-items: center; }
+
+  .stamp-large {
+    width: 110px; height: 110px;
+    border-radius: 50%;
+    border: 1.5px solid var(--gold);
+    background: radial-gradient(circle, rgba(200,155,60,0.10), transparent 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    margin-bottom: 22px;
+    position: relative;
+  }
+  .stamp-large::before, .stamp-large::after {
+    content: "";
+    position: absolute;
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    top: 50%;
+  }
+  .stamp-large::before { left: -3px; }
+  .stamp-large::after { right: -3px; }
+  .stamp-rune {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 22px; color: var(--gold-bright);
+    letter-spacing: 0.05em;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stamp-when {
+    font-size: 9px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-mute); font-weight: 500;
+  }
+
+  .stamp {
+    font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--gold); font-weight: 500;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 30px; line-height: 1.05; letter-spacing: -0.02em;
+    text-align: center; margin-bottom: 14px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+
+  .lede {
+    text-align: center; font-family: var(--serif); font-style: italic;
+    font-size: 14px; line-height: 1.5; color: var(--text-mute);
+    max-width: 280px; margin-bottom: 18px;
+  }
+  .lede b { color: var(--text); font-style: normal; font-weight: 500; }
+
+  /* Receipt */
+  .receipt {
+    width: 100%; max-width: 320px;
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 12px; padding: 14px 18px; margin-bottom: 28px;
+  }
+  .r-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 6px 0;
+  }
+  .r-row + .r-row { border-top: 1px dashed var(--rule); }
+  .r-k {
+    font-size: 9.5px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .r-v {
+    font-family: var(--serif); font-weight: 500; font-size: 14px;
+    color: var(--text); letter-spacing: -0.005em;
+    font-feature-settings: "tnum";
+  }
+
+  .footer { margin-top: auto; width: 100%; }
+  .recruit {
+    background: var(--surface);
+    border: 1px solid var(--gold-line);
+    border-radius: 16px;
+    padding: 18px 18px 16px;
+    margin-bottom: 12px;
+    text-align: center;
+    position: relative;
+  }
+  .recruit::before {
+    content: ""; position: absolute; top: 0; left: 24px; right: 24px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  }
+  .recruit-stamp {
+    font-size: 9.5px; letter-spacing: 0.32em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 8px;
+  }
+  .recruit-h {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 22px; line-height: 1.1; letter-spacing: -0.012em;
+    margin-bottom: 14px;
+  }
+  .recruit-h em { font-style: italic; color: var(--gold); }
+  .recruit-cta {
+    display: block; width: 100%; height: 52px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205; font-family: var(--serif); font-weight: 500;
+    font-size: 16px; letter-spacing: 0.005em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px; margin-bottom: 10px;
+    box-shadow: 0 1px 0 rgba(255,220,140,0.25) inset, 0 8px 22px rgba(200,155,60,0.18);
+  }
+  .recruit-row {
+    display: flex; gap: 6px; justify-content: center;
+    flex-wrap: wrap;
+  }
+  .recruit-alt {
+    font-size: 11px; color: var(--text-dim);
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 1px;
+  }
+  .micro-foot {
+    text-align: center;
+    font-family: var(--serif); font-style: italic;
+    font-size: 11.5px; color: var(--text-dim);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="stamp-large">
+    <div class="stamp-rune">KEPT</div>
+    <div class="stamp-when">Apr 26, 9:14pm</div>
+  </div>
+
+  <div class="stamp">— Verdict in —</div>
+  <h1>Done.<br/>Joey's been <em>told.</em></h1>
+  <div class="lede"><b>Thanks for being honest.</b> His $100 is being released.</div>
+
+  <div class="receipt">
+    <div class="r-row">
+      <div class="r-k">The Vow</div>
+      <div class="r-v">Gym 3x this week</div>
+    </div>
+    <div class="r-row">
+      <div class="r-k">Verdict</div>
+      <div class="r-v">Kept</div>
+    </div>
+    <div class="r-row">
+      <div class="r-k">Refund</div>
+      <div class="r-v">$100 → Joey</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="recruit">
+      <div class="recruit-stamp">— Now you —</div>
+      <div class="recruit-h">What would <em>you</em> put<br/>$50 on this week?</div>
+      <div class="recruit-cta">Make my vow →</div>
+      <div class="recruit-row">
+        <span class="recruit-alt">Dare Joey back</span>
+        <span class="recruit-alt">·</span>
+        <span class="recruit-alt">Just look around</span>
+      </div>
+    </div>
+    <div class="micro-foot">You judged honestly. Joey owes you one.</div>
+  </div>
+</div>
+</body>
+</html>

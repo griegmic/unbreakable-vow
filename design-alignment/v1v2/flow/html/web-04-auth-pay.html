@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-line: rgba(200,155,60,0.22);
+    --gold-soft: rgba(200,155,60,0.10);
+    --rule: rgba(240,233,219,0.08);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    background: var(--bg);
+    background-image: radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 60%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen { display: flex; flex-direction: column; height: 100%; padding: 44px 22px 22px; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; padding: 0 6px; }
+  .back { font-size: 22px; color: var(--text-mute); }
+  .web-tag {
+    font-size: 9.5px; letter-spacing: 0.24em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+
+  .heading-label {
+    font-family: var(--serif); font-style: italic; font-size: 13px;
+    color: var(--gold); margin-bottom: 8px;
+    padding: 0 6px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 400;
+    font-variation-settings: "opsz" 144;
+    font-size: 30px; line-height: 1.05; letter-spacing: -0.018em;
+    margin-bottom: 12px;
+    padding: 0 6px;
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+  .lede {
+    font-size: 13.5px; line-height: 1.5; color: var(--text-mute);
+    max-width: 320px; margin-bottom: 18px;
+    padding: 0 6px;
+  }
+
+  /* Phone field */
+  .field-label {
+    font-size: 9.5px; letter-spacing: 0.28em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+    margin-bottom: 8px; padding: 0 6px;
+  }
+  .phone-row {
+    display: flex; gap: 8px; margin-bottom: 6px;
+  }
+  .country {
+    width: 64px; height: 56px;
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    background: var(--surface);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--serif); font-weight: 500; font-size: 14px;
+    color: var(--text-mute);
+    gap: 4px;
+  }
+  .phone-input {
+    flex: 1; height: 56px;
+    border: 1px solid var(--gold-line);
+    border-radius: 12px;
+    background: var(--surface);
+    padding: 0 16px;
+    font-family: var(--serif); font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 19px; letter-spacing: 0.005em;
+    color: var(--text);
+    display: flex; align-items: center;
+    box-shadow: 0 0 0 3px rgba(200,155,60,0.08);
+  }
+  .phone-input .typed { color: var(--text); font-feature-settings: "tnum"; }
+  .phone-input .caret {
+    display: inline-block; width: 2px; height: 22px;
+    background: var(--gold-bright); margin-left: 2px;
+    animation: blink 1s step-end infinite;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .phone-help {
+    font-size: 11px; color: var(--text-dim); padding: 0 6px;
+    margin-bottom: 18px;
+    line-height: 1.4;
+  }
+  .phone-help a { color: var(--text-mute); border-bottom: 1px dotted var(--rule); }
+
+  /* Receipt strip */
+  .receipt {
+    background: transparent;
+    border-left: 2px solid var(--gold);
+    padding: 10px 14px;
+    margin: 0 6px 14px;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px;
+  }
+  .receipt-l {
+    font-size: 10.5px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .receipt-l b {
+    display: block; font-family: var(--serif); font-style: italic;
+    font-weight: 400; font-size: 13px; color: var(--text-mute);
+    letter-spacing: 0; text-transform: none;
+    margin-top: 3px;
+  }
+  .receipt-r {
+    font-family: var(--serif); font-weight: 500; font-size: 26px;
+    color: var(--gold-bright); letter-spacing: -0.02em;
+    font-feature-settings: "tnum";
+  }
+
+  /* Apple Pay */
+  .apple-pay {
+    width: 100%; height: 56px; border-radius: 14px;
+    background: #fff; color: #000;
+    font-family: -apple-system, "SF Pro Text", sans-serif;
+    font-weight: 600; font-size: 18px; letter-spacing: -0.01em;
+    display: flex; align-items: center; justify-content: center;
+    gap: 6px;
+    margin-bottom: 12px;
+    box-shadow: 0 8px 28px rgba(255,255,255,0.05);
+  }
+  .apple-pay .glyph { font-size: 22px; line-height: 1; margin-top: -2px; }
+
+  .other-pay {
+    text-align: center;
+    font-size: 11.5px; color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .other-pay a {
+    color: var(--text-mute);
+    border-bottom: 1px dotted var(--rule);
+    padding-bottom: 1px;
+  }
+
+  /* Web-only callout */
+  .web-callout {
+    background: var(--surface); border: 1px dashed var(--gold-line);
+    border-radius: 10px;
+    padding: 9px 12px;
+    margin: 12px 6px 0;
+    font-family: var(--serif); font-style: italic;
+    font-size: 11.5px; color: var(--text-mute);
+    text-align: center; line-height: 1.45;
+  }
+  .web-callout b { color: var(--text); font-style: normal; font-weight: 500; }
+
+  .footer { margin-top: auto; padding: 0 6px; }
+  .reassurance {
+    text-align: center; font-family: var(--serif); font-style: italic;
+    font-size: 12px; color: var(--text-mute); line-height: 1.55;
+    margin-bottom: 4px;
+  }
+  .reassurance b { color: var(--text); font-style: normal; font-weight: 500; }
+  .micro {
+    text-align: center;
+    font-size: 10px; color: var(--text-dim);
+    letter-spacing: 0.04em; line-height: 1.5;
+  }
+  .micro .stripe { font-weight: 500; color: var(--text-mute); }
+</style>
+</head>
+<body>
+<div class="screen">
+  <div class="topbar">
+    <div class="back">←</div>
+    <div class="web-tag">Mobile Web</div>
+  </div>
+
+  <div class="heading-label">Skin in the game.</div>
+  <h1>Put your card<br/>where your <em>word</em> is.</h1>
+  <div class="lede">Phone keeps it tied to you. You'll pick your judge after.</div>
+
+  <div class="field-label">Your number</div>
+  <div class="phone-row">
+    <div class="country">🇺🇸 +1</div>
+    <div class="phone-input">
+      <span class="typed">(415) 555&nbsp;</span><span class="caret"></span>
+    </div>
+  </div>
+  <div class="phone-help">We text you a 6-digit code. <a>Use Gmail instead</a></div>
+
+  <div class="receipt">
+    <div class="receipt-l">On hold<b>"Gym Mon, Wed &amp; Fri"</b></div>
+    <div class="receipt-r">$50</div>
+  </div>
+
+  <div class="apple-pay">
+    <span class="glyph"></span><span>Pay</span>
+  </div>
+
+  <div class="other-pay">or <a>card · Google Pay</a></div>
+
+  <div class="web-callout">
+    On web, you'll <b>name your judge after</b> by sending one text.
+  </div>
+
+  <div class="footer">
+    <div class="reassurance">Nothing charges <b>unless you break it.</b></div>
+    <div class="micro">Held by <span class="stripe">Stripe</span> · Released Sunday if your judge says you kept it</div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Vow Broken · Charity</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,400;1,9..144,500&family=Inter+Tight:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0F0D0A; --surface: #181512; --surface-2: #1F1B16;
+    --text: #F0E9DB; --text-mute: #A49A85; --text-dim: #726A5A;
+    --gold: #C89B3C; --gold-bright: #E8B656; --gold-deep: #8B6820;
+    --gold-line: rgba(200,155,60,0.18);
+    --gold-soft: rgba(200,155,60,0.08);
+    --rule: rgba(240,233,219,0.08);
+    --muted-red: #A05248;
+    --muted-red-soft: rgba(160,82,72,0.14);
+    --serif: "Fraunces", Georgia, serif;
+    --sans: "Inter Tight", -apple-system, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 393px; height: 852px; overflow: hidden; }
+  body {
+    /* "broken" gradient — cooler, dimmer, slight red wash */
+    background: var(--bg);
+    background-image:
+      radial-gradient(ellipse 700px 480px at 50% 28%, rgba(160,82,72,0.10), transparent 64%),
+      radial-gradient(ellipse 800px 500px at 50% 100%, rgba(200,155,60,0.04), transparent 70%);
+    color: var(--text); font-family: var(--sans); font-size: 15px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .screen {
+    display: flex; flex-direction: column;
+    height: 100%; padding: 84px 28px 28px;
+    align-items: center; text-align: center;
+  }
+
+  /* Broken seal hero */
+  .seal-wrap {
+    position: relative;
+    width: 96px; height: 96px;
+    margin-bottom: 22px;
+  }
+  .seal {
+    position: relative; width: 96px; height: 96px;
+    display: flex; align-items: center; justify-content: center;
+    filter: drop-shadow(0 12px 24px rgba(40,30,15,0.4));
+  }
+
+  h1 {
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-variation-settings: "opsz" 144;
+    font-size: 36px; line-height: 1.05; letter-spacing: -0.02em;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .sub {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 16px; line-height: 1.45;
+    color: var(--text-mute);
+    margin-bottom: 26px;
+    max-width: 320px;
+  }
+  .sub b { color: var(--text); font-weight: 500; font-style: italic; }
+  .sub .dest { color: var(--gold); font-weight: 500; font-style: italic; }
+
+  /* Receipt card */
+  .receipt {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 14px;
+    padding: 16px 18px 14px;
+    margin-bottom: 22px;
+    position: relative;
+    text-align: left;
+  }
+  .receipt::before {
+    content: ""; position: absolute; top: 0; left: 22px; right: 22px; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(160,82,72,0.32), transparent);
+  }
+  .r-label {
+    font-size: 9px; letter-spacing: 0.3em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500; margin-bottom: 8px;
+  }
+  .r-vow {
+    font-family: var(--serif); font-style: italic; font-weight: 400;
+    font-size: 16px; line-height: 1.25; color: var(--text);
+    margin-bottom: 10px;
+  }
+  .r-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0;
+    border-top: 1px dashed var(--rule);
+  }
+  .r-k {
+    font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--text-dim); font-weight: 500;
+  }
+  .r-v {
+    font-family: var(--serif); font-weight: 500; font-size: 13.5px;
+    color: var(--text); font-feature-settings: "tnum";
+  }
+  .r-v .arrow { color: var(--text-dim); font-family: var(--sans); margin: 0 4px; }
+  .r-v .dest { color: var(--gold); font-style: italic; }
+  .r-v.muted { color: var(--text-mute); font-style: italic; font-weight: 400; }
+
+  /* Muted-red BROKEN stamp */
+  .stamp {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 4px 16px;
+    border: 1.5px solid var(--muted-red);
+    border-radius: 4px;
+    color: var(--muted-red);
+    font-family: var(--serif); font-weight: 600;
+    font-size: 16px; letter-spacing: 0.18em;
+    transform: rotate(-3deg);
+    margin-bottom: 26px;
+  }
+
+  .spacer { flex: 1; }
+
+  /* Primary CTA — gold (forward motion, not punishment) */
+  .cta {
+    width: 100%; height: 60px; border-radius: 14px;
+    background: linear-gradient(180deg, #D4A94A, #B88930);
+    color: #1A1205;
+    font-family: var(--serif); font-weight: 500;
+    font-size: 17px;
+    display: flex; align-items: center; justify-content: center;
+    gap: 8px;
+    box-shadow:
+      0 1px 0 rgba(255,220,140,0.3) inset,
+      0 12px 32px rgba(200,155,60,0.22);
+    margin-bottom: 16px;
+  }
+
+  /* Secondary text-link */
+  .secondaries {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .sec-link {
+    font-family: var(--sans); font-size: 13px; font-weight: 500;
+    color: var(--text-mute);
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="screen">
+
+  <!-- Broken seal: cracked wax in two halves, muted gold -->
+  <div class="seal-wrap">
+    <div class="seal">
+      <svg viewBox="0 0 96 96" width="96" height="96" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <radialGradient id="bs-gold" cx="35%" cy="28%" r="70%">
+            <stop offset="0%" stop-color="#B8954A"/>
+            <stop offset="40%" stop-color="#A88840"/>
+            <stop offset="80%" stop-color="#7A5C1A"/>
+            <stop offset="100%" stop-color="#4F3A0E"/>
+          </radialGradient>
+        </defs>
+        <!-- Left half -->
+        <path d="M48 6 a42 42 0 0 0 -36 60 l30 -16 l-2 -16 l8 -10 l4 -8 z"
+              fill="url(#bs-gold)"
+              stroke="#3A2C0C" stroke-width="0.8"
+              transform="translate(-3 0)"/>
+        <!-- Right half -->
+        <path d="M48 6 a42 42 0 0 1 36 60 l-30 -16 l2 -16 l-8 -10 l-4 -8 z"
+              fill="url(#bs-gold)"
+              stroke="#3A2C0C" stroke-width="0.8"
+              transform="translate(3 0)"/>
+        <!-- Bottom half left -->
+        <path d="M12 66 a42 42 0 0 0 30 24 l8 -22 l-12 -10 l-6 8 l-12 8 z"
+              fill="url(#bs-gold)"
+              stroke="#3A2C0C" stroke-width="0.8"
+              transform="translate(-2 2)"/>
+        <!-- Bottom half right -->
+        <path d="M84 66 a42 42 0 0 1 -30 24 l-8 -22 l12 -10 l6 8 l12 8 z"
+              fill="url(#bs-gold)"
+              stroke="#3A2C0C" stroke-width="0.8"
+              transform="translate(2 2)"/>
+        <!-- Crack lines (jagged dark) -->
+        <path d="M44 4 L48 22 L42 36 L52 50 L46 64 L52 88"
+              fill="none" stroke="#1A1205" stroke-width="2" stroke-linecap="round" stroke-linejoin="miter"/>
+      </svg>
+    </div>
+  </div>
+
+  <h1>You broke it.</h1>
+  <div class="sub">
+    Sarah confirmed.<br/>
+    The $25 is on its way to <span class="dest">ALS Association</span>.
+  </div>
+
+  <!-- Receipt -->
+  <div class="receipt">
+    <div class="r-label">— The Receipt —</div>
+    <div class="r-vow">Go to the gym 3x.</div>
+    <div class="r-row">
+      <span class="r-k">Money</span>
+      <span class="r-v">$25 <span class="arrow">→</span> <span class="dest">ALS Association</span></span>
+    </div>
+    <div class="r-row">
+      <span class="r-k">Streak</span>
+      <span class="r-v muted">Streak ended at 3</span>
+    </div>
+  </div>
+
+  <div class="stamp">BROKEN</div>
+
+  <div class="spacer"></div>
+
+  <!-- Primary CTA — forward motion. One screen, one emotion. -->
+  <div class="cta">
+    <span>Make a new vow</span>
+    <span>→</span>
+  </div>
+
+</div>
+</body>
+</html>

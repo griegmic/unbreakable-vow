@@ -152,7 +152,7 @@ export default function StakeScreen() {
           {consequence === 'anti' ? 'Pick a cause that stings' : 'Pick a charity'}
         </Text>
         {consequence === 'anti' ? (
-          <Text style={styles.antiHint}>The worse it feels, the harder you'll try.</Text>
+          <Text style={styles.antiHint}>The worse it feels, the harder you will try.</Text>
         ) : null}
         <View style={styles.optionWrap}>
           {options.map((option) => (

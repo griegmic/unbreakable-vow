@@ -57,11 +57,6 @@ export async function createVow(params: {
   return data;
 }
 
-/** @deprecated Use the seal-vow edge function instead. Direct DB writes skip Stripe capture. */
-async function sealVow(_vowId: string) {
-  throw new Error('sealVow() is disabled. Use the seal-vow edge function.');
-}
-
 /** @deprecated Use voidVowV2() which calls the void-vow edge function with proper Stripe handling. */
 export async function voidVow(vowId: string) {
   const { error } = await supabase.from('vows').update({
@@ -317,7 +312,7 @@ export async function saveWitnessReminder(token: string, phone: string, name?: s
     }
     if (data?.error) return { success: false, error: data.error };
     return { success: true };
-  } catch (err) {
+  } catch {
     return { success: false, error: 'Failed to save reminder.' };
   }
 }
@@ -436,79 +431,13 @@ export async function getRecentVows(limit: number = 5): Promise<VowRow[]> {
 }
 
 export async function acceptChallenge(token: string): Promise<{ success: boolean; error?: string }> {
-  console.log('[vow-api] acceptChallenge:', token);
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return { success: false, error: 'Not authenticated' };
-
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-    const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
-
-    const res = await fetch(`${supabaseUrl}/functions/v1/accept-challenge`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': anonKey,
-        'Authorization': `Bearer ${session.access_token}`,
-      },
-      body: JSON.stringify({
-        token,
-        action: 'accept',
-        email: session.user.email,
-        display_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0],
-        stake_amount: 0,
-        destination: '',
-      }),
-    });
-
-    const body = await res.json().catch(() => null);
-    if (!res.ok || body?.error) {
-      const errMsg = body?.error ? String(body.error) : `HTTP ${res.status}`;
-      console.error('[vow-api] acceptChallenge error:', errMsg);
-      return { success: false, error: errMsg };
-    }
-    return { success: true };
-  } catch (err) {
-    console.error('[vow-api] acceptChallenge exception:', err);
-    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
-  }
+  console.log('[vow-api] acceptChallenge blocked in native app:', token);
+  return { success: false, error: 'Dare acceptance happens in the mobile web flow.' };
 }
 
 export async function declineChallenge(token: string): Promise<{ success: boolean; error?: string }> {
-  console.log('[vow-api] declineChallenge:', token);
-  try {
-    const { data: { session } } = await supabase.auth.getSession();
-
-    const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || '';
-    const anonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '';
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'apikey': anonKey,
-      'Authorization': `Bearer ${session?.access_token || anonKey}`,
-    };
-
-    const res = await fetch(`${supabaseUrl}/functions/v1/accept-challenge`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        token,
-        action: 'decline',
-        display_name: session?.user?.user_metadata?.full_name || undefined,
-      }),
-    });
-
-    const body = await res.json().catch(() => null);
-    if (!res.ok || body?.error) {
-      const errMsg = body?.error ? String(body.error) : `HTTP ${res.status}`;
-      console.error('[vow-api] declineChallenge error:', errMsg);
-      return { success: false, error: errMsg };
-    }
-    return { success: true };
-  } catch (err) {
-    console.error('[vow-api] declineChallenge exception:', err);
-    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
-  }
+  console.log('[vow-api] declineChallenge blocked in native app:', token);
+  return { success: false, error: 'Dare responses happen in the mobile web flow.' };
 }
 
 export async function getVowDetail(vowId: string): Promise<VowRow | null> {

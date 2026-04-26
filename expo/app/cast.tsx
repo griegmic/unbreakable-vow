@@ -2,7 +2,7 @@ import Constants from 'expo-constants';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Send, Sparkles, Copy, Check, UserRound, X, MessageCircle, Shield, Calendar } from 'lucide-react-native';
+import { ArrowLeft, Send, Sparkles, Check, UserRound, X, Shield, Calendar } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as Clipboard from 'expo-clipboard';
 import {
@@ -221,21 +221,12 @@ export default function CastScreen() {
       setDareLink(link);
       setSending(false);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-      // Auto-trigger share sheet immediately
-      const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
-      const name = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || '';
-      const shareText = name
-        ? `${name} dared you to make an Unbreakable Vow: ${vowPart} → ${link}`
-        : `You've been dared to make an Unbreakable Vow: ${vowPart} → ${link}`;
       try {
-        const result = await Share.share({ message: shareText });
-        if (result.action === Share.sharedAction) {
-          setShared(true);
-          return;
-        }
-      } catch {}
-      // If share was cancelled or failed, fall through to the share screen
+        const token = await registerForPushNotifications();
+        if (token) await savePushToken(token);
+      } catch (pushErr) {
+        console.log('[Cast] push registration failed:', pushErr);
+      }
       setDareSent(true);
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -243,7 +234,7 @@ export default function CastScreen() {
       setError(errMsg || 'Something went wrong');
       setSending(false);
     }
-  }, [sending, vowText, targetName, finalText, suggestedStake, deadlineDate]);
+  }, [sending, vowText, targetName, targetPhone, finalText, suggestedStake, deadlineDate]);
 
   const handleSend = async () => {
     if (!vowText.trim() || !targetName.trim() || sending) return;
@@ -266,10 +257,6 @@ export default function CastScreen() {
 
   const handleAuthSuccess = useCallback(async () => {
     setAuthSheetVisible(false);
-    try {
-      const token = await registerForPushNotifications();
-      if (token) await savePushToken(token);
-    } catch {}
     if (isAuthenticated) {
       void handleSendDare();
     } else {
@@ -283,17 +270,23 @@ export default function CastScreen() {
 
   const senderName = session?.user?.user_metadata?.full_name || session?.user?.email?.split('@')[0] || '';
 
-  const getShareText = () => {
+  const getShareText = useCallback(() => {
     const vowPart = formattedText.replace(/\.$/, '').toLowerCase();
     if (senderName) {
       return `${senderName} dared you to make an Unbreakable Vow: ${vowPart} → ${dareLink}`;
     }
     return `You've been dared to make an Unbreakable Vow: ${vowPart} → ${dareLink}`;
-  };
+  }, [dareLink, formattedText, senderName]);
 
   const handleShare = useCallback(async () => {
     void Haptics.selectionAsync();
     try {
+      if (targetPhone) {
+        const sep = Platform.OS === 'ios' ? '&' : '?';
+        await Linking.openURL(`sms:${formatE164(targetPhone)}${sep}body=${encodeURIComponent(getShareText())}`);
+        setShared(true);
+        return;
+      }
       const result = await Share.share({ message: getShareText() });
       if (result.action === Share.sharedAction) {
         setShared(true);
@@ -301,7 +294,7 @@ export default function CastScreen() {
     } catch {
       console.log('[Cast] share failed');
     }
-  }, [dareLink, formattedText]);
+  }, [getShareText, targetPhone]);
 
   const handleCopyLink = useCallback(async () => {
     void Haptics.selectionAsync();

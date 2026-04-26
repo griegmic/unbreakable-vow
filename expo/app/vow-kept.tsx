@@ -22,15 +22,12 @@ export default function VowKeptScreen() {
   const { activeVowText, resetVow, vow, isSelfWitness } = useVowFlow();
   const receiptRef = useRef<View>(null);
   const [sharing, setSharing] = useState(false);
-  const [keptCount, setKeptCount] = useState(0);
   const [streak, setStreak] = useState(0);
 
   useEffect(() => {
     getVowHistory()
       .then((data) => {
         const rows = data as VowRow[];
-        const kept = rows.filter((v) => v.verdict === 'kept').length + 1; // +1 for this one
-        setKeptCount(kept);
         // Calculate streak
         let s = 1; // this one counts
         // Sort by verdict_at descending (should already be)
@@ -49,7 +46,6 @@ export default function VowKeptScreen() {
       })
       .catch((err) => {
         console.error('[VowKeptScreen] failed to load history:', err);
-        setKeptCount(1);
         setStreak(1);
       });
   }, []);
@@ -108,9 +104,9 @@ export default function VowKeptScreen() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getShareText = () => isZeroStake
+  const getShareText = useCallback(() => isZeroStake
     ? `I kept my Unbreakable Vow: "${activeVowText}" 🔥 ${streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`
-    : `I kept my Unbreakable Vow: "${activeVowText}" — $${vow.stake.amount} protected. 🔥 ${streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`;
+    : `I kept my Unbreakable Vow: "${activeVowText}" — $${vow.stake.amount} protected. 🔥 ${streak > 1 ? `${streak} in a row\n` : ''}unbreakablevow.app`, [activeVowText, isZeroStake, streak, vow.stake.amount]);
 
   const handleShare = useCallback(async () => {
     if (sharing) return;
@@ -139,7 +135,7 @@ export default function VowKeptScreen() {
     } finally {
       setSharing(false);
     }
-  }, [sharing, activeVowText, vow.stake.amount, streak, isZeroStake]);
+  }, [sharing, getShareText]);
 
   const handleDonate = () => {
     const url = `https://www.google.com/search?q=donate+${encodeURIComponent(destination)}`;

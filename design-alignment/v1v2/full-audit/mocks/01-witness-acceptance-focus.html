@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Witness acceptance focus mock</title>
+  <style>
+    :root {
+      --bg: #0f0d0a;
+      --card: #181512;
+      --line: rgba(240,233,219,.1);
+      --gold: #d8aa43;
+      --gold2: #e8bd5d;
+      --text: #f0e9db;
+      --muted: #a49a85;
+      --dim: #716958;
+      --green: #34c759;
+      --black: #15100a;
+      font-family: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); }
+    .screen {
+      min-height: 100dvh;
+      max-width: 430px;
+      margin: 0 auto;
+      padding: 22px 22px 20px;
+      display: flex;
+      flex-direction: column;
+      background:
+        radial-gradient(520px 360px at 50% -8%, rgba(216,170,67,.13), transparent 62%),
+        var(--bg);
+    }
+    .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 26px; }
+    .brand { font: 600 14px Georgia, serif; color: var(--muted); }
+    .brand em { color: var(--gold); }
+    .make { color: var(--gold2); font-weight: 800; font-size: 14px; }
+    .badge { display: inline-flex; color: var(--gold2); border: 1px solid rgba(216,170,67,.32); border-radius: 999px; padding: 7px 10px; letter-spacing: .18em; text-transform: uppercase; font-size: 10px; font-weight: 800; margin-bottom: 15px; }
+    h1 { margin: 0 0 12px; font-size: 42px; line-height: .98; letter-spacing: 0; font-weight: 850; }
+    h1 span { color: var(--gold); }
+    .sub { margin: 0 0 18px; color: var(--muted); font-size: 17px; line-height: 1.38; font-weight: 550; }
+    .card { border: 1px solid var(--line); background: linear-gradient(180deg, rgba(240,233,219,.055), rgba(240,233,219,.025)); border-radius: 18px; padding: 18px; margin-bottom: 14px; }
+    .label { color: var(--dim); text-transform: uppercase; letter-spacing: .22em; font-size: 10px; font-weight: 800; margin-bottom: 8px; }
+    .vow { font-size: 26px; line-height: 1.08; font-weight: 800; margin-bottom: 16px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; border-top: 1px solid var(--line); padding-top: 14px; }
+    .tile { border: 1px solid var(--line); border-radius: 14px; padding: 12px; background: rgba(240,233,219,.025); }
+    .tile.gold { border-color: rgba(216,170,67,.34); background: rgba(216,170,67,.1); }
+    .tile strong { display: block; font-size: 20px; margin-bottom: 3px; }
+    .tile.gold strong { color: var(--gold2); }
+    .next { display: grid; gap: 8px; margin: 2px 0 16px; }
+    .step { display: grid; grid-template-columns: 30px 1fr; gap: 12px; align-items: start; padding: 10px 0; border-bottom: 1px solid var(--line); }
+    .step:last-child { border-bottom: 0; }
+    .num { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; background: rgba(240,233,219,.08); color: var(--muted); font-weight: 850; }
+    .step:first-child .num { background: var(--gold); color: var(--black); }
+    .step b { display: block; font-size: 16px; margin-bottom: 3px; }
+    .step span { color: var(--muted); font-size: 14px; line-height: 1.34; }
+    .spacer { flex: 1; min-height: 18px; }
+    .cta { width: 100%; height: 58px; border: 0; border-radius: 999px; background: linear-gradient(180deg, var(--gold2), var(--gold)); color: var(--black); font-weight: 850; font-size: 17px; }
+    .secondary { height: 44px; border: 1px solid var(--line); border-radius: 999px; background: transparent; color: var(--muted); font-weight: 700; margin-top: 9px; width: 100%; }
+    .links { display: flex; justify-content: center; gap: 18px; margin-top: 12px; color: var(--muted); font-weight: 750; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="screen">
+    <div class="top"><div class="brand">Unbreakable <em>Vow</em></div><div class="make">Make a vow</div></div>
+    <div class="badge">Judge invite</div>
+    <h1>Joseph needs you to <span>hold the line.</span></h1>
+    <p class="sub">They put cash on a promise. Your job is simple: nudge if needed, then call it kept or broken.</p>
+    <section class="card">
+      <div class="label">The vow</div>
+      <div class="vow">No alcohol, 2 weeks.</div>
+      <div class="grid">
+        <div class="tile gold"><div class="label">On the line</div><strong>$50</strong><span>ALS if broken</span></div>
+        <div class="tile"><div class="label">Your call</div><strong>Sun</strong><span>one tap verdict</span></div>
+      </div>
+    </section>
+    <section class="next">
+      <div class="step"><div class="num">1</div><div><b>Accept the job.</b><span>Joseph knows the vow is real.</span></div></div>
+      <div class="step"><div class="num">2</div><div><b>Nudge if needed.</b><span>One text can keep them honest.</span></div></div>
+      <div class="step"><div class="num">3</div><div><b>Make the call.</b><span>Verdict day is kept or broken. No essay.</span></div></div>
+    </section>
+    <div class="spacer"></div>
+    <button class="cta">I'm in - hold Joseph to it</button>
+    <button class="secondary">Pass - I can't judge this one</button>
+    <div class="links"><span>Make your own vow</span><span>Dare a friend</span></div>
+  </main>
+</body>
+</html>

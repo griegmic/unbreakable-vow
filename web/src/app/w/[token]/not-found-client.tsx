@@ -92,11 +92,11 @@ export default function WitnessNotFound({ token }: { token: string }) {
         >
           <Clock className="w-6 h-6" style={{ color: 'var(--gold)' }} />
         </div>
-        <h2 className="text-xl font-serif font-bold" style={{ color: 'var(--text)' }}>
-          Almost ready
+        <h2 className="text-xl font-semibold" style={{ color: 'var(--text)', fontFamily: 'var(--uv-font-sans)' }}>
+          Your friend sent you a vow.
         </h2>
         <p className="text-[15px] leading-[22px]" style={{ color: 'var(--text-secondary)' }}>
-          Your friend is still setting up their vow. This page will update automatically.
+          They&apos;re still finishing the stake. Keep this open and the invite will appear automatically.
         </p>
         <div
           className="w-6 h-6 border-2 rounded-full animate-spin mt-2"

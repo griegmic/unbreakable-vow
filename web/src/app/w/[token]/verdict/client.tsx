@@ -38,7 +38,7 @@ function formatEndDate(dateStr: string | null): string {
     d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-export default function VerdictClient({ vow, token, makerName, targetName }: { vow: Vow; token: string; makerName: string; targetName?: string }) {
+export default function VerdictClient({ vow, token, makerName, targetName, isEarlyCompletion = false }: { vow: Vow; token: string; makerName: string; targetName?: string; isEarlyCompletion?: boolean }) {
   // For challenge vows, the "maker" is the challenger/witness viewing this page,
   // and "targetName" is the person being judged.
   const cleanName = (name: string | undefined, fallback: string) => {
@@ -61,6 +61,32 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
   const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const handleConfirmRef = useRef<(v: VerdictChoice) => Promise<void>>(null!);
+  const EscapeBar = () => (
+    <div style={{
+      position: 'absolute', top: 18, left: 20, right: 20,
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      gap: 16, zIndex: 2,
+    }}>
+      <Link
+        href={`/w/${token}`}
+        style={{
+          color: 'var(--uv-text-muted)', textDecoration: 'none',
+          fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 700,
+        }}
+      >
+        &larr; Back to vow
+      </Link>
+      <Link
+        href="/quick-vow"
+        style={{
+          color: 'var(--uv-gold-bright)', textDecoration: 'none',
+          fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 800,
+        }}
+      >
+        Make a vow
+      </Link>
+    </div>
+  );
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -191,7 +217,8 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
     };
 
     return (
-      <div style={{ minHeight: "100dvh", background: "var(--uv-bg)", backgroundImage: "radial-gradient(ellipse at 50% 30%, rgba(200,155,60,0.06), var(--uv-bg) 70%)", display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 36px 40px", textAlign: "center" }}>
+      <div style={{ position: 'relative', minHeight: "100dvh", background: "var(--uv-bg)", backgroundImage: "radial-gradient(ellipse at 50% 30%, rgba(200,155,60,0.06), var(--uv-bg) 70%)", display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 36px 40px", textAlign: "center" }}>
+        <EscapeBar />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
             UNBREAKABLE VOW
@@ -271,12 +298,12 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
 
           {/* Growth CTAs */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-            <Link href="/" style={{ textDecoration: 'none' }}>
+            <Link href="/quick-vow" style={{ textDecoration: 'none' }}>
               <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
             </Link>
             <div style={{ textAlign: 'center' }}>
               <Link
-                href={targetName ? '/cast' : `/?ref=witness&from=${encodeURIComponent(makerName)}`}
+                href="/cast"
                 style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}
               >
                 Dare {judgeName} &rarr;
@@ -291,7 +318,8 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
   // ─── CONFIRM (submitting) STATE ───
   if (view === 'confirm') {
     return (
-      <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 30%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 36px 40px', textAlign: 'center' }}>
+      <div style={{ position: 'relative', minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 30%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 36px 40px', textAlign: 'center' }}>
+        <EscapeBar />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
             UNBREAKABLE VOW
@@ -324,19 +352,40 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
 
   // ─── CHOOSE STATE ───
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 36px 40px' }}>
+    <div style={{ position: 'relative', minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 36px 40px' }}>
+      <EscapeBar />
       <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
         <EyebrowTag tone="gold">UNBREAKABLE VOW</EyebrowTag>
 
         {/* "— VERDICT DAY —" stamp per mock */}
         <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
-          — Verdict day —
+          {isEarlyCompletion ? '— Early release —' : '— Verdict day —'}
         </div>
 
         {/* H1 per mock: "Joey's vow / is up." with forced line break */}
         <div style={{ textAlign: 'center' }}>
-          <FrauncesH1 italic size="page">{judgeName}&apos;s vow<br/>is <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>up.</em></FrauncesH1>
+          <FrauncesH1 italic size="page">
+            {isEarlyCompletion ? (
+              <>{judgeName} says<br/>it&apos;s <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>done.</em></>
+            ) : (
+              <>{judgeName}&apos;s vow<br/>is <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>up.</em></>
+            )}
+          </FrauncesH1>
         </div>
+
+        {isEarlyCompletion && (
+          <div style={{
+            borderRadius: 16,
+            border: '1px solid var(--uv-gold-line)',
+            background: 'rgba(215,169,70,0.08)',
+            padding: '14px 16px',
+            textAlign: 'center',
+          }}>
+            <p style={{ margin: 0, fontFamily: 'var(--uv-font-sans)', fontSize: 14.5, lineHeight: 1.45, color: 'var(--uv-text-muted)' }}>
+              Release them only if you&apos;re sure. Your tap closes the vow.
+            </p>
+          </div>
+        )}
 
         {/* Vow card with stamp header + 2-col meta per mock */}
         <RitualCard>
@@ -354,7 +403,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
                 <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)' }}>to {vow.destination}, if broken</div>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>Vow ended</div>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>{isEarlyCompletion ? 'Deadline' : 'Vow ended'}</div>
                 <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>{formatRelativeTime(vow.ends_at)}</div>
                 <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)', fontStyle: 'italic' }}>{formatEndDate(vow.ends_at)}</div>
               </div>
@@ -438,7 +487,7 @@ export default function VerdictClient({ vow, token, makerName, targetName }: { v
             Need to check? <span style={{ color: 'var(--uv-gold)', fontWeight: 500 }}>Open Messages with {judgeNameInline}</span>
           </button>
           <p style={{ fontSize: 13, color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic' }}>
-            Be honest. They&apos;re counting on it.
+            {isEarlyCompletion ? 'Early release counts. Be sure.' : 'Be honest. They&apos;re counting on it.'}
           </p>
         </div>
       </div>
