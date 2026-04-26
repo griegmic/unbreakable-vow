@@ -79,18 +79,58 @@ export async function saveCard(vowId: string): Promise<SaveCardResult> {
 // ── Payment sheet: SetupIntent mode (save card, no charge) ──
 
 export async function setupPaymentSheetForSetup(clientSecret: string, stakeAmountCents?: number): Promise<void> {
-  void clientSecret;
-  void stakeAmountCents;
-  throw new Error('Native Stripe payment sheet is unavailable in web preview');
+  const { initPaymentSheet } = await import('@stripe/stripe-react-native');
+  const displayAmount = stakeAmountCents && stakeAmountCents > 0
+    ? (stakeAmountCents / 100).toFixed(2)
+    : undefined;
+  const { error } = await initPaymentSheet({
+    setupIntentClientSecret: clientSecret, // SetupIntent, not PaymentIntent
+    merchantDisplayName: 'Unbreakable Vow',
+    style: 'alwaysDark',
+    primaryButtonLabel: 'Save payment method',
+    applePay: {
+      merchantCountryCode: 'US',
+      cartItems: displayAmount
+        ? [{ paymentType: 'Immediate', isPending: true, label: 'If broken', amount: displayAmount }]
+        : undefined,
+    },
+    googlePay: {
+      merchantCountryCode: 'US',
+      currencyCode: 'USD',
+      amount: displayAmount,
+      label: 'If broken',
+      testEnv: false,
+    },
+    defaultBillingDetails: { address: { country: 'US' } },
+  });
+
+  if (error) throw new Error(error.message);
 }
 
 // ── Legacy: Payment sheet for PaymentIntent ──
 
 export async function setupPaymentSheet(clientSecret: string): Promise<void> {
-  void clientSecret;
-  throw new Error('Native Stripe payment sheet is unavailable in web preview');
+  const { initPaymentSheet } = await import('@stripe/stripe-react-native');
+  const { error } = await initPaymentSheet({
+    paymentIntentClientSecret: clientSecret,
+    merchantDisplayName: 'Unbreakable Vow',
+    style: 'alwaysDark',
+    applePay: { merchantCountryCode: 'US' },
+    googlePay: { merchantCountryCode: 'US', testEnv: false },
+    defaultBillingDetails: { address: { country: 'US' } },
+  });
+
+  if (error) throw new Error(error.message);
 }
 
 export async function showPaymentSheet(): Promise<boolean> {
-  throw new Error('Native Stripe payment sheet is unavailable in web preview');
+  const { presentPaymentSheet } = await import('@stripe/stripe-react-native');
+  const { error } = await presentPaymentSheet();
+
+  if (error) {
+    if (error.code === 'Canceled') return false;
+    throw new Error(error.message);
+  }
+
+  return true;
 }

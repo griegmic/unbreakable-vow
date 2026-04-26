@@ -335,11 +335,11 @@ export default function QuickVowScreen() {
         await devBypassSeal(resolvedWitnessName, resolvedWitnessPhone);
         return;
       }
-      // Staked vow in Expo Go: prompt with skip option
+      // Staked vow in Expo Go: native Stripe cannot present PaymentSheet here.
       setSealing(false);
       Alert.alert(
-        `Payment: $${stakeAmount}`,
-        'Stripe is not available in Expo Go. Skip payment for testing?',
+        `Stake $${stakeAmount}`,
+        'Apple Pay and card setup require TestFlight or a development build. Skip payment for Expo Go testing?',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Skip payment (test)', onPress: () => devBypassSeal(resolvedWitnessName, resolvedWitnessPhone) },
@@ -351,7 +351,7 @@ export default function QuickVowScreen() {
     // Production flow
     let vowId: string | null = null;
     let witnessInviteToken: string | null = null;
-    let paymentCaptured = false;
+    let cardSaved = false;
 
     try {
       const vowRecord = await createVow({
@@ -387,7 +387,7 @@ export default function QuickVowScreen() {
         return;
       }
 
-      paymentCaptured = true;
+      cardSaved = true;
       setPaidVowId(vowId);
       await invokeSealEdgeFunction(vowId);
       setSealing(false);
@@ -397,9 +397,9 @@ export default function QuickVowScreen() {
       const errMsg = err instanceof Error ? err.message : String(err);
       console.error('[QuickVow] seal flow error:', errMsg);
       setSealing(false);
-      if (paidVowId || paymentCaptured) {
+      if (paidVowId || cardSaved) {
         setPaidVowId(vowId || paidVowId);
-        Alert.alert('Almost there', 'Your card was saved, but we couldn\'t finish sealing. Tap "Stake this vow" to try again.');
+        Alert.alert('Almost there', `Your card was saved, but we couldn't finish sealing. Tap "Stake $${stakeAmount}" to try again.`);
       } else {
         if (vowId) await voidVowV2(vowId).catch(() => {});
         Alert.alert('Something went wrong', errMsg || 'Please try again.');

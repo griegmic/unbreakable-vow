@@ -206,11 +206,11 @@ export default function SealScreen() {
         await handleDevBypass();
         return;
       }
-      // Staked vow in Expo Go: prompt with skip option
+      // Staked vow in Expo Go: native Stripe cannot present PaymentSheet here.
       setLoading(false);
       Alert.alert(
-        `Payment: $${vow.stake.amount}`,
-        'Stripe is not available in Expo Go. Skip payment for testing?',
+        `Stake $${vow.stake.amount}`,
+        'Apple Pay and card setup require TestFlight or a development build. Skip payment for Expo Go testing?',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Skip payment (test)', onPress: () => handleDevBypass() },
@@ -225,7 +225,7 @@ export default function SealScreen() {
     }
 
     let vowId: string | null = null;
-    let paymentCaptured = false;
+    let cardSaved = false;
 
     try {
       console.log('[SealScreen] step 1: creating vow record');
@@ -261,7 +261,7 @@ export default function SealScreen() {
         return;
       }
 
-      paymentCaptured = true; // card saved successfully
+      cardSaved = true;
       setPaidVowId(vowId);
 
       await invokeSealEdgeFunction(vowId);
@@ -273,8 +273,8 @@ export default function SealScreen() {
       console.error('[SealScreen] seal flow error:', errMsg);
       console.error('[SealScreen] full error:', JSON.stringify(err, Object.getOwnPropertyNames(err instanceof Error ? err : {})));
       setLoading(false);
-      if (paidVowId || paymentCaptured) {
-        // Payment was captured — don't void, let user retry the seal step
+      if (paidVowId || cardSaved) {
+        // Card was saved — don't void, let the user retry the seal step.
         setPaidVowId(vowId || paidVowId);
         Alert.alert(
           'Almost there',
