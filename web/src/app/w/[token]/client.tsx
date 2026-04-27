@@ -190,6 +190,72 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   if (status === 'accepted') {
     const end = vow.ends_at ? new Date(vow.ends_at) : null;
     const needsMakerToFinish = vow.status === 'draft';
+    const needsVerdictNow = vow.status === 'awaiting_verdict';
+
+    if (needsVerdictNow) {
+      return (
+        <div style={{ minHeight: "100dvh", background: "var(--uv-bg)", backgroundImage: "radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)", display: "flex", flexDirection: "column", alignItems: "center", padding: "42px 24px 24px" }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, width: '100%', maxWidth: 340, alignItems: 'center', minHeight: 'calc(100dvh - 66px)' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+                padding: '10px 16px',
+                borderRadius: 999,
+                backgroundColor: 'rgba(82,214,154,0.08)',
+                border: '1px solid rgba(82,214,154,0.15)',
+              }}
+            >
+              <Check style={{ width: 16, height: 16, color: 'var(--uv-success)' }} />
+              <span style={{ fontSize: 13, fontWeight: 650, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>
+                You&apos;re on it.
+              </span>
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <h1 style={{ margin: 0, fontFamily: 'var(--uv-font-sans)', fontSize: 34, lineHeight: 1.02, fontWeight: 850, color: 'var(--uv-text)', letterSpacing: 0 }}>
+                Time&apos;s up.<br/><span style={{ color: 'var(--uv-gold)' }}>It&apos;s your call.</span>
+              </h1>
+            </div>
+
+            <p style={{ maxWidth: 290, margin: 0, fontFamily: 'var(--uv-font-sans)', fontSize: 15, lineHeight: 1.42, color: 'var(--uv-text-muted)', textAlign: 'center' }}>
+              You accepted the job. Now call whether {makerFirstName} kept the vow.
+            </p>
+
+            <section style={{ width: '100%', borderRadius: 16, padding: '15px 15px 14px', background: 'linear-gradient(180deg, rgba(215,169,70,0.10), rgba(238,231,215,0.025))', border: '1px solid var(--uv-border-soft)', textAlign: 'left' }}>
+              <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontWeight: 750, marginBottom: 9 }}>
+                The vow
+              </div>
+              <p style={{ margin: '0 0 12px', fontFamily: 'var(--uv-font-sans)', fontSize: 18, lineHeight: 1.25, color: 'var(--uv-text)', fontWeight: 750 }}>
+                {vow.refined_text}
+              </p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 12, borderTop: '1px solid var(--uv-border-soft)' }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 32, borderRadius: 999, border: '1px solid var(--uv-gold-line)', background: 'rgba(215,169,70,0.10)', color: 'var(--uv-gold-bright)', padding: '0 11px', fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, fontWeight: 750 }}>
+                  {vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} on the line` : 'Their word'}
+                </span>
+                {vow.destination && vow.stake_amount > 0 && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 32, borderRadius: 999, border: '1px solid var(--uv-border-soft)', background: 'rgba(238,231,215,0.035)', color: 'var(--uv-text-muted)', padding: '0 11px', fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, fontWeight: 750 }}>
+                    {vow.destination} if broken
+                  </span>
+                )}
+              </div>
+            </section>
+
+            <div style={{ flex: 1 }} />
+
+            <GoldCTA
+              label="Deliver your verdict"
+              onPress={() => { window.location.href = `/w/${token}/verdict`; }}
+            />
+            <Link href={`/w/${token}`} style={{ color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 650, textDecoration: 'none' }}>
+              Back to vow
+            </Link>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div style={{ minHeight: "100dvh", background: "var(--uv-bg)", backgroundImage: "radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)", display: "flex", flexDirection: "column", alignItems: "center", padding: "42px 24px 24px" }}>

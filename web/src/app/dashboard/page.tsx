@@ -277,7 +277,7 @@ export default function DashboardPage() {
       return;
     }
     fetchData();
-    intervalRef.current = setInterval(fetchData, 30000);
+    intervalRef.current = setInterval(fetchData, 10000);
 
     // Refresh data when page becomes visible (prevents stale state after back-nav)
     const handleVisibility = () => {

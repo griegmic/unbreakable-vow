@@ -279,7 +279,7 @@ function VowDetailContent() {
     if (authLoading) return;
     if (!isAuthenticated) { router.replace('/'); return; }
     fetchVow();
-    const interval = setInterval(fetchVow, 15000);
+    const interval = setInterval(fetchVow, 5000);
     return () => clearInterval(interval);
   }, [isAuthenticated, authLoading, router, fetchVow]);
 
