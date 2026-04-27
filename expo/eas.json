@@ -16,6 +16,12 @@
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "appleId": "rosenfield.joseph@gmail.com",
+        "ascAppId": "6743597637",
+        "appleTeamId": "GL966Y3VHQ"
+      }
+    }
   }
 }
