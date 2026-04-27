@@ -8,6 +8,7 @@ import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
+import { hashJudgeTerms, prepareJudgeLink, shareOrCopyJudgeLink, type JudgeLinkTerms } from '@/lib/judge-link';
 import { getVowVerdictDate } from '@/lib/vow-logic';
 
 type SealStep = 'review' | 'auth' | 'payment' | 'sealing' | 'done';
@@ -147,8 +148,63 @@ export default function SealPage() {
   const draftCreatingRef = useRef(false);
   const draftPromiseRef = useRef<Promise<{ id: string } | null> | null>(null);
   const ensureDraftVow = useCallback(async (): Promise<{ id: string; witness_invite_token?: string | null; error?: string } | null> => {
+    const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
+    const currentTerms: JudgeLinkTerms = {
+      vowId: vow.vowId,
+      rawInput: vow.rawInput,
+      refinedText: activeVowText,
+      stakeAmountCents: vow.stake.amount * 100,
+      consequence: vow.stake.consequence as JudgeLinkTerms['consequence'],
+      destination: vow.stake.destination,
+      endsAt: endDate.toISOString(),
+      witnessName: isSelfWitness ? 'Just me' : vow.witnessName,
+      witnessPhone: vow.witnessPhone || null,
+    };
+    const currentTermsHash = await hashJudgeTerms(currentTerms);
+
     if (vow.vowId) {
-      const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
+      const { data: lockedDraft } = await supabase.from('vows')
+        .select('id, witness_invite_token, witness_share_locked_at, terms_hash')
+        .eq('id', vow.vowId)
+        .eq('status', 'draft')
+        .maybeSingle();
+
+      if (lockedDraft?.witness_share_locked_at && lockedDraft.terms_hash && lockedDraft.terms_hash !== currentTermsHash) {
+        const s = await getValidSession();
+        if (!s) return { id: '', error: '__needs_auth__' };
+
+        await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
+
+        const { data: newVow, error: newError } = await supabase.from('vows').insert({
+          user_id: s.user.id,
+          raw_input: vow.rawInput,
+          refined_text: activeVowText,
+          witness_name: isSelfWitness ? 'Just me' : vow.witnessName,
+          witness_phone: vow.witnessPhone || null,
+          witness_invite_token: crypto.randomUUID(),
+          stake_amount: vow.stake.amount * 100,
+          consequence: vow.stake.consequence,
+          destination: vow.stake.destination,
+          status: 'draft',
+          starts_at: new Date().toISOString(),
+          ends_at: endDate.toISOString(),
+          terms_hash: currentTermsHash,
+        }).select('id, witness_invite_token').single();
+
+        if (newError || !newVow) {
+          console.error('Draft supersede creation failed:', newError?.message);
+          return { id: '', error: `Vow creation failed: ${newError?.message || 'Unknown error'}` };
+        }
+
+        await supabase.from('vows')
+          .update({ status: 'voided', superseded_by_vow_id: newVow.id })
+          .eq('id', lockedDraft.id)
+          .eq('status', 'draft');
+
+        setVowId(newVow.id, newVow.witness_invite_token);
+        return newVow;
+      }
+
       const { data: existing } = await supabase.from('vows')
         .update({
           refined_text: activeVowText,
@@ -158,6 +214,7 @@ export default function SealPage() {
           consequence: vow.stake.consequence,
           destination: vow.stake.destination,
           ends_at: endDate.toISOString(),
+          terms_hash: currentTermsHash,
         })
         .eq('id', vow.vowId)
         .eq('status', 'draft')
@@ -193,6 +250,7 @@ export default function SealPage() {
           status: 'draft',
           starts_at: new Date().toISOString(),
           ends_at: endDate.toISOString(),
+          terms_hash: currentTermsHash,
         }).select('id, witness_invite_token').single();
 
         if (vowError) {
@@ -234,41 +292,32 @@ export default function SealPage() {
     witnessShareAttemptedRef.current = true;
 
     const shareWitness = async () => {
-      const draft = await ensureDraftVow();
-      if (!draft?.id || draft.error) {
-        witnessShareAttemptedRef.current = false;
-        return;
-      }
-
-      const token = draft.witness_invite_token || vow.witnessInviteToken;
-      if (!token) {
-        witnessShareAttemptedRef.current = false;
-        return;
-      }
-
       try { localStorage.removeItem('uv-share-witness-after-auth'); } catch {}
 
-      const vowText = activeVowText.replace(/\.$/, '').toLowerCase();
-      const witnessUrl = `${window.location.origin}/w/${token}`;
-      const stakeHook = vow.stake.amount > 0 ? ` and put $${vow.stake.amount} on it` : '';
-      const shareText = `I just made a vow to ${vowText}${stakeHook}. You're my witness: ${witnessUrl}`;
+      const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
+      const prepared = await prepareJudgeLink({
+        vowId: vow.vowId,
+        rawInput: vow.rawInput,
+        refinedText: activeVowText,
+        stakeAmountCents: vow.stake.amount * 100,
+        consequence: vow.stake.consequence as JudgeLinkTerms['consequence'],
+        destination: vow.stake.destination,
+        endsAt: endDate.toISOString(),
+        witnessName: 'Your witness',
+        witnessPhone: null,
+      }, 'share' in navigator ? 'share' : 'copy');
+      setVowId(prepared.vowId, prepared.witnessInviteToken);
 
-      if (navigator.share) {
-        try {
-          await navigator.share({ text: shareText });
-        } catch {}
-      } else {
-        try {
-          await navigator.clipboard.writeText(shareText);
-          setError('Witness invite copied. Send it, then finish sealing.');
-        } catch {}
-      }
+      try {
+        const outcome = await shareOrCopyJudgeLink(prepared);
+        if (outcome === 'copied') setError('Judge link copied. Send it, then finish sealing.');
+      } catch {}
 
       router.replace('/seal', { scroll: false });
     };
 
     shareWitness();
-  }, [activeVowText, ensureDraftVow, isAuthenticated, isSelfWitness, router, vow.rawInput, vow.stake.amount, vow.witnessInviteToken]);
+  }, [activeVowText, isAuthenticated, isSelfWitness, router, setVowId, vow.deadlineIso, vow.rawInput, vow.stake.amount, vow.stake.consequence, vow.stake.destination, vow.vowId]);
 
   // ── Shared: call seal-vow with silent retries ──
   const callSealVow = useCallback(async (vowId: string, opts?: { skip_payment?: boolean }): Promise<{ ok: boolean; error?: string }> => {

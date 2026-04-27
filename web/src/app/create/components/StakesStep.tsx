@@ -15,6 +15,11 @@ interface StakesStepProps {
   vowText: string;
   witnessName: string;
   endsAt: Date | null;
+  judgeLinkState?: 'idle' | 'working' | 'shared' | 'copied' | 'error';
+  judgeLinkTermsChanged?: boolean;
+  judgeLinkMessage?: string;
+  onSendJudgeLink?: () => void;
+  onSkipJudgeLink?: () => void;
 }
 
 const AMOUNTS = [10, 25, 50, 100];
@@ -31,13 +36,17 @@ export function StakesStep({
   stakeAmount,
   setStakeAmount,
   destination,
-  destinationKind,
   onIfBroken,
   onNext,
   onBack,
   vowText,
   witnessName,
   endsAt,
+  judgeLinkState = 'idle',
+  judgeLinkTermsChanged = false,
+  judgeLinkMessage,
+  onSendJudgeLink,
+  onSkipJudgeLink,
 }: StakesStepProps) {
   const deadlineLabel = endsAt
     ? `Ends ${endsAt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}`
@@ -207,6 +216,88 @@ export function StakesStep({
         </div>
 
         <div style={{ flex: 1, minHeight: 24 }} />
+
+        {onSendJudgeLink && (
+          <section style={{
+            marginBottom: 16,
+            borderRadius: 18,
+            border: '1px solid var(--uv-gold-line)',
+            background: 'linear-gradient(180deg, rgba(215,169,70,0.12), rgba(238,231,215,0.035))',
+            padding: 16,
+          }}>
+            <div style={{
+              fontFamily: 'var(--uv-font-sans)', fontSize: 10, letterSpacing: '0.22em',
+              textTransform: 'uppercase', color: 'var(--uv-gold)', fontWeight: 750,
+              marginBottom: 7,
+            }}>
+              Optional judge
+            </div>
+            <h2 style={{
+              margin: '0 0 6px', fontFamily: 'var(--uv-font-sans)', fontSize: 18,
+              color: 'var(--uv-text)', fontWeight: 750, lineHeight: 1.15,
+            }}>
+              Send the judge link now.
+            </h2>
+            <p style={{
+              margin: '0 0 13px', fontFamily: 'var(--uv-font-sans)', fontSize: 13.5,
+              color: judgeLinkTermsChanged ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
+              lineHeight: 1.35,
+            }}>
+              {judgeLinkTermsChanged
+                ? 'Changing this creates a new judge link.'
+                : 'They see the promise, stake, destination, and verdict date. It starts once you seal it.'}
+            </p>
+            {judgeLinkMessage && (
+              <p style={{
+                margin: '0 0 12px', fontFamily: 'var(--uv-font-sans)', fontSize: 12.5,
+                color: judgeLinkState === 'error' ? 'var(--uv-danger)' : 'var(--uv-success)',
+                lineHeight: 1.3,
+              }}>
+                {judgeLinkMessage}
+              </p>
+            )}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 9 }}>
+              <button
+                type="button"
+                onClick={onSendJudgeLink}
+                disabled={judgeLinkState === 'working'}
+                style={{
+                  minHeight: 48,
+                  borderRadius: 999,
+                  border: '1px solid var(--uv-gold)',
+                  background: 'rgba(215,169,70,0.16)',
+                  color: 'var(--uv-gold-bright)',
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 15,
+                  fontWeight: 800,
+                  cursor: judgeLinkState === 'working' ? 'wait' : 'pointer',
+                }}
+              >
+                {judgeLinkState === 'working'
+                  ? 'Preparing...'
+                  : judgeLinkTermsChanged
+                    ? 'Create new judge link'
+                    : 'Send judge link'}
+              </button>
+              <button
+                type="button"
+                onClick={onSkipJudgeLink}
+                style={{
+                  minHeight: 38,
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--uv-text-dim)',
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 13,
+                  fontWeight: 650,
+                  cursor: 'pointer',
+                }}
+              >
+                Seal first, send after
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Fine print */}
         <p style={{

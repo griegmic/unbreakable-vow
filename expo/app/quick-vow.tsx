@@ -10,6 +10,7 @@ import {
   Platform,
   Pressable,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -32,6 +33,7 @@ import {
 } from '@/constants/unbreakable';
 import { hapticPrimary, hapticSealComplete, hapticSelection } from '@/lib/haptics';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
+import { prepareJudgeLink } from '@/lib/prepare-judge-link';
 import { saveCard, setupPaymentSheetForSetup, showPaymentSheet } from '@/lib/stripe';
 import { createVow, voidVowV2 } from '@/lib/vow-api';
 import { supabase } from '@/lib/supabase';
@@ -134,10 +136,12 @@ export default function QuickVowScreen() {
 
   // Seal state
   const [sealing, setSealing] = useState(false);
+  const [judgeSharing, setJudgeSharing] = useState(false);
   const [error, setError] = useState('');
   const [authSheetVisible, setAuthSheetVisible] = useState(false);
   const [paidVowId, setPaidVowId] = useState<string | null>(null);
   const pendingSealRef = useRef(false);
+  const pendingShareRef = useRef(false);
   const stakePulse = useRef(new Animated.Value(1)).current;
 
   // VowFlow for hydrating after seal
@@ -276,6 +280,43 @@ export default function QuickVowScreen() {
     ]).start();
   };
 
+  const handleShareJudgeLink = useCallback(async () => {
+    if (!vowText.trim() || judgeSharing) return;
+    if (!isAuthenticated) {
+      pendingShareRef.current = true;
+      setAuthSheetVisible(true);
+      return;
+    }
+
+    setJudgeSharing(true);
+    setError('');
+    hapticPrimary();
+    try {
+      const prepared = await prepareJudgeLink({
+        vowId: vowFlow.vow.vowId,
+        rawInput: vowText,
+        refinedText: finalText,
+        stakeAmountCents: stakeAmount * 100,
+        consequence,
+        destination: stakeAmount > 0 ? destination : 'None',
+        endsAt: deadlineDate.toISOString(),
+        witnessName: 'Your witness',
+        witnessPhone: null,
+      }, 'share');
+      vowFlow.setWitnessType('friend');
+      vowFlow.setWitness('Your witness', 'link');
+      vowFlow.setVowId(prepared.vowId, prepared.witnessInviteToken);
+      setWitnessName('Your witness');
+      setWitnessPhone('');
+      await Share.share({ message: prepared.shareText, url: prepared.witnessUrl });
+      hapticSealComplete();
+    } catch (err) {
+      Alert.alert('Judge link not sent', err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      setJudgeSharing(false);
+    }
+  }, [consequence, deadlineDate, destination, finalText, isAuthenticated, judgeSharing, stakeAmount, vowFlow, vowText]);
+
   // -----------------------------------------------------------------------
   // Seal logic — mirrors seal.tsx patterns exactly
   // -----------------------------------------------------------------------
@@ -354,18 +395,35 @@ export default function QuickVowScreen() {
     let cardSaved = false;
 
     try {
-      const vowRecord = await createVow({
-        rawInput: vowText,
-        refinedText: finalText,
-        witnessName: resolvedWitnessName,
-        witnessPhone: resolvedWitnessPhone,
-        stakeAmount,
-        consequence,
-        destination: stakeAmount > 0 ? destination : 'None',
-        deadlineIso: deadlineDate.toISOString(),
-      });
-      vowId = vowRecord.id;
-      witnessInviteToken = vowRecord.witness_invite_token;
+      if (vowFlow.vow.vowId) {
+        const prepared = await prepareJudgeLink({
+          vowId: vowFlow.vow.vowId,
+          rawInput: vowText,
+          refinedText: finalText,
+          stakeAmountCents: stakeAmount * 100,
+          consequence,
+          destination: stakeAmount > 0 ? destination : 'None',
+          endsAt: deadlineDate.toISOString(),
+          witnessName: resolvedWitnessName,
+          witnessPhone: resolvedWitnessPhone,
+        }, 'share');
+        vowId = prepared.vowId;
+        witnessInviteToken = prepared.witnessInviteToken;
+        vowFlow.setVowId(prepared.vowId, prepared.witnessInviteToken);
+      } else {
+        const vowRecord = await createVow({
+          rawInput: vowText,
+          refinedText: finalText,
+          witnessName: resolvedWitnessName,
+          witnessPhone: resolvedWitnessPhone,
+          stakeAmount,
+          consequence,
+          destination: stakeAmount > 0 ? destination : 'None',
+          deadlineIso: deadlineDate.toISOString(),
+        });
+        vowId = vowRecord.id;
+        witnessInviteToken = vowRecord.witness_invite_token;
+      }
       if (stakeAmount === 0) {
         // $0 vow: seal directly, no payment
         await invokeSealEdgeFunction(vowId);
@@ -406,7 +464,7 @@ export default function QuickVowScreen() {
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sealing, vowText, finalText, witnessName, witnessPhone, stakeAmount, consequence, destination, deadlineDate, paidVowId, session]);
+  }, [sealing, vowText, finalText, witnessName, witnessPhone, stakeAmount, consequence, destination, deadlineDate, paidVowId, session, vowFlow.vow.vowId, vowFlow.vow.witnessInviteToken]);
 
   const handleSeal = async () => {
     if (!vowText.trim() || sealing) return;
@@ -427,8 +485,18 @@ export default function QuickVowScreen() {
     }
   }, [isAuthenticated, handleSealFlow]);
 
+  useEffect(() => {
+    if (pendingShareRef.current && isAuthenticated) {
+      pendingShareRef.current = false;
+      void handleShareJudgeLink();
+    }
+  }, [isAuthenticated, handleShareJudgeLink]);
+
   const handleAuthSuccess = useCallback(async () => {
     setAuthSheetVisible(false);
+    if (pendingShareRef.current) {
+      return;
+    }
     if (isAuthenticated) {
       void handleSealFlow();
     } else {
@@ -657,14 +725,12 @@ export default function QuickVowScreen() {
           ))}
           <Pressable
             onPress={() => {
-              hapticSelection();
-              setWitnessName('Your witness');
-              setWitnessPhone('');
+              void handleShareJudgeLink();
             }}
             style={styles.judgeShortcut}
           >
             <Link2 color={palette.textMuted} size={13} />
-            <Text style={styles.judgeShortcutText}>Share link</Text>
+            <Text style={styles.judgeShortcutText}>{judgeSharing ? 'Opening...' : 'Share link'}</Text>
           </Pressable>
           <Pressable
             onPress={() => {

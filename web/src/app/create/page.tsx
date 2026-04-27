@@ -4,6 +4,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
+import { hashJudgeTerms, prepareJudgeLink, shareOrCopyJudgeLink, type JudgeLinkTerms } from '@/lib/judge-link';
 import { HamburgerMenu } from '@/components/hamburger-menu';
 import { VowInput } from './components/VowInput';
 import { StakesStep } from './components/StakesStep';
@@ -16,7 +17,7 @@ type Step = 1 | 3 | 3.5;
 export default function CreatePage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const { vow, setRawInput, setRefinedText, setStake, setDeadline } = useVowFlow();
+  const { vow, setRawInput, setRefinedText, setStake, setDeadline, setVowId, setWitnessType, setWitnessName, setWitnessPhone } = useVowFlow();
 
   // Restore from VowFlowProvider if coming back from /seal
   const [step, setStep] = useState<Step>(() => {
@@ -28,6 +29,9 @@ export default function CreatePage() {
   const [stakeAmount, setStakeAmount] = useState(() => vow.stake?.amount || 50);
   const [destination, setDestination] = useState(() => vow.stake?.destination || 'ALS Association');
   const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>(() => (vow.stake?.consequence as 'charity' | 'anti') || 'charity');
+  const [judgeLinkState, setJudgeLinkState] = useState<'idle' | 'working' | 'shared' | 'copied' | 'error'>('idle');
+  const [judgeLinkMessage, setJudgeLinkMessage] = useState('');
+  const [sharedTermsHash, setSharedTermsHash] = useState<string | null>(null);
 
   // Push history state when step changes so browser back works within the flow
   const goToStep = useCallback((newStep: Step) => {
@@ -74,6 +78,81 @@ export default function CreatePage() {
   const handleIfBrokenClose = useCallback(() => {
     setStep(3);
     window.history.replaceState({ step: 3 }, '', '/create');
+  }, []);
+
+  const buildJudgeTerms = useCallback((): JudgeLinkTerms => {
+    const endDate = endsAt || new Date(Date.now() + 7 * 86400000);
+    return {
+      vowId: vow.vowId,
+      rawInput: vowText,
+      refinedText: vowText,
+      stakeAmountCents: stakeAmount * 100,
+      consequence: destinationKind,
+      destination,
+      endsAt: endDate.toISOString(),
+      witnessName: 'Your witness',
+      witnessPhone: null,
+    };
+  }, [destination, destinationKind, endsAt, stakeAmount, vow.vowId, vowText]);
+
+  const [currentTermsHash, setCurrentTermsHash] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!vowText.trim() || !endsAt) {
+      Promise.resolve().then(() => {
+        if (!cancelled) setCurrentTermsHash(null);
+      });
+      return;
+    }
+    hashJudgeTerms(buildJudgeTerms()).then((hash) => {
+      if (!cancelled) setCurrentTermsHash(hash);
+    }).catch(() => {
+      if (!cancelled) setCurrentTermsHash(null);
+    });
+    return () => { cancelled = true; };
+  }, [buildJudgeTerms, endsAt, vowText]);
+
+  const judgeLinkTermsChanged = Boolean(sharedTermsHash && currentTermsHash && sharedTermsHash !== currentTermsHash);
+
+  const handleSendJudgeLink = useCallback(async () => {
+    if (!vowText.trim()) return;
+    setRawInput(vowText);
+    setRefinedText(vowText);
+    setStake({ amount: stakeAmount, consequence: destinationKind, destination });
+    if (endsAt) setDeadline(endsAt.toISOString());
+    setWitnessType('friend');
+    setWitnessName('Your witness');
+    setWitnessPhone('');
+
+    if (!isAuthenticated) {
+      try { localStorage.setItem('uv-share-witness-after-auth', '1'); } catch {}
+      router.push('/seal?shareWitness=1');
+      return;
+    }
+
+    setJudgeLinkState('working');
+    setJudgeLinkMessage('');
+    try {
+      const prepared = await prepareJudgeLink(buildJudgeTerms(), 'share' in navigator ? 'share' : 'copy');
+      const outcome = await shareOrCopyJudgeLink(prepared);
+      setVowId(prepared.vowId, prepared.witnessInviteToken);
+      setSharedTermsHash(prepared.termsHash);
+      setJudgeLinkState(outcome);
+      setJudgeLinkMessage(outcome === 'shared' ? 'Judge link opened in your share sheet.' : 'Judge link copied. Send it to your judge.');
+    } catch (err) {
+      if (err instanceof DOMException && err.name === 'AbortError') {
+        setJudgeLinkState('idle');
+        return;
+      }
+      setJudgeLinkState('error');
+      setJudgeLinkMessage(err instanceof Error ? err.message : 'Could not prepare judge link.');
+    }
+  }, [buildJudgeTerms, destination, destinationKind, endsAt, isAuthenticated, router, setDeadline, setRawInput, setRefinedText, setStake, setVowId, setWitnessName, setWitnessPhone, setWitnessType, stakeAmount, vowText]);
+
+  const handleSkipJudgeLink = useCallback(() => {
+    setJudgeLinkState('idle');
+    setJudgeLinkMessage('No problem. You can send it after sealing.');
   }, []);
 
   // Step 3 "Seal my vow" — save to VowFlowProvider and go to /seal
@@ -139,6 +218,11 @@ export default function CreatePage() {
         vowText={vowText}
         witnessName="TBD"
         endsAt={endsAt}
+        judgeLinkState={judgeLinkState}
+        judgeLinkTermsChanged={judgeLinkTermsChanged}
+        judgeLinkMessage={judgeLinkMessage}
+        onSendJudgeLink={handleSendJudgeLink}
+        onSkipJudgeLink={handleSkipJudgeLink}
       />
     </>
   );

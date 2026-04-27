@@ -78,6 +78,10 @@ export interface Database {
           witness_name: string;
           witness_phone: string | null;
           witness_invite_token: string | null;
+          witness_share_locked_at?: string | null;
+          witness_share_method?: string | null;
+          terms_hash?: string | null;
+          superseded_by_vow_id?: string | null;
           witness_user_id?: string | null;
           stake_amount: number;
           consequence: string;
@@ -106,6 +110,10 @@ export interface Database {
           witness_name: string;
           witness_phone?: string | null;
           witness_invite_token?: string | null;
+          witness_share_locked_at?: string | null;
+          witness_share_method?: string | null;
+          terms_hash?: string | null;
+          superseded_by_vow_id?: string | null;
           witness_user_id?: string | null;
           stake_amount: number;
           consequence?: string;
@@ -134,6 +142,10 @@ export interface Database {
           witness_name?: string;
           witness_phone?: string | null;
           witness_invite_token?: string | null;
+          witness_share_locked_at?: string | null;
+          witness_share_method?: string | null;
+          terms_hash?: string | null;
+          superseded_by_vow_id?: string | null;
           witness_user_id?: string | null;
           stake_amount?: number;
           consequence?: string;

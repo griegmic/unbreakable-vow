@@ -1,7 +1,7 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
-import { ChevronRight, Search, UserPlus, X } from 'lucide-react-native';
+import { ChevronRight, Link2, Search, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { AppMenuButton } from '@/components/app-menu';
 import {
@@ -12,13 +12,14 @@ import {
 import { palette, serifFont } from '@/constants/unbreakable';
 import { type ContactEntry, requestAndLoadContacts } from '@/lib/contacts';
 import { hapticPrimary, hapticSealComplete, hapticSecondary, hapticSelection } from '@/lib/haptics';
+import { prepareJudgeLink } from '@/lib/prepare-judge-link';
 import { updateVowWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
 type WitnessMode = 'choose' | 'contacts';
 
 export default function WitnessScreen() {
-  const { setWitness, setWitnessType, vow, updateWitnessMidVow, setVowId } = useVowFlow();
+  const { activeVowText, setWitness, setWitnessType, vow, updateWitnessMidVow, setVowId } = useVowFlow();
   const params = useLocalSearchParams<{ midVow?: string }>();
   const isMidVow = params.midVow === '1' && !!vow.vowId;
   const [mode, setMode] = useState<WitnessMode>('choose');
@@ -57,6 +58,40 @@ export default function WitnessScreen() {
       );
     }
   }, []);
+
+  const handleShareJudgeLink = useCallback(async () => {
+    if (!vow.rawInput.trim()) {
+      router.replace('/');
+      return;
+    }
+
+    hapticPrimary();
+    setLoadingContacts(true);
+    try {
+      const endDate = vow.deadlineIso ? new Date(vow.deadlineIso) : new Date(Date.now() + 7 * 86400000);
+      const prepared = await prepareJudgeLink({
+        vowId: vow.vowId,
+        rawInput: vow.rawInput,
+        refinedText: activeVowText || vow.rawInput,
+        stakeAmountCents: vow.stake.amount * 100,
+        consequence: vow.stake.consequence,
+        destination: vow.stake.destination,
+        endsAt: endDate.toISOString(),
+        witnessName: 'Your witness',
+        witnessPhone: null,
+      }, 'share');
+      setWitnessType('friend');
+      setWitness('Your witness', 'link');
+      setVowId(prepared.vowId, prepared.witnessInviteToken);
+      await Share.share({ message: prepared.shareText, url: prepared.witnessUrl });
+      hapticSealComplete();
+      router.push('/seal');
+    } catch (err) {
+      Alert.alert('Judge link not sent', err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      setLoadingContacts(false);
+    }
+  }, [activeVowText, setVowId, setWitness, setWitnessType, vow]);
 
   const handleSelectContact = useCallback(async (contact: ContactEntry) => {
     hapticSelection();
@@ -112,22 +147,36 @@ export default function WitnessScreen() {
         />
 
         <Pressable
-          onPress={handlePickFromContacts}
+          onPress={handleShareJudgeLink}
           style={({ pressed }) => [styles.heroButton, pressed && styles.heroButtonPressed]}
-          testID="witness-pick-friend"
+          testID="witness-share-link"
         >
           <View style={styles.heroIconWrap}>
             {loadingContacts ? (
               <ActivityIndicator size="small" color={palette.goldBright} />
             ) : (
-              <UserPlus color={palette.goldBright} size={22} />
+              <Link2 color={palette.goldBright} size={22} />
             )}
           </View>
           <View style={styles.heroCopy}>
-            <Text style={styles.heroTitle}>Pick your witness</Text>
-            <Text style={styles.heroSubtitle}>They decide if you kept your word</Text>
+            <Text style={styles.heroTitle}>Send judge link</Text>
+            <Text style={styles.heroSubtitle}>They see the full vow. It starts once you seal it.</Text>
           </View>
           <ChevronRight color={palette.goldBright} size={18} />
+        </Pressable>
+
+        <Pressable
+          onPress={handlePickFromContacts}
+          style={({ pressed }) => [styles.secondaryButton, pressed && styles.heroButtonPressed]}
+          testID="witness-pick-friend"
+        >
+          <View style={styles.secondaryIconWrap}>
+            <UserPlus color={palette.textSecondary} size={18} />
+          </View>
+          <View style={styles.heroCopy}>
+            <Text style={styles.secondaryTitle}>Pick from contacts</Text>
+            <Text style={styles.heroSubtitle}>Useful when you already know exactly who.</Text>
+          </View>
         </Pressable>
 
         <View style={styles.soloFooterMinimal}>
@@ -235,6 +284,17 @@ const styles = StyleSheet.create({
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
   },
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: 'rgba(238,231,215,0.035)',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: palette.border,
+    marginTop: 12,
+  },
   heroIconWrap: {
     width: 48,
     height: 48,
@@ -245,6 +305,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  secondaryIconWrap: {
+    width: 42,
+    height: 42,
+    borderRadius: 13,
+    backgroundColor: 'rgba(238,231,215,0.05)',
+    borderWidth: 1,
+    borderColor: palette.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   heroCopy: {
     flex: 1,
     gap: 3,
@@ -252,6 +322,13 @@ const styles = StyleSheet.create({
   heroTitle: {
     color: palette.goldBright,
     fontSize: 17,
+    fontWeight: '700' as const,
+    fontFamily: serifFont,
+    letterSpacing: -0.2,
+  },
+  secondaryTitle: {
+    color: palette.text,
+    fontSize: 16,
     fontWeight: '700' as const,
     fontFamily: serifFont,
     letterSpacing: -0.2,
