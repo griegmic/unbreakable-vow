@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import {
@@ -19,6 +18,7 @@ import {
 
 import { AppMenuButton } from '@/components/app-menu';
 import { palette, serifFont } from '@/constants/unbreakable';
+import { hapticSealComplete, hapticSelection } from '@/lib/haptics';
 import { getVowDetail, getVowTimeline, voidVowV2 } from '@/lib/vow-api';
 import { useAuth } from '@/providers/auth-provider';
 import type { AuditEvent } from '@/types/database';
@@ -215,7 +215,7 @@ export default function VowDetailScreen() {
             const result = await voidVowV2(vowId);
             setWithdrawing(false);
             if (result.success) {
-              void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+              hapticSealComplete();
               router.replace('/dashboard');
             } else {
               Alert.alert('Failed', result.error || 'Could not withdraw vow.');
@@ -259,7 +259,7 @@ export default function VowDetailScreen() {
 
   const handleEarlyJudgment = async () => {
     if (!vow) return;
-    void Haptics.selectionAsync();
+    hapticSelection();
 
     if (vow.witness_name === 'Just me') {
       router.push({ pathname: '/self-resolve', params: { vowId: vow.id } });
@@ -340,7 +340,7 @@ export default function VowDetailScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Pressable
             onPress={() => {
-              void Haptics.selectionAsync();
+              hapticSelection();
               router.replace('/dashboard');
             }}
             style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}

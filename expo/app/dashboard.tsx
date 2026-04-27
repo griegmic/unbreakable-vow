@@ -1,5 +1,4 @@
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
 import { router, Stack, useFocusEffect } from 'expo-router';
 import { ChevronLeft, ChevronRight, Settings } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -26,6 +25,7 @@ import {
   getWitnessingVows,
 } from '@/lib/vow-api';
 import { supabase } from '@/lib/supabase';
+import { hapticPrimary, hapticSecondary } from '@/lib/haptics';
 
 import {
   buildDashboardList,
@@ -306,13 +306,13 @@ function DashboardCard({
           <View style={styles.actionRow}>
             <Pressable
               style={styles.keptBtn}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
+              onPress={() => { hapticSecondary(); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
             >
               <Text style={styles.keptBtnText}>Kept ✓</Text>
             </Pressable>
             <Pressable
               style={styles.brokenBtn}
-              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
+              onPress={() => { hapticSecondary(); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
             >
               <Text style={styles.brokenBtnText}>Broken ✗</Text>
             </Pressable>
@@ -322,7 +322,7 @@ function DashboardCard({
         {state === 'M3' && (
           <Pressable
             style={styles.orangeBtn}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
+            onPress={() => { hapticSecondary(); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
           >
             <Text style={styles.orangeBtnText}>Self-resolve →</Text>
           </Pressable>
@@ -331,7 +331,7 @@ function DashboardCard({
         {state === 'M11' && (
           <Pressable
             style={styles.goldBtn}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/vow-detail', params: { vowId: vow.id } }); }}
+            onPress={() => { hapticSecondary(); router.push({ pathname: '/vow-detail', params: { vowId: vow.id } }); }}
           >
             <Text style={styles.goldBtnText}>Deliver verdict →</Text>
           </Pressable>
@@ -341,7 +341,7 @@ function DashboardCard({
           <Pressable
             style={styles.blueBtn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              hapticSecondary();
               if (vow.witness_invite_token) openWebFlow(`/w/${vow.witness_invite_token}/verdict`);
               else router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
             }}
@@ -354,7 +354,7 @@ function DashboardCard({
           <Pressable
             style={styles.goldBtn}
             onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              hapticPrimary();
               openWebFlow(`/c/${vow.challenge_invite_token}`);
             }}
           >
@@ -484,7 +484,7 @@ function DashboardHero({
       {state !== 'T1' && (
         <Pressable
           style={styles.secondaryLink}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/quick-vow'); }}
+          onPress={() => { hapticSecondary(); router.push('/quick-vow'); }}
         >
           <Text style={styles.secondaryLinkText}>Make a vow →</Text>
         </Pressable>
@@ -503,7 +503,7 @@ function HeroCTA({
   const targetName = vow.target_display_name || 'them';
 
   const GoldButton = ({ label, onPress }: { label: string; onPress: () => void }) => (
-    <Pressable style={styles.heroBtnWrap} onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); }}>
+    <Pressable style={styles.heroBtnWrap} onPress={() => { hapticPrimary(); onPress(); }}>
       <LinearGradient colors={[palette.goldBright, palette.gold, palette.goldDeep]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.heroBtnGradient}>
         <Text style={styles.heroBtnDarkText}>{label}</Text>
       </LinearGradient>
@@ -516,13 +516,13 @@ function HeroCTA({
         <View style={styles.actionRow}>
           <Pressable
             style={[styles.heroKeptBtn, { flex: 1 }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
+            onPress={() => { hapticSecondary(); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
           >
             <Text style={styles.heroKeptText}>I kept it</Text>
           </Pressable>
           <Pressable
             style={[styles.heroBrokenBtn, { flex: 1 }]}
-            onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
+            onPress={() => { hapticSecondary(); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
           >
             <Text style={styles.heroBrokenText}>I broke it</Text>
           </Pressable>
@@ -543,7 +543,7 @@ function HeroCTA({
       return (
         <Pressable
           style={styles.heroOrangeBtn}
-          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
+          onPress={() => { hapticSecondary(); router.push({ pathname: '/self-resolve', params: { vowId: vow.id } }); }}
         >
           <Text style={styles.heroOrangeText}>Self-resolve →</Text>
         </Pressable>
@@ -566,7 +566,7 @@ function HeroCTA({
     case 'W1':
       return (
         <Pressable style={styles.heroBlueBtn} onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          hapticSecondary();
           if (vow.witness_invite_token) openWebFlow(`/w/${vow.witness_invite_token}/verdict`);
           else router.push({ pathname: '/vow-detail', params: { vowId: vow.id } });
         }}>
@@ -819,7 +819,7 @@ export default function VowDashboard() {
         <DashboardCard
           item={item.data}
           onTap={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            hapticSecondary();
             const target = getTapTarget(item.data);
             router.push(target as any);
           }}
@@ -846,7 +846,7 @@ export default function VowDashboard() {
       )}
       <Pressable
         style={({ pressed }) => [styles.makeVowBtn, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
-        onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push('/quick-vow'); }}
+        onPress={() => { hapticPrimary(); router.push('/quick-vow'); }}
       >
         <LinearGradient
           colors={[palette.goldBright, palette.gold, palette.goldDeep]}
