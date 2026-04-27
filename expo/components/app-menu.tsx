@@ -89,12 +89,6 @@ export function AppMenuButton({ style }: AppMenuProps) {
       route: '/quick-vow',
     },
     {
-      icon: <Sparkles color={palette.goldBright} size={18} />,
-      label: 'Guided Flow',
-      description: 'Step-by-step vow creation',
-      route: '/?guided=1',
-    },
-    {
       icon: <BookOpen color={palette.textSecondary} size={18} />,
       label: 'My Vows',
       description: 'Active and past vows',

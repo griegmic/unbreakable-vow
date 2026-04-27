@@ -18,6 +18,8 @@
 - Treat Rork visibility as two lanes:
   - `web/src/...` for Rork chat/design inspection.
   - `expo/...` for Rork QR, Expo Go, and TestFlight.
+- Redirect the native root route to `quick-vow` so Rork QR / Expo Go stops landing on the old bespoke guided home screen.
+- Remove the app-menu route that sent users back into the stale native guided flow.
 - Preserve native-only improvements where they are clearly better than web:
   - contact picker for judges
   - recent witnesses

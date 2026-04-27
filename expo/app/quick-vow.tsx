@@ -734,14 +734,6 @@ export default function QuickVowScreen() {
           </View>
         ) : null}
 
-        <Pressable
-          onPress={() => {
-            hapticSelection();
-            router.push('/?guided=1');
-          }}
-        >
-          <Text style={styles.guidedLink}>Need the guided flow?</Text>
-        </Pressable>
       </RitualScreen>
 
       <ContactPickerModal
