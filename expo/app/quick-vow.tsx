@@ -629,7 +629,13 @@ export default function QuickVowScreen() {
           <View style={styles.judgeCopy}>
             <Text style={styles.judgeLabel}>{selectedJudgeLabel} →</Text>
             <Text style={styles.judgeSubtext}>
-              {witnessPhone ? witnessPhone : witnessName === 'Just me' ? 'You make the final call.' : 'Contacts first. Share link still works.'}
+              {witnessPhone
+                ? witnessPhone
+                : witnessName === 'Just me'
+                  ? 'You make the final call.'
+                  : witnessName === 'Your witness'
+                    ? 'Share the judge link after sealing.'
+                    : 'Pick from contacts, or share a link after sealing.'}
             </Text>
           </View>
         </Pressable>
@@ -727,6 +733,15 @@ export default function QuickVowScreen() {
             <Text style={styles.errorText}>{error}</Text>
           </View>
         ) : null}
+
+        <Pressable
+          onPress={() => {
+            hapticSelection();
+            router.push('/?guided=1');
+          }}
+        >
+          <Text style={styles.guidedLink}>Need the guided flow?</Text>
+        </Pressable>
       </RitualScreen>
 
       <ContactPickerModal
