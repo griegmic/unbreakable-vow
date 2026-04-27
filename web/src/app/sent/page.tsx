@@ -221,7 +221,7 @@ export default function SentPage() {
           color: 'var(--uv-text)',
           margin: '12px 0 14px',
         }}>
-          It&apos;s <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>done.</em>
+          Your vow is <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>bound.</em>
         </h1>
 
         <p style={{
@@ -233,7 +233,7 @@ export default function SentPage() {
           maxWidth: 290,
           marginBottom: 22,
         }}>
-          Your word is on the line. <span style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>Whoever taps the link becomes your witness.</span>
+          Next: send the witness link. <span style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>Whoever taps it becomes your witness.</span>
         </p>
 
         {/* Receipt card */}

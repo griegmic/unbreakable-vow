@@ -1348,7 +1348,7 @@ export default function ChallengeInviteClient({
 
           {/* Title */}
           <div style={{ textAlign: 'center' }}>
-            <FrauncesH1 italic size="page">The vow is sealed.</FrauncesH1>
+            <FrauncesH1 italic size="page">The vow is bound.</FrauncesH1>
             <div style={{ marginTop: 8 }}>
               <FrauncesSub>{makerFirstName} will decide if you kept it at the deadline.</FrauncesSub>
             </div>

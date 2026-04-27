@@ -224,7 +224,7 @@ function VowDetailContent() {
         }, 500);
         celebTimersRef.current.push(t1);
       }
-    }, 900);
+    }, 1100);
 
     celebTimersRef.current.push(minTextTime);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -323,6 +323,10 @@ function VowDetailContent() {
       ? `${origin}/w/${vow.witness_invite_token}` : '';
     const truncatedUrl = celebWitnessUrl.length > 40
       ? celebWitnessUrl.slice(0, 37) + '...' : celebWitnessUrl;
+    const celebVowText = vow?.refined_text?.trim() || 'Your vow';
+    const truncatedVowText = celebVowText.length > 54
+      ? `${celebVowText.slice(0, 51).trim()}...`
+      : celebVowText;
 
     return (
       <div
@@ -343,61 +347,98 @@ function VowDetailContent() {
         {/* Seal + text phases */}
         {(celebPhase === 'seal' || celebPhase === 'text') && (
           <>
-            {/* Gold wax seal icon */}
             <div
               style={{
-                width: 72,
-                height: 72,
+                position: 'relative',
+                width: 126,
+                height: 126,
                 borderRadius: '50%',
-                background: 'radial-gradient(circle at 30% 22%, #F2C766 0%, #E8B656 30%, #C89B3C 62%, #8B6820 100%)',
-                boxShadow: '0 0 0 1px rgba(139,104,32,0.45), 0 14px 40px rgba(200,155,60,0.32)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                opacity: 1,
-                transition: 'opacity 300ms ease',
+                marginBottom: 8,
               }}
             >
-              <span style={{
-                fontFamily: 'var(--uv-font-serif)',
-                fontSize: 28,
-                fontWeight: 600,
-                fontStyle: 'italic',
-                color: '#1A1205',
-                letterSpacing: '-0.03em',
-              }}>
-                UV
-              </span>
+              <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', border: '1px solid rgba(212,169,85,0.24)' }} />
+              <div style={{ position: 'absolute', inset: 13, borderRadius: '50%', border: '1px solid rgba(212,169,85,0.38)' }} />
+              <div
+                style={{
+                  width: 94,
+                  height: 94,
+                  borderRadius: 26,
+                  background: 'radial-gradient(circle at 30% 22%, #F2C766 0%, #E8B656 30%, #C89B3C 62%, #8B6820 100%)',
+                  boxShadow: '0 0 0 1px rgba(139,104,32,0.45), 0 18px 50px rgba(200,155,60,0.32)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transform: celebPhase === 'seal' ? 'scale(0.96)' : 'scale(1)',
+                  transition: 'transform 420ms cubic-bezier(.2,.9,.2,1)',
+                }}
+              >
+                <Check style={{ width: 42, height: 42, color: '#1A1205', strokeWidth: 3 }} />
+              </div>
             </div>
 
             <div
               style={{
                 textAlign: 'center',
                 opacity: celebPhase === 'text' ? 1 : 0,
-                transition: 'opacity 300ms ease',
+                transform: celebPhase === 'text' ? 'translateY(0)' : 'translateY(8px)',
+                transition: 'opacity 300ms ease, transform 300ms ease',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
               }}
             >
+              <p style={{
+                fontFamily: 'var(--uv-font-sans)',
+                fontSize: 10,
+                fontWeight: 800,
+                letterSpacing: '0.28em',
+                textTransform: 'uppercase',
+                color: 'var(--uv-gold-bright, #F2C766)',
+                margin: '0 0 12px',
+              }}>
+                Sealed
+              </p>
               <p
                 style={{
                   fontFamily: 'var(--uv-font-serif)',
-                  fontStyle: 'italic',
                   fontSize: 38,
+                  lineHeight: 1.04,
                   fontWeight: 400,
-                  color: 'var(--uv-gold, #D4A955)',
-                  margin: '20px 0 8px',
+                  color: 'var(--uv-text)',
+                  margin: 0,
                 }}
               >
-                Vow sealed.
+                Your vow is<br />
+                <em style={{ color: 'var(--uv-gold, #D4A955)', fontStyle: 'italic' }}>bound.</em>
+              </p>
+              <div style={{
+                width: 92,
+                height: 1,
+                background: 'linear-gradient(90deg, transparent, rgba(212,169,85,0.58), transparent)',
+                margin: '20px 0 16px',
+              }} />
+              <p style={{
+                fontFamily: 'var(--uv-font-serif)',
+                fontStyle: 'italic',
+                fontSize: 20,
+                lineHeight: 1.28,
+                color: 'var(--uv-text)',
+                margin: '0 0 9px',
+                maxWidth: 300,
+              }}>
+                &ldquo;{truncatedVowText}&rdquo;
               </p>
               <p style={{
                 fontFamily: 'var(--uv-font-sans)',
-                fontSize: 15,
-                lineHeight: 1.35,
-                fontWeight: 600,
-                color: 'var(--uv-text)',
+                fontSize: 13,
+                lineHeight: 1.4,
+                color: 'var(--uv-text-muted)',
                 margin: 0,
               }}>
-                Your word is on the line.
+                Next: send the witness link.
               </p>
             </div>
           </>

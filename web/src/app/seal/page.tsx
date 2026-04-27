@@ -930,12 +930,12 @@ export default function SealPage() {
                 Sealed
               </p>
               <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 48, lineHeight: 1, fontWeight: 400, color: 'var(--uv-text)', margin: 0 }}>
-                It&apos;s official.
+                Your vow is bound.
               </h1>
               <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 16, lineHeight: 1.45, color: 'var(--uv-text-muted)', margin: '4px 0 0', maxWidth: 300 }}>
                 {namedWitness
-                  ? `Your vow is live. Now tell ${namedWitness}.`
-                  : 'Your vow is live. Now send the witness invite.'}
+                  ? `Next: tell ${namedWitness}.`
+                  : 'Next: send the witness link.'}
               </p>
             </div>
           )}
