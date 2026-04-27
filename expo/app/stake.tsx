@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { CreditCard, Flame, HeartHandshake, ShieldCheck } from 'lucide-react-native';
 import React, { useMemo, useRef, useState } from 'react';
@@ -14,6 +13,7 @@ import {
   TitleBlock,
 } from '@/components/vow-ui';
 import { antiCauses, charities, palette, stakeAmounts } from '@/constants/unbreakable';
+import { hapticPrimary, hapticSelection } from '@/lib/haptics';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function StakeScreen() {
@@ -34,7 +34,7 @@ export default function StakeScreen() {
 
   const handleContinue = () => {
     if (!canContinue) return;
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    hapticPrimary();
     setStake({ amount, consequence, destination: amount > 0 ? destination : 'None' });
     router.push('/witness');
   };
@@ -51,7 +51,7 @@ export default function StakeScreen() {
   const scaleAnim = useRef(new Animated.Value(1)).current;
 
   const handleAmountPress = (value: number) => {
-    void Haptics.selectionAsync();
+    hapticSelection();
     setAmount(value);
     Animated.sequence([
       Animated.timing(scaleAnim, { toValue: 1.05, duration: 100, useNativeDriver: true }),
@@ -101,7 +101,7 @@ export default function StakeScreen() {
         </View>
         <Pressable
           onPress={() => {
-            void Haptics.selectionAsync();
+            hapticSelection();
             setAmount(0);
           }}
           style={styles.accountabilityOnly}
@@ -123,7 +123,7 @@ export default function StakeScreen() {
             <Pressable
               key={option.id}
               onPress={() => {
-                void Haptics.selectionAsync();
+                hapticSelection();
                 setConsequence(option.id);
                 if (option.id === 'charity') {
                   setDestination(charities[0]);

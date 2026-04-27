@@ -7,6 +7,10 @@
 - Created the Project Parody operating plan and screen-by-screen parity matrix.
 - Stabilized the Expo/Rork back-navigation layer by replacing shared `router.back()` behavior with explicit route fallbacks.
 - Added explicit native fallbacks on seal, stake, witness, refine, auth, settings, challenges, history, and self-resolve screens.
+- Rebuilt the native root entry as the Smart Split surface:
+  - first-time users see a web-aligned guided create first step
+  - returning authenticated users with prior vows route to Quick Vow
+- Normalized core maker-flow haptics through `expo/lib/haptics.ts` for root create, refine, stake, witness, and seal.
 - Verified the native project with:
   - `npx tsc --noEmit`
   - `npm run lint`
@@ -18,7 +22,7 @@
 - Treat Rork visibility as two lanes:
   - `web/src/...` for Rork chat/design inspection.
   - `expo/...` for Rork QR, Expo Go, and TestFlight.
-- Redirect the native root route to `quick-vow` so Rork QR / Expo Go stops landing on the old bespoke guided home screen.
+- Replace the previous native root redirect with Smart Split so Rork QR / Expo Go can test the correct first-time and returning-user surfaces.
 - Remove the app-menu route that sent users back into the stale native guided flow.
 - Preserve native-only improvements where they are clearly better than web:
   - contact picker for judges

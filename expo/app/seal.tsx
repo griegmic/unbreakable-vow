@@ -1,5 +1,4 @@
 import Constants from 'expo-constants';
-import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { Check, Sparkles, Star } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -8,6 +7,7 @@ import { AppMenuButton } from '@/components/app-menu';
 import AuthSheet from '@/components/auth-sheet';
 import { BackButton, PrimaryButton, RitualCard, RitualScreen, SecondaryButton, TitleBlock } from '@/components/vow-ui';
 import { getVowVerdictDate, palette, serifFont } from '@/constants/unbreakable';
+import { hapticPrimary, hapticSealComplete, hapticSecondary } from '@/lib/haptics';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { saveCard, setupPaymentSheetForSetup, showPaymentSheet } from '@/lib/stripe';
 import { createVow, voidVowV2 } from '@/lib/vow-api';
@@ -97,7 +97,7 @@ export default function SealScreen() {
       duration: 500,
       useNativeDriver: false,
     }).start(() => {
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      hapticSealComplete();
       setSealed(true);
 
       Animated.parallel([
@@ -115,7 +115,7 @@ export default function SealScreen() {
       ]).start();
 
       setTimeout(async () => {
-        void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        hapticSecondary();
         void registerPush();
         router.replace({
           pathname: '/vow-detail',
@@ -162,7 +162,7 @@ export default function SealScreen() {
   const handleDevBypass = useCallback(async () => {
     if (loading) return;
     setLoading(true);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    hapticPrimary();
     console.log('[SealScreen] Dev bypass — creating real vow, skipping payment');
     let devVowId = 'dev-' + Date.now();
     let devToken: string | null = 'dev-token-' + Date.now();
@@ -197,7 +197,7 @@ export default function SealScreen() {
   const handleSealFlow = useCallback(async () => {
     if (loading) return;
     setLoading(true);
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    hapticPrimary();
 
     // Expo Go — no native Stripe module, show skip prompt for staked vows
     if (IS_EXPO_GO) {

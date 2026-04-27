@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { Stack, router } from 'expo-router';
 import { ArrowRight, Sparkles } from 'lucide-react-native';
 import React, { useCallback, useMemo, useRef, useState } from 'react';
@@ -18,6 +17,7 @@ import {
   getContextualSuggestions,
   palette,
 } from '@/constants/unbreakable';
+import { hapticPrimary, hapticSecondary, hapticSelection, hapticVoidConfirm } from '@/lib/haptics';
 import { useVowFlow } from '@/providers/vow-flow';
 
 export default function RefineScreen() {
@@ -34,7 +34,7 @@ export default function RefineScreen() {
   console.log('[RefineScreen] rawInput:', vow.rawInput, '| suggestion:', initialSuggestion);
 
   const triggerShake = useCallback(() => {
-    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
+    hapticVoidConfirm();
     shakeAnim.setValue(0);
     Animated.sequence([
       Animated.timing(shakeAnim, { toValue: 10, duration: 50, useNativeDriver: true }),
@@ -60,12 +60,12 @@ export default function RefineScreen() {
     }
 
     setVagueError('');
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    hapticPrimary();
     continueWith(trimmed);
   }, [suggestionText, continueWith, triggerShake]);
 
   const handleKeepOriginal = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    hapticSecondary();
     continueWith(vow.rawInput);
   }, [vow.rawInput, continueWith]);
 
@@ -148,7 +148,7 @@ export default function RefineScreen() {
           key={suggestion}
           style={({ pressed }) => [styles.suggestionCard, pressed && styles.suggestionCardPressed]}
           onPress={() => {
-            void Haptics.selectionAsync();
+            hapticSelection();
             setSuggestionText(suggestion);
             setVagueError('');
           }}

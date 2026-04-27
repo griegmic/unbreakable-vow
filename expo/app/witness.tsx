@@ -1,4 +1,3 @@
-import * as Haptics from 'expo-haptics';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { ChevronRight, Search, UserPlus, X } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -12,6 +11,7 @@ import {
 } from '@/components/vow-ui';
 import { palette, serifFont } from '@/constants/unbreakable';
 import { type ContactEntry, requestAndLoadContacts } from '@/lib/contacts';
+import { hapticPrimary, hapticSealComplete, hapticSecondary, hapticSelection } from '@/lib/haptics';
 import { updateVowWitness } from '@/lib/vow-api';
 import { useVowFlow } from '@/providers/vow-flow';
 
@@ -39,7 +39,7 @@ export default function WitnessScreen() {
   console.log('[WitnessScreen] mode:', mode);
 
   const handlePickFromContacts = useCallback(async () => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    hapticPrimary();
     setLoadingContacts(true);
 
     try {
@@ -59,7 +59,7 @@ export default function WitnessScreen() {
   }, []);
 
   const handleSelectContact = useCallback(async (contact: ContactEntry) => {
-    void Haptics.selectionAsync();
+    hapticSelection();
     const firstName = contact.name.split(' ')[0];
     console.log('[WitnessScreen] contact selected:', firstName, contact.phone);
 
@@ -76,7 +76,7 @@ export default function WitnessScreen() {
           if (result.witnessInviteToken) {
             setVowId(vow.vowId, result.witnessInviteToken);
           }
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          hapticSealComplete();
           router.replace('/stake');
         } else {
           Alert.alert('Something went wrong', result.error || 'Please try again.');
@@ -133,7 +133,7 @@ export default function WitnessScreen() {
         <View style={styles.soloFooterMinimal}>
           <Pressable
             onPress={() => {
-              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              hapticSecondary();
               setWitnessType('self');
               setWitness('Just me', 'link');
               router.push('/seal');
