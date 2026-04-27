@@ -7,12 +7,11 @@ import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { IntroCeremony } from '@/components/intro-ceremony';
 import { StripeWrapper } from '@/components/stripe-wrapper';
 import '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import { AuthProvider } from '@/providers/auth-provider';
-import { OathStateProvider, useOathState } from '@/providers/oath-state';
+import { OathStateProvider } from '@/providers/oath-state';
 import { VowFlowProvider } from '@/providers/vow-flow';
 
 void SplashScreen.preventAutoHideAsync();
@@ -52,23 +51,9 @@ function RootLayoutNav() {
 }
 
 function AppWithOath() {
-  const { ready, shouldShowIntro, shouldShowOath, completeIntro, dismissOath } = useOathState();
-
-  if (!ready) {
-    return <View style={{ flex: 1, backgroundColor: '#030508' }} />;
-  }
-
-  const showCeremony = shouldShowIntro || shouldShowOath;
-
   return (
     <View style={{ flex: 1, backgroundColor: '#030508' }}>
       <RootLayoutNav />
-      {showCeremony ? (
-        <IntroCeremony
-          showFullIntro={shouldShowIntro}
-          onComplete={shouldShowIntro ? completeIntro : dismissOath}
-        />
-      ) : null}
     </View>
   );
 }

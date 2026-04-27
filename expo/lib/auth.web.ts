@@ -1,3 +1,4 @@
+import { normalizePhoneE164 } from './phone';
 import { supabase } from './supabase';
 
 export interface AuthResult {
@@ -13,10 +14,9 @@ export async function signInWithGoogle(): Promise<AuthResult> {
 }
 
 function toE164(phone: string): string {
-  const digits = phone.replace(/\D/g, '');
-  if (digits.startsWith('1') && digits.length === 11) return `+${digits}`;
-  if (digits.length === 10) return `+1${digits}`;
-  return `+${digits}`;
+  const normalized = normalizePhoneE164(phone);
+  if (!normalized) throw new Error('Please enter a valid phone number.');
+  return normalized;
 }
 
 export async function sendPhoneOtp(phone: string): Promise<AuthResult> {
