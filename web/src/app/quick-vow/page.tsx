@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AvatarMenuTrigger, ChoicePill } from '@/components/primitives';
 import { IfBrokenSheet } from '@/app/create/components/IfBrokenSheet';
@@ -9,82 +9,106 @@ import { useAuth } from '@/providers/auth-provider';
 import { inferDeadline } from '@/lib/vow-logic';
 
 /**
- * Quick Vow — S21 / 08-quick-vow.html
+ * Quick Vow
  *
- * Returning-user power flow: card-based vow input with inline meta-pills
- * (deadline, stake, witness), one-tap suggestion chips, and dual CTA footer.
- * Routes to /seal?quick=1 so returning users skip the redundant review page.
+ * One-screen fast path with the visual contract from quick-vow-clickable-flow:
+ * promise, verdict, stake, witness, destination, then /seal?quick=1.
  */
 
 type DeadlineId = 'eow' | 'tomorrow' | '7days' | '30days' | 'custom';
 type JudgeMode = 'share' | 'self';
+type ContactPickerNavigator = Navigator & {
+  contacts?: {
+    select: (
+      properties: Array<'name' | 'tel'>,
+      options?: { multiple?: boolean },
+    ) => Promise<Array<{ name?: string[]; tel?: string[] }>>;
+  };
+};
+
+const STAKE_OPTIONS = [10, 25, 50, 100];
+const DEFAULT_VOW = 'No takeout all week';
+
+const DEADLINE_PRESETS: { id: DeadlineId; label: string }[] = [
+  { id: 'eow', label: 'Sunday night' },
+  { id: 'tomorrow', label: 'Tomorrow' },
+  { id: '7days', label: '1 week' },
+  { id: '30days', label: '30 days' },
+  { id: 'custom', label: 'Pick date' },
+];
 
 function getEndOfWeek(): Date {
   const d = new Date();
   const diff = 7 - d.getDay();
   d.setDate(d.getDate() + (diff === 0 ? 7 : diff));
-  d.setHours(23, 59, 0, 0);
+  d.setHours(21, 0, 0, 0);
   return d;
 }
+
 function getTomorrow(): Date {
   const d = new Date();
   d.setDate(d.getDate() + 1);
   d.setHours(21, 0, 0, 0);
   return d;
 }
+
 function getOneWeek(): Date {
   const d = new Date();
   d.setDate(d.getDate() + 7);
   d.setHours(23, 59, 0, 0);
   return d;
 }
+
 function getThirtyDays(): Date {
   const d = new Date();
   d.setDate(d.getDate() + 30);
   d.setHours(23, 59, 0, 0);
   return d;
 }
+
 function getDateForPreset(id: DeadlineId): Date {
   switch (id) {
-    case 'eow': return getEndOfWeek();
-    case 'tomorrow': return getTomorrow();
-    case '7days': return getOneWeek();
-    case '30days': return getThirtyDays();
-    default: return getOneWeek();
+    case 'eow':
+      return getEndOfWeek();
+    case 'tomorrow':
+      return getTomorrow();
+    case '30days':
+      return getThirtyDays();
+    case 'custom':
+    case '7days':
+    default:
+      return getOneWeek();
   }
 }
-function formatDeadlineShort(date: Date): string {
+
+function formatVerdictLabel(date: Date, selectedDeadline: DeadlineId): string {
+  if (selectedDeadline === 'eow') return 'Sunday night';
+  if (selectedDeadline === 'tomorrow') return 'Tomorrow night';
+  if (selectedDeadline === '7days') return 'In 1 week';
+  if (selectedDeadline === '30days') return 'In 30 days';
+  if (date.getDay() === 0) return 'Sunday night';
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-const DEADLINE_PRESETS: { id: DeadlineId; label: string }[] = [
-  { id: 'eow', label: 'This Sunday' },
-  { id: '7days', label: '1 week' },
-  { id: '30days', label: '30 days' },
-  { id: 'custom', label: 'Pick date' },
-];
-
-const STAKE_OPTIONS = [10, 25, 50, 100];
-
-interface QuickSuggestion {
-  text: string;
-  amount: number;
-  deadlineLabel: string;
-  deadlineId: DeadlineId;
+function getStakeNote(amount: number): string {
+  if (amount <= 10) return 'Light enough to start. Real enough to count.';
+  if (amount <= 25) return 'Enough to notice. Easy enough to choose.';
+  if (amount <= 50) return 'Small enough to choose today. Real enough to remember tomorrow.';
+  return 'Large enough to make the promise louder.';
 }
 
-const SUGGESTIONS: QuickSuggestion[] = [
-  { text: 'Gym 3x this week', amount: 50, deadlineLabel: '$50 \u00b7 Sun', deadlineId: 'eow' },
-  { text: 'Delete TikTok for a week', amount: 25, deadlineLabel: '$25 \u00b7 Mon', deadlineId: '7days' },
-  { text: 'Dry, 2 weeks', amount: 100, deadlineLabel: '$100 \u00b7 14d', deadlineId: '30days' },
-  { text: 'No texting my ex', amount: 50, deadlineLabel: '$50 \u00b7 30d', deadlineId: '30days' },
-];
+function formatPhoneDisplay(value: string): string {
+  const cleaned = value.replace(/\D/g, '');
+  const digits = (cleaned.length === 11 && cleaned.startsWith('1') ? cleaned.slice(1) : cleaned).slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
 
-function getStakeNote(amount: number): string {
-  if (amount <= 10) return 'A little sting. Enough to notice.';
-  if (amount <= 25) return 'Respectable pain. Still sane.';
-  if (amount <= 50) return 'Enough to sting. Not enough to be stupid.';
-  return 'Max pain. Choose wisely.';
+function normalizeWitnessPhone(value: string): string {
+  const cleaned = value.replace(/\D/g, '');
+  const digits = (cleaned.length === 11 && cleaned.startsWith('1') ? cleaned.slice(1) : cleaned).slice(0, 10);
+  return digits.length === 10 ? `+1${digits}` : '';
 }
 
 export default function QuickVowPage() {
@@ -92,44 +116,78 @@ export default function QuickVowPage() {
   const { isAuthenticated, session, displayName } = useAuth();
   const vowFlow = useVowFlow();
 
-  // Form state
-  const [vowText, setVowText] = useState('');
-  const [selectedDeadline, setSelectedDeadline] = useState<DeadlineId>('7days');
+  const [vowText, setVowText] = useState(DEFAULT_VOW);
+  const [selectedDeadline, setSelectedDeadline] = useState<DeadlineId>('eow');
   const [customDate, setCustomDate] = useState('');
   const [witnessName, setWitnessName] = useState('');
+  const [witnessPhone, setWitnessPhone] = useState('');
+  const [witnessChoiceMade, setWitnessChoiceMade] = useState(false);
   const [judgeMode, setJudgeMode] = useState<JudgeMode>('share');
   const [stakeAmount, setStakeAmount] = useState(50);
   const [destination, setDestination] = useState('ALS Association');
   const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>('charity');
-  const [showIfBroken, setShowIfBroken] = useState(false);
-
   const [expandedPill, setExpandedPill] = useState<'deadline' | 'witness' | null>(null);
+  const [showIfBroken, setShowIfBroken] = useState(false);
+  const [contactNotice, setContactNotice] = useState('');
 
+  const vowInputRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
 
-  // Compute deadline date
   const deadlineDate = useMemo(() => {
     if (selectedDeadline === 'custom' && customDate) {
-      return new Date(customDate + 'T23:59:00');
+      return new Date(`${customDate}T23:59:00`);
     }
     return getDateForPreset(selectedDeadline);
   }, [selectedDeadline, customDate]);
 
-  // Infer deadline from text
   const inferredDeadline = useMemo(() => {
     if (!vowText.trim()) return null;
     return inferDeadline(vowText);
   }, [vowText]);
 
   const effectiveDeadline = inferredDeadline || deadlineDate;
+  const verdictLabel = formatVerdictLabel(effectiveDeadline, inferredDeadline ? 'custom' : selectedDeadline);
+  const canContinue = vowText.trim().length >= 3;
+  const userEmail = session?.user?.email ?? null;
+  const witnessPhoneDigits = witnessPhone.replace(/\D/g, '');
+  const witnessTitle = judgeMode === 'self'
+    ? 'Judge it myself'
+    : witnessName.trim()
+      ? witnessName.trim()
+      : witnessChoiceMade
+        ? 'Share judge link'
+        : 'Choose a witness';
+  const witnessSubtitle = judgeMode === 'self'
+    ? 'No witness, just your word.'
+    : witnessPhoneDigits.length >= 10
+      ? formatPhoneDisplay(witnessPhone)
+      : witnessChoiceMade
+        ? 'Send it after sealing.'
+        : 'Pick from contacts or enter a phone number.';
+  const witnessMark = judgeMode === 'self'
+    ? '✓'
+    : witnessName.trim()
+      ? witnessName.trim().charAt(0).toUpperCase()
+      : '+';
 
-  const canSeal = vowText.trim().length >= 10;
+  const { minDate, maxDate } = useMemo(() => {
+    const now = new Date();
+    const max = new Date(now.getTime() + 90 * 86400000);
+    return {
+      minDate: now.toISOString().split('T')[0],
+      maxDate: max.toISOString().split('T')[0],
+    };
+  }, []);
 
   const handleSeal = () => {
-    if (!canSeal) return;
+    if (!canContinue) {
+      vowInputRef.current?.focus();
+      return;
+    }
 
-    vowFlow.setRawInput(vowText);
-    vowFlow.setRefinedText(vowText);
+    const trimmedVow = vowText.trim();
+    vowFlow.setRawInput(trimmedVow);
+    vowFlow.setRefinedText(trimmedVow);
     vowFlow.setDeadline(effectiveDeadline.toISOString());
 
     try {
@@ -141,9 +199,11 @@ export default function QuickVowPage() {
     if (judgeMode === 'self') {
       vowFlow.setWitnessType('self');
       vowFlow.setWitnessName('Just me');
+      vowFlow.setWitnessPhone('');
     } else {
       vowFlow.setWitnessType('friend');
       vowFlow.setWitnessName(witnessName.trim() || 'Your witness');
+      vowFlow.setWitnessPhone(normalizeWitnessPhone(witnessPhone));
     }
 
     vowFlow.setStake({
@@ -155,6 +215,20 @@ export default function QuickVowPage() {
     router.push('/seal?quick=1');
   };
 
+  const handleContinue = () => {
+    if (!canContinue) {
+      vowInputRef.current?.focus();
+      return;
+    }
+
+    if (!witnessChoiceMade) {
+      setExpandedPill('witness');
+      return;
+    }
+
+    handleSeal();
+  };
+
   const handleDeadlineClick = (id: DeadlineId) => {
     if (id === 'custom') {
       setSelectedDeadline('custom');
@@ -164,393 +238,681 @@ export default function QuickVowPage() {
     setSelectedDeadline(id);
   };
 
-  const handleSuggestionTap = (s: QuickSuggestion) => {
-    setVowText(s.text);
-    setStakeAmount(s.amount);
-    setSelectedDeadline(s.deadlineId);
+  const pickContact = async () => {
+    setContactNotice('');
+    const contactApi = (navigator as ContactPickerNavigator).contacts;
+
+    if (!contactApi?.select) {
+      setContactNotice('Contacts are not available in this browser. Add a phone number instead.');
+      return;
+    }
+
+    try {
+      const [contact] = await contactApi.select(['name', 'tel'], { multiple: false });
+      if (!contact) return;
+      const name = contact.name?.[0] || '';
+      const phone = contact.tel?.[0] || '';
+      setWitnessName(name);
+      setWitnessPhone(phone);
+      setJudgeMode('share');
+      setWitnessChoiceMade(true);
+      setExpandedPill(null);
+    } catch {
+      setContactNotice('No contact selected.');
+    }
+  };
+
+  const acceptWitnessChoice = () => {
+    if (!witnessName.trim() && witnessPhoneDigits.length < 10) {
+      setContactNotice('Add a name or phone, or choose “Share judge link after sealing.”');
+      return;
+    }
+    setJudgeMode('share');
+    setWitnessChoiceMade(true);
     setExpandedPill(null);
   };
-
-  const togglePill = (pill: 'deadline' | 'witness') => {
-    setExpandedPill(prev => prev === pill ? null : pill);
-  };
-
-  const { minDate, maxDate } = useMemo(() => {
-    const now = new Date();
-    const max = new Date(now.getTime() + 90 * 86400000);
-    return {
-      minDate: now.toISOString().split('T')[0],
-      maxDate: max.toISOString().split('T')[0],
-    };
-  }, []);
-
-  const userEmail = session?.user?.email ?? null;
 
   return (
     <>
       <style>{`
-        @keyframes uv-stake-pulse {
-          0% { transform: scale(0.985); opacity: 0.84; }
-          100% { transform: scale(1); opacity: 1; }
+        .qv-page {
+          min-height: 100dvh;
+          padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(10px, env(safe-area-inset-bottom, 0px));
+          background:
+            linear-gradient(180deg, #26221c 0%, #1a1713 38%, #0f0e0c 100%);
+          color: #f0e8d8;
+        }
+
+        .qv-shell {
+          width: 100%;
+          max-width: 393px;
+          min-height: calc(100dvh - 20px);
+          margin: 0 auto;
+          display: flex;
+          flex-direction: column;
+          padding: 32px 36px 28px;
+          border: 1px solid rgba(255, 255, 255, 0.075);
+          border-radius: 34px;
+          background:
+            radial-gradient(ellipse 360px 210px at 50% -50px, rgba(184, 138, 53, 0.10), transparent 70%),
+            #100e0b;
+          box-shadow: 0 34px 90px rgba(0, 0, 0, 0.50);
+        }
+
+        .qv-topbar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 34px;
+        }
+
+        .qv-brand {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+          min-width: 0;
+          font-family: var(--uv-font-serif);
+          font-size: 25px;
+          line-height: 1;
+          font-weight: 430;
+          color: #f0e8d8;
+        }
+
+        .qv-brand em {
+          color: #e7c674;
+          font-style: italic;
+          font-weight: 400;
+        }
+
+        .qv-mark {
+          width: 56px;
+          height: 56px;
+          border: 1px solid #b88a35;
+          transform: rotate(45deg);
+          display: grid;
+          place-items: center;
+          flex: 0 0 auto;
+        }
+
+        .qv-mark::after {
+          content: "";
+          width: 14px;
+          height: 14px;
+          background: #e7c674;
+        }
+
+        .qv-avatar > div > button {
+          width: 68px !important;
+          height: 68px !important;
+        }
+
+        .qv-avatar > div > button > div {
+          width: 68px !important;
+          height: 68px !important;
+          border-color: rgba(240, 232, 216, 0.10) !important;
+          background: rgba(240, 232, 216, 0.026) !important;
+          color: #e7c674 !important;
+          font-family: var(--uv-font-sans) !important;
+          font-size: 26px !important;
+          font-weight: 650 !important;
+        }
+
+        .qv-kicker {
+          color: #e7c674;
+          font-family: var(--uv-font-sans);
+          font-size: 19px;
+          line-height: 1;
+          font-weight: 680;
+          letter-spacing: 0.26em;
+          text-transform: uppercase;
+          margin-bottom: 20px;
+        }
+
+        .qv-title {
+          margin: 0 0 28px;
+          color: #f0e8d8;
+          font-family: var(--uv-font-serif);
+          font-size: 56px;
+          line-height: 1.02;
+          font-weight: 430;
+          letter-spacing: 0;
+        }
+
+        .qv-title em {
+          color: #e7c674;
+          font-style: italic;
+          font-weight: 400;
+        }
+
+        .qv-card {
+          border-radius: 30px;
+          border: 1px solid rgba(240, 232, 216, 0.105);
+          background: linear-gradient(180deg, rgba(240, 232, 216, 0.050), rgba(240, 232, 216, 0.020));
+          box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+        }
+
+        .qv-label {
+          color: #6f6556;
+          font-family: var(--uv-font-sans);
+          font-size: 18px;
+          line-height: 1;
+          font-weight: 680;
+          letter-spacing: 0.27em;
+          text-transform: uppercase;
+        }
+
+        .qv-vow-card {
+          padding: 32px 32px 28px;
+          margin-bottom: 18px;
+        }
+
+        .qv-vow-input {
+          width: 100%;
+          min-height: 124px;
+          display: block;
+          resize: none;
+          border: none;
+          outline: none;
+          background: transparent;
+          color: #f0e8d8;
+          font-family: var(--uv-font-sans);
+          font-size: 50px;
+          line-height: 1.08;
+          font-weight: 680;
+          letter-spacing: 0;
+          padding: 36px 0 24px;
+        }
+
+        .qv-vow-input::placeholder {
+          color: rgba(240, 232, 216, 0.43);
+          opacity: 1;
+        }
+
+        .qv-rule {
+          height: 1px;
+          background: rgba(184, 138, 53, 0.25);
+          margin-bottom: 22px;
+        }
+
+        .qv-inline-meta {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 18px;
+          color: #9a8f7d;
+          font-family: var(--uv-font-sans);
+          font-size: 25px;
+          line-height: 1.2;
+          font-weight: 450;
+        }
+
+        .qv-deadline-button,
+        .qv-receipt-button,
+        .qv-help-button {
+          appearance: none;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          padding: 0;
+        }
+
+        .qv-inline-meta strong {
+          color: #f0e8d8;
+          font-weight: 680;
+          text-align: right;
+        }
+
+        .qv-consequence {
+          border-radius: 30px;
+          border: 1px solid rgba(184, 138, 53, 0.27);
+          background:
+            linear-gradient(180deg, rgba(184, 138, 53, 0.088), rgba(240, 232, 216, 0.022));
+          padding: 30px 26px 26px;
+          margin-bottom: 18px;
+        }
+
+        .qv-money-row {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          margin-bottom: 28px;
+        }
+
+        .qv-money {
+          color: #e7c674;
+          font-family: var(--uv-font-serif);
+          font-size: 82px;
+          line-height: 0.9;
+          font-weight: 430;
+          text-shadow: 0 12px 30px rgba(184, 138, 53, 0.11);
+        }
+
+        .qv-money-note {
+          max-width: 280px;
+          text-align: right;
+          color: #9a8f7d;
+          font-family: var(--uv-font-serif);
+          font-size: 22px;
+          line-height: 1.25;
+          font-weight: 400;
+          font-style: italic;
+        }
+
+        .qv-amounts {
+          display: grid;
+          grid-template-columns: repeat(4, minmax(0, 1fr));
+          gap: 14px;
+        }
+
+        .qv-amount {
+          height: 74px;
+          border-radius: 18px;
+          border: 1px solid rgba(240, 232, 216, 0.072);
+          background: rgba(0, 0, 0, 0.10);
+          color: #9a8f7d;
+          display: grid;
+          place-items: center;
+          font-family: var(--uv-font-sans);
+          font-size: 30px;
+          line-height: 1;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 100ms ease, border-color 120ms ease, background 120ms ease;
+        }
+
+        .qv-amount[data-active="true"] {
+          color: #e7c674;
+          border-color: rgba(231, 198, 116, 0.54);
+          background: linear-gradient(180deg, rgba(231, 198, 116, 0.18), rgba(184, 138, 53, 0.088));
+        }
+
+        .qv-amount:active,
+        .qv-witness:active,
+        .qv-primary:active {
+          transform: scale(0.98);
+        }
+
+        .qv-witness {
+          min-height: 112px;
+          width: 100%;
+          border-radius: 24px;
+          border: 1px solid rgba(184, 138, 53, 0.20);
+          background: rgba(240, 232, 216, 0.024);
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 0 26px;
+          margin-bottom: 18px;
+          cursor: pointer;
+          text-align: left;
+          transition: transform 100ms ease, border-color 120ms ease;
+        }
+
+        .qv-bubble {
+          width: 62px;
+          height: 62px;
+          border-radius: 50%;
+          display: grid;
+          place-items: center;
+          background: rgba(184, 138, 53, 0.12);
+          color: #e7c674;
+          border: 1px solid rgba(184, 138, 53, 0.18);
+          font-family: var(--uv-font-sans);
+          font-size: 31px;
+          line-height: 1;
+          font-weight: 700;
+          flex: 0 0 auto;
+        }
+
+        .qv-witness-title {
+          display: block;
+          color: #f0e8d8;
+          font-family: var(--uv-font-sans);
+          font-size: 29px;
+          line-height: 1.12;
+          font-weight: 720;
+        }
+
+        .qv-witness-sub {
+          display: block;
+          color: #6f6556;
+          font-family: var(--uv-font-sans);
+          font-size: 23px;
+          line-height: 1.25;
+          font-weight: 500;
+          margin-top: 8px;
+        }
+
+        .qv-receipt-button {
+          width: 100%;
+          color: #c9beaa;
+          text-align: center;
+          font-family: var(--uv-font-sans);
+          font-size: 25px;
+          line-height: 1.35;
+          font-weight: 480;
+          margin-bottom: 8px;
+        }
+
+        .qv-receipt-button strong {
+          color: #f0e8d8;
+          font-weight: 720;
+        }
+
+        .qv-spacer {
+          flex: 1;
+          min-height: 34px;
+        }
+
+        .qv-primary {
+          width: 100%;
+          min-height: 104px;
+          border-radius: 999px;
+          border: none;
+          color: #171209;
+          background: linear-gradient(180deg, #eac46e, #cfa047 62%, #a77a2e);
+          font-family: var(--uv-font-sans);
+          font-size: 31px;
+          line-height: 1;
+          font-weight: 760;
+          box-shadow: 0 1px 0 rgba(255, 244, 210, 0.34) inset, 0 20px 42px rgba(184, 138, 53, 0.18);
+          cursor: pointer;
+          transition: transform 100ms ease, opacity 120ms ease;
+        }
+
+        .qv-primary:disabled {
+          cursor: not-allowed;
+          opacity: 0.48;
+        }
+
+        .qv-help-button {
+          width: 100%;
+          color: #6f6556;
+          text-align: center;
+          font-family: var(--uv-font-sans);
+          font-size: 21px;
+          line-height: 1;
+          font-weight: 700;
+          margin-top: 28px;
+          padding: 6px 0;
+        }
+
+        .qv-sheet-backdrop {
+          position: fixed;
+          inset: 0;
+          z-index: 90;
+          background: rgba(0, 0, 0, 0.58);
+          display: flex;
+          align-items: flex-end;
+          justify-content: center;
+          padding: 0 10px;
+        }
+
+        .qv-sheet {
+          width: 100%;
+          max-width: 440px;
+          border-radius: 24px 24px 0 0;
+          background: var(--uv-bg-elevated);
+          border: 1px solid var(--uv-border-soft);
+          padding: 18px 20px max(22px, env(safe-area-inset-bottom));
+          box-shadow: 0 -20px 60px rgba(0, 0, 0, 0.45);
+        }
+
+        .qv-sheet-title {
+          margin: 0 0 6px;
+          color: var(--uv-text);
+          font-family: var(--uv-font-serif);
+          font-size: 24px;
+          line-height: 1.1;
+          font-weight: 500;
+        }
+
+        .qv-sheet-copy {
+          margin: 0 0 14px;
+          color: var(--uv-text-muted);
+          font-family: var(--uv-font-sans);
+          font-size: 14px;
+          line-height: 1.4;
+        }
+
+        .qv-sheet-input {
+          width: 100%;
+          box-sizing: border-box;
+          background: var(--uv-bg-input);
+          border: 1px solid var(--uv-border-strong);
+          border-radius: 14px;
+          padding: 14px 16px;
+          font-family: var(--uv-font-sans);
+          font-size: 16px;
+          color: var(--uv-text);
+          outline: none;
+          margin-bottom: 10px;
+        }
+
+        .qv-sheet-action {
+          width: 100%;
+          min-height: 52px;
+          border-radius: 14px;
+          border: 1px solid var(--uv-border-soft);
+          background: rgba(240, 232, 216, 0.026);
+          color: var(--uv-text);
+          font-family: var(--uv-font-sans);
+          font-size: 15px;
+          font-weight: 700;
+          cursor: pointer;
+          text-align: left;
+          padding: 12px 14px;
+          margin-bottom: 10px;
+        }
+
+        .qv-sheet-action[data-primary="true"] {
+          border: none;
+          background: var(--uv-gold);
+          color: var(--uv-text-on-gold);
+          text-align: center;
+        }
+
+        .qv-sheet-action[data-active="true"] {
+          border-color: var(--uv-gold);
+          background: rgba(200, 155, 60, 0.12);
+          color: var(--uv-gold-bright);
+        }
+
+        .qv-sheet-hint {
+          display: block;
+          margin-top: 3px;
+          font-size: 12.5px;
+          font-weight: 500;
+          color: var(--uv-text-dim);
+        }
+
+        .qv-sheet-notice {
+          margin: -2px 0 10px;
+          color: var(--uv-text-muted);
+          font-size: 12.5px;
+          line-height: 1.35;
+        }
+
+        @media (min-width: 0px) {
+          .qv-page {
+            padding: max(8px, env(safe-area-inset-top, 0px)) 8px max(8px, env(safe-area-inset-bottom, 0px));
+          }
+
+          .qv-shell {
+            padding: 18px 20px 16px;
+            border-radius: 28px;
+            min-height: calc(100dvh - 16px);
+          }
+
+          .qv-topbar { margin-bottom: 18px; }
+          .qv-brand { gap: 10px; font-size: 15px; }
+          .qv-mark { width: 22px; height: 22px; }
+          .qv-mark::after { width: 6px; height: 6px; }
+          .qv-avatar > div > button { width: 44px !important; height: 44px !important; }
+          .qv-avatar > div > button > div { width: 38px !important; height: 38px !important; font-size: 14px !important; }
+          .qv-kicker { font-size: 10px; margin-bottom: 9px; }
+          .qv-title { font-size: 31px; margin-bottom: 14px; }
+          .qv-vow-card { padding: 16px 17px 13px; margin-bottom: 10px; border-radius: 18px; }
+          .qv-label { font-size: 9.5px; }
+          .qv-vow-input { min-height: 76px; font-size: 28px; padding: 9px 0 11px; }
+          .qv-rule { margin-bottom: 10px; }
+          .qv-inline-meta { font-size: 13px; }
+          .qv-consequence { padding: 15px 14px 13px; margin-bottom: 9px; border-radius: 20px; }
+          .qv-money-row { margin-bottom: 12px; }
+          .qv-money { font-size: 47px; }
+          .qv-money-note { max-width: 158px; font-size: 13px; }
+          .qv-amounts { gap: 8px; }
+          .qv-amount { height: 42px; border-radius: 12px; font-size: 15px; }
+          .qv-witness { min-height: 62px; border-radius: 17px; gap: 12px; padding: 0 14px; margin-bottom: 8px; }
+          .qv-bubble { width: 34px; height: 34px; font-size: 17px; }
+          .qv-witness-title { font-size: 15.5px; }
+          .qv-witness-sub { font-size: 12.5px; margin-top: 4px; }
+          .qv-receipt-button { font-size: 14px; margin-bottom: 8px; }
+          .qv-spacer { min-height: 8px; }
+          .qv-primary { min-height: 58px; font-size: 17px; }
+          .qv-help-button { font-size: 12.5px; margin-top: 12px; }
+        }
+
+        @media (max-width: 360px), (max-height: 760px) {
+          .qv-shell { padding-top: 14px; padding-bottom: 12px; }
+          .qv-topbar { margin-bottom: 10px; }
+          .qv-title { font-size: 28px; margin-bottom: 10px; }
+          .qv-vow-card { padding: 14px 16px 12px; }
+          .qv-vow-input { min-height: 58px; font-size: 24px; padding: 7px 0 9px; }
+          .qv-consequence { padding: 12px; }
+          .qv-money { font-size: 40px; }
+          .qv-money-note { font-size: 12px; max-width: 136px; }
+          .qv-amount { height: 38px; }
+          .qv-witness { min-height: 58px; }
+          .qv-help-button { margin-top: 9px; }
         }
       `}</style>
-      <div
-        style={{
-          height: '100dvh',
-          overflow: 'hidden',
-          background: 'var(--uv-bg)',
-          backgroundImage: 'radial-gradient(ellipse at top, rgba(200,155,60,0.05), transparent 60%)',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: '18px 20px 16px',
-        }}
-      >
-        <div style={{ maxWidth: 480, width: '100%', height: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-          {/* ── Topbar ── */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: 10,
-          }}>
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 10,
-            }}>
-              <div style={{
-                width: 22,
-                height: 22,
-                border: '1px solid var(--uv-gold)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                transform: 'rotate(45deg)',
-                flexShrink: 0,
-              }}>
-                <div style={{ width: 6, height: 6, background: 'var(--uv-gold)' }} />
-              </div>
-              <span style={{
-                fontFamily: 'var(--uv-font-serif)',
-                fontSize: 15,
-                fontWeight: 500,
-                color: 'var(--uv-text)',
-              }}>
-                Unbreakable <em style={{ color: 'var(--uv-gold)', fontStyle: 'italic' }}>Vow</em>
-              </span>
+      <main className="qv-page">
+        <section className="qv-shell" aria-label="Quick vow">
+          <div className="qv-topbar">
+            <div className="qv-brand" aria-label="Unbreakable Vow">
+              <span className="qv-mark" aria-hidden="true" />
+              <span>Unbreakable <em>Vow</em></span>
             </div>
-
-            <AvatarMenuTrigger
-              displayName={isAuthenticated ? displayName : null}
-              email={isAuthenticated ? userEmail : null}
-            />
+            <div className="qv-avatar">
+              <AvatarMenuTrigger
+                displayName={isAuthenticated ? displayName : 'J'}
+                email={isAuthenticated ? userEmail : null}
+              />
+            </div>
           </div>
 
-          {/* ── Vow Card ── */}
-          <div style={{
-            background: 'var(--uv-bg-card)',
-            border: '1px solid var(--uv-border-soft)',
-            borderRadius: 16,
-            padding: '18px 18px 14px',
-            marginBottom: 10,
-            position: 'relative',
-            boxShadow: '0 18px 40px rgba(0,0,0,0.35)',
-          }}>
-            {/* Vow input */}
-            <input
-              type="text"
+          <div className="qv-kicker">Seal a vow</div>
+          <h1 className="qv-title">One promise.<br /><em>Real consequence.</em></h1>
+
+          <div className="qv-card qv-vow-card">
+            <label className="qv-label" htmlFor="quick-vow-text">I vow to</label>
+            <textarea
+              id="quick-vow-text"
+              ref={vowInputRef}
+              className="qv-vow-input"
               value={vowText}
-              onChange={e => setVowText(e.target.value)}
-              placeholder="I vow to..."
-              style={{
-                width: '100%',
-                fontFamily: 'var(--uv-font-sans)',
-                fontWeight: 500,
-                fontSize: 26,
-                lineHeight: 1.12,
-                letterSpacing: 0,
-                color: 'var(--uv-text)',
-                background: 'transparent',
-                border: 'none',
-                borderBottom: '1px solid rgba(200,155,60,0.24)',
-                outline: 'none',
-                padding: '0 0 13px',
-                marginBottom: 0,
+              onChange={(e) => setVowText(e.target.value)}
+              onKeyDown={(e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleContinue();
               }}
+              rows={2}
+              placeholder="No takeout all week"
             />
-
-            {/* Deadline */}
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              paddingTop: 8,
-            }}>
-              <button
-                type="button"
-                onClick={() => togglePill('deadline')}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  padding: '12px 0',
-                  margin: '-4px 0',
-                  background: 'none',
-                  border: 'none',
-                  fontFamily: 'var(--uv-font-sans)',
-                  fontSize: 12,
-                  color: 'var(--uv-text-muted)',
-                  cursor: 'pointer',
-                  minHeight: 44,
-                }}
-              >
-                Verdict <em style={{ fontStyle: 'italic', color: 'var(--uv-text-dim)' }}>by</em>{' '}
-                <span style={{ color: 'var(--uv-text)', fontWeight: 500 }}>{formatDeadlineShort(effectiveDeadline)}</span>
-              </button>
-            </div>
+            <div className="qv-rule" />
+            <button
+              type="button"
+              className="qv-deadline-button qv-inline-meta"
+              onClick={() => setExpandedPill('deadline')}
+              aria-label={`Change verdict date, currently ${verdictLabel}`}
+            >
+              <span>Verdict</span>
+              <strong>{verdictLabel}</strong>
+            </button>
           </div>
 
-          {/* ── One-tap suggestions ── */}
-          <div id="suggestions-section">
-            <div style={{
-              display: 'flex',
-              gap: 8,
-              overflowX: 'auto',
-              margin: '0 -20px 15px 0',
-              paddingRight: 20,
-              scrollbarWidth: 'none',
-            }}>
-              {SUGGESTIONS.map((s) => (
+          <div className="qv-consequence">
+            <div className="qv-money-row">
+              <div>
+                <div className="qv-label" style={{ marginBottom: 16 }}>On the line</div>
+                <div className="qv-money">${stakeAmount}</div>
+              </div>
+              <div className="qv-money-note">{getStakeNote(stakeAmount)}</div>
+            </div>
+            <div className="qv-amounts" role="group" aria-label="Stake amount">
+              {STAKE_OPTIONS.map((amount) => (
                 <button
-                  key={s.text}
+                  key={amount}
                   type="button"
-                  onClick={() => handleSuggestionTap(s)}
-                  style={{
-                    flex: '0 0 auto',
-                    padding: '8px 12px',
-                    background: 'rgba(240,233,219,0.025)',
-                    border: '1px solid var(--uv-border-soft)',
-                    borderRadius: 9999,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    fontFamily: 'var(--uv-font-sans)',
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: 'var(--uv-text-muted)',
-                    letterSpacing: 0,
-                  }}>
-                  {s.text}
+                  className="qv-amount"
+                  data-active={stakeAmount === amount}
+                  aria-pressed={stakeAmount === amount}
+                  onClick={() => setStakeAmount(amount)}
+                >
+                  ${amount}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* ── Stake selector ── */}
-          <div style={{ marginBottom: 12 }}>
-            <div
-              key={stakeAmount}
-              style={{
-                textAlign: 'center',
-                fontFamily: 'var(--uv-font-serif)',
-                fontSize: 56,
-                lineHeight: 0.95,
-                fontWeight: 500,
-                color: 'var(--uv-gold)',
-                fontFeatureSettings: '"tnum"',
-                textShadow: '0 10px 34px rgba(200,155,60,0.18)',
-                margin: '5px 0 12px',
-                animation: 'uv-stake-pulse 180ms ease-out',
-              }}
-            >
-              ${stakeAmount}
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
-              {STAKE_OPTIONS.map((amt) => {
-                const active = stakeAmount === amt;
-                return (
-                  <button
-                    key={amt}
-                    type="button"
-                    onClick={() => setStakeAmount(amt)}
-                    style={{
-                      height: 52,
-                      borderRadius: 14,
-                      border: active ? '1px solid var(--uv-gold)' : '1px solid var(--uv-border-soft)',
-                      background: active ? 'linear-gradient(180deg, rgba(232,182,86,0.22), rgba(200,155,60,0.13))' : 'rgba(240,233,219,0.025)',
-                      color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
-                      fontFamily: 'var(--uv-font-sans)',
-                      fontSize: 18,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      boxShadow: active ? '0 0 0 1px rgba(232,182,86,0.08), 0 16px 34px rgba(200,155,60,0.10)' : 'none',
-                    }}
-                  >
-                    ${amt}
-                  </button>
-                );
-              })}
-            </div>
-            <div style={{
-              minHeight: 17,
-              textAlign: 'center',
-              color: 'var(--uv-text-dim)',
-              fontFamily: 'var(--uv-font-sans)',
-              fontStyle: 'italic',
-              fontSize: 13,
-              fontWeight: 500,
-              lineHeight: 1.25,
-              marginTop: 8,
-            }}>
-              {getStakeNote(stakeAmount)}
-            </div>
-          </div>
-
-          {/* ── Witness + consequence ── */}
           <button
             type="button"
-            onClick={() => togglePill('witness')}
-            style={{
-              width: '100%',
-              minHeight: 58,
-              borderRadius: 16,
-              background: 'var(--uv-bg-card)',
-              border: '1px solid rgba(200,155,60,0.22)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              padding: '0 15px',
-              cursor: 'pointer',
-              marginBottom: 12,
-              textAlign: 'left',
-            }}
+            className="qv-witness"
+            onClick={() => setExpandedPill('witness')}
           >
-            <span style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(200,155,60,0.14)', border: '1px solid rgba(200,155,60,0.16)', color: 'var(--uv-gold-bright)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
-              {judgeMode === 'self' ? '✓' : witnessName.trim() ? witnessName.trim().charAt(0).toUpperCase() : '+'}
-            </span>
-            <span style={{ display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0 }}>
-              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 16, fontWeight: 600, color: 'var(--uv-text)' }}>
-                {judgeMode === 'self'
-                  ? 'Judge it myself'
-                  : witnessName.trim()
-                    ? `Share with ${witnessName.trim()}`
-                    : 'Share judge link after sealing'}
-              </span>
-              <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, fontWeight: 500, color: 'var(--uv-text-dim)' }}>
-                {judgeMode === 'self' ? 'No witness, just your word.' : 'Send the judge link after you seal.'}
-              </span>
+            <span className="qv-bubble" aria-hidden="true">{witnessMark}</span>
+            <span style={{ minWidth: 0 }}>
+              <span className="qv-witness-title">{witnessTitle}</span>
+              <span className="qv-witness-sub">{witnessSubtitle}</span>
             </span>
           </button>
+
           <button
             type="button"
+            className="qv-receipt-button"
             onClick={() => setShowIfBroken(true)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: 0,
-              marginBottom: 4,
-              fontFamily: 'var(--uv-font-sans)',
-              fontSize: 14.5,
-              lineHeight: 1.3,
-              color: 'var(--uv-text)',
-              textAlign: 'center',
-            }}
           >
-            If broken, <span style={{ color: 'var(--uv-text)', fontWeight: 600 }}>${stakeAmount}</span> &rarr; <span style={{ color: 'var(--uv-text)', fontWeight: 600 }}>{destination}</span>
+            If broken, <strong>${stakeAmount}</strong> goes to <strong>{destination}</strong>.
+          </button>
+
+          <div className="qv-spacer" />
+
+          <button
+            type="button"
+            className="qv-primary"
+            onClick={handleContinue}
+            disabled={!canContinue}
+          >
+            Continue
           </button>
           <button
             type="button"
+            className="qv-help-button"
             onClick={() => router.push('/?guided=1')}
-            style={{
-              alignSelf: 'center',
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '7px 10px',
-              margin: '0 auto 2px',
-              fontFamily: 'var(--uv-font-sans)',
-              fontSize: 12.5,
-              fontWeight: 600,
-              color: 'var(--uv-text-dim)',
-              textAlign: 'center',
-            }}
           >
-            Need the guided flow?
+            Need help? Guided setup
           </button>
-
-          {/* Spacer to push footer to bottom */}
-          <div style={{ flex: 1, minHeight: 4 }} />
-
-          {/* ── Footer ── */}
-          <div style={{ padding: '0 2px' }}>
-            <button
-              onClick={handleSeal}
-              disabled={!canSeal}
-              style={{
-                width: '100%',
-                height: 56,
-                borderRadius: 999,
-                border: 'none',
-                background: canSeal
-                  ? 'linear-gradient(180deg, #EDC66B, #D6A339 62%, #B88930)'
-                  : 'linear-gradient(180deg, rgba(237,198,107,0.38), rgba(184,137,48,0.32))',
-                color: canSeal ? 'var(--uv-text-on-gold)' : 'rgba(21,16,10,0.5)',
-                fontFamily: 'var(--uv-font-sans)',
-                fontWeight: 700,
-                fontSize: 18,
-                letterSpacing: '0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 8,
-                padding: '0 18px',
-                cursor: canSeal ? 'pointer' : 'not-allowed',
-                boxShadow: canSeal
-                  ? '0 1px 0 rgba(255,244,210,0.35) inset, 0 22px 48px rgba(200,155,60,0.18)'
-                  : '0 10px 30px rgba(216,174,78,0.08), inset 0 1px 0 rgba(255,255,255,0.2)',
-                transition: 'transform 100ms ease',
-              }}
-              onMouseDown={(e) => { if (canSeal) (e.currentTarget.style.transform = 'scale(0.97)'); }}
-              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; }}
-            >
-              Stake ${stakeAmount} {'\u2192'}
-            </button>
-          </div>
-        </div>
-      </div>
+        </section>
+      </main>
 
       {expandedPill && (
         <div
+          className="qv-sheet-backdrop"
           onClick={() => setExpandedPill(null)}
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 90,
-            background: 'rgba(0,0,0,0.58)',
-            display: 'flex',
-            alignItems: 'flex-end',
-            justifyContent: 'center',
-          }}
         >
           <div
+            className="qv-sheet"
             onClick={(e) => e.stopPropagation()}
-            style={{
-              width: '100%',
-              maxWidth: 440,
-              borderRadius: '24px 24px 0 0',
-              background: 'var(--uv-bg-elevated)',
-              border: '1px solid var(--uv-border-soft)',
-              padding: '18px 20px max(22px, env(safe-area-inset-bottom))',
-              boxShadow: '0 -20px 60px rgba(0,0,0,0.45)',
-            }}
           >
             {expandedPill === 'deadline' ? (
               <>
-                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 22, color: 'var(--uv-text)', marginBottom: 12 }}>When is verdict day?</div>
+                <h2 className="qv-sheet-title">When is verdict day?</h2>
+                <p className="qv-sheet-copy">Pick the moment your witness decides if this promise held.</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {DEADLINE_PRESETS.map(preset => (
+                  {DEADLINE_PRESETS.map((preset) => (
                     <ChoicePill
                       key={preset.id}
                       label={preset.label}
@@ -566,7 +928,11 @@ export default function QuickVowPage() {
                   ref={dateInputRef}
                   type="date"
                   value={customDate}
-                  onChange={e => { setCustomDate(e.target.value); setSelectedDeadline('custom'); setExpandedPill(null); }}
+                  onChange={(e) => {
+                    setCustomDate(e.target.value);
+                    setSelectedDeadline('custom');
+                    setExpandedPill(null);
+                  }}
                   min={minDate}
                   max={maxDate}
                   style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
@@ -575,96 +941,78 @@ export default function QuickVowPage() {
               </>
             ) : (
               <>
-                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 22, color: 'var(--uv-text)', marginBottom: 6 }}>Who judges?</div>
-                <p style={{ margin: '0 0 14px', fontFamily: 'var(--uv-font-sans)', fontSize: 14, lineHeight: 1.4, color: 'var(--uv-text-muted)' }}>
-                  Fastest path: seal the vow, then share one judge link. No phone number hunt right now.
-                </p>
+                <h2 className="qv-sheet-title">Choose a witness.</h2>
+                <p className="qv-sheet-copy">Add someone who can call the verdict. If contacts are unavailable, a phone number works.</p>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    setJudgeMode('share');
-                    setExpandedPill(null);
-                  }}
-                  style={{
-                    width: '100%',
-                    minHeight: 56,
-                    borderRadius: 14,
-                    border: judgeMode === 'share' ? '1px solid var(--uv-gold)' : '1px solid var(--uv-border-strong)',
-                    background: judgeMode === 'share' ? 'rgba(200,155,60,0.12)' : 'var(--uv-bg-input)',
-                    color: 'var(--uv-text)',
-                    fontFamily: 'var(--uv-font-sans)',
-                    fontSize: 15,
-                    fontWeight: 650,
-                    cursor: 'pointer',
-                    textAlign: 'left',
-                    padding: '12px 14px',
-                    marginBottom: 10,
-                  }}
+                  className="qv-sheet-action"
+                  onClick={pickContact}
                 >
-                  Share judge link after sealing
-                  <span style={{ display: 'block', marginTop: 3, fontSize: 12.5, fontWeight: 500, color: 'var(--uv-text-dim)' }}>
-                    Native share, text, or copy link on the next screen.
-                  </span>
+                  Pick from contacts
+                  <span className="qv-sheet-hint">Works on supported mobile browsers.</span>
                 </button>
+                {contactNotice && <p className="qv-sheet-notice">{contactNotice}</p>}
+
                 <input
+                  className="qv-sheet-input"
                   type="text"
                   value={witnessName}
-                  onChange={e => { setWitnessName(e.target.value); setJudgeMode('share'); }}
-                  placeholder="Optional: their first name"
-                  style={{
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    background: 'var(--uv-bg-input)',
-                    border: '1px solid var(--uv-border-strong)',
-                    borderRadius: 14,
-                    padding: '14px 16px',
-                    fontFamily: 'var(--uv-font-sans)',
-                    fontSize: 16,
-                    color: 'var(--uv-text)',
-                    outline: 'none',
-                    marginBottom: 10,
+                  onChange={(e) => {
+                    setWitnessName(e.target.value);
+                    setJudgeMode('share');
                   }}
+                  placeholder="Witness name"
+                />
+                <input
+                  className="qv-sheet-input"
+                  type="tel"
+                  inputMode="tel"
+                  autoComplete="tel"
+                  value={formatPhoneDisplay(witnessPhone)}
+                  onChange={(e) => {
+                    setWitnessPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
+                    setJudgeMode('share');
+                  }}
+                  placeholder="Phone number"
                 />
                 <button
                   type="button"
-                  onClick={() => {
-                    setJudgeMode('self');
-                    setWitnessName('');
-                    setExpandedPill(null);
-                  }}
-                  style={{
-                    width: '100%',
-                    height: 48,
-                    borderRadius: 12,
-                    border: judgeMode === 'self' ? '1px solid var(--uv-gold)' : '1px solid var(--uv-border-soft)',
-                    background: judgeMode === 'self' ? 'rgba(200,155,60,0.12)' : 'transparent',
-                    color: judgeMode === 'self' ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
-                    fontFamily: 'var(--uv-font-sans)',
-                    fontSize: 15,
-                    fontWeight: 650,
-                    cursor: 'pointer',
-                    marginBottom: 10,
-                  }}
+                  className="qv-sheet-action"
+                  data-primary="true"
+                  onClick={acceptWitnessChoice}
                 >
-                  Judge it myself
+                  Use this witness
                 </button>
                 <button
                   type="button"
-                  onClick={() => setExpandedPill(null)}
-                  style={{
-                    width: '100%',
-                    height: 50,
-                    borderRadius: 12,
-                    border: 'none',
-                    background: 'var(--uv-gold)',
-                    color: 'var(--uv-text-on-gold)',
-                    fontFamily: 'var(--uv-font-sans)',
-                    fontSize: 15,
-                    fontWeight: 750,
-                    cursor: 'pointer',
+                  className="qv-sheet-action"
+                  data-active={judgeMode === 'share' && witnessChoiceMade && !witnessPhoneDigits}
+                  onClick={() => {
+                    setWitnessName('');
+                    setWitnessPhone('');
+                    setJudgeMode('share');
+                    setWitnessChoiceMade(true);
+                    setExpandedPill(null);
                   }}
                 >
-                  Done
+                  Share judge link after sealing
+                  <span className="qv-sheet-hint">Fastest path if you do not want to find their number now.</span>
+                </button>
+                <button
+                  type="button"
+                  className="qv-sheet-action"
+                  data-active={judgeMode === 'self'}
+                  onClick={() => {
+                    setWitnessName('');
+                    setWitnessPhone('');
+                    setJudgeMode('self');
+                    setWitnessChoiceMade(true);
+                    setExpandedPill(null);
+                  }}
+                >
+                  Judge it myself
+                  <span className="qv-sheet-hint">No witness, just your word.</span>
                 </button>
               </>
             )}
@@ -672,17 +1020,22 @@ export default function QuickVowPage() {
         </div>
       )}
 
-      {/* IfBroken sheet */}
       {showIfBroken && (
         <div
           onClick={() => setShowIfBroken(false)}
           style={{
-            position: 'fixed', inset: 0, zIndex: 100,
-            background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            position: 'fixed',
+            inset: 0,
+            zIndex: 100,
+            background: 'rgba(0,0,0,0.7)',
+            backdropFilter: 'blur(4px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 10,
           }}
         >
-          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 440, maxHeight: '90dvh', overflow: 'auto' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 440, maxHeight: '90dvh', overflow: 'auto' }}>
             <IfBrokenSheet
               destination={destination}
               destinationKind={destinationKind}
