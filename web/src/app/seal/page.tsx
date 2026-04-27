@@ -325,13 +325,17 @@ export default function SealPage() {
     } catch {}
     setStep('sealing');
     setSealAnimPhase(0);
-    const t0 = setTimeout(() => {
+    const t0 = setTimeout(() => setSealAnimPhase(1), 120);
+    const t1 = setTimeout(() => setSealAnimPhase(2), 520);
+    const t2 = setTimeout(() => setSealAnimPhase(3), 980);
+    const t3 = setTimeout(() => {
+      setStep('done');
       paymentVowIdRef.current = null;
       paymentWitnessTokenRef.current = null;
       resetVow();
       router.replace(isSelfWitness ? `/vow/${sealedId}?sealed=1` : '/sent');
-    }, 120);
-    timersRef.current.push(t0);
+    }, 2600);
+    timersRef.current.push(t0, t1, t2, t3);
   }, [activeVowText, isSelfWitness, resetVow, router, vow.deadlineIso, vow.rawInput, vow.refinedText, vow.stake.amount, vow.witnessInviteToken, vow.witnessName, vow.witnessPhone]);
 
   const createVowAndPay = useCallback(async () => {
