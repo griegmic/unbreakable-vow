@@ -402,8 +402,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                     </>
                   ) : (
                     <>
-                      <strong style={{ color: 'var(--uv-text)', fontWeight: 500, fontStyle: 'normal' }}>That&apos;s it for now.</strong>{' '}
-                      We&apos;ll text you {vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'long' }) : 'verdict day'}. In the meantime, tasteful pestering is encouraged.
+                      <strong style={{ color: 'var(--uv-text)', fontWeight: 500, fontStyle: 'normal' }}>That&apos;s it for now.</strong><br/>
+                      Tasteful pestering is encouraged.
                     </>
                   )}
                 </FrauncesSub>
@@ -514,7 +514,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
             Witness invite
           </div>
           <h1 style={{ fontFamily: 'var(--uv-font-sans)', fontWeight: 800, fontSize: 42, lineHeight: 0.98, letterSpacing: 0, margin: '0 0 12px', color: 'var(--uv-text)' }}>
-            {makerFirstName} made a vow.<br/><span style={{ color: 'var(--uv-gold)' }}>They need you.</span>
+            {makerFirstName === 'Your friend' ? 'Your friend needs you.' : `${makerFirstName} needs you.`}
           </h1>
           <p style={{ fontFamily: 'var(--uv-font-sans)', fontWeight: 500, fontSize: 17, color: 'var(--uv-text-muted)', lineHeight: 1.42, margin: 0 }}>
             They put {stakeDisplay || 'their word'} on a promise. Your job is tiny but powerful: keep them honest, then call it kept or broken.
