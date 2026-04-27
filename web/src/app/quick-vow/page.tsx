@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AvatarMenuTrigger, ChoicePill } from '@/components/primitives';
 import { IfBrokenSheet } from '@/app/create/components/IfBrokenSheet';
@@ -17,17 +17,9 @@ import { inferDeadline } from '@/lib/vow-logic';
 
 type DeadlineId = 'eow' | 'tomorrow' | '7days' | '30days' | 'custom';
 type JudgeMode = 'share' | 'self';
-type ContactPickerNavigator = Navigator & {
-  contacts?: {
-    select: (
-      properties: Array<'name' | 'tel'>,
-      options?: { multiple?: boolean },
-    ) => Promise<Array<{ name?: string[]; tel?: string[] }>>;
-  };
-};
 
-const STAKE_OPTIONS = [10, 25, 50, 100];
-const DEFAULT_VOW = 'No takeout all week';
+const STAKE_OPTIONS = [10, 50, 100];
+const DEFAULT_VOW = '';
 
 const DEADLINE_PRESETS: { id: DeadlineId; label: string }[] = [
   { id: 'eow', label: 'Sunday night' },
@@ -97,20 +89,6 @@ function getStakeNote(amount: number): string {
   return 'Large enough to make the promise louder.';
 }
 
-function formatPhoneDisplay(value: string): string {
-  const cleaned = value.replace(/\D/g, '');
-  const digits = (cleaned.length === 11 && cleaned.startsWith('1') ? cleaned.slice(1) : cleaned).slice(0, 10);
-  if (digits.length <= 3) return digits;
-  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-}
-
-function normalizeWitnessPhone(value: string): string {
-  const cleaned = value.replace(/\D/g, '');
-  const digits = (cleaned.length === 11 && cleaned.startsWith('1') ? cleaned.slice(1) : cleaned).slice(0, 10);
-  return digits.length === 10 ? `+1${digits}` : '';
-}
-
 export default function QuickVowPage() {
   const router = useRouter();
   const { isAuthenticated, session, displayName } = useAuth();
@@ -120,15 +98,13 @@ export default function QuickVowPage() {
   const [selectedDeadline, setSelectedDeadline] = useState<DeadlineId>('eow');
   const [customDate, setCustomDate] = useState('');
   const [witnessName, setWitnessName] = useState('');
-  const [witnessPhone, setWitnessPhone] = useState('');
-  const [witnessChoiceMade, setWitnessChoiceMade] = useState(false);
   const [judgeMode, setJudgeMode] = useState<JudgeMode>('share');
   const [stakeAmount, setStakeAmount] = useState(50);
+  const [customStake, setCustomStake] = useState('');
   const [destination, setDestination] = useState('ALS Association');
   const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>('charity');
-  const [expandedPill, setExpandedPill] = useState<'deadline' | 'witness' | null>(null);
+  const [expandedPill, setExpandedPill] = useState<'deadline' | 'witness' | 'stake' | null>(null);
   const [showIfBroken, setShowIfBroken] = useState(false);
-  const [contactNotice, setContactNotice] = useState('');
 
   const vowInputRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
@@ -149,21 +125,21 @@ export default function QuickVowPage() {
   const verdictLabel = formatVerdictLabel(effectiveDeadline, inferredDeadline ? 'custom' : selectedDeadline);
   const canContinue = vowText.trim().length >= 3;
   const userEmail = session?.user?.email ?? null;
-  const witnessPhoneDigits = witnessPhone.replace(/\D/g, '');
+  const vowDensity = vowText.trim().length > 78
+    ? 'long'
+    : vowText.trim().length > 44
+      ? 'medium'
+      : 'short';
   const witnessTitle = judgeMode === 'self'
     ? 'Judge it myself'
     : witnessName.trim()
       ? witnessName.trim()
-      : witnessChoiceMade
-        ? 'Share judge link'
-        : 'Choose a witness';
+      : 'Share judge link';
   const witnessSubtitle = judgeMode === 'self'
     ? 'No witness, just your word.'
-    : witnessPhoneDigits.length >= 10
-      ? formatPhoneDisplay(witnessPhone)
-      : witnessChoiceMade
-        ? 'Send it after sealing.'
-        : 'Pick from contacts or enter a phone number.';
+    : witnessName.trim()
+      ? 'They get the judge link after sealing.'
+      : 'Send it after sealing.';
   const witnessMark = judgeMode === 'self'
     ? '✓'
     : witnessName.trim()
@@ -178,6 +154,14 @@ export default function QuickVowPage() {
       maxDate: max.toISOString().split('T')[0],
     };
   }, []);
+
+  useLayoutEffect(() => {
+    const el = vowInputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight}px`;
+    el.scrollTop = 0;
+  }, [vowText, vowDensity]);
 
   const handleSeal = () => {
     if (!canContinue) {
@@ -203,7 +187,7 @@ export default function QuickVowPage() {
     } else {
       vowFlow.setWitnessType('friend');
       vowFlow.setWitnessName(witnessName.trim() || 'Your witness');
-      vowFlow.setWitnessPhone(normalizeWitnessPhone(witnessPhone));
+      vowFlow.setWitnessPhone('');
     }
 
     vowFlow.setStake({
@@ -221,11 +205,6 @@ export default function QuickVowPage() {
       return;
     }
 
-    if (!witnessChoiceMade) {
-      setExpandedPill('witness');
-      return;
-    }
-
     handleSeal();
   };
 
@@ -238,37 +217,20 @@ export default function QuickVowPage() {
     setSelectedDeadline(id);
   };
 
-  const pickContact = async () => {
-    setContactNotice('');
-    const contactApi = (navigator as ContactPickerNavigator).contacts;
+  const handleStakeSelect = (amount: number) => {
+    setStakeAmount(amount);
+    setCustomStake('');
+  };
 
-    if (!contactApi?.select) {
-      setContactNotice('Contacts are not available in this browser. Add a phone number instead.');
-      return;
-    }
-
-    try {
-      const [contact] = await contactApi.select(['name', 'tel'], { multiple: false });
-      if (!contact) return;
-      const name = contact.name?.[0] || '';
-      const phone = contact.tel?.[0] || '';
-      setWitnessName(name);
-      setWitnessPhone(phone);
-      setJudgeMode('share');
-      setWitnessChoiceMade(true);
-      setExpandedPill(null);
-    } catch {
-      setContactNotice('No contact selected.');
-    }
+  const handleCustomStakeApply = () => {
+    const amount = Math.round(Number(customStake));
+    if (!Number.isFinite(amount) || amount < 1) return;
+    setStakeAmount(Math.min(amount, 10000));
+    setExpandedPill(null);
   };
 
   const acceptWitnessChoice = () => {
-    if (!witnessName.trim() && witnessPhoneDigits.length < 10) {
-      setContactNotice('Add a name or phone, or choose “Share judge link after sealing.”');
-      return;
-    }
     setJudgeMode('share');
-    setWitnessChoiceMade(true);
     setExpandedPill(null);
   };
 
@@ -410,8 +372,10 @@ export default function QuickVowPage() {
         .qv-vow-input {
           width: 100%;
           min-height: 124px;
+          max-height: 184px;
           display: block;
           resize: none;
+          overflow: hidden;
           border: none;
           outline: none;
           background: transparent;
@@ -422,6 +386,21 @@ export default function QuickVowPage() {
           font-weight: 680;
           letter-spacing: 0;
           padding: 36px 0 24px;
+        }
+
+        .qv-vow-input[data-density="medium"] {
+          min-height: 112px;
+          font-size: 40px;
+          line-height: 1.08;
+          padding-top: 24px;
+        }
+
+        .qv-vow-input[data-density="long"] {
+          min-height: 148px;
+          font-size: 31px;
+          line-height: 1.12;
+          padding-top: 18px;
+          padding-bottom: 18px;
         }
 
         .qv-vow-input::placeholder {
@@ -720,6 +699,31 @@ export default function QuickVowPage() {
           color: var(--uv-gold-bright);
         }
 
+        .qv-sheet-action-row {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 8px;
+          margin-bottom: 10px;
+        }
+
+        .qv-sheet-stake {
+          min-height: 56px;
+          border-radius: 14px;
+          border: 1px solid var(--uv-border-soft);
+          background: rgba(240, 232, 216, 0.026);
+          color: var(--uv-text-muted);
+          font-family: var(--uv-font-sans);
+          font-size: 17px;
+          font-weight: 700;
+          cursor: pointer;
+        }
+
+        .qv-sheet-stake[data-active="true"] {
+          border-color: var(--uv-gold);
+          background: rgba(200, 155, 60, 0.12);
+          color: var(--uv-gold-bright);
+        }
+
         .qv-sheet-hint {
           display: block;
           margin-top: 3px;
@@ -757,6 +761,8 @@ export default function QuickVowPage() {
           .qv-vow-card { padding: 16px 17px 13px; margin-bottom: 10px; border-radius: 18px; }
           .qv-label { font-size: 9.5px; }
           .qv-vow-input { min-height: 76px; font-size: 28px; padding: 9px 0 11px; }
+          .qv-vow-input[data-density="medium"] { min-height: 88px; font-size: 23px; line-height: 1.1; padding: 8px 0 10px; }
+          .qv-vow-input[data-density="long"] { min-height: 106px; font-size: 20px; line-height: 1.12; padding: 7px 0 9px; }
           .qv-rule { margin-bottom: 10px; }
           .qv-inline-meta { font-size: 13px; }
           .qv-consequence { padding: 15px 14px 13px; margin-bottom: 9px; border-radius: 20px; }
@@ -781,6 +787,8 @@ export default function QuickVowPage() {
           .qv-title { font-size: 28px; margin-bottom: 10px; }
           .qv-vow-card { padding: 14px 16px 12px; }
           .qv-vow-input { min-height: 58px; font-size: 24px; padding: 7px 0 9px; }
+          .qv-vow-input[data-density="medium"] { min-height: 78px; font-size: 21px; }
+          .qv-vow-input[data-density="long"] { min-height: 100px; font-size: 18px; line-height: 1.12; }
           .qv-consequence { padding: 12px; }
           .qv-money { font-size: 40px; }
           .qv-money-note { font-size: 12px; max-width: 136px; }
@@ -791,7 +799,7 @@ export default function QuickVowPage() {
       `}</style>
 
       <main className="qv-page">
-        <section className="qv-shell" aria-label="Quick vow">
+        <section className="qv-shell" aria-label="Seal a vow">
           <div className="qv-topbar">
             <div className="qv-brand" aria-label="Unbreakable Vow">
               <span className="qv-mark" aria-hidden="true" />
@@ -814,13 +822,14 @@ export default function QuickVowPage() {
               id="quick-vow-text"
               ref={vowInputRef}
               className="qv-vow-input"
+              data-density={vowDensity}
               value={vowText}
               onChange={(e) => setVowText(e.target.value)}
               onKeyDown={(e) => {
                 if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleContinue();
               }}
               rows={2}
-              placeholder="No takeout all week"
+              placeholder="Write your vow"
             />
             <div className="qv-rule" />
             <button
@@ -850,11 +859,23 @@ export default function QuickVowPage() {
                   className="qv-amount"
                   data-active={stakeAmount === amount}
                   aria-pressed={stakeAmount === amount}
-                  onClick={() => setStakeAmount(amount)}
+                  onClick={() => handleStakeSelect(amount)}
                 >
                   ${amount}
                 </button>
               ))}
+              <button
+                type="button"
+                className="qv-amount"
+                data-active={!STAKE_OPTIONS.includes(stakeAmount)}
+                aria-pressed={!STAKE_OPTIONS.includes(stakeAmount)}
+                onClick={() => {
+                  setCustomStake(String(stakeAmount));
+                  setExpandedPill('stake');
+                }}
+              >
+                Other
+              </button>
             </div>
           </div>
 
@@ -939,21 +960,53 @@ export default function QuickVowPage() {
                   tabIndex={-1}
                 />
               </>
-            ) : (
+            ) : expandedPill === 'stake' ? (
               <>
-                <h2 className="qv-sheet-title">Choose a witness.</h2>
-                <p className="qv-sheet-copy">Add someone who can call the verdict. If contacts are unavailable, a phone number works.</p>
-
+                <h2 className="qv-sheet-title">Set the stake.</h2>
+                <p className="qv-sheet-copy">Choose the amount that makes the vow real without making it reckless.</p>
+                <div className="qv-sheet-action-row">
+                  {STAKE_OPTIONS.map((amount) => (
+                    <button
+                      key={amount}
+                      type="button"
+                      className="qv-sheet-stake"
+                      data-active={stakeAmount === amount}
+                      onClick={() => {
+                        handleStakeSelect(amount);
+                        setExpandedPill(null);
+                      }}
+                    >
+                      ${amount}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  className="qv-sheet-input"
+                  type="number"
+                  inputMode="numeric"
+                  min={1}
+                  max={10000}
+                  value={customStake}
+                  onChange={(e) => setCustomStake(e.target.value.replace(/[^\d]/g, '').slice(0, 5))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleCustomStakeApply();
+                  }}
+                  placeholder="Other amount"
+                  autoFocus
+                />
                 <button
                   type="button"
                   className="qv-sheet-action"
-                  onClick={pickContact}
+                  data-primary="true"
+                  onClick={handleCustomStakeApply}
                 >
-                  Pick from contacts
-                  <span className="qv-sheet-hint">Works on supported mobile browsers.</span>
+                  Use ${customStake || stakeAmount}
                 </button>
-                {contactNotice && <p className="qv-sheet-notice">{contactNotice}</p>}
-
+              </>
+            ) : (
+              <>
+                <h2 className="qv-sheet-title">Who judges?</h2>
+                <p className="qv-sheet-copy">Fast path: seal first, then share the judge link. Add a name only if you already know.</p>
                 <input
                   className="qv-sheet-input"
                   type="text"
@@ -962,19 +1015,7 @@ export default function QuickVowPage() {
                     setWitnessName(e.target.value);
                     setJudgeMode('share');
                   }}
-                  placeholder="Witness name"
-                />
-                <input
-                  className="qv-sheet-input"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={formatPhoneDisplay(witnessPhone)}
-                  onChange={(e) => {
-                    setWitnessPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
-                    setJudgeMode('share');
-                  }}
-                  placeholder="Phone number"
+                  placeholder="Optional: first name"
                 />
                 <button
                   type="button"
@@ -982,22 +1023,20 @@ export default function QuickVowPage() {
                   data-primary="true"
                   onClick={acceptWitnessChoice}
                 >
-                  Use this witness
+                  Done
                 </button>
                 <button
                   type="button"
                   className="qv-sheet-action"
-                  data-active={judgeMode === 'share' && witnessChoiceMade && !witnessPhoneDigits}
+                  data-active={judgeMode === 'share' && !witnessName.trim()}
                   onClick={() => {
                     setWitnessName('');
-                    setWitnessPhone('');
                     setJudgeMode('share');
-                    setWitnessChoiceMade(true);
                     setExpandedPill(null);
                   }}
                 >
                   Share judge link after sealing
-                  <span className="qv-sheet-hint">Fastest path if you do not want to find their number now.</span>
+                  <span className="qv-sheet-hint">No witness details needed right now.</span>
                 </button>
                 <button
                   type="button"
@@ -1005,9 +1044,7 @@ export default function QuickVowPage() {
                   data-active={judgeMode === 'self'}
                   onClick={() => {
                     setWitnessName('');
-                    setWitnessPhone('');
                     setJudgeMode('self');
-                    setWitnessChoiceMade(true);
                     setExpandedPill(null);
                   }}
                 >
