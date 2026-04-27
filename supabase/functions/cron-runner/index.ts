@@ -569,9 +569,9 @@ Deno.serve(async (req) => {
           if (now >= day1) {
             if (!(await alreadyQueued('vow_day1', keeperId))) {
               const body = vow.witness_name && vow.witness_user_id
-                ? `Day 1 down. ${vow.witness_name} is watching.`
-                : 'Day 1 down. You made a promise.';
-              await queuePush(keeperId, 'Day 1', body, 'vow_day1', day1);
+                ? `${vow.witness_name} is watching. Keep it clean today.`
+                : 'You made the promise. Keep it clean today.';
+              await queuePush(keeperId, 'Still in it', body, 'vow_day1', day1);
             }
           }
 
@@ -581,7 +581,7 @@ Deno.serve(async (req) => {
           const vowDurationMs = endsAt.getTime() - startsAt.getTime();
           if (vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
             if (!(await alreadyQueued('vow_midpoint', keeperId))) {
-              await queuePush(keeperId, 'Halfway', 'Halfway. Still standing?', 'vow_midpoint', midpoint);
+              await queuePush(keeperId, 'Halfway check', "Halfway there. If you're slipping, fix it today.", 'vow_midpoint', midpoint);
             }
           }
 
@@ -590,13 +590,31 @@ Deno.serve(async (req) => {
           // Only send if 48h-before is after the midpoint (avoid sending before midpoint on short vows)
           if (fortyEightBefore > midpoint && now >= fortyEightBefore) {
             if (!(await alreadyQueued('vow_48h_warning', keeperId))) {
-              const daysLeft = Math.ceil((endsAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
-              const body = `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left. You know what's on the line.`;
-              await queuePush(keeperId, 'Deadline approaching', body, 'vow_48h_warning', fortyEightBefore);
+              const amountDollars = Math.round((vow.stake_amount || 0) / 100);
+              const stakeLine = amountDollars > 0 ? `$${amountDollars} is still safe.` : 'Your word is still clean.';
+              await queuePush(keeperId, 'Two days left', `${stakeLine} Finish strong.`, 'vow_48h_warning', fortyEightBefore);
             }
           }
 
-          // --- #6: Verdict day — notify witness when ends_at is reached ---
+          // --- #5: 10 minutes before deadline ---
+          const tenMinutesBefore = new Date(endsAt.getTime() - 10 * 60 * 1000);
+          if (tenMinutesBefore > startsAt && now >= tenMinutesBefore) {
+            if (!(await alreadyQueued('vow_10m_warning', keeperId))) {
+              await queuePush(keeperId, 'Last call', '10 minutes left. Close the loop before verdict time.', 'vow_10m_warning', tenMinutesBefore);
+            }
+          }
+
+          // --- #6: Verdict time — notify maker when ends_at is reached ---
+          if (now >= endsAt) {
+            if (!(await alreadyQueued('vow_verdict_day_maker', keeperId))) {
+              const body = vow.witness_name && vow.witness_user_id
+                ? `${vow.witness_name} has the call now.`
+                : 'Verdict time. Your vow is due.';
+              await queuePush(keeperId, 'Verdict time', body, 'vow_verdict_day_maker', endsAt);
+            }
+          }
+
+          // --- #7: Verdict time — notify witness when ends_at is reached ---
           if (now >= endsAt && vow.witness_user_id) {
             if (!(await alreadyQueued('vow_verdict_day_witness', vow.witness_user_id))) {
               // Get vow keeper's display name (for challenge vows, this is the target)

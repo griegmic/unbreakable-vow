@@ -29,7 +29,6 @@ import {
   inferDeadline,
   palette,
   serifFont,
-  stakeAmounts as defaultStakeAmounts,
 } from '@/constants/unbreakable';
 import { hapticPrimary, hapticSealComplete, hapticSelection } from '@/lib/haptics';
 import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
@@ -40,19 +39,18 @@ import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
-const STAKE_OPTIONS = [...defaultStakeAmounts]; // [10, 25, 50, 100]
+const STAKE_OPTIONS = [10, 50, 100];
 const QUICK_SUGGESTIONS = [
   'Gym 3x this week',
   'Delete TikTok for a week',
-  'Dry, 2 weeks',
+  'No alcohol, 2 weeks',
   'No texting my ex',
 ];
 
 const STAKE_NOTES: Record<number, string> = {
-  10: 'A little sting. Enough to notice.',
-  25: 'Respectable pain. Still sane.',
-  50: 'Enough to sting. Not enough to be stupid.',
-  100: 'Max pain. Choose wisely.',
+  10: 'Light enough to start. Real enough to count.',
+  50: 'Small enough to choose today. Real enough to remember tomorrow.',
+  100: 'Large enough to make the promise louder.',
 };
 
 /**
@@ -95,6 +93,14 @@ function formatDateShort(date: Date): string {
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+function formatVerdictLabel(date: Date, preset: DeadlinePreset): string {
+  if (preset === 'end_of_week') return 'Sunday night';
+  if (preset === 'tomorrow') return 'Tomorrow night';
+  if (preset === 'in_7_days') return 'In 1 week';
+  if (preset === 'in_30_days') return 'In 30 days';
+  return formatDateShort(date);
+}
+
 function formatE164(phone: string): string {
   const digits = phone.replace(/\D/g, '');
   if (digits.startsWith('1') && digits.length === 11) return `+${digits}`;
@@ -118,8 +124,8 @@ export default function QuickVowScreen() {
   const [stakeAmount, setStakeAmount] = useState(50);
   const [consequence, setConsequence] = useState<ConsequenceType>('charity');
   const [destination, setDestination] = useState(charities[0]);
-  const [deadlinePreset, setDeadlinePreset] = useState<DeadlinePreset>('in_7_days');
-  const [customDate, setCustomDate] = useState<Date>(getPresetDate('in_7_days'));
+  const [deadlinePreset, setDeadlinePreset] = useState<DeadlinePreset>('end_of_week');
+  const [customDate, setCustomDate] = useState<Date>(getPresetDate('end_of_week'));
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [recentWitnesses, setRecentWitnesses] = useState<RecentWitness[]>([]);
 
@@ -246,13 +252,7 @@ export default function QuickVowScreen() {
           if (defaults.consequence) setConsequence(defaults.consequence);
           const validPresets: DeadlinePreset[] = ['tomorrow', 'end_of_week', 'in_7_days', 'in_30_days', 'custom'];
           if (defaults.deadlinePreset && validPresets.includes(defaults.deadlinePreset)) {
-            // Map in_30_days to custom since it has no chip
-            if (defaults.deadlinePreset === 'in_30_days') {
-              setCustomDate(getPresetDate('in_30_days'));
-              setDeadlinePreset('custom');
-            } else {
-              setDeadlinePreset(defaults.deadlinePreset);
-            }
+            setDeadlinePreset(defaults.deadlinePreset);
           }
         }
       } catch {}
@@ -531,16 +531,17 @@ export default function QuickVowScreen() {
         >
           <CalendarDays color={palette.textMuted} size={15} />
           <Text style={styles.verdictText}>
-            Verdict <Text style={styles.verdictBy}>by</Text> <Text style={styles.verdictDate}>{formatDateShort(deadlineDate)}</Text>
+            Verdict <Text style={styles.verdictBy}>by</Text> <Text style={styles.verdictDate}>{formatVerdictLabel(deadlineDate, deadlinePreset)}</Text>
           </Text>
         </Pressable>
 
         {showDatePicker ? (
           <View style={styles.datePresetRow}>
             {([
+              ['end_of_week', 'Sunday night'],
               ['tomorrow', 'Tomorrow'],
-              ['end_of_week', 'End week'],
-              ['in_7_days', '7 days'],
+              ['in_7_days', '1 week'],
+              ['in_30_days', '30 days'],
               ['custom', 'Pick date'],
             ] as [DeadlinePreset, string][]).map(([id, label]) => (
               <Pressable
@@ -634,8 +635,8 @@ export default function QuickVowScreen() {
                 : witnessName === 'Just me'
                   ? 'You make the final call.'
                   : witnessName === 'Your witness'
-                    ? 'Share the judge link after sealing.'
-                    : 'Pick from contacts, or share a link after sealing.'}
+                    ? 'Send it after sealing.'
+                    : 'Sync contacts or send after sealing.'}
             </Text>
           </View>
         </Pressable>
@@ -815,6 +816,7 @@ const styles = StyleSheet.create({
   },
   datePresetRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 7,
     minHeight: 34,

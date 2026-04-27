@@ -49,3 +49,32 @@ Phase 1 remains maker-flow parity:
 4. Patch both when the same copy/layout must be shared.
 5. Keep native contact/haptic/push/payment upgrades.
 6. Run Rork preview and Expo Go QR testing before calling any pass complete.
+
+## 2026-04-27
+
+### Completed
+
+- Re-aligned native Quick Vow with the now-approved live mobile web baseline:
+  - stake choices are `$10`, `$50`, `$100`
+  - default verdict timing is Sunday night
+  - verdict presets use the same plain-language labels as web
+  - stake note copy matches the approved web copy
+  - native judge copy keeps the contact-picker advantage without drifting from the web premise
+- Kept native-only upgrades intact:
+  - contact picker / recent witnesses
+  - selection haptics on chips, stake, date, judge, and destination controls
+  - success haptic after seal
+  - Expo Go payment bypass remains explicit; TestFlight remains the Apple Pay validation target
+- Updated the server-side push lifecycle to support a cleaner app-native accountability rhythm:
+  - Day 1: light accountability nudge
+  - Midpoint: only for vows three days or longer
+  - 48 hours left: finish-strong reminder
+  - 10 minutes left: last-call reminder
+  - Verdict time: notify maker and app-based witness
+
+### Push Philosophy
+
+- Push is for installed-app users who already got value from the product.
+- SMS remains the reliable channel for web-only witnesses and critical verdict asks.
+- Push should feel like accountability from the vow, not marketing from the app.
+- No push permission on first launch; ask after a successful seal/acceptance moment.
