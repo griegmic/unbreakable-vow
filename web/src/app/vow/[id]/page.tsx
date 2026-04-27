@@ -185,46 +185,16 @@ function VowDetailContent() {
   useEffect(() => {
     if (searchParams.get('sealed') === '1') {
       setShowCelebration(true);
-      setCelebPhase('seal');
+      textTransitionDoneRef.current = false;
 
-      // Check reduced motion preference
       const prefersReducedMotion = typeof window !== 'undefined' &&
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-      if (prefersReducedMotion) {
-        setCelebPhase('text');
-        // Transition from 'text' happens in the vow-aware effect below
-        const t1 = setTimeout(() => {
-          // If vow isn't loaded yet after 500ms in reduced motion, just fade
-          if (!textTransitionDoneRef.current) {
-            textTransitionDoneRef.current = true;
-            setCelebPhase('fade');
-            const t2 = setTimeout(() => {
-              setCelebPhase('done');
-              setShowCelebration(false);
-              router.replace(`/vow/${vowId}`, { scroll: false });
-            }, 200);
-            celebTimersRef.current.push(t2);
-          }
-        }, 500);
+      setCelebPhase(prefersReducedMotion ? 'text' : 'seal');
+
+      if (!prefersReducedMotion) {
+        const t1 = setTimeout(() => setCelebPhase('text'), 140);
         celebTimersRef.current.push(t1);
-      } else {
-        const t1 = setTimeout(() => setCelebPhase('text'), 300);
-        // Give the seal moment room to land before asking them to text the witness.
-        const t2 = setTimeout(() => {
-          if (!textTransitionDoneRef.current) {
-            textTransitionDoneRef.current = true;
-            // Check if vow is loaded and has a real witness
-            // This will be handled reactively; set a flag for the effect
-            setCelebPhase((prev) => {
-              if (prev !== 'text') return prev;
-              // Vow data not available yet in this closure, so we use a
-              // temporary 'check' approach: the vow-aware effect handles it
-              return 'text'; // stay in text, let the effect pick it up
-            });
-          }
-        }, 3300);
-        celebTimersRef.current.push(t1, t2);
       }
     }
     return () => {
@@ -235,15 +205,15 @@ function VowDetailContent() {
 
   // Vow-aware celebration transition: once vow loads and we're past the text display time, decide share vs fade
   useEffect(() => {
-    if (!showCelebration || celebPhase !== 'text' || textTransitionDoneRef.current) return;
+    if (!showCelebration || celebPhase !== 'text' || textTransitionDoneRef.current || !vow) return;
 
-    // Wait long enough that the success state feels intentional, not like a flash.
+    // One short confirmation beat, then move to the next real job.
     const minTextTime = setTimeout(() => {
       if (textTransitionDoneRef.current) return;
       textTransitionDoneRef.current = true;
 
-      const isSelfWitness = !vow || vow.witness_name === 'Just me';
-      if (!isSelfWitness && vow) {
+      const isSelfWitness = vow.witness_name === 'Just me';
+      if (!isSelfWitness) {
         setCelebPhase('share');
       } else {
         setCelebPhase('fade');
@@ -254,7 +224,7 @@ function VowDetailContent() {
         }, 500);
         celebTimersRef.current.push(t1);
       }
-    }, 2800);
+    }, 900);
 
     celebTimersRef.current.push(minTextTime);
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -482,7 +452,7 @@ function VowDetailContent() {
               margin: '0 0 28px',
               textAlign: 'center',
             }}>
-              They need to accept before your vow goes live.
+              They accept, then the vow starts.
             </p>
 
             {/* Primary CTA: Text witness */}

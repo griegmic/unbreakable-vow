@@ -312,16 +312,12 @@ export default function SealPage() {
     } catch {}
     setStep('sealing');
     setSealAnimPhase(0);
-    const t0 = setTimeout(() => setSealAnimPhase(1), 120);
-    const t1 = setTimeout(() => setSealAnimPhase(2), 520);
-    const t2 = setTimeout(() => setSealAnimPhase(3), 980);
-    const t3 = setTimeout(() => {
-      setStep('done');
+    const t0 = setTimeout(() => {
       paymentVowIdRef.current = null;
       resetVow();
       router.replace(`/vow/${sealedId}?sealed=1`);
-    }, 2600);
-    timersRef.current.push(t0, t1, t2, t3);
+    }, 120);
+    timersRef.current.push(t0);
   }, [resetVow, router]);
 
   const createVowAndPay = useCallback(async () => {
