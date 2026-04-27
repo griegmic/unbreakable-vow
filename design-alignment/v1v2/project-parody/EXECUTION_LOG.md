@@ -15,6 +15,9 @@
 ### Current High-Confidence Batch
 
 - Keep Rork/Expo Go as the first acceptance surface.
+- Treat Rork visibility as two lanes:
+  - `web/src/...` for Rork chat/design inspection.
+  - `expo/...` for Rork QR, Expo Go, and TestFlight.
 - Preserve native-only improvements where they are clearly better than web:
   - contact picker for judges
   - recent witnesses
@@ -35,6 +38,8 @@
 Phase 1 remains maker-flow parity:
 
 1. Compare accepted mobile web create/seal/vow-detail/dashboard screenshots against Expo.
-2. Replace stale native layouts only where the web design is clearly better.
-3. Keep native contact/haptic/push/payment upgrades.
-4. Run Rork preview and Expo Go QR testing before calling any pass complete.
+2. Patch `web/src/...` when the change must show in the Rork web/design inspection thread.
+3. Patch `expo/...` when the change must show through the Rork QR code and Expo Go.
+4. Patch both when the same copy/layout must be shared.
+5. Keep native contact/haptic/push/payment upgrades.
+6. Run Rork preview and Expo Go QR testing before calling any pass complete.

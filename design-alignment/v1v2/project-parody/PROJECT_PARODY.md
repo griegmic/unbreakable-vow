@@ -13,6 +13,21 @@ The name is intentionally kept as requested, but the operating goal is parity: s
 - Rork acceptance surface: `rork.json` points to `expo`, so every native change must compile in Rork preview and scan correctly into Expo Go.
 - TestFlight acceptance surface: same Expo code, with native-only capabilities enabled and verified on-device.
 
+## Rork Visibility Rule
+
+There are two Rork surfaces that can be confused:
+
+- Rork chat/file inspection may read the web app under `web/src/app`.
+- Rork QR / Expo Go preview should read the Expo app because `rork.json` points at `expo`.
+
+Project Parody work must therefore label every visible change as one of:
+
+- **Web acceptance change:** patch `web/src/...` so the Rork web/design inspection sees it.
+- **Expo QR change:** patch `expo/...` so the QR code and Expo Go show it.
+- **Dual parity change:** patch both web and Expo when the same user-facing copy/layout should match.
+
+No screen should be called complete until the relevant Rork surface is named and verified. If Rork says it is reading `web/src/app/guided/page.tsx`, then an Expo-only patch will not be visible in that Rork inspection thread even though it is correct for Expo Go/TestFlight.
+
 ## Native Exceptions Where App Should Differ From Web
 
 - Judge/witness selection: native should use contact permission + contact picker/recent contacts. Web should use share/link/SMS fallback.
@@ -62,6 +77,7 @@ Each screen must pass:
 
 ### Phase 1 — Maker Flow Parity
 
+- Start every screen with a web-vs-Expo source mapping so Rork inspection and Expo QR do not drift.
 - Align `expo/app/quick-vow.tsx` with the approved web quick-vow structure.
 - Align guided/native route order with web: create/refine/stake/witness/seal.
 - Remove stale native-only screens or make them redirect shims.
