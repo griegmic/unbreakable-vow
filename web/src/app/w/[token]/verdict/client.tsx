@@ -1,8 +1,23 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Check, DollarSign, Share2, CheckCheck, Undo2 } from 'lucide-react';
-import { RitualCard, GoldCTA, OutlinedGoldCTA, EyebrowTag, FrauncesH1, FrauncesSub, Stamp } from '@/components/primitives';
+import { CheckCheck, Share2, Undo2 } from 'lucide-react';
+import {
+  FlowCard,
+  FlowCTA,
+  FlowGrid,
+  FlowLabel,
+  FlowPill,
+  FlowSecondary,
+  FlowShell,
+  FlowSpacer,
+  FlowStamp,
+  FlowSub,
+  FlowTitle,
+  FlowTop,
+  FlowVow,
+  shortDestinationName,
+} from '@/components/vow-flow-ui';
 
 interface Vow {
   id: string;
@@ -38,6 +53,10 @@ function formatEndDate(dateStr: string | null): string {
     d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
+function stakeDollars(amount: number): string {
+  return `$${Math.round(amount / 100)}`;
+}
+
 export default function VerdictClient({ vow, token, makerName, targetName, isEarlyCompletion = false }: { vow: Vow; token: string; makerName: string; targetName?: string; isEarlyCompletion?: boolean }) {
   // For challenge vows, the "maker" is the challenger/witness viewing this page,
   // and "targetName" is the person being judged.
@@ -47,7 +66,10 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
     return digits.length >= 7 ? fallback : name;
   };
   const judgeName = cleanName(targetName || makerName, 'Your friend');
+  const judgeFirstName = judgeName === 'Your friend' ? 'Your friend' : judgeName.split(' ')[0];
+  const judgeFirstInline = judgeFirstName === 'Your friend' ? 'your friend' : judgeFirstName;
   const judgeNameInline = judgeName === 'Your friend' ? 'your friend' : judgeName;
+  const destinationShort = shortDestinationName(vow.destination);
   const [choice, setChoice] = useState<VerdictChoice>(null);
   const [view, setView] = useState<ViewState>('choose');
   const [busy, setBusy] = useState(false);
@@ -208,101 +230,34 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
     };
 
     return (
-      <div style={{ position: 'relative', minHeight: "100dvh", background: "var(--uv-bg)", backgroundImage: "radial-gradient(ellipse at 50% 30%, rgba(200,155,60,0.06), var(--uv-bg) 70%)", display: "flex", flexDirection: "column", alignItems: "center", padding: "80px 36px 40px", textAlign: "center" }}>
-        <EscapeBar />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
-            UNBREAKABLE VOW
-          </span>
-
-          <div style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }}>
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: isKept ? 'rgba(82,214,154,0.12)' : 'rgba(220,38,38,0.12)',
-              }}
-            >
-              {isKept ? (
-                <Check style={{ width: 32, height: 32, color: 'var(--uv-success)' }} />
-              ) : (
-                <DollarSign style={{ width: 32, height: 32, color: 'var(--uv-danger)' }} />
-              )}
-            </div>
-          </div>
-
-          <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <h1 style={{ fontSize: 26, fontWeight: 600, fontFamily: 'var(--uv-font-serif)', color: 'var(--uv-text)', margin: 0 }}>
-              {isKept ? 'You called it kept.' : 'You called it broken.'}
-            </h1>
-            <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-              {isKept
-                ? `${judgeName} just got the news.`
-                : `${judgeName} knows.`
-              }
-            </p>
-            {!isKept && vow.stake_amount > 0 && (
-              <p style={{ fontSize: 14, color: 'var(--uv-text-dim)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-                ${vow.stake_amount / 100} will be donated to {vow.destination}.
-              </p>
-            )}
-            {isKept && vow.stake_amount > 0 && (
-              <p style={{ fontSize: 14, color: 'var(--uv-text-dim)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-                Their ${vow.stake_amount / 100} comes back.
-              </p>
-            )}
-          </div>
-
-          {/* Share outcome */}
-          <button
-            onClick={handleShareOutcome}
-            style={{
-              width: '100%',
-              minHeight: 48,
-              borderRadius: 'var(--uv-radius-md)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              backgroundColor: 'var(--uv-bg-card)',
-              border: '1px solid var(--uv-border-strong)',
-              cursor: 'pointer',
-              transition: 'transform 120ms',
-            }}
-          >
-            {shared ? (
-              <>
-                <CheckCheck style={{ width: 16, height: 16, color: 'var(--uv-success)' }} />
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>Copied!</span>
-              </>
-            ) : (
-              <>
-                <Share2 style={{ width: 16, height: 16, color: 'var(--uv-text-muted)' }} />
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Share the outcome</span>
-              </>
-            )}
-          </button>
-
-          {/* Growth CTAs */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-            <Link href="/cast" style={{ textDecoration: 'none' }}>
-              <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-sans)", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>Challenge {judgeName} to do it again</button>
-            </Link>
-            <div style={{ textAlign: 'center' }}>
-              <Link
-                href="/quick-vow"
-                style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}
-              >
-                Make your own vow &rarr;
-              </Link>
-            </div>
-          </div>
+      <FlowShell center tone={isKept ? 'success' : 'danger'}>
+        <FlowTop action="Make a vow" onAction={() => { window.location.href = '/quick-vow'; }} />
+        <div style={{ width: 68, height: 68, borderRadius: '50%', display: 'grid', placeItems: 'center', marginBottom: 16, color: isKept ? 'var(--uv-success)' : 'var(--uv-danger)', background: isKept ? 'rgba(82,214,154,.08)' : 'rgba(248,113,113,.08)', border: `1px solid ${isKept ? 'rgba(82,214,154,.18)' : 'rgba(248,113,113,.2)'}`, fontFamily: 'var(--uv-font-sans)', fontSize: 31, fontWeight: 900 }}>
+          {isKept ? '✓' : '$'}
         </div>
-      </div>
+        <FlowStamp>Verdict submitted</FlowStamp>
+        <FlowTitle small center>You called it<br/><span style={{ color: isKept ? 'var(--uv-success)' : 'var(--uv-danger)' }}>{isKept ? 'kept.' : 'broken.'}</span></FlowTitle>
+        <FlowSub center>
+          {isKept
+            ? `${judgeName} just got the news. ${vow.stake_amount > 0 ? `Their ${stakeDollars(vow.stake_amount)} comes back.` : ''}`
+            : `${judgeName} knows. ${vow.stake_amount > 0 ? `${stakeDollars(vow.stake_amount)} will be donated to ${vow.destination}.` : ''}`}
+        </FlowSub>
+        <FlowCard>
+          <FlowLabel>The record</FlowLabel>
+          <FlowVow quote>{vow.refined_text}</FlowVow>
+          <FlowGrid
+            left={{ label: 'Outcome', value: isKept ? 'Kept' : 'Broken', sub: isKept ? 'word honored' : 'honesty noted', tone: isKept ? 'green' : 'red' }}
+            right={{ label: 'Stake', value: vow.stake_amount > 0 ? stakeDollars(vow.stake_amount) : 'Word', sub: isKept ? 'returned' : `to ${vow.destination || 'the record'}`, tone: 'gold' }}
+          />
+        </FlowCard>
+        <FlowSpacer />
+        <FlowCTA onClick={() => { window.location.href = '/cast'; }}>Challenge {judgeName} to do it again</FlowCTA>
+        <FlowSecondary onClick={() => { window.location.href = '/quick-vow'; }}>Make your own vow</FlowSecondary>
+        <button onClick={handleShareOutcome} style={{ marginTop: 12, border: 0, background: 'none', color: shared ? 'var(--uv-success)' : 'var(--uv-text-muted)', display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 750, cursor: 'pointer' }}>
+          {shared ? <CheckCheck style={{ width: 15, height: 15 }} /> : <Share2 style={{ width: 15, height: 15 }} />}
+          {shared ? 'Copied' : 'Share outcome'}
+        </button>
+      </FlowShell>
     );
   }
 
@@ -343,214 +298,73 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
 
   // ─── CHOOSE STATE ───
   return (
-    <div style={{ position: 'relative', minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 20%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 36px 40px' }}>
-      <EscapeBar />
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-        <EyebrowTag tone="gold">UNBREAKABLE VOW</EyebrowTag>
+    <FlowShell center>
+      <FlowTop action="Back to vow" onAction={() => { window.location.href = `/w/${token}`; }} />
+        <FlowStamp>{isEarlyCompletion ? 'Early release' : 'Verdict day'}</FlowStamp>
+        <FlowTitle small center>
+          {isEarlyCompletion
+          ? <>{judgeFirstName} says<br/><span style={{ color: 'var(--uv-gold-bright)' }}>they did it.</span></>
+          : <>{judgeFirstName}&apos;s vow<br/>is <span style={{ color: 'var(--uv-gold-bright)' }}>up.</span></>}
+      </FlowTitle>
+      {isEarlyCompletion && (
+        <FlowSub center>If you are sure, release them early. Their money comes back and the vow closes.</FlowSub>
+      )}
+      <FlowCard hot compact={!isEarlyCompletion}>
+        <FlowLabel>The vow</FlowLabel>
+        <FlowVow quote>{vow.refined_text}</FlowVow>
+        <FlowGrid
+          left={{ label: 'On the line', value: vow.stake_amount > 0 ? stakeDollars(vow.stake_amount) : 'Word', sub: destinationShort ? `${destinationShort} if broken` : 'accountability', tone: 'gold' }}
+          right={{ label: isEarlyCompletion ? 'Due' : 'Ended', value: isEarlyCompletion ? formatEndDate(vow.ends_at).split(',')[0] || 'Soon' : 'Today', sub: formatEndDate(vow.ends_at) || 'verdict link' }}
+        />
+      </FlowCard>
 
-        {/* "— VERDICT DAY —" stamp per mock */}
-        <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
-          {isEarlyCompletion ? '— Early release —' : '— Verdict day —'}
-        </div>
-
-        {/* H1 per mock: "Joey's vow / is up." with forced line break */}
-        <div style={{ textAlign: 'center' }}>
-          <FrauncesH1 italic size="page">
-            {isEarlyCompletion ? (
-              <>{judgeName} says<br/>it&apos;s <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>done.</em></>
-            ) : (
-              <>{judgeName}&apos;s vow<br/>is <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>up.</em></>
-            )}
-          </FrauncesH1>
-        </div>
-
-        {isEarlyCompletion && (
-          <div style={{
-            borderRadius: 16,
-            border: '1px solid var(--uv-gold-line)',
-            background: 'rgba(215,169,70,0.08)',
-            padding: '14px 16px',
-            textAlign: 'center',
-          }}>
-            <p style={{ margin: 0, fontFamily: 'var(--uv-font-sans)', fontSize: 14.5, lineHeight: 1.45, color: 'var(--uv-text-muted)' }}>
-              Release them only if you&apos;re sure. Your tap closes the vow.
+      {isEarlyCompletion ? (
+        <>
+          <FlowCard>
+            <FlowLabel>Before you release</FlowLabel>
+            <FlowVow quote>Did they actually finish?</FlowVow>
+            <p style={{ color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)', fontSize: 12, lineHeight: 1.35, margin: 0, textAlign: 'left' }}>
+              Check if you need to. Early release is final.
             </p>
+          </FlowCard>
+          <FlowSpacer />
+          <FlowCTA tone="green" onClick={() => handleChoose('kept')} disabled={busy || !truthSworn}>Yes, release {judgeFirstName}</FlowCTA>
+          <FlowSecondary onClick={() => { window.location.href = `/w/${token}`; }}>Not yet - keep vow open</FlowSecondary>
+          <button
+            type="button"
+            onClick={() => {
+              const body = encodeURIComponent('Hey - checking before I release you early. Did you finish the vow?');
+              window.location.href = `sms:&body=${body}`;
+            }}
+            style={{ marginTop: 12, border: 0, background: 'none', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)', fontSize: 12, cursor: 'pointer' }}
+          >
+            Need proof? Open Messages with {judgeNameInline}.
+          </button>
+        </>
+      ) : (
+        <>
+          <FlowStamp>Your call</FlowStamp>
+          <FlowTitle small center>Did {judgeFirstInline} keep<br/><span style={{ color: 'var(--uv-gold-bright)' }}>their word?</span></FlowTitle>
+          <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 4 }}>
+            <VerdictButton label="Yes" sub="Kept it" tone="green" onClick={() => handleChoose('kept')} disabled={busy || !truthSworn} />
+            <VerdictButton label="No" sub="Broke it" tone="red" onClick={() => handleChoose('broken')} disabled={busy || !truthSworn} />
           </div>
-        )}
-
-        {/* Vow card with stamp header + 2-col meta per mock */}
-        <RitualCard>
-          <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 8 }}>
-            — The Vow —
-          </div>
-          <p style={{ fontSize: 18, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontWeight: 500, color: 'var(--uv-gold)', margin: 0, textAlign: 'center', lineHeight: 1.5 }}>
-            &ldquo;{vow.refined_text}&rdquo;
+          <FlowSpacer />
+          <button
+            type="button"
+            onClick={() => {
+              const body = encodeURIComponent('Hey - just checking before I submit my verdict. Did you keep it?');
+              window.location.href = `sms:&body=${body}`;
+            }}
+            style={{ border: 0, background: 'none', color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', fontSize: 13, cursor: 'pointer', padding: 0 }}
+          >
+            Need to check? Open Messages with {judgeNameInline}.
+          </button>
+          <p style={{ color: 'var(--uv-text-dim)', margin: '6px 0 0', fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic', fontSize: 13 }}>
+            Be honest. They are counting on it.
           </p>
-          {vow.stake_amount > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 14, paddingTop: 14, borderTop: '1px dashed var(--uv-border-soft)' }}>
-              <div>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>On the line</div>
-                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>${vow.stake_amount / 100}</div>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)' }}>to {vow.destination}, if broken</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', marginBottom: 4 }}>{isEarlyCompletion ? 'Deadline' : 'Vow ended'}</div>
-                <div style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 18, fontWeight: 500, color: 'var(--uv-text)' }}>{formatRelativeTime(vow.ends_at)}</div>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 11, color: 'var(--uv-text-dim)', fontStyle: 'italic' }}>{formatEndDate(vow.ends_at)}</div>
-              </div>
-            </div>
-          )}
-        </RitualCard>
-
-        {/* No "I'll tell the truth" checkbox — mock doesn't have it. Verdict buttons are unguarded. */}
-
-        {isEarlyCompletion ? (
-          <>
-            <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
-              Your call
-            </div>
-
-            <div style={{ textAlign: 'center' }}>
-              <FrauncesH1 italic size="page">Did {judgeNameInline} actually <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>finish?</em></FrauncesH1>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              <button
-                onClick={() => handleChoose('kept')}
-                disabled={busy || !truthSworn}
-                style={{
-                  minHeight: 58,
-                  borderRadius: 999,
-                  border: 'none',
-                  background: 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))',
-                  color: 'var(--uv-text-on-gold)',
-                  cursor: !truthSworn ? 'not-allowed' : 'pointer',
-                  opacity: !truthSworn ? 0.5 : 1,
-                  fontFamily: 'var(--uv-font-sans)',
-                  fontSize: 17,
-                  fontWeight: 800,
-                }}
-              >
-                Yes, release {judgeName}
-              </button>
-              <Link
-                href={`/w/${token}`}
-                style={{
-                  minHeight: 48,
-                  borderRadius: 999,
-                  border: '1px solid var(--uv-border-strong)',
-                  background: 'var(--uv-bg-card)',
-                  color: 'var(--uv-text-muted)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  textDecoration: 'none',
-                  fontFamily: 'var(--uv-font-sans)',
-                  fontSize: 14,
-                  fontWeight: 700,
-                }}
-              >
-                Not yet - keep vow open
-              </Link>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
-              <button
-                onClick={() => {
-                  const body = encodeURIComponent(`Hey - checking before I release you early. Did you finish the vow?`);
-                  window.location.href = `sms:&body=${body}`;
-                }}
-                style={{ background: 'none', border: 'none', fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)', cursor: 'pointer', padding: 0 }}
-              >
-                Need proof? <span style={{ color: 'var(--uv-gold)', fontWeight: 500 }}>Open Messages with {judgeNameInline}</span>
-              </button>
-              <p style={{ fontSize: 13, color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic' }}>
-                Early release is final. Be sure.
-              </p>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* "YOUR CALL" section header per mock */}
-            <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
-              Your call
-            </div>
-
-            <div style={{ textAlign: 'center' }}>
-              <FrauncesH1 italic size="page">Did {judgeNameInline} keep <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>their word?</em></FrauncesH1>
-            </div>
-
-            {/* Verdict buttons — side-by-side per mock (~120px tall each) */}
-            <div style={{ display: 'flex', gap: 12 }}>
-              <button
-                onClick={() => handleChoose('kept')}
-                disabled={busy || !truthSworn}
-                style={{
-                  flex: 1,
-                  minHeight: 120,
-                  borderRadius: 18,
-                  padding: 20,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  backgroundColor: 'var(--uv-bg-card)',
-                  border: '1.5px solid var(--uv-success)',
-                  cursor: !truthSworn ? 'not-allowed' : 'pointer',
-                  opacity: !truthSworn ? 0.5 : 1,
-                  transition: 'transform 120ms',
-                }}
-              >
-                <span style={{ fontSize: 22, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-serif)' }}>Yes</span>
-                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>Kept it</span>
-              </button>
-
-              <button
-                onClick={() => handleChoose('broken')}
-                disabled={busy || !truthSworn}
-                style={{
-                  flex: 1,
-                  minHeight: 120,
-                  borderRadius: 18,
-                  padding: 20,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 6,
-                  backgroundColor: 'var(--uv-bg-card)',
-                  border: '1.5px solid var(--uv-danger)',
-                  cursor: !truthSworn ? 'not-allowed' : 'pointer',
-                  opacity: !truthSworn ? 0.5 : 1,
-                  transition: 'transform 120ms',
-                }}
-              >
-                <span style={{ fontSize: 22, fontWeight: 600, color: 'var(--uv-danger)', fontFamily: 'var(--uv-font-serif)' }}>No</span>
-                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>Broke it</span>
-              </button>
-            </div>
-
-            {/* Footer per mock: "Open Messages" link + "Be honest" */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
-              <button
-                onClick={() => {
-                  if (makerName) {
-                    const body = encodeURIComponent(`Hey - just checking before I submit my verdict. Did you keep it?`);
-                    window.location.href = `sms:&body=${body}`;
-                  }
-                }}
-                style={{ background: 'none', border: 'none', fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)', cursor: 'pointer', padding: 0 }}
-              >
-                Need to check? <span style={{ color: 'var(--uv-gold)', fontWeight: 500 }}>Open Messages with {judgeNameInline}</span>
-              </button>
-              <p style={{ fontSize: 13, color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic' }}>
-                Be honest. They&apos;re counting on it.
-              </p>
-            </div>
-          </>
-        )}
-      </div>
+        </>
+      )}
 
       {/* Undo toast */}
       {pendingVerdict && (
@@ -617,6 +431,34 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
           </div>
         </div>
       )}
-    </div>
+    </FlowShell>
+  );
+}
+
+function VerdictButton({ label, sub, tone, onClick, disabled }: { label: string; sub: string; tone: 'green' | 'red'; onClick: () => void; disabled?: boolean }) {
+  const color = tone === 'green' ? 'var(--uv-success)' : 'var(--uv-danger)';
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        minHeight: 122,
+        borderRadius: 18,
+        border: `1.5px solid ${color}`,
+        background: 'var(--uv-bg-card)',
+        color: 'var(--uv-text)',
+        display: 'grid',
+        placeItems: 'center',
+        padding: 18,
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? .5 : 1,
+      }}
+    >
+      <span>
+        <strong style={{ display: 'block', fontFamily: 'var(--uv-font-serif)', fontSize: 24, fontWeight: 600, color, marginBottom: 7 }}>{label}</strong>
+        <span style={{ display: 'block', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase' }}>{sub}</span>
+      </span>
+    </button>
   );
 }

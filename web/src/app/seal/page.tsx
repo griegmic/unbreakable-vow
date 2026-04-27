@@ -66,6 +66,7 @@ export default function SealPage() {
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const paymentVowIdRef = useRef<string | null>(null);
+  const paymentWitnessTokenRef = useRef<string | null>(null);
   const witnessShareAttemptedRef = useRef(false);
   const quickAutoSealAttemptedRef = useRef(false);
 
@@ -301,9 +302,21 @@ export default function SealPage() {
     return { ok: false, error: lastError || 'Could not reach server' };
   }, []);
 
-  const scheduleSealRedirect = useCallback((sealedId: string) => {
+  const scheduleSealRedirect = useCallback((sealedId: string, witnessInviteToken?: string | null) => {
+    const token = witnessInviteToken || vow.witnessInviteToken || null;
     try {
-      const target = JSON.stringify({ id: sealedId, ts: Date.now() });
+      const target = JSON.stringify({
+        id: sealedId,
+        witnessInviteToken: token,
+        rawInput: vow.rawInput,
+        refinedText: activeVowText,
+        witnessName: isSelfWitness ? 'Just me' : vow.witnessName,
+        witnessPhone: isSelfWitness ? '' : vow.witnessPhone,
+        stakeAmount: vow.stake.amount,
+        deadlineIso: vow.deadlineIso,
+        isSelfWitness,
+        ts: Date.now(),
+      });
       localStorage.setItem('uv-post-seal-target', target);
       sessionStorage.setItem('uv-post-seal-target', target);
       localStorage.removeItem('auth-return-path');
@@ -314,11 +327,12 @@ export default function SealPage() {
     setSealAnimPhase(0);
     const t0 = setTimeout(() => {
       paymentVowIdRef.current = null;
+      paymentWitnessTokenRef.current = null;
       resetVow();
-      router.replace(`/vow/${sealedId}?sealed=1`);
+      router.replace(isSelfWitness ? `/vow/${sealedId}?sealed=1` : '/sent');
     }, 120);
     timersRef.current.push(t0);
-  }, [resetVow, router]);
+  }, [activeVowText, isSelfWitness, resetVow, router, vow.deadlineIso, vow.rawInput, vow.refinedText, vow.stake.amount, vow.witnessInviteToken, vow.witnessName, vow.witnessPhone]);
 
   const createVowAndPay = useCallback(async () => {
     if (sealingRef.current) return;
@@ -350,6 +364,7 @@ export default function SealPage() {
       }
 
       paymentVowIdRef.current = draft.id;
+      paymentWitnessTokenRef.current = draft.witness_invite_token || vow.witnessInviteToken || null;
       const { data: siData, error: siError } = await supabase.functions.invoke('save-card', {
         body: { vow_id: draft.id },
       });
@@ -389,7 +404,7 @@ export default function SealPage() {
       sealingRef.current = false;
       setSealing(false);
     }
-  }, [ensureDraftVow]);
+  }, [ensureDraftVow, vow.witnessInviteToken]);
 
   const handleZeroStakeSeal = useCallback(async () => {
     if (sealingRef.current) return;
@@ -427,14 +442,14 @@ export default function SealPage() {
         }
         throw new Error(result.error || 'Could not activate your vow. Please try again.');
       }
-      scheduleSealRedirect(draft.id);
+      scheduleSealRedirect(draft.id, draft.witness_invite_token || vow.witnessInviteToken);
     } catch (err) {
       console.error('Zero-stake seal error:', err);
       setError(err instanceof Error ? err.message : 'Could not seal your vow. Please try again.');
       sealingRef.current = false;
       setSealing(false);
     }
-  }, [ensureDraftVow, callSealVow, scheduleSealRedirect]);
+  }, [ensureDraftVow, callSealVow, scheduleSealRedirect, vow.witnessInviteToken]);
 
   const handleSealTap = async () => {
     if (authLoading) return;
@@ -477,13 +492,13 @@ export default function SealPage() {
         sealed_at: new Date().toISOString(),
       }).eq('id', draft.id);
 
-      scheduleSealRedirect(draft.id);
+      scheduleSealRedirect(draft.id, draft.witness_invite_token || vow.witnessInviteToken);
     } catch (err) {
       console.error('Dev bypass error:', err);
       setError(err instanceof Error ? err.message : 'Dev bypass failed. Check console for details.');
       setSealing(false);
     }
-  }, [ensureDraftVow, sealing, scheduleSealRedirect]);
+  }, [ensureDraftVow, sealing, scheduleSealRedirect, vow.witnessInviteToken]);
 
   const handleAuthSuccess = useCallback(async () => {
     // NUCLEAR FIX: After OTP verification, the session is guaranteed valid
@@ -525,7 +540,7 @@ export default function SealPage() {
           }
           throw new Error(result.error || 'Could not activate your vow. Please try again.');
         }
-        scheduleSealRedirect(draft.id);
+        scheduleSealRedirect(draft.id, draft.witness_invite_token || vow.witnessInviteToken);
       } catch (err) {
         console.error('Post-auth seal error:', err);
         setError(err instanceof Error ? err.message : 'Could not seal your vow. Please try again.');
@@ -578,6 +593,7 @@ export default function SealPage() {
           throw new Error(`No client secret. Response: ${JSON.stringify(siData)}`);
         }
         paymentVowIdRef.current = draft.id;
+        paymentWitnessTokenRef.current = draft.witness_invite_token || vow.witnessInviteToken || null;
         setClientSecret(secret);
         setStep('payment');
       } catch (err) {
@@ -587,7 +603,7 @@ export default function SealPage() {
         setSealing(false);
       }
     }
-  }, [vow.stake.amount, ensureDraftVow, callSealVow, scheduleSealRedirect]);
+  }, [vow.stake.amount, vow.witnessInviteToken, ensureDraftVow, callSealVow, scheduleSealRedirect]);
 
   const handlePaymentSuccess = async () => {
     setStep('sealing');
@@ -609,7 +625,7 @@ export default function SealPage() {
     }
 
     if (sealedTargetId) {
-      scheduleSealRedirect(sealedTargetId);
+      scheduleSealRedirect(sealedTargetId, paymentWitnessTokenRef.current || vow.witnessInviteToken);
     } else {
       setError('Your payment went through but we could not find the vow to seal. Please try again.');
       setStep('review');
@@ -1032,8 +1048,9 @@ export default function SealPage() {
 
           {/* Hero */}
           <h1 style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 26, fontWeight: 600,
+            fontFamily: 'var(--uv-font-sans)', fontSize: 30, fontWeight: 700,
             color: 'var(--uv-text)', margin: '0 0 6px', textAlign: 'center',
+            lineHeight: 1.12,
           }}>
             {phoneStep === 'otp'
                 ? 'Enter the code.'
@@ -1042,9 +1059,9 @@ export default function SealPage() {
                   : 'What’s your number?'}
           </h1>
           <p style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+            fontFamily: 'var(--uv-font-sans)', fontSize: 16,
             color: 'var(--uv-text-muted)', margin: '0 auto 28px', textAlign: 'center',
-            maxWidth: 280, lineHeight: 1.45,
+            maxWidth: 320, lineHeight: 1.45,
           }}>
             {phoneStep === 'otp'
                 ? `We texted a 6-digit code to (${phone.slice(0,3)}) ${phone.slice(3,6)}-${phone.slice(6)}`
@@ -1096,7 +1113,7 @@ export default function SealPage() {
                   onBlur={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-border-strong)'; }}
                   style={{
                     flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                    fontSize: 18, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
+                    fontSize: 19, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
                     padding: '17px 0', WebkitAppearance: 'none',
                   }}
                 />
@@ -1207,7 +1224,7 @@ export default function SealPage() {
               >
                 <span style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
-                  fontSize: 15, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-muted)',
+                  fontSize: 16, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text-muted)',
                   paddingRight: 10, borderRight: '1px solid var(--uv-border-strong)',
                   marginRight: 10, whiteSpace: 'nowrap', userSelect: 'none',
                 }}>
@@ -1225,7 +1242,7 @@ export default function SealPage() {
                   onBlur={(e) => { const w = e.target.closest('div'); if (w) (w as HTMLElement).style.borderColor = 'var(--uv-border-strong)'; }}
                   style={{
                     flex: 1, border: 'none', outline: 'none', background: 'transparent',
-                    fontSize: 18, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
+                    fontSize: 19, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)',
                     padding: '17px 0', WebkitAppearance: 'none',
                     textDecoration: 'none', WebkitTextDecorationLine: 'none',
                   }}
@@ -1426,7 +1443,7 @@ export default function SealPage() {
               setSealing(false);
               return;
             }
-            scheduleSealRedirect(skipVowId);
+            scheduleSealRedirect(skipVowId, paymentWitnessTokenRef.current || vow.witnessInviteToken);
           } : undefined}
         />
       )}

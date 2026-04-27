@@ -97,6 +97,25 @@ import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
 import { antiCauses } from '@/lib/vow-logic';
 import type { Database } from '@/lib/types';
+import {
+  FlowCard,
+  FlowCTA,
+  FlowGrid,
+  FlowJob,
+  FlowLabel,
+  FlowMeta,
+  FlowMeter,
+  FlowSecondary,
+  FlowShell,
+  FlowSpacer,
+  FlowStamp,
+  FlowStatus,
+  FlowSub,
+  FlowTitle,
+  FlowTop,
+  FlowVow,
+  shortDestinationName,
+} from '@/components/vow-flow-ui';
 
 type VowRow = Database['public']['Tables']['vows']['Row'];
 
@@ -611,6 +630,7 @@ function VowDetailContent() {
   const shareUrl = origin ? `${origin}/outcome/${vow.id}` : '';
   const certificateUrl = origin ? `${origin}/certificate/${vow.id}` : '';
   const stakeLabel = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : null;
+  const destinationShort = shortDestinationName(vow.destination);
   const isTerminal = ['kept', 'broken', 'voided'].includes(vow.status);
 
   const witnessLabel = isSolo
@@ -626,7 +646,7 @@ function VowDetailContent() {
     : vow.witness_name;
 
   const stakeSubtitle = vow.stake_amount > 0
-    ? `${stakeLabel} at stake \u00b7 ${vow.destination} if broken`
+    ? `${stakeLabel} at stake \u00b7 ${(destinationShort || vow.destination)} if broken`
     : 'Accountability only';
   const isAntiCause = vow.destination
     ? antiCauses.some(cause => vow.destination.toLowerCase().includes(cause.toLowerCase()))
@@ -1027,123 +1047,42 @@ function VowDetailContent() {
     };
 
     return (
-      <RitualScreen>
-        <BackNav />
-
-        {/* Header: pill + vow text */}
-        <div style={{ marginBottom: 6 }}>
-        <StatusPill variant="pending">One tap away</StatusPill>
-        </div>
-        <h1 style={{
-          fontFamily: 'var(--uv-font-serif)',
-          fontSize: 24,
-          fontWeight: 400,
-          color: 'var(--uv-text)',
-          margin: '0 0 8px',
-          lineHeight: 1.25,
-        }}>
-          {vow.refined_text}
-        </h1>
-
-        {/* Stake / deadline sub-info */}
-        <p style={{
-          fontFamily: 'var(--uv-font-sans)',
-          fontSize: 13,
-          color: 'var(--uv-text-faint)',
-          margin: '0 0 20px',
-        }}>
-          {stakeLabel ? `${stakeLabel} at stake` : 'Accountability only'}
-          {endDateFormatted ? ` \u00b7 Verdict by ${endDateFormatted}` : ''}
-        </p>
-
-        {/* Witness declined card */}
-        {witnessDeclined && (
-          <RitualCard>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backgroundColor: 'var(--uv-warn-bg)',
-              }}>
-                <Ban className="w-[18px] h-[18px]" style={{ color: 'var(--uv-warn)' }} />
-              </div>
-              <div>
-                <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
-                  {vow.witness_name} declined.
-                </span>
-                <span style={{ fontSize: 13, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', lineHeight: 1.45, display: 'block', marginTop: 4 }}>
-                  You can continue solo &mdash; you&apos;ll judge the vow yourself on verdict day.
-                </span>
-              </div>
-            </div>
-            <GoldCTA label={actionBusy ? 'Switching...' : 'Go solo instead'} onPress={handleGoSolo} disabled={actionBusy} />
-          </RitualCard>
-        )}
-
-        {/* Witness pending card */}
-        {!witnessDeclined && witnessUrl && (
-          <RitualCard>
-            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 14 }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                backgroundColor: 'var(--uv-gold-selected-shadow)',
-              }}>
-                <Clock className="w-[18px] h-[18px]" style={{ color: 'var(--uv-gold)' }} />
-              </div>
-              <div>
-                <span style={{ fontSize: 15, fontWeight: 500, display: 'block', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>
-                  Get {witnessDisplayName} in.
-                </span>
-                <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)', lineHeight: 1.45, display: 'block', marginTop: 4 }}>
-                  Once they accept, the vow starts feeling real.
-                </span>
-              </div>
-            </div>
-
-            <GoldCTA
-              label={vow.witness_phone ? `Text ${witnessDisplayName}` : 'Send the invite'}
-              onPress={handleSendInvite}
-            />
-
-            <div style={{ display: 'flex', justifyContent: 'center', marginTop: 10 }}>
-              <button
-                type="button"
-                onClick={handleCopyLink}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  fontFamily: 'var(--uv-font-sans)',
-                  fontSize: 13,
-                  fontWeight: 500,
-                  color: 'var(--uv-text-muted)',
-                  padding: '8px 0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <Share2 className="w-3.5 h-3.5" style={{ color: 'var(--uv-text-faint)' }} />
-                {actionMsg === 'Link copied' ? 'Copied!' : 'Copy invite link'}
-              </button>
-            </div>
-          </RitualCard>
-        )}
-
-        {/* "or go solo" */}
-        {!witnessDeclined && (
-          <MutedSecondary
-            label="Judge it myself instead"
-            onPress={handleGoSolo}
+      <FlowShell>
+        <FlowTop action="Dashboard" onAction={() => router.push('/dashboard')} />
+        <FlowStatus tone="gold">One tap away</FlowStatus>
+        <FlowTitle>{witnessDisplayName === 'your witness' ? 'Send the invite.' : `Get ${witnessDisplayName} in.`}</FlowTitle>
+        <FlowSub>Your vow is sealed. {witnessDisplayName === 'your witness' ? 'Your witness needs to accept before it goes live.' : `${witnessDisplayName} needs to accept before it goes live.`}</FlowSub>
+        <FlowCard hot compact>
+          <FlowLabel>The vow</FlowLabel>
+          <FlowVow>{vow.refined_text}</FlowVow>
+          <FlowMeta items={[
+            { label: stakeLabel ? `${stakeLabel} at stake` : 'Accountability only', gold: true },
+            ...(destinationShort && stakeLabel ? [{ label: `${destinationShort} if broken` }] : []),
+            ...(endDateFormatted ? [{ label: `Due ${endDateFormatted.split(',')[0]}` }] : []),
+          ]} />
+        </FlowCard>
+        {witnessDeclined ? (
+          <FlowJob title={`${vow.witness_name} declined`} body="You can continue solo, or choose someone else later." mark="!" />
+        ) : (
+          <FlowJob
+            title="Next move"
+            body={witnessDisplayName === 'your witness' ? 'Share the witness link. They accept, then they call it.' : `Send ${witnessDisplayName} the invite. They accept, then they call it.`}
+            mark="→"
           />
         )}
-
-        <TimelineBlock />
-        <WithdrawButton compact />
+        <FlowSpacer />
+        {witnessDeclined ? (
+          <FlowCTA onClick={handleGoSolo} disabled={actionBusy}>{actionBusy ? 'Switching...' : 'Go solo instead'}</FlowCTA>
+        ) : (
+          <>
+            <FlowCTA tone="green" onClick={handleSendInvite}>{vow.witness_phone ? `Text ${witnessDisplayName} the invite` : 'Share witness invite'}</FlowCTA>
+            <FlowSecondary onClick={handleCopyLink}>{actionMsg === 'Link copied' ? 'Copied!' : 'Copy invite link'}</FlowSecondary>
+            <FlowSecondary onClick={handleGoSolo}>Judge it myself instead</FlowSecondary>
+          </>
+        )}
         <VoidConfirmModal />
         <ActionMessage />
-      </RitualScreen>
+      </FlowShell>
     );
   }
 
@@ -1216,131 +1155,41 @@ function VowDetailContent() {
     };
 
     return (
-      <RitualScreen>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, padding: '0 4px' }}>
-          <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: 'var(--uv-text-muted)', padding: '10px 12px 10px 0', margin: '-10px 0 -10px 0', minWidth: 44, minHeight: 44, display: 'flex', alignItems: 'center' }} aria-label="Back to dashboard">
-            ←
-          </button>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 11, letterSpacing: '0.24em', textTransform: 'uppercase' as const, color: 'var(--uv-success)', fontWeight: 650, fontFamily: 'var(--uv-font-sans)' }}>
-            <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--uv-success)', boxShadow: '0 0 6px var(--uv-success)', display: 'inline-block' }} />
-            Vow live
-          </div>
-          {isAuthenticated && <HamburgerMenu />}
-        </div>
-
-        <section style={{
-          background: 'var(--uv-bg-card)',
-          border: '1px solid var(--uv-border-soft)',
-          borderRadius: 16,
-          padding: '20px 20px 18px',
-          marginBottom: 14,
-        }}>
-          <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase' as const, color: 'var(--uv-text-dim)', fontWeight: 700, marginBottom: 10 }}>
-            The vow
-          </div>
-          <h1 style={{
-            margin: 0,
-            fontFamily: 'var(--uv-font-sans)',
-            fontSize: 27,
-            lineHeight: 1.08,
-            fontWeight: 750,
-            color: 'var(--uv-text)',
-            letterSpacing: 0,
-          }}>
-            {vow.refined_text}
-          </h1>
-          <div style={{ height: 1, background: 'var(--uv-border-soft)', margin: '18px 0 14px' }} />
-          <p style={{ margin: 0, fontFamily: 'var(--uv-font-sans)', fontSize: 14.5, lineHeight: 1.4, color: 'var(--uv-text-muted)' }}>
-            <span style={{ color: 'var(--uv-text)', fontWeight: 700 }}>{consequenceLine.split(' · ')[0]}</span>
-            {consequenceLine.includes(' · ') && (
-              <span> · {consequenceLine.split(' · ')[1]}</span>
-            )}
-          </p>
-          <p style={{ margin: '7px 0 0', fontFamily: 'var(--uv-font-sans)', fontSize: 14.5, lineHeight: 1.4, color: 'var(--uv-text-muted)' }}>
-            {judgeLine}
-          </p>
-        </section>
-
+      <FlowShell>
+        <FlowTop action="Dashboard" onAction={() => router.push('/dashboard')} />
+        <FlowStatus>Vow live</FlowStatus>
+        <FlowCard hot compact>
+          <FlowLabel>The vow</FlowLabel>
+          <FlowVow>{vow.refined_text}</FlowVow>
+          <FlowMeta items={[
+            { label: stakeLabel ? `${stakeLabel} on hold` : 'Your word', gold: true },
+            { label: isSolo ? 'You judge' : vow.witness_accepted_at ? `${activeJudgeName} is watching` : `${witnessDisplayName} pending` },
+          ]} />
+        </FlowCard>
         {vow.ends_at && (
-          <section style={{
-            background: 'linear-gradient(180deg, rgba(215,169,70,0.12), rgba(215,169,70,0.045))',
-            border: '1px solid var(--uv-gold-line)',
-            borderRadius: 16,
-            padding: '18px 20px',
-            marginBottom: 14,
-          }}>
-            <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, letterSpacing: '0.28em', textTransform: 'uppercase' as const, color: 'var(--uv-text-dim)', fontWeight: 700, marginBottom: 8 }}>
-              Time left
-            </div>
-            <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 38, lineHeight: 1, fontWeight: 760, color: 'var(--uv-gold-bright)', letterSpacing: 0, fontFeatureSettings: '"tnum"' }}>
+          <FlowCard>
+            <FlowLabel>Time left</FlowLabel>
+            <p style={{ margin: '0 0 10px', color: 'var(--uv-gold-bright)', fontFamily: 'var(--uv-font-sans)', fontSize: 44, lineHeight: 1, fontWeight: 820, letterSpacing: 0, fontVariantNumeric: 'tabular-nums' }}>
               {timeHeadline}
-            </div>
-            {endDateFull && (
-              <p style={{ margin: '10px 0 0', fontFamily: 'var(--uv-font-sans)', fontSize: 14, lineHeight: 1.4, color: 'var(--uv-text-muted)' }}>
-                Verdict by <span style={{ color: 'var(--uv-text)', fontWeight: 650 }}>{endDateFull}</span>
-              </p>
-            )}
-          </section>
+            </p>
+            <p style={{ margin: '0 0 14px', color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', fontSize: 14.5, lineHeight: 1.4 }}>
+              Verdict by {endDateFull || endDateFormatted}.
+            </p>
+            <FlowMeter pct={vow.starts_at && vow.ends_at ? Math.round(((Date.now() - new Date(vow.starts_at).getTime()) / (new Date(vow.ends_at).getTime() - new Date(vow.starts_at).getTime())) * 100) : 42} />
+          </FlowCard>
         )}
-
-        <section style={{ marginBottom: 14 }}>
-          <p style={{ margin: '0 0 12px', fontFamily: 'var(--uv-font-sans)', fontSize: 15, lineHeight: 1.45, color: 'var(--uv-text-muted)' }}>
-            <span style={{ color: 'var(--uv-text)', fontWeight: 700 }}>Next:</span>{' '}
-            {isSolo
-              ? 'keep your word. If you finish early, close it yourself.'
-              : vow.witness_accepted_at
-                ? `${activeJudgeName} is watching. Send a nudge if you want the pressure on.`
-                : `send ${witnessDisplayName} the invite so they can accept.`}
-          </p>
-          <GoldCTA
-            label={actionBusy ? 'Working...' : primaryLabel}
-            onPress={handlePrimaryActiveAction}
-            disabled={actionBusy}
-          />
-        </section>
-
-        <div style={{ display: 'grid', gridTemplateColumns: (!isSolo && showSecondaryShare) ? '1fr 1fr' : '1fr', gap: 10, marginBottom: 12 }}>
-          {!isSolo && (
-            <button type="button" onClick={handleDoneEarly} disabled={actionBusy} style={{
-              borderRadius: 14,
-              padding: '13px 14px',
-              minHeight: 58,
-              background: 'var(--uv-bg-card)',
-              border: '1px solid var(--uv-border-soft)',
-              color: 'var(--uv-text)',
-              cursor: actionBusy ? 'wait' : 'pointer',
-              fontFamily: 'var(--uv-font-sans)',
-              fontSize: 14,
-              fontWeight: 650,
-              opacity: actionBusy ? 0.68 : 1,
-            }}>
-              I finished early
-            </button>
-          )}
-          {showSecondaryShare && (
-            <button type="button" onClick={handleActiveShare} style={{
-              borderRadius: 14,
-              padding: '13px 14px',
-              minHeight: 58,
-              background: 'var(--uv-bg-card)',
-              border: '1px solid var(--uv-border-soft)',
-              color: 'var(--uv-text)',
-              cursor: 'pointer',
-              fontFamily: 'var(--uv-font-sans)',
-              fontSize: 14,
-              fontWeight: 650,
-            }}>
-              Share vow
-            </button>
-          )}
-        </div>
-
-        <TimelineBlock />
-        <WithdrawButton compact />
+        <FlowJob
+          title={isSolo ? 'Keep going' : vow.witness_accepted_at ? 'Keep going' : 'Next move'}
+          body={isSolo ? 'You call this one when it is done.' : vow.witness_accepted_at ? `${activeJudgeName} decides if you kept your word.` : `Send ${witnessDisplayName} the invite so they can accept.`}
+        />
+        <FlowSpacer />
+        <FlowCTA tone="green" onClick={handlePrimaryActiveAction} disabled={actionBusy}>{actionBusy ? 'Working...' : primaryLabel}</FlowCTA>
+        {!isSolo && <FlowSecondary onClick={handleDoneEarly}>Ask {witnessDisplayName} to release me early</FlowSecondary>}
+        {showSecondaryShare && <FlowSecondary onClick={handleActiveShare}>Share vow</FlowSecondary>}
         <VoidConfirmModal />
         <DevVerdictButtons />
         <ActionMessage />
-      </RitualScreen>
+      </FlowShell>
     );
   }
 
@@ -1352,59 +1201,43 @@ function VowDetailContent() {
     const canSelfResolve = isMaker && (isSolo || !witnessAccepted);
 
     return (
-      <RitualScreen>
-        <BackNav />
-        <StatusPill variant="verdict">Verdict due</StatusPill>
-
-        <VowTitle
-          text={isWitness ? `${vow.witness_name}, it's your call.` : isSolo ? "Time's up." : `${vow.witness_name} is deciding.`}
-          sub={isSolo ? 'How did it go?' : witnessAccepted ? undefined : `${vow.witness_name} never accepted. You can self-resolve.`}
-        />
-
-        <RitualCard>
-          <p style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 17, fontWeight: 400, color: 'var(--uv-text)', margin: 0 }}>
-            {vow.refined_text}
-          </p>
-          <div style={{ height: 1, backgroundColor: 'var(--uv-border-strong)', margin: '12px 0' }} />
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>At stake</span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel || 'Accountability only'}</span>
-          </div>
-          {vow.destination && vow.stake_amount > 0 && (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
-              <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>If broken</span>
-              <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)' }}>{vow.destination}</span>
-            </div>
-          )}
-        </RitualCard>
-
-        <TimelineBlock />
-        <WithdrawButton />
+      <FlowShell>
+        <FlowTop action="Dashboard" onAction={() => router.push('/dashboard')} />
+        <FlowStatus tone="gold">Verdict due</FlowStatus>
+        <FlowTitle>
+          {isWitness ? 'Time to call it.' : isSolo ? "Time's up." : `Time's up.`}<br/>
+          <span style={{ color: 'var(--uv-gold-bright)' }}>{isSolo ? 'You decide.' : `${vow.witness_name || 'Your witness'} decides.`}</span>
+        </FlowTitle>
+        <FlowSub>{isSolo ? 'How did it go?' : witnessAccepted ? 'They have the verdict link. Give them a nudge if you need to.' : `${vow.witness_name} never accepted. You can self-resolve.`}</FlowSub>
+        <FlowCard hot compact>
+          <FlowLabel>The vow</FlowLabel>
+          <FlowVow>{vow.refined_text}</FlowVow>
+          <FlowMeta items={[
+            { label: stakeLabel ? `${stakeLabel} at stake` : 'Accountability only', gold: true },
+            ...(destinationShort && stakeLabel ? [{ label: `${destinationShort} if broken` }] : []),
+            { label: 'Ended today' },
+          ]} />
+        </FlowCard>
+        <FlowJob title="Now we wait" body={stakeLabel ? 'Kept means refund. Broken means donation.' : 'Kept means honored. Broken means the record stands.'} mark="?" />
+        <FlowSpacer />
+        {canSelfResolve && <FlowCTA onClick={() => router.push(`/self-resolve?id=${vow.id}`)}>Deliver your verdict</FlowCTA>}
+        {isMaker && witnessAccepted && vow.witness_phone && (
+          <FlowCTA tone="green" onClick={() => { if (vow.witness_phone) window.open(`sms:${vow.witness_phone}`, '_self'); }}>Nudge {vow.witness_name} to decide</FlowCTA>
+        )}
+        {isMaker && witnessAccepted && !vow.witness_phone && (
+          <FlowCTA tone="green" onClick={async () => {
+            if (!witnessUrl) return;
+            if (navigator.share) await navigator.share({ text: `Time to deliver the verdict on my vow: "${vow.refined_text}"`, url: `${witnessUrl}/verdict` }).catch(() => {});
+          }}>Nudge {vow.witness_name} to decide</FlowCTA>
+        )}
+        {isWitness && vow.witness_invite_token && (
+          <FlowCTA onClick={() => router.push(`/w/${vow.witness_invite_token}/verdict`)}>Deliver your verdict</FlowCTA>
+        )}
+        <FlowSecondary onClick={() => router.push('/dashboard')}>Back to dashboard</FlowSecondary>
         <VoidConfirmModal />
         <DevVerdictButtons />
         <ActionMessage />
-
-        {/* Footer CTAs */}
-        <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {canSelfResolve && (
-            <GoldCTA label="Deliver your verdict" onPress={() => router.push(`/self-resolve?id=${vow.id}`)} />
-          )}
-          {isMaker && witnessAccepted && vow.witness_phone && (
-            <GoldCTA label={`Nudge ${vow.witness_name}`} onPress={() => { if (vow.witness_phone) window.open(`sms:${vow.witness_phone}`, '_self'); }} />
-          )}
-          {isMaker && witnessAccepted && !vow.witness_phone && (
-            <ShareButton
-              url={witnessUrl ? `${witnessUrl}/verdict` : ''}
-              text={`Time to deliver the verdict on my vow: "${vow.refined_text}"`}
-              buttonText={`Nudge ${vow.witness_name} to decide`}
-            />
-          )}
-          {isWitness && vow.witness_invite_token && (
-            <GoldCTA label="Deliver your verdict" onPress={() => router.push(`/w/${vow.witness_invite_token}/verdict`)} />
-          )}
-          <DashboardButton />
-        </div>
-      </RitualScreen>
+      </FlowShell>
     );
   }
 

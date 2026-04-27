@@ -7,9 +7,9 @@ interface FrauncesH1Props {
 }
 
 const SIZES = {
-  hero: { fontSize: 48, lineHeight: 1.04, letterSpacing: '-0.015em' },
-  page: { fontSize: 34, lineHeight: 1.08, letterSpacing: '-0.015em' },
-  card: { fontSize: 24, lineHeight: 1.15, letterSpacing: '-0.012em' },
+  hero: { fontSize: 48, lineHeight: 1.03, letterSpacing: '0' },
+  page: { fontSize: 34, lineHeight: 1.06, letterSpacing: '0' },
+  card: { fontSize: 24, lineHeight: 1.13, letterSpacing: '0' },
 } as const;
 
 export function FrauncesH1({ children, italic = false, size = 'page' }: FrauncesH1Props) {
@@ -19,9 +19,8 @@ export function FrauncesH1({ children, italic = false, size = 'page' }: Fraunces
       style={{
         fontFamily: 'var(--uv-font-serif)',
         fontSize: s.fontSize,
-        fontWeight: 450,
+        fontWeight: 500,
         fontStyle: italic ? 'italic' : 'normal',
-        fontVariationSettings: `"opsz" ${s.fontSize > 30 ? 120 : s.fontSize}, "SOFT" 24`,
         letterSpacing: s.letterSpacing,
         lineHeight: s.lineHeight,
         color: 'var(--uv-text)',

@@ -10,10 +10,10 @@ export function FrauncesSub({ children, dim = false }: FrauncesSubProps) {
     <p
       style={{
         fontFamily: 'var(--uv-font-sans)',
-        fontSize: 14,
-        fontWeight: 400,
+        fontSize: 15,
+        fontWeight: 450,
         fontStyle: 'normal',
-        lineHeight: 1.5,
+        lineHeight: 1.45,
         color: dim ? 'var(--uv-text-dim)' : 'var(--uv-text-muted)',
         margin: 0,
       }}

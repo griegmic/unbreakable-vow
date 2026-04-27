@@ -314,14 +314,14 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
 
           <div style={{ flex: 1, minHeight: 20 }} />
 
-          {/* Quick vow link */}
+          {/* Fast seal link */}
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 12,
             color: 'var(--uv-text-faint)', margin: '0 0 12px', textAlign: 'center',
           }}>
             Want to do it all at once?{' '}
             <a href="/quick-vow" style={{ color: 'var(--uv-gold)', textDecoration: 'none', fontWeight: 500 }}>
-              Quick vow &rarr;
+              Seal a vow &rarr;
             </a>
           </p>
 

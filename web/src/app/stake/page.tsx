@@ -192,14 +192,14 @@ export default function StakePage() {
       {/* ── 2. Page Header ── */}
       <div style={{ marginBottom: 18 }}>
         <h1 style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 34, fontWeight: 500,
+          fontFamily: 'var(--uv-font-serif)', fontSize: 36, fontWeight: 500,
           color: 'var(--uv-text)', margin: '0 0 6px',
-          lineHeight: 1.15, letterSpacing: '-0.01em',
+          lineHeight: 1.06, letterSpacing: '0',
         }}>
           Set the <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>terms</em>.
         </h1>
         <p style={{
-          fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 400,
+          fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 450,
           color: 'var(--uv-text-dim)', margin: 0,
         }}>
           A vow without weight is a wish.
@@ -243,9 +243,9 @@ export default function StakePage() {
 
           {/* Vow text */}
           <p style={{
-            fontFamily: 'var(--uv-font-serif)', fontSize: 24, fontWeight: 500,
-            color: 'var(--uv-text)', margin: 0, lineHeight: 1.3,
-            letterSpacing: '-0.01em',
+            fontFamily: 'var(--uv-font-serif)', fontSize: 25, fontWeight: 500,
+            color: 'var(--uv-text)', margin: 0, lineHeight: 1.18,
+            letterSpacing: '0',
           }}>
             <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>I&apos;ll</em>{' '}
             {vowBody}
@@ -289,7 +289,7 @@ export default function StakePage() {
                     borderRadius: 10,
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                     fontFamily: 'var(--uv-font-serif)', fontWeight: 500,
-                    fontSize: 24, letterSpacing: '-0.02em',
+                    fontSize: 25, letterSpacing: '0',
                     color: active ? 'var(--uv-gold-bright)' : 'var(--uv-text-muted)',
                     fontFeatureSettings: '"tnum"',
                     cursor: 'pointer',
@@ -376,6 +376,7 @@ export default function StakePage() {
             <p style={{
               textAlign: 'center' as const, margin: '0 0 14px',
               fontFamily: 'var(--uv-font-sans)', fontSize: 14,
+              fontWeight: 450,
               fontStyle: 'italic',
               color: 'var(--uv-text-dim)',
             }}>
@@ -529,7 +530,7 @@ export default function StakePage() {
           <p style={{
             textAlign: 'center' as const,
             fontFamily: 'var(--uv-font-sans)', fontSize: 13,
-            color: 'var(--uv-text-dim)',
+            color: 'var(--uv-text-muted)',
             margin: '0 0 12px',
           }}>
             Nothing charges unless you break it.

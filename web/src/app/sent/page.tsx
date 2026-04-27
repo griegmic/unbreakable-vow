@@ -1,10 +1,57 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { WaxSeal, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, DeliveredPill, EyebrowTag } from '@/components/primitives';
+import { WaxSeal, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, DeliveredPill } from '@/components/primitives';
 import { useAuth } from '@/providers/auth-provider';
 import { useVowFlow } from '@/providers/vow-flow';
 import { HamburgerMenu } from '@/components/hamburger-menu';
+import { supabase } from '@/lib/supabase';
+
+type PostSealTarget = {
+  id: string;
+  witnessInviteToken?: string | null;
+  rawInput?: string;
+  refinedText?: string;
+  witnessName?: string;
+  witnessPhone?: string;
+  stakeAmount?: number;
+  deadlineIso?: string | null;
+  isSelfWitness?: boolean;
+  ts?: number;
+};
+
+function readPostSealTarget(): PostSealTarget | null {
+  try {
+    const raw = sessionStorage.getItem('uv-post-seal-target') || localStorage.getItem('uv-post-seal-target');
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PostSealTarget;
+    if (parsed?.id && Date.now() - Number(parsed.ts || 0) < 10 * 60 * 1000) return parsed;
+  } catch {}
+  return null;
+}
+
+async function copyTextToClipboard(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {}
+
+  try {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.top = '-1000px';
+    textarea.style.left = '-1000px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 
 /**
  * S8 · Sealed (state A) + S9 · Sealed (state B — returned from Messages)
@@ -25,23 +72,32 @@ export default function SentPage() {
   const [stateB, setStateB] = useState(false);
   const [deliveredAt, setDeliveredAt] = useState<Date | null>(null);
   const [showDonePrompt, setShowDonePrompt] = useState(false);
-  const [recoveredVowId, setRecoveredVowId] = useState('');
+  const [recoveredTarget, setRecoveredTarget] = useState<PostSealTarget | null>(null);
+  const [shareFeedback, setShareFeedback] = useState('');
+  const [shareSheetAvailable, setShareSheetAvailable] = useState(false);
+  const [clientOrigin, setClientOrigin] = useState('');
   // Desktop detection after mount to avoid hydration mismatch.
   // SSR default is mobile (S8/S9). Desktop (S-WEB3) activates after useEffect.
   const [isDesktop, setIsDesktop] = useState(false);
   useEffect(() => {
+    setClientOrigin(window.location.origin);
     setIsDesktop(!/iPhone|iPad|iPod|Android/i.test(navigator.userAgent));
+    setShareSheetAvailable(typeof navigator.share === 'function');
   }, []);
 
-  const witnessName = vow.witnessName || 'your witness';
-  const stake = vow.stake?.amount ?? 0;
-  const stakeDollars = Math.round(stake / 100);
+  const witnessName = vow.witnessName || recoveredTarget?.witnessName || 'your judge';
+  const stakeDollars = vow.rawInput ? (vow.stake?.amount ?? 0) : (recoveredTarget?.stakeAmount ?? 0);
   const vowId = vow.vowId || '';
-  const targetVowId = vowId || recoveredVowId;
-  const witnessInviteToken = vow.witnessInviteToken || '';
+  const targetVowId = vowId || recoveredTarget?.id || '';
+  const witnessInviteToken = vow.witnessInviteToken || recoveredTarget?.witnessInviteToken || '';
+  const witnessPhone = vow.witnessPhone || recoveredTarget?.witnessPhone || '';
 
-  const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-  const witnessUrl = `${baseUrl}/w/${witnessInviteToken}`;
+  const baseUrl = clientOrigin;
+  const witnessUrl = witnessInviteToken
+    ? `${baseUrl}/w/${witnessInviteToken}`
+    : targetVowId
+      ? `${baseUrl}/vow/${targetVowId}`
+      : baseUrl;
 
   // V6 universal SMS template — no vow text in body (§1.2)
   const smsBody = stakeDollars > 0
@@ -51,16 +107,11 @@ export default function SentPage() {
   // Redirect if no vow state
   useEffect(() => {
     if (!vow.rawInput) {
-      try {
-        const raw = sessionStorage.getItem('uv-post-seal-target') || localStorage.getItem('uv-post-seal-target');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed?.id && Date.now() - Number(parsed.ts || 0) < 10 * 60 * 1000) {
-            setRecoveredVowId(parsed.id);
-            return;
-          }
-        }
-      } catch {}
+      const recovered = readPostSealTarget();
+      if (recovered) {
+        setRecoveredTarget(recovered);
+        return;
+      }
       try {
         const stored = localStorage.getItem('unbreakable-vow-flow');
         if (stored) {
@@ -74,26 +125,49 @@ export default function SentPage() {
 
   // Check if already in state B (persisted via localStorage)
   useEffect(() => {
-    if (vowId) {
-      const sentFlag = localStorage.getItem(`uv-sent-${vowId}`);
+    if (targetVowId) {
+      const sentFlag = localStorage.getItem(`uv-sent-${targetVowId}`);
       if (sentFlag) {
         setStateB(true);
         setDeliveredAt(new Date(sentFlag));
       }
     }
-  }, [vowId]);
+  }, [targetVowId]);
 
   useEffect(() => {
     if (vowId) return;
-    try {
-      const raw = sessionStorage.getItem('uv-post-seal-target') || localStorage.getItem('uv-post-seal-target');
-      if (!raw) return;
-      const parsed = JSON.parse(raw);
-      if (parsed?.id && Date.now() - Number(parsed.ts || 0) < 10 * 60 * 1000) {
-        setRecoveredVowId(parsed.id);
-      }
-    } catch {}
+    const recovered = readPostSealTarget();
+    if (recovered) setRecoveredTarget(recovered);
   }, [vowId]);
+
+  useEffect(() => {
+    if (!targetVowId || (witnessInviteToken && (vow.rawInput || recoveredTarget?.rawInput))) return;
+
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('vows')
+        .select('id, raw_input, refined_text, witness_name, witness_phone, witness_invite_token, stake_amount, ends_at')
+        .eq('id', targetVowId)
+        .maybeSingle();
+
+      if (cancelled || !data) return;
+      setRecoveredTarget((current) => ({
+        id: targetVowId,
+        ...current,
+        rawInput: current?.rawInput || data.raw_input || '',
+        refinedText: current?.refinedText || data.refined_text || '',
+        witnessName: current?.witnessName || data.witness_name || '',
+        witnessPhone: current?.witnessPhone || data.witness_phone || '',
+        witnessInviteToken: current?.witnessInviteToken || data.witness_invite_token || '',
+        stakeAmount: current?.stakeAmount ?? Math.round(Number(data.stake_amount || 0) / 100),
+        deadlineIso: current?.deadlineIso || data.ends_at || null,
+        ts: current?.ts || Date.now(),
+      }));
+    })();
+
+    return () => { cancelled = true; };
+  }, [recoveredTarget?.rawInput, targetVowId, vow.rawInput, witnessInviteToken]);
 
   const goToVow = useCallback(() => {
     if (targetVowId) {
@@ -142,41 +216,66 @@ export default function SentPage() {
   }, [stateB]);
 
   // State A: "Tell witness" handler
-  const handleTellWitness = useCallback(() => {
+  const markShareAttempted = useCallback((message = 'Link ready. Send it to your judge.') => {
+    const now = new Date();
+    setStateB(true);
+    setDeliveredAt(now);
+    setShareFeedback(message);
+    if (targetVowId) {
+      try { localStorage.setItem(`uv-sent-${targetVowId}`, now.toISOString()); } catch {}
+    }
+  }, [targetVowId]);
+
+  const copyShareText = useCallback(async (text: string, feedback = 'Link copied. Paste it anywhere.') => {
+    const didCopy = await copyTextToClipboard(text);
+    if (didCopy) {
+      markShareAttempted(feedback);
+    } else {
+      setShareFeedback('Select the link and copy it manually.');
+    }
+  }, [markShareAttempted]);
+
+  const copyJudgeLink = useCallback(async () => {
+    await copyShareText(witnessUrl, 'Judge link copied. Paste it into any message.');
+  }, [copyShareText, witnessUrl]);
+
+  const openShareSheet = useCallback(async () => {
+    if (!shareSheetAvailable) {
+      await copyShareText(smsBody, 'Judge link copied. Paste it into any message.');
+      return;
+    }
+
+    try {
+      await navigator.share({ text: smsBody, url: witnessUrl });
+      markShareAttempted('Share sheet opened.');
+    } catch {
+      await copyShareText(smsBody, 'Share sheet was closed. Link copied instead.');
+    }
+  }, [copyShareText, markShareAttempted, shareSheetAvailable, smsBody, witnessUrl]);
+
+  const handleTellWitness = useCallback(async () => {
     const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (isMobile && vow.witnessPhone) {
+    if (isMobile && witnessPhone) {
       // Open iMessage / SMS with prefilled body
-      window.location.href = `sms:${vow.witnessPhone}&body=${encodeURIComponent(smsBody)}`;
+      window.location.href = `sms:${witnessPhone}&body=${encodeURIComponent(smsBody)}`;
+      markShareAttempted('Message opened.');
     } else if (isMobile) {
       // No phone — open SMS with no recipient
       window.location.href = `sms:?&body=${encodeURIComponent(smsBody)}`;
+      markShareAttempted('Message opened.');
     } else {
-      // Desktop — use navigator.share or fallback to copy
-      if (navigator.share) {
-        navigator.share({ text: smsBody, url: witnessUrl }).catch(() => {});
-      } else {
-        navigator.clipboard.writeText(smsBody);
-      }
+      await copyJudgeLink();
     }
-  }, [smsBody, witnessUrl, vow.witnessPhone]);
-
-  // "or share link here" handler
-  const handleShareFallback = useCallback(async () => {
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    if (navigator.share && isMobile) {
-      try { await navigator.share({ text: smsBody, url: witnessUrl }); } catch {}
-    } else {
-      await navigator.clipboard.writeText(witnessUrl);
-    }
-  }, [smsBody, witnessUrl]);
+  }, [copyJudgeLink, markShareAttempted, smsBody, witnessPhone]);
 
   // ── S-WEB3: Desktop web variant (§3.9) ──
   // isDesktop is set after mount via useEffect to avoid hydration mismatch.
   // SSR always renders the mobile (S8/S9) path; desktop variant activates client-side.
   if (isDesktop) {
-    const vowText = vow.refinedText || vow.rawInput || '';
-    const verdictDate = vow.deadlineIso
-      ? new Date(vow.deadlineIso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    const vowText = vow.refinedText || vow.rawInput || recoveredTarget?.refinedText || recoveredTarget?.rawInput || '';
+    const deadlineIso = vow.deadlineIso || recoveredTarget?.deadlineIso;
+    const verdictDate = deadlineIso
+      ? new Date(deadlineIso).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
       : 'TBD';
 
     return (
@@ -214,32 +313,158 @@ export default function SentPage() {
         <h1 style={{
           fontFamily: 'var(--uv-font-serif)',
           fontVariationSettings: '"opsz" 144',
-          fontSize: 38,
+          fontSize: 36,
           fontWeight: 400,
           letterSpacing: '-0.02em',
-          lineHeight: 1,
+          lineHeight: 1.03,
           color: 'var(--uv-text)',
           margin: '12px 0 14px',
         }}>
-          Your vow is <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>bound.</em>
+          Send your <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>judge link.</em>
         </h1>
 
         <p style={{
           fontFamily: 'var(--uv-font-serif)',
           fontStyle: 'italic',
-          fontSize: 14,
+          fontSize: 14.5,
           lineHeight: 1.45,
           color: 'var(--uv-text-muted)',
-          maxWidth: 290,
+          maxWidth: 326,
           marginBottom: 22,
         }}>
-          Next: send the witness link. <span style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>Whoever taps it becomes your witness.</span>
+          Your vow is sealed. <span style={{ color: 'var(--uv-text)', fontStyle: 'normal', fontWeight: 500 }}>Now send this private link to the person who will judge it.</span>
         </p>
+
+        <div style={{
+          width: '100%',
+          maxWidth: 392,
+          borderRadius: 14,
+          border: '1px solid rgba(231, 198, 116, 0.34)',
+          background: 'linear-gradient(180deg, rgba(231, 198, 116, 0.12), rgba(240, 232, 216, 0.035))',
+          padding: '14px 14px 12px',
+          marginBottom: 16,
+          boxShadow: '0 18px 45px rgba(0,0,0,0.28)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', marginBottom: 8 }}>
+            <div style={{
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 9.5,
+              fontWeight: 650,
+              letterSpacing: '0.24em',
+              textTransform: 'uppercase',
+              color: 'var(--uv-gold)',
+              textAlign: 'left',
+            }}>
+              Judge link
+            </div>
+            <div style={{
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 11,
+              color: 'var(--uv-text-muted)',
+              whiteSpace: 'nowrap',
+            }}>
+              Private until shared
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={copyJudgeLink}
+            aria-label="Judge link URL"
+            style={{
+              width: '100%',
+              minHeight: 42,
+              border: '1px solid rgba(240, 232, 216, 0.10)',
+              borderRadius: 10,
+              background: 'rgba(0,0,0,0.22)',
+              color: 'var(--uv-text)',
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 13,
+              lineHeight: 1.25,
+              textAlign: 'left',
+              padding: '10px 12px',
+              cursor: 'copy',
+              overflowWrap: 'anywhere',
+            }}
+          >
+            {witnessUrl}
+          </button>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: shareSheetAvailable ? '1fr 1fr' : '1fr',
+            gap: 8,
+            marginTop: 10,
+          }}>
+            <button
+              type="button"
+              onClick={copyJudgeLink}
+              style={{
+                height: 44,
+                border: 'none',
+                borderRadius: 999,
+                background: 'var(--uv-gold)',
+                color: '#0F0D0A',
+                fontFamily: 'var(--uv-font-sans)',
+                fontSize: 14,
+                fontWeight: 750,
+                cursor: 'pointer',
+              }}
+            >
+              Copy judge link
+            </button>
+            {shareSheetAvailable && (
+              <button
+                type="button"
+                onClick={openShareSheet}
+                style={{
+                  height: 44,
+                  border: '1px solid rgba(231, 198, 116, 0.36)',
+                  borderRadius: 999,
+                  background: 'rgba(231, 198, 116, 0.10)',
+                  color: 'var(--uv-gold-bright)',
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                }}
+              >
+                Open share sheet
+              </button>
+            )}
+          </div>
+          <div style={{
+            minHeight: 17,
+            marginTop: 8,
+            color: shareFeedback.includes('failed') ? '#f0a58f' : 'var(--uv-text-muted)',
+            fontFamily: 'var(--uv-font-sans)',
+            fontSize: 11.5,
+            lineHeight: 1.35,
+            textAlign: 'center',
+          }}>
+            {shareFeedback || 'Copy it, text it, DM it. The judge just needs this link.'}
+          </div>
+          <button
+            type="button"
+            onClick={goToVow}
+            style={{
+              marginTop: 6,
+              background: 'none',
+              border: 'none',
+              color: 'var(--uv-text-dim)',
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 11.5,
+              cursor: 'pointer',
+              padding: 0,
+              borderBottom: '1px dotted var(--uv-border-soft)',
+            }}
+          >
+            See vow live
+          </button>
+        </div>
 
         {/* Receipt card */}
         <div style={{
           width: '100%',
-          maxWidth: 340,
+          maxWidth: 392,
           background: 'var(--uv-bg-card)',
           border: '1px solid var(--uv-border-soft)',
           borderRadius: 12,
@@ -250,7 +475,7 @@ export default function SentPage() {
             { k: 'THE VOW', v: vowText.length > 30 ? vowText.slice(0, 27) + '...' : vowText || 'Your vow' },
             { k: 'ON HOLD', v: stakeDollars > 0 ? `$${stakeDollars}` : 'No stake' },
             { k: 'VERDICT', v: verdictDate },
-            { k: 'WITNESS', v: `Sent · waiting on tap`, pending: true, showDot: true },
+            { k: 'JUDGE', v: stateB ? 'Waiting for acceptance' : 'Needs the link', pending: true, showDot: true },
           ].map((row, i) => (
             <div key={row.k} style={{
               display: 'flex',
@@ -294,39 +519,15 @@ export default function SentPage() {
           ))}
         </div>
 
-        {/* Spacer */}
-        <div style={{ flex: 1 }} />
-
-        {/* CTAs */}
-        <div style={{ width: '100%' }}>
-          <GoldCTA
-            label="See your vow live →"
-            onPress={goToVow}
-          />
-          <div style={{
-            display: 'flex',
-            gap: 6,
-            justifyContent: 'center',
-            marginTop: 8,
-            fontFamily: 'var(--uv-font-sans)',
-            fontSize: 11.5,
-            lineHeight: 1.2,
-            color: 'var(--uv-text-dim)',
-          }}>
-            <button
-              onClick={() => navigator.clipboard.writeText(witnessUrl)}
-              style={{ background: 'none', border: 'none', color: 'var(--uv-text-muted)', fontSize: 11.5, lineHeight: 1.2, cursor: 'pointer', borderBottom: '1px dotted var(--uv-border-soft)', paddingBottom: 1, padding: 0 }}
-            >
-              Resend the link
-            </button>
-            <span>·</span>
-            <button
-              onClick={handleShareFallback}
-              style={{ background: 'none', border: 'none', color: 'var(--uv-text-muted)', fontSize: 11.5, lineHeight: 1.2, cursor: 'pointer', borderBottom: '1px dotted var(--uv-border-soft)', paddingBottom: 1, padding: 0 }}
-            >
-              Send to someone else
-            </button>
-          </div>
+        <div style={{
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 10.5,
+          lineHeight: 1.45,
+          color: 'var(--uv-text-dim)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+        }}>
+          You can come back after your judge accepts
         </div>
       </div>
     );
@@ -345,7 +546,7 @@ export default function SentPage() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: '120px 36px 30px',
+        padding: '96px 30px 28px',
         textAlign: 'center',
       }}
     >
@@ -374,7 +575,7 @@ export default function SentPage() {
         )}
       </div>
       {/* Wax Seal */}
-      <div style={{ marginBottom: 40, position: 'relative' }}>
+      <div style={{ marginBottom: 30, position: 'relative' }}>
         <WaxSeal size="lg" showHalo showCheck={stateB} />
       </div>
 
@@ -387,20 +588,53 @@ export default function SentPage() {
 
       {/* H1 */}
       <div style={{ marginBottom: 16 }}>
-        <FrauncesH1>{stateB ? `Over to ${witnessName}.` : 'Sealed.'}</FrauncesH1>
+        <FrauncesH1>{stateB ? `Waiting on ${witnessName}.` : 'Share the judge link.'}</FrauncesH1>
       </div>
 
       {/* Sub */}
-      <div style={{ marginBottom: 40, maxWidth: 300 }}>
+      <div style={{ marginBottom: 24, maxWidth: 310 }}>
         {stateB ? (
           <FrauncesSub>
-            They&apos;ve got <span style={{ color: 'var(--uv-gold-bright)', fontWeight: 500, fontStyle: 'italic' }}>24 hours</span> to accept.<br/>Heckle them until they do.
+            They need to tap the link and accept.<br/>Until then, the vow is waiting.
           </FrauncesSub>
         ) : (
           <FrauncesSub>
-            Now tell <span style={{ color: 'var(--uv-gold)', fontWeight: 500, fontStyle: 'italic' }}>{witnessName}</span>.<br/>They don&apos;t know yet.
+            Send this to the person who will judge it.<br/>The share sheet is the fastest path.
           </FrauncesSub>
         )}
+      </div>
+
+      <button
+        type="button"
+        onClick={copyJudgeLink}
+        aria-label="Judge link URL"
+        style={{
+          width: '100%',
+          maxWidth: 330,
+          border: '1px solid rgba(231, 198, 116, 0.26)',
+          borderRadius: 18,
+          background: 'rgba(231, 198, 116, 0.075)',
+          color: 'var(--uv-text-muted)',
+          fontFamily: 'var(--uv-font-sans)',
+          fontSize: 12.5,
+          lineHeight: 1.3,
+          padding: '13px 14px',
+          textAlign: 'center',
+          overflowWrap: 'anywhere',
+          cursor: 'copy',
+        }}
+      >
+        {witnessUrl}
+      </button>
+      <div style={{
+        minHeight: 18,
+        marginTop: 10,
+        color: shareFeedback.includes('failed') ? '#f0a58f' : 'var(--uv-text-dim)',
+        fontFamily: 'var(--uv-font-sans)',
+        fontSize: 12,
+        lineHeight: 1.3,
+      }}>
+        {shareFeedback || 'Private link ready.'}
       </div>
 
       {/* Spacer */}
@@ -408,19 +642,37 @@ export default function SentPage() {
 
       {/* CTA */}
       {stateB ? (
-        <OutlinedGoldCTA
-          label="See your vow →"
-          onPress={goToVow}
-        />
+        <>
+          <GoldCTA
+            label={shareSheetAvailable ? 'Share again →' : 'Copy link again →'}
+            onPress={shareSheetAvailable ? openShareSheet : copyJudgeLink}
+          />
+          <button
+            onClick={goToVow}
+            style={{
+              marginTop: 16,
+              background: 'none',
+              border: 'none',
+              color: 'var(--uv-text-muted)',
+              fontFamily: 'var(--uv-font-sans)',
+              fontSize: 12.5,
+              cursor: 'pointer',
+              padding: 0,
+              borderBottom: '1px dotted var(--uv-border-soft)',
+            }}
+          >
+            See vow live
+          </button>
+        </>
       ) : (
         <>
           <GoldCTA
-            label={`Tell ${witnessName} →`}
-            onPress={handleTellWitness}
+            label={shareSheetAvailable ? 'Open share sheet →' : `Text ${witnessName} →`}
+            onPress={shareSheetAvailable ? openShareSheet : handleTellWitness}
             variant="filled-imsg-green"
           />
           <button
-            onClick={handleShareFallback}
+            onClick={copyJudgeLink}
             style={{
               marginTop: 18,
               background: 'none',
@@ -439,7 +691,7 @@ export default function SentPage() {
               borderBottom: '1px dotted var(--uv-border-soft)',
               paddingBottom: 1,
             }}>
-              or share link here
+              Copy link instead
             </span>
           </button>
         </>

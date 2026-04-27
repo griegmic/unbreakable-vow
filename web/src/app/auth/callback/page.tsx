@@ -57,9 +57,12 @@ export default function AuthCallbackPage() {
           if (raw) {
             const parsed = JSON.parse(raw);
             if (parsed?.id && Date.now() - Number(parsed.ts || 0) < 5 * 60 * 1000) {
-              sessionStorage.removeItem('uv-post-seal-target');
-              localStorage.removeItem('uv-post-seal-target');
-              return `/vow/${parsed.id}?sealed=1`;
+              if (parsed.isSelfWitness) {
+                sessionStorage.removeItem('uv-post-seal-target');
+                localStorage.removeItem('uv-post-seal-target');
+                return `/vow/${parsed.id}?sealed=1`;
+              }
+              return '/sent';
             }
           }
         } catch {}

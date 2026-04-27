@@ -1,12 +1,13 @@
 'use client';
 
-import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AvatarMenuTrigger, ChoicePill } from '@/components/primitives';
 import { IfBrokenSheet } from '@/app/create/components/IfBrokenSheet';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
 import { inferDeadline } from '@/lib/vow-logic';
+import { supabase } from '@/lib/supabase';
 
 /**
  * Quick Vow
@@ -17,6 +18,15 @@ import { inferDeadline } from '@/lib/vow-logic';
 
 type DeadlineId = 'eow' | 'tomorrow' | '7days' | '30days' | 'custom';
 type JudgeMode = 'share' | 'self';
+type DraftVow = { id: string; witness_invite_token?: string | null; error?: string };
+type ContactPickerNavigator = Navigator & {
+  contacts?: {
+    select: (
+      properties: Array<'name' | 'tel'>,
+      options?: { multiple?: boolean },
+    ) => Promise<Array<{ name?: string[]; tel?: string[] }>>;
+  };
+};
 
 const STAKE_OPTIONS = [10, 50, 100];
 const DEFAULT_VOW = '';
@@ -89,6 +99,36 @@ function getStakeNote(amount: number): string {
   return 'Large enough to make the promise louder.';
 }
 
+function formatPhoneDisplay(value: string): string {
+  const cleaned = value.replace(/\D/g, '');
+  const digits = (cleaned.length === 11 && cleaned.startsWith('1') ? cleaned.slice(1) : cleaned).slice(0, 10);
+  if (digits.length <= 3) return digits;
+  if (digits.length <= 6) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+}
+
+function normalizeWitnessPhone(value: string): string {
+  const cleaned = value.replace(/\D/g, '');
+  const digits = (cleaned.length === 11 && cleaned.startsWith('1') ? cleaned.slice(1) : cleaned).slice(0, 10);
+  return digits.length === 10 ? `+1${digits}` : '';
+}
+
+async function getValidSession() {
+  try {
+    const { data: refreshed } = await supabase.auth.refreshSession();
+    if (refreshed?.session) return refreshed.session;
+  } catch {}
+  const { data } = await supabase.auth.getSession();
+  return data.session ?? null;
+}
+
+async function ensurePublicUser(userId: string, meta?: Record<string, unknown>, email?: string) {
+  await supabase.from('users').upsert(
+    { id: userId, display_name: (meta?.full_name as string) || email?.split('@')[0] || null },
+    { onConflict: 'id', ignoreDuplicates: true },
+  );
+}
+
 export default function QuickVowPage() {
   const router = useRouter();
   const { isAuthenticated, session, displayName } = useAuth();
@@ -98,6 +138,8 @@ export default function QuickVowPage() {
   const [selectedDeadline, setSelectedDeadline] = useState<DeadlineId>('eow');
   const [customDate, setCustomDate] = useState('');
   const [witnessName, setWitnessName] = useState('');
+  const [witnessPhone, setWitnessPhone] = useState('');
+  const [witnessChoiceMade, setWitnessChoiceMade] = useState(false);
   const [judgeMode, setJudgeMode] = useState<JudgeMode>('share');
   const [stakeAmount, setStakeAmount] = useState(50);
   const [customStake, setCustomStake] = useState('');
@@ -105,9 +147,17 @@ export default function QuickVowPage() {
   const [destinationKind, setDestinationKind] = useState<'charity' | 'anti'>('charity');
   const [expandedPill, setExpandedPill] = useState<'deadline' | 'witness' | 'stake' | null>(null);
   const [showIfBroken, setShowIfBroken] = useState(false);
+  const [contactNotice, setContactNotice] = useState('');
+  const [contactPickerAvailable, setContactPickerAvailable] = useState(false);
+  const [shareSheetAvailable, setShareSheetAvailable] = useState(false);
+  const [showJudgeManual, setShowJudgeManual] = useState(false);
+  const [judgeShareBusy, setJudgeShareBusy] = useState(false);
+  const [judgeShareReady, setJudgeShareReady] = useState(false);
 
   const vowInputRef = useRef<HTMLTextAreaElement>(null);
   const dateInputRef = useRef<HTMLInputElement>(null);
+  const draftCreatingRef = useRef(false);
+  const draftPromiseRef = useRef<Promise<DraftVow | null> | null>(null);
 
   const deadlineDate = useMemo(() => {
     if (selectedDeadline === 'custom' && customDate) {
@@ -125,6 +175,7 @@ export default function QuickVowPage() {
   const verdictLabel = formatVerdictLabel(effectiveDeadline, inferredDeadline ? 'custom' : selectedDeadline);
   const canContinue = vowText.trim().length >= 3;
   const userEmail = session?.user?.email ?? null;
+  const witnessPhoneDigits = witnessPhone.replace(/\D/g, '');
   const vowDensity = vowText.trim().length > 78
     ? 'long'
     : vowText.trim().length > 44
@@ -134,12 +185,18 @@ export default function QuickVowPage() {
     ? 'Judge it myself'
     : witnessName.trim()
       ? witnessName.trim()
-      : 'Share judge link';
+      : witnessChoiceMade
+        ? 'Share judge link'
+        : 'Share judge link';
   const witnessSubtitle = judgeMode === 'self'
     ? 'No witness, just your word.'
-    : witnessName.trim()
+    : witnessPhoneDigits.length >= 10
+      ? formatPhoneDisplay(witnessPhone)
+      : witnessName.trim()
       ? 'They get the judge link after sealing.'
-      : 'Send it after sealing.';
+      : witnessChoiceMade
+        ? 'Send it after sealing.'
+        : 'Sync contacts or send after sealing.';
   const witnessMark = judgeMode === 'self'
     ? '✓'
     : witnessName.trim()
@@ -163,6 +220,11 @@ export default function QuickVowPage() {
     el.scrollTop = 0;
   }, [vowText, vowDensity]);
 
+  useEffect(() => {
+    setContactPickerAvailable(Boolean((navigator as ContactPickerNavigator).contacts?.select));
+    setShareSheetAvailable(Boolean(navigator.share));
+  }, []);
+
   const handleSeal = () => {
     if (!canContinue) {
       vowInputRef.current?.focus();
@@ -170,6 +232,8 @@ export default function QuickVowPage() {
     }
 
     const trimmedVow = vowText.trim();
+    const existingVowId = vowFlow.vow.vowId;
+    const existingInviteToken = vowFlow.vow.witnessInviteToken;
     vowFlow.setRawInput(trimmedVow);
     vowFlow.setRefinedText(trimmedVow);
     vowFlow.setDeadline(effectiveDeadline.toISOString());
@@ -187,7 +251,7 @@ export default function QuickVowPage() {
     } else {
       vowFlow.setWitnessType('friend');
       vowFlow.setWitnessName(witnessName.trim() || 'Your witness');
-      vowFlow.setWitnessPhone('');
+      vowFlow.setWitnessPhone(normalizeWitnessPhone(witnessPhone));
     }
 
     vowFlow.setStake({
@@ -195,8 +259,86 @@ export default function QuickVowPage() {
       consequence: destinationKind,
       destination,
     });
+    if (existingVowId) vowFlow.setVowId(existingVowId, existingInviteToken);
 
     router.push('/seal?quick=1');
+  };
+
+  const saveVowFlow = () => {
+    const trimmedVow = vowText.trim();
+    const existingVowId = vowFlow.vow.vowId;
+    const existingInviteToken = vowFlow.vow.witnessInviteToken;
+    vowFlow.setRawInput(trimmedVow);
+    vowFlow.setRefinedText(trimmedVow);
+    vowFlow.setDeadline(effectiveDeadline.toISOString());
+    vowFlow.setWitnessType('friend');
+    vowFlow.setWitnessName(witnessName.trim() || 'Your judge');
+    vowFlow.setWitnessPhone(normalizeWitnessPhone(witnessPhone));
+    vowFlow.setStake({
+      amount: stakeAmount,
+      consequence: destinationKind,
+      destination,
+    });
+    if (existingVowId) vowFlow.setVowId(existingVowId, existingInviteToken);
+  };
+
+  const ensureQuickDraftVow = async (): Promise<DraftVow | null> => {
+    if (vowFlow.vow.vowId) {
+      const { data: existing, error } = await supabase.from('vows')
+        .update({
+          raw_input: vowText.trim(),
+          refined_text: vowText.trim(),
+          witness_name: witnessName.trim() || 'Your judge',
+          witness_phone: normalizeWitnessPhone(witnessPhone) || null,
+          stake_amount: stakeAmount * 100,
+          consequence: destinationKind,
+          destination,
+          ends_at: effectiveDeadline.toISOString(),
+        })
+        .eq('id', vowFlow.vow.vowId)
+        .eq('status', 'draft')
+        .select('id, witness_invite_token')
+        .maybeSingle();
+      if (existing) return existing;
+      if (error) return { id: '', error: error.message };
+    }
+
+    if (draftCreatingRef.current && draftPromiseRef.current) return draftPromiseRef.current;
+    draftCreatingRef.current = true;
+
+    const promise = (async (): Promise<DraftVow | null> => {
+      try {
+        const s = await getValidSession();
+        if (!s) return { id: '', error: '__needs_auth__' };
+
+        await ensurePublicUser(s.user.id, s.user.user_metadata, s.user.email ?? undefined);
+
+        const { data: newVow, error } = await supabase.from('vows').insert({
+          user_id: s.user.id,
+          raw_input: vowText.trim(),
+          refined_text: vowText.trim(),
+          witness_name: witnessName.trim() || 'Your judge',
+          witness_phone: normalizeWitnessPhone(witnessPhone) || null,
+          witness_invite_token: crypto.randomUUID(),
+          stake_amount: stakeAmount * 100,
+          consequence: destinationKind,
+          destination,
+          status: 'draft',
+          starts_at: new Date().toISOString(),
+          ends_at: effectiveDeadline.toISOString(),
+        }).select('id, witness_invite_token').single();
+
+        if (error) return { id: '', error: error.message };
+        vowFlow.setVowId(newVow.id, newVow.witness_invite_token);
+        return newVow;
+      } finally {
+        draftCreatingRef.current = false;
+        draftPromiseRef.current = null;
+      }
+    })();
+
+    draftPromiseRef.current = promise;
+    return promise;
   };
 
   const handleContinue = () => {
@@ -229,16 +371,105 @@ export default function QuickVowPage() {
     setExpandedPill(null);
   };
 
+  const pickContact = async () => {
+    setContactNotice('');
+    const contactApi = (navigator as ContactPickerNavigator).contacts;
+
+    if (!contactApi?.select) {
+      setContactNotice('Contacts are not available here. You can still share the judge link after sealing.');
+      return;
+    }
+
+    try {
+      const [contact] = await contactApi.select(['name', 'tel'], { multiple: false });
+      if (!contact) return;
+      setWitnessName(contact.name?.[0] || '');
+      setWitnessPhone(contact.tel?.[0] || '');
+      setJudgeMode('share');
+      setWitnessChoiceMade(true);
+      setShowJudgeManual(false);
+      setExpandedPill(null);
+    } catch {
+      setContactNotice('No contact selected.');
+    }
+  };
+
   const acceptWitnessChoice = () => {
+    if (!witnessName.trim() && witnessPhoneDigits.length > 0 && witnessPhoneDigits.length < 10) {
+      setContactNotice('Use a 10-digit phone number, or choose “Share judge link after sealing.”');
+      return;
+    }
     setJudgeMode('share');
+    setWitnessChoiceMade(true);
+    setContactNotice('');
+    setShowJudgeManual(false);
     setExpandedPill(null);
+  };
+
+  const shareJudgeLinkNow = async () => {
+    if (!canContinue) {
+      setExpandedPill(null);
+      vowInputRef.current?.focus();
+      return;
+    }
+
+    setJudgeShareBusy(true);
+    setContactNotice('');
+    saveVowFlow();
+    setJudgeMode('share');
+    setWitnessChoiceMade(true);
+
+    try {
+      const draft = await ensureQuickDraftVow();
+      if (!draft?.id || draft.error) {
+        if (draft?.error === '__needs_auth__') {
+          try { localStorage.setItem('uv-share-witness-after-auth', '1'); } catch {}
+          setContactNotice('We will open the judge link after sign-in.');
+          setJudgeShareReady(true);
+          return;
+        }
+        setContactNotice('Could not create the judge link yet. You can still share it after sealing.');
+        return;
+      }
+
+      const token = draft.witness_invite_token || vowFlow.vow.witnessInviteToken;
+      if (!token) {
+        setContactNotice('Could not create the judge link yet. You can still share it after sealing.');
+        return;
+      }
+
+      const witnessUrl = `${window.location.origin}/w/${token}`;
+      const shareText = stakeAmount > 0
+        ? `I just made a vow and put $${stakeAmount} on it. Judge me here: ${witnessUrl}`
+        : `I just made a vow. Judge me here: ${witnessUrl}`;
+
+      if (navigator.share) {
+        try {
+          await navigator.share({ text: shareText, url: witnessUrl });
+          setContactNotice('Judge link opened.');
+        } catch {
+          setContactNotice('No problem. The judge link is ready after sealing.');
+        }
+      } else {
+        await navigator.clipboard.writeText(shareText);
+        setContactNotice('Judge link copied.');
+      }
+
+      setJudgeShareReady(true);
+      setExpandedPill(null);
+    } catch {
+      setContactNotice('Could not share from this browser. The judge link will be ready after sealing.');
+    } finally {
+      setJudgeShareBusy(false);
+    }
   };
 
   return (
     <>
       <style>{`
         .qv-page {
-          min-height: 100dvh;
+          height: 100dvh;
+          overflow: hidden;
           padding: max(10px, env(safe-area-inset-top, 0px)) 10px max(10px, env(safe-area-inset-bottom, 0px));
           background:
             linear-gradient(180deg, #26221c 0%, #1a1713 38%, #0f0e0c 100%);
@@ -248,7 +479,7 @@ export default function QuickVowPage() {
         .qv-shell {
           width: 100%;
           max-width: 393px;
-          min-height: calc(100dvh - 20px);
+          height: calc(100dvh - 20px);
           margin: 0 auto;
           display: flex;
           flex-direction: column;
@@ -383,7 +614,7 @@ export default function QuickVowPage() {
           font-family: var(--uv-font-sans);
           font-size: 50px;
           line-height: 1.08;
-          font-weight: 680;
+          font-weight: 520;
           letter-spacing: 0;
           padding: 36px 0 24px;
         }
@@ -392,6 +623,7 @@ export default function QuickVowPage() {
           min-height: 112px;
           font-size: 40px;
           line-height: 1.08;
+          font-weight: 510;
           padding-top: 24px;
         }
 
@@ -399,13 +631,15 @@ export default function QuickVowPage() {
           min-height: 148px;
           font-size: 31px;
           line-height: 1.12;
+          font-weight: 500;
           padding-top: 18px;
           padding-bottom: 18px;
         }
 
         .qv-vow-input::placeholder {
-          color: rgba(240, 232, 216, 0.43);
+          color: rgba(240, 232, 216, 0.34);
           opacity: 1;
+          font-weight: 500;
         }
 
         .qv-rule {
@@ -747,7 +981,7 @@ export default function QuickVowPage() {
           .qv-shell {
             padding: 18px 20px 16px;
             border-radius: 28px;
-            min-height: calc(100dvh - 16px);
+            height: calc(100dvh - 16px);
           }
 
           .qv-topbar { margin-bottom: 18px; }
@@ -829,7 +1063,7 @@ export default function QuickVowPage() {
                 if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') handleContinue();
               }}
               rows={2}
-              placeholder="Write your vow"
+              placeholder="skip takeout all week"
             />
             <div className="qv-rule" />
             <button
@@ -1005,46 +1239,89 @@ export default function QuickVowPage() {
               </>
             ) : (
               <>
-                <h2 className="qv-sheet-title">Who judges?</h2>
-                <p className="qv-sheet-copy">Fast path: seal first, then share the judge link. Add a name only if you already know.</p>
-                <input
-                  className="qv-sheet-input"
-                  type="text"
-                  value={witnessName}
-                  onChange={(e) => {
-                    setWitnessName(e.target.value);
-                    setJudgeMode('share');
-                  }}
-                  placeholder="Optional: first name"
-                />
+                <h2 className="qv-sheet-title">Share judge link.</h2>
+                <p className="qv-sheet-copy">
+                  {contactPickerAvailable
+                    ? 'Use your share sheet now, or pick from contacts if you want the app to address it for you.'
+                    : 'Open the share sheet or copy the private judge link. No phone number needed.'}
+                </p>
                 <button
                   type="button"
                   className="qv-sheet-action"
                   data-primary="true"
-                  onClick={acceptWitnessChoice}
+                  disabled={judgeShareBusy}
+                  onClick={shareJudgeLinkNow}
                 >
-                  Done
+                  {judgeShareBusy
+                    ? 'Making judge link...'
+                    : judgeShareReady
+                      ? 'Share again'
+                      : shareSheetAvailable
+                        ? 'Open share sheet'
+                        : 'Copy judge link'}
                 </button>
-                <button
-                  type="button"
-                  className="qv-sheet-action"
-                  data-active={judgeMode === 'share' && !witnessName.trim()}
-                  onClick={() => {
-                    setWitnessName('');
-                    setJudgeMode('share');
-                    setExpandedPill(null);
-                  }}
-                >
-                  Share judge link after sealing
-                  <span className="qv-sheet-hint">No witness details needed right now.</span>
-                </button>
+                {contactNotice && <p className="qv-sheet-notice">{contactNotice}</p>}
+                {contactPickerAvailable && (
+                  <button
+                    type="button"
+                    className="qv-sheet-action"
+                    onClick={pickContact}
+                  >
+                    Choose from contacts
+                    <span className="qv-sheet-hint">Optional. The share sheet is usually faster.</span>
+                  </button>
+                )}
+                {showJudgeManual ? (
+                  <>
+                    <input
+                      className="qv-sheet-input"
+                      type="text"
+                      value={witnessName}
+                      onChange={(e) => {
+                        setWitnessName(e.target.value);
+                        setJudgeMode('share');
+                      }}
+                      placeholder="Judge name"
+                    />
+                    <input
+                      className="qv-sheet-input"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
+                      value={formatPhoneDisplay(witnessPhone)}
+                      onChange={(e) => {
+                        setWitnessPhone(e.target.value.replace(/\D/g, '').slice(0, 10));
+                        setJudgeMode('share');
+                      }}
+                      placeholder="Phone number"
+                    />
+                    <button
+                      type="button"
+                      className="qv-sheet-action"
+                      onClick={acceptWitnessChoice}
+                    >
+                      Use this judge
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    type="button"
+                    className="qv-sheet-action"
+                    onClick={() => setShowJudgeManual(true)}
+                  >
+                    Add phone manually
+                    <span className="qv-sheet-hint">Only if you really want the SMS pre-addressed.</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   className="qv-sheet-action"
                   data-active={judgeMode === 'self'}
                   onClick={() => {
                     setWitnessName('');
+                    setWitnessPhone('');
                     setJudgeMode('self');
+                    setWitnessChoiceMade(true);
                     setExpandedPill(null);
                   }}
                 >

@@ -211,9 +211,9 @@ export default function WitnessPage() {
           <p style={{
             margin: 0,
             fontFamily: 'var(--uv-font-sans)',
-            fontSize: 13,
+            fontSize: 15,
             lineHeight: 1.45,
-            color: 'var(--uv-text-dim)',
+            color: 'var(--uv-text-muted)',
           }}>
             They get the invite now and the verdict link when your deadline hits.
           </p>
@@ -247,15 +247,15 @@ export default function WitnessPage() {
           </div>
           <div style={{ flex: 1 }}>
             <span style={{
-              fontFamily: 'var(--uv-font-sans)', fontSize: 17, fontWeight: 700,
+              fontFamily: 'var(--uv-font-sans)', fontSize: 18, fontWeight: 750,
               color: primaryTitleColor, display: 'block',
               letterSpacing: '0',
             }}>
               {primaryTitle}
             </span>
             <span style={{
-              fontFamily: 'var(--uv-font-sans)', fontSize: 13, marginTop: 2,
-              display: 'block', lineHeight: '18px', color: 'var(--uv-text-muted)',
+              fontFamily: 'var(--uv-font-sans)', fontSize: 15, marginTop: 3,
+              display: 'block', lineHeight: '21px', color: 'var(--uv-text-muted)',
             }}>
               {primarySub}
             </span>
@@ -277,7 +277,7 @@ export default function WitnessPage() {
             }}
           >
             <span style={{
-              fontFamily: 'var(--uv-font-sans)', fontSize: 13,
+              fontFamily: 'var(--uv-font-sans)', fontSize: 15,
               color: 'var(--uv-text-muted)',
             }}>
               No witness — just my word

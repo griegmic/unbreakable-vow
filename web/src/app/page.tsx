@@ -65,11 +65,11 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
 
   const lineBase: React.CSSProperties = {
     fontFamily: 'var(--uv-font-serif)',
-    fontSize: 31,
-    fontWeight: 400,
+    fontSize: 'clamp(31px, 6vw, 46px)',
+    fontWeight: 500,
     color: 'var(--uv-gold)',
     textAlign: 'center',
-    lineHeight: 1.35,
+    lineHeight: 1.28,
     margin: 0,
     transition: reducedMotion ? 'none' : 'opacity 400ms ease-out',
   };
@@ -100,7 +100,8 @@ function CeremonyOverlay({ onComplete }: { onComplete: () => void }) {
         <p style={{
           ...lineBase,
           fontStyle: 'italic',
-          fontSize: 24,
+          fontSize: 'clamp(24px, 4vw, 32px)',
+          fontWeight: 500,
           color: 'var(--uv-text-muted)',
           opacity: line3Visible ? 1 : 0,
         }}>
@@ -223,9 +224,13 @@ export default function HomePage() {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (parsed?.id && Date.now() - Number(parsed.ts || 0) < 5 * 60 * 1000) {
-          sessionStorage.removeItem('uv-post-seal-target');
-          localStorage.removeItem('uv-post-seal-target');
-          router.replace(`/vow/${parsed.id}?sealed=1`);
+          if (parsed.isSelfWitness) {
+            sessionStorage.removeItem('uv-post-seal-target');
+            localStorage.removeItem('uv-post-seal-target');
+            router.replace(`/vow/${parsed.id}?sealed=1`);
+          } else {
+            router.replace('/sent');
+          }
           return;
         }
       }
