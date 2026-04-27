@@ -1,0 +1,1557 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Full Witness Flow Mocks</title>
+  <style>
+    :root {
+      --bg: #0f0d0a;
+      --card: #181512;
+      --elev: #1f1b16;
+      --input: #1a1612;
+      --line: rgba(240,233,219,.1);
+      --line-strong: #322d24;
+      --gold: #c89b3c;
+      --gold2: #e8b656;
+      --gold3: #8b6820;
+      --text: #f0e9db;
+      --muted: #a49a85;
+      --dim: #726a5a;
+      --green: #34c759;
+      --success: #52d69a;
+      --danger: #f87171;
+      --ink: #15100a;
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--text);
+      background:
+        radial-gradient(900px 520px at 50% -12%, rgba(200,155,60,.14), transparent 62%),
+        var(--bg);
+    }
+
+    .page {
+      width: min(1700px, 100%);
+      margin: 0 auto;
+      padding: 34px 20px 58px;
+    }
+
+    .intro {
+      max-width: 780px;
+      margin: 0 auto 34px;
+      text-align: center;
+    }
+
+    .intro h1 {
+      margin: 0 0 8px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 34px;
+      font-weight: 500;
+    }
+
+    .intro p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(320px, 1fr));
+      gap: 24px;
+      align-items: start;
+    }
+
+    .section-break {
+      max-width: 780px;
+      margin: 56px auto 30px;
+      text-align: center;
+    }
+
+    .section-break h2 {
+      margin: 0 0 8px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 32px;
+      line-height: 1.08;
+      font-weight: 500;
+    }
+
+    .section-break p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .step {
+      display: grid;
+      gap: 12px;
+      justify-items: center;
+    }
+
+    .step-title {
+      width: 393px;
+      max-width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+    }
+
+    .step-title span:last-child {
+      color: var(--dim);
+      font-weight: 650;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .phone {
+      width: 393px;
+      min-height: 852px;
+      border-radius: 42px;
+      overflow: hidden;
+      position: relative;
+      border: 1px solid rgba(240,233,219,.08);
+      background:
+        radial-gradient(480px 340px at 50% -8%, rgba(200,155,60,.14), transparent 62%),
+        radial-gradient(520px 400px at 50% 108%, rgba(52,199,89,.06), transparent 68%),
+        var(--bg);
+      box-shadow: 0 28px 80px rgba(0,0,0,.48), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+
+    .screen {
+      min-height: 852px;
+      padding: 26px 22px 24px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 26px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      color: var(--muted);
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .brand em { color: var(--gold); }
+
+    .mark {
+      width: 22px;
+      height: 22px;
+      border-radius: 7px;
+      display: grid;
+      place-items: center;
+      color: var(--ink);
+      background: linear-gradient(135deg, var(--gold2), var(--gold));
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 10px;
+      font-weight: 700;
+    }
+
+    .top a {
+      color: var(--gold2);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    .pill {
+      width: fit-content;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      border: 1px solid rgba(200,155,60,.32);
+      color: var(--gold2);
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .pill.green {
+      border-color: rgba(82,214,154,.22);
+      color: var(--success);
+      background: rgba(82,214,154,.07);
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 42px;
+      line-height: .98;
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+
+    h2.center { text-align: center; }
+    h2.small { font-size: 35px; line-height: 1.02; }
+    h2 .gold { color: var(--gold2); }
+    h2 .green { color: var(--success); }
+    h2 .red { color: var(--danger); }
+
+    .sub {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: 16.5px;
+      line-height: 1.4;
+      font-weight: 550;
+    }
+
+    .sub.center {
+      text-align: center;
+      max-width: 312px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .card {
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(240,233,219,.055), rgba(240,233,219,.025));
+      border-radius: 18px;
+      padding: 18px;
+      margin-bottom: 12px;
+    }
+
+    .card.hot {
+      border-color: rgba(200,155,60,.36);
+      background: linear-gradient(180deg, rgba(200,155,60,.12), rgba(240,233,219,.025));
+    }
+
+    .compact-card {
+      padding: 15px;
+      border-radius: 16px;
+    }
+
+    .compact-card .vow {
+      font-size: 23px;
+      margin-bottom: 12px;
+    }
+
+    .mini-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding-top: 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .meta-chip {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(240,233,219,.035);
+      color: var(--muted);
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .meta-chip.gold {
+      color: var(--gold2);
+      border-color: rgba(200,155,60,.36);
+      background: rgba(200,155,60,.1);
+    }
+
+    .one-job {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 14px;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(240,233,219,.035);
+    }
+
+    .one-job b {
+      display: block;
+      color: var(--text);
+      font-size: 14.5px;
+      line-height: 1.2;
+      margin-bottom: 3px;
+    }
+
+    .one-job span {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.25;
+    }
+
+    .one-job-mark {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      flex: 0 0 auto;
+      color: var(--ink);
+      background: linear-gradient(180deg, var(--gold2), var(--gold));
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .maker-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      width: fit-content;
+      margin-bottom: 16px;
+      color: var(--success);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+    }
+
+    .maker-status.warn { color: var(--gold2); }
+    .maker-status.danger { color: var(--danger); }
+
+    .maker-status::before {
+      content: "";
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .big-time {
+      margin: 0 0 10px;
+      color: var(--gold2);
+      font-size: 44px;
+      line-height: 1;
+      font-weight: 820;
+      letter-spacing: 0;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .maker-note {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 14.5px;
+      line-height: 1.4;
+    }
+
+    .label {
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: .22em;
+      font-size: 10px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+
+    .vow {
+      margin: 0 0 16px;
+      font-size: 26px;
+      line-height: 1.08;
+      font-weight: 820;
+      letter-spacing: 0;
+    }
+
+    .quote {
+      margin: 0 0 16px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 23px;
+      line-height: 1.28;
+      font-style: italic;
+      color: var(--text);
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .tile {
+      min-height: 82px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(240,233,219,.028);
+    }
+
+    .tile.gold {
+      border-color: rgba(200,155,60,.36);
+      background: rgba(200,155,60,.1);
+    }
+
+    .tile.danger {
+      border-color: rgba(248,113,113,.28);
+      background: rgba(248,113,113,.08);
+    }
+
+    .tile strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .tile.gold strong { color: var(--gold2); }
+    .tile.danger strong { color: var(--danger); }
+
+    .tile span {
+      color: var(--muted);
+      font-size: 12.5px;
+      line-height: 1.25;
+    }
+
+    .receipt {
+      display: grid;
+      gap: 9px;
+      margin-bottom: 14px;
+    }
+
+    .receipt-row {
+      display: grid;
+      grid-template-columns: 30px 1fr;
+      gap: 12px;
+      align-items: start;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .receipt-row:last-child { border-bottom: 0; }
+
+    .num {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      background: rgba(240,233,219,.08);
+      font-weight: 850;
+      font-size: 13px;
+    }
+
+    .receipt-row:first-child .num {
+      color: var(--ink);
+      background: var(--gold);
+    }
+
+    .receipt-row b {
+      display: block;
+      margin-bottom: 3px;
+      color: var(--text);
+      font-size: 15.5px;
+      line-height: 1.15;
+    }
+
+    .receipt-row span {
+      color: var(--muted);
+      font-size: 13.5px;
+      line-height: 1.34;
+    }
+
+    .input {
+      width: 100%;
+      height: 54px;
+      margin-bottom: 10px;
+      padding: 0 16px;
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+      color: var(--text);
+      background: var(--input);
+      font-size: 16px;
+      outline: none;
+    }
+
+    .input::placeholder { color: rgba(164,154,133,.55); }
+
+    .caption {
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.35;
+      text-align: center;
+    }
+
+    .spacer {
+      flex: 1;
+      min-height: 18px;
+    }
+
+    .cta {
+      width: 100%;
+      min-height: 58px;
+      border: 0;
+      border-radius: 999px;
+      color: var(--ink);
+      background: linear-gradient(180deg, var(--gold2), var(--gold) 60%, var(--gold3));
+      font-size: 17px;
+      font-weight: 850;
+      cursor: pointer;
+      box-shadow: 0 18px 46px rgba(200,155,60,.22), inset 0 1px 0 rgba(255,255,255,.28);
+    }
+
+    .cta.green {
+      color: #071109;
+      background: linear-gradient(180deg, #56e07f, var(--green));
+      box-shadow: 0 18px 44px rgba(52,199,89,.18), inset 0 1px 0 rgba(255,255,255,.3);
+    }
+
+    .cta.red {
+      color: #1a0909;
+      background: linear-gradient(180deg, #ff9d9d, var(--danger) 58%, #b93e3e);
+      box-shadow: 0 18px 44px rgba(248,113,113,.18), inset 0 1px 0 rgba(255,255,255,.28);
+    }
+
+    .secondary {
+      width: 100%;
+      min-height: 46px;
+      margin-top: 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: transparent;
+      font-size: 14px;
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    .mini-links {
+      display: flex;
+      justify-content: center;
+      gap: 18px;
+      margin-top: 13px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .center-stack {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .check {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 16px;
+      color: var(--ink);
+      background: radial-gradient(circle at 30% 22%, #f2c766 0%, var(--gold2) 32%, var(--gold) 66%, var(--gold3) 100%);
+      font-size: 32px;
+      font-weight: 900;
+      box-shadow: 0 0 0 8px rgba(200,155,60,.07), 0 20px 48px rgba(200,155,60,.24);
+    }
+
+    .status-icon {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 16px;
+      font-size: 31px;
+      font-weight: 900;
+      background: rgba(240,233,219,.055);
+      border: 1px solid var(--line);
+    }
+
+    .status-icon.green { color: var(--success); background: rgba(82,214,154,.08); border-color: rgba(82,214,154,.18); }
+    .status-icon.red { color: var(--danger); background: rgba(248,113,113,.08); border-color: rgba(248,113,113,.2); }
+
+    .outcome-art {
+      width: 94px;
+      height: 94px;
+      display: grid;
+      place-items: center;
+      margin: 0 auto 16px;
+      position: relative;
+      color: var(--ink);
+      font-size: 40px;
+      font-weight: 950;
+      line-height: 1;
+    }
+
+    .outcome-art.trophy {
+      border-radius: 30px 30px 42px 42px;
+      background: radial-gradient(circle at 32% 20%, #ffe3a1 0%, var(--gold2) 34%, var(--gold) 68%, var(--gold3) 100%);
+      box-shadow: 0 0 0 10px rgba(200,155,60,.07), 0 24px 54px rgba(200,155,60,.26);
+    }
+
+    .outcome-art.trophy::before,
+    .outcome-art.trophy::after {
+      content: "";
+      position: absolute;
+      top: 18px;
+      width: 20px;
+      height: 30px;
+      border: 4px solid rgba(232,182,86,.72);
+      border-radius: 999px;
+    }
+
+    .outcome-art.trophy::before { left: -13px; border-right: 0; }
+    .outcome-art.trophy::after { right: -13px; border-left: 0; }
+
+    .outcome-art.shield {
+      clip-path: polygon(50% 0, 90% 13%, 84% 62%, 50% 100%, 16% 62%, 10% 13%);
+      background: linear-gradient(180deg, #f0c46b, var(--gold) 50%, #70511a);
+      box-shadow: 0 24px 52px rgba(200,155,60,.2);
+    }
+
+    .outcome-art.broken {
+      border-radius: 50%;
+      color: var(--danger);
+      background: rgba(248,113,113,.08);
+      border: 1px solid rgba(248,113,113,.22);
+      box-shadow: 0 0 0 10px rgba(248,113,113,.04), 0 24px 52px rgba(0,0,0,.22);
+    }
+
+    .outcome-art.brutal {
+      clip-path: polygon(50% 0, 90% 13%, 84% 62%, 50% 100%, 16% 62%, 10% 13%);
+      color: #ffd0d0;
+      background: linear-gradient(180deg, #7c2222, #2a1210 70%);
+      box-shadow: 0 0 0 9px rgba(248,113,113,.055), 0 24px 54px rgba(248,113,113,.16);
+    }
+
+    .outcome-art.brutal::after {
+      content: "";
+      position: absolute;
+      inset: 16px 43px;
+      transform: rotate(24deg);
+      background: rgba(255,255,255,.38);
+      border-radius: 999px;
+    }
+
+    .stamp {
+      margin-bottom: 12px;
+      color: var(--dim);
+      font-size: 9.5px;
+      font-weight: 700;
+      letter-spacing: .28em;
+      text-transform: uppercase;
+    }
+
+    .meter {
+      height: 7px;
+      border-radius: 999px;
+      overflow: hidden;
+      background: rgba(240,233,219,.07);
+      margin-top: 12px;
+    }
+
+    .meter div {
+      width: 24%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), var(--gold2));
+    }
+
+    .verdict-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 4px;
+    }
+
+    .verdict {
+      min-height: 122px;
+      border-radius: 18px;
+      border: 1.5px solid var(--line);
+      background: var(--card);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      cursor: pointer;
+    }
+
+    .verdict strong {
+      display: block;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 7px;
+    }
+
+    .verdict span {
+      display: block;
+      color: var(--dim);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+    }
+
+    .verdict.kept { border-color: var(--success); }
+    .verdict.kept strong { color: var(--success); }
+    .verdict.broken { border-color: var(--danger); }
+    .verdict.broken strong { color: var(--danger); }
+
+    .toast {
+      margin-top: auto;
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      background: var(--elev);
+      padding: 15px;
+      box-shadow: 0 16px 48px rgba(0,0,0,.24);
+    }
+
+    .toast-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+
+    .toast b {
+      color: var(--text);
+      font-size: 14px;
+    }
+
+    .undo {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 8px 12px;
+      color: var(--muted);
+      background: var(--card);
+      font-weight: 800;
+    }
+
+    .progress {
+      height: 4px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(240,233,219,.07);
+    }
+
+    .progress div {
+      width: 58%;
+      height: 100%;
+      border-radius: inherit;
+      background: var(--success);
+    }
+
+    @media (max-width: 1500px) {
+      .flow { grid-template-columns: repeat(3, minmax(320px, 1fr)); }
+    }
+
+    @media (max-width: 1120px) {
+      .flow { grid-template-columns: 1fr; }
+      .step-title, .phone { width: 393px; }
+    }
+
+    @media (max-width: 440px) {
+      .page { padding: 22px 12px 36px; }
+      .step-title, .phone { width: 100%; }
+      .phone { border-radius: 28px; }
+      h2 { font-size: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header class="intro">
+      <h1>Full Witness Flow</h1>
+      <p>Core path from cold link to accepted witness to verdict. This uses the new headline direction and removes the visible pass button from the first accept screen.</p>
+    </header>
+
+    <section class="flow">
+      <article class="step">
+        <div class="step-title"><strong>01. Invite</strong><span>cold witness link</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+            </div>
+            <div class="pill">Witness invite</div>
+            <h2>Nick made a vow.<br><span class="gold">He needs you.</span></h2>
+            <p class="sub">He put cash on a promise. Your job is tiny but powerful: keep him honest, then call it kept or broken.</p>
+
+            <section class="card hot compact-card">
+              <div class="label">The vow</div>
+              <p class="vow">No alcohol for 2 weeks.</p>
+              <div class="mini-meta">
+                <span class="meta-chip gold">$50 on the line</span>
+                <span class="meta-chip">ALS if broken</span>
+                <span class="meta-chip">You call it Sunday</span>
+              </div>
+            </section>
+
+            <section class="one-job">
+              <div>
+                <b>Your job</b>
+                <span>Accept, keep Nick accountable, and we text you Sunday to call it.</span>
+              </div>
+              <div class="one-job-mark">✓</div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta">I'm in - hold Nick to it</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>02A. Reminder</strong><span>we already know name</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <span></span>
+            </div>
+            <div class="pill green">You're on it</div>
+            <h2 class="center small">Where should we text you?</h2>
+            <p class="sub center">We will send the verdict link Sunday. That is the whole thing.</p>
+
+            <section class="card" style="width:100%; text-align:left">
+              <div class="label">You accepted</div>
+              <p class="quote">"No alcohol for 2 weeks."</p>
+              <div class="grid2">
+                <div class="tile gold">
+                  <div class="label">On the line</div>
+                  <strong>$50</strong>
+                  <span>ALS if broken</span>
+                </div>
+                <div class="tile">
+                  <div class="label">Verdict</div>
+                  <strong>Sun</strong>
+                  <span>we text you</span>
+                </div>
+              </div>
+            </section>
+
+            <input class="input" value="" placeholder="Phone number" />
+            <p class="caption">No account. No app install. Just the verdict link.</p>
+
+            <div class="spacer"></div>
+            <button class="cta">Text me Sunday</button>
+            <button class="secondary">Not now</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>02B. Reminder</strong><span>we need name too</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <span></span>
+            </div>
+            <div class="pill green">You're on it</div>
+            <h2 class="center small">Where should we text you?</h2>
+            <p class="sub center">We will send the verdict link Sunday. Add the name Nick will recognize.</p>
+
+            <section class="card" style="width:100%; text-align:left">
+              <div class="label">You accepted</div>
+              <p class="quote">"No alcohol for 2 weeks."</p>
+              <div class="mini-meta">
+                <span class="meta-chip gold">$50 on the line</span>
+                <span class="meta-chip">Sunday verdict</span>
+              </div>
+            </section>
+
+            <input class="input" value="" placeholder="Phone number" />
+            <input class="input" value="" placeholder="Your name" />
+            <p class="caption">No account. We only need this so Nick knows who accepted.</p>
+
+            <div class="spacer"></div>
+            <button class="cta">Text me Sunday</button>
+            <button class="secondary">Not now</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>03. Accepted</strong><span>resting state</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Make a vow</a>
+            </div>
+
+            <div class="check">✓</div>
+            <div class="stamp">You're in</div>
+            <h2 class="center small">Nick knows<br><span class="gold">you are watching.</span></h2>
+            <p class="sub center"><strong style="color:var(--text)">That is it for now.</strong> We will text you Sunday. In the meantime, tasteful pestering is encouraged.</p>
+
+            <section class="card" style="width:100%; text-align:left">
+              <div class="label">You're watching</div>
+              <p class="vow">No alcohol for 2 weeks.</p>
+              <div class="grid2">
+                <div class="tile gold">
+                  <div class="label">On the line</div>
+                  <strong>$50</strong>
+                  <span>ALS if broken</span>
+                </div>
+                <div class="tile">
+                  <div class="label">Next</div>
+                  <strong>Sun</strong>
+                  <span>verdict link</span>
+                </div>
+              </div>
+              <div class="meter"><div></div></div>
+            </section>
+
+            <section class="receipt" style="width:100%">
+              <div class="receipt-row"><div class="num">1</div><div><b>Now</b><span>Nick knows.</span></div></div>
+              <div class="receipt-row"><div class="num">2</div><div><b>Sunday</b><span>You call it.</span></div></div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta green">Pester Nick responsibly</button>
+            <button class="secondary">Make your own vow</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>04. Mid Vow</strong><span>revisit or nudge</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Make a vow</a>
+            </div>
+            <div class="pill green">Watching</div>
+            <h2>Nick is still<br><span class="gold">on the hook.</span></h2>
+            <p class="sub">Verdict day is Sunday. If he gets slippery, one text is enough.</p>
+
+            <section class="card hot">
+              <div class="label">The vow</div>
+              <p class="vow">No alcohol for 2 weeks.</p>
+              <div class="grid2">
+                <div class="tile gold">
+                  <div class="label">On the line</div>
+                  <strong>$50</strong>
+                  <span>ALS if broken</span>
+                </div>
+                <div class="tile">
+                  <div class="label">Progress</div>
+                  <strong>Day 5</strong>
+                  <span>9 days left</span>
+                </div>
+              </div>
+              <div class="meter"><div style="width:36%"></div></div>
+            </section>
+
+            <section class="card">
+              <div class="label">Suggested text</div>
+              <p class="quote">"Still keeping the vow? I'm paying attention."</p>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta green">Check in on Nick</button>
+            <button class="secondary">Make your own vow</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>04B. Early Release</strong><span>maker says it is done</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Back to vow</a>
+            </div>
+            <div class="pill">Release request</div>
+            <h2>Nick says<br><span class="gold">he did it.</span></h2>
+            <p class="sub">If you are sure, release him early. His money comes back and the vow closes.</p>
+
+            <section class="card hot compact-card">
+              <div class="label">The vow</div>
+              <p class="vow">Run 10 miles by Sunday.</p>
+              <div class="mini-meta">
+                <span class="meta-chip gold">$50 on the line</span>
+                <span class="meta-chip">Due Sunday</span>
+                <span class="meta-chip">Requested Thursday</span>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="label">Before you release</div>
+              <p class="quote">"Did he actually finish the 10 miles?"</p>
+              <p class="caption" style="text-align:left">Check with Nick if you need to. Early release is final.</p>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta green">Yes, release Nick</button>
+            <button class="secondary">Not yet - keep vow open</button>
+            <p class="caption" style="margin-top:12px">Need proof? Open Messages with Nick.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>05. Verdict</strong><span>decision moment</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Back to vow</a>
+            </div>
+            <div class="stamp">Verdict day</div>
+            <h2 class="center small">Nick's vow<br>is <span class="gold">up.</span></h2>
+
+            <section class="card hot">
+              <div class="label">The vow</div>
+              <p class="quote">"No alcohol for 2 weeks."</p>
+              <div class="grid2">
+                <div class="tile gold">
+                  <div class="label">On the line</div>
+                  <strong>$50</strong>
+                  <span>ALS if broken</span>
+                </div>
+                <div class="tile">
+                  <div class="label">Ended</div>
+                  <strong>Today</strong>
+                  <span>9:00 PM</span>
+                </div>
+              </div>
+            </section>
+
+            <div class="stamp">Your call</div>
+            <h2 class="center small">Did Nick keep<br><span class="gold">his word?</span></h2>
+
+            <div class="verdict-buttons">
+              <button class="verdict kept"><span><strong>Yes</strong><span>Kept it</span></span></button>
+              <button class="verdict broken"><span><strong>No</strong><span>Broke it</span></span></button>
+            </div>
+
+            <div class="spacer"></div>
+            <p class="caption">Need to check? Open Messages with Nick.</p>
+            <p class="caption" style="font-family:Georgia,serif;font-style:italic;color:var(--dim)">Be honest. He is counting on it.</p>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>06. Undo</strong><span>mis-tap protection</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Back to vow</a>
+            </div>
+            <div class="stamp">Verdict day</div>
+            <h2 class="center small">Nick's vow<br>is <span class="gold">up.</span></h2>
+
+            <section class="card hot">
+              <div class="label">The vow</div>
+              <p class="quote">"No alcohol for 2 weeks."</p>
+              <div class="grid2">
+                <div class="tile gold">
+                  <div class="label">On the line</div>
+                  <strong>$50</strong>
+                  <span>ALS if broken</span>
+                </div>
+                <div class="tile">
+                  <div class="label">Ended</div>
+                  <strong>Today</strong>
+                  <span>9:00 PM</span>
+                </div>
+              </div>
+            </section>
+
+            <div class="stamp">Your call</div>
+            <h2 class="center small">Did Nick keep<br><span class="gold">his word?</span></h2>
+            <div class="verdict-buttons">
+              <button class="verdict kept"><span><strong>Yes</strong><span>Kept it</span></span></button>
+              <button class="verdict broken" style="box-shadow:0 0 0 3px rgba(248,113,113,.09)"><span><strong>No</strong><span>Broke it</span></span></button>
+            </div>
+
+            <div class="toast">
+              <div class="toast-top">
+                <b>Your verdict: <span style="color:var(--danger)">Broken</span></b>
+                <button class="undo">Undo</button>
+              </div>
+              <div class="progress"><div style="width:42%;background:var(--danger)"></div></div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>07A. Kept</strong><span>confirmation</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Make a vow</a>
+            </div>
+            <div class="status-icon green">✓</div>
+            <div class="stamp">Verdict submitted</div>
+            <h2 class="center small">You called it<br><span class="green">kept.</span></h2>
+            <p class="sub center">Nick just got the news. His $50 comes back.</p>
+
+            <section class="card" style="width:100%; text-align:left">
+              <div class="label">The record</div>
+              <p class="quote">"No alcohol for 2 weeks."</p>
+              <div class="grid2">
+                <div class="tile">
+                  <div class="label">Outcome</div>
+                  <strong style="color:var(--success)">Kept</strong>
+                  <span>word honored</span>
+                </div>
+                <div class="tile gold">
+                  <div class="label">Stake</div>
+                  <strong>$50</strong>
+                  <span>returned</span>
+                </div>
+              </div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta">Challenge Nick to do it again</button>
+            <button class="secondary">Make your own vow</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>07B. Broken</strong><span>confirmation</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Make a vow</a>
+            </div>
+            <div class="status-icon red">$</div>
+            <div class="stamp">Verdict submitted</div>
+            <h2 class="center small">You called it<br><span class="red">broken.</span></h2>
+            <p class="sub center">Nick knows. $50 will be donated to ALS.</p>
+
+            <section class="card" style="width:100%; text-align:left">
+              <div class="label">The record</div>
+              <p class="quote">"No alcohol for 2 weeks."</p>
+              <div class="grid2">
+                <div class="tile">
+                  <div class="label">Outcome</div>
+                  <strong style="color:var(--danger)">Broken</strong>
+                  <span>honesty noted</span>
+                </div>
+                <div class="tile gold">
+                  <div class="label">Stake</div>
+                  <strong>$50</strong>
+                  <span>to ALS</span>
+                </div>
+              </div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta">Challenge Nick to do it again</button>
+            <button class="secondary">Make your own vow</button>
+          </div>
+        </div>
+      </article>
+    </section>
+
+    <section class="section-break">
+      <h2>Maker Post-Creation Flow</h2>
+      <p>What Nick sees after sealing: waiting for witness acceptance, active accountability, early completion, time-up, and final outcome.</p>
+    </section>
+
+    <section class="flow">
+      <article class="step">
+        <div class="step-title"><strong>M01. Sealed</strong><span>witness not accepted yet</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="maker-status warn">One tap away</div>
+            <h2>Get Sarah in.</h2>
+            <p class="sub">Your vow is sealed. It gets real when your witness accepts.</p>
+
+            <section class="card hot compact-card">
+              <div class="label">The vow</div>
+              <p class="vow">Run 10 miles by Sunday.</p>
+              <div class="mini-meta">
+                <span class="meta-chip gold">$50 at stake</span>
+                <span class="meta-chip">ALS if broken</span>
+                <span class="meta-chip">Due Sunday</span>
+              </div>
+            </section>
+
+            <section class="one-job">
+              <div>
+                <b>Next move</b>
+                <span>Send Sarah the invite. She accepts, then she calls it.</span>
+              </div>
+              <div class="one-job-mark">→</div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta green">Text Sarah the invite</button>
+            <button class="secondary">Copy invite link</button>
+            <button class="secondary">Judge it myself instead</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>M01B. Sealed</strong><span>no witness name yet</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="maker-status warn">One tap away</div>
+            <h2>Send the invite.</h2>
+            <p class="sub">Your vow is sealed. It gets real when someone accepts.</p>
+
+            <section class="card hot compact-card">
+              <div class="label">The vow</div>
+              <p class="vow">Run 10 miles by Sunday.</p>
+              <div class="mini-meta">
+                <span class="meta-chip gold">$50 at stake</span>
+                <span class="meta-chip">ALS if broken</span>
+                <span class="meta-chip">Due Sunday</span>
+              </div>
+            </section>
+
+            <section class="one-job">
+              <div>
+                <b>Next move</b>
+                <span>Share the witness link. They accept, then they call it.</span>
+              </div>
+              <div class="one-job-mark">→</div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta green">Share witness invite</button>
+            <button class="secondary">Copy invite link</button>
+            <button class="secondary">Judge it myself instead</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>M02. Active</strong><span>witness accepted</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="maker-status">Vow live</div>
+            <section class="card hot compact-card">
+              <div class="label">The vow</div>
+              <p class="vow">Run 10 miles by Sunday.</p>
+              <div class="mini-meta">
+                <span class="meta-chip gold">$50 on hold</span>
+                <span class="meta-chip">Sarah is watching</span>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="label">Time left</div>
+              <p class="big-time">3 days</p>
+              <p class="maker-note">Verdict by Sunday at 9:00 PM.</p>
+              <div class="meter"><div style="width:45%"></div></div>
+            </section>
+
+            <section class="one-job">
+              <div>
+                <b>Keep going</b>
+                <span>Sarah decides if you kept your word.</span>
+              </div>
+              <div class="one-job-mark">✓</div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta green">Text Sarah a check-in</button>
+            <button class="secondary">I finished early</button>
+            <button class="secondary">Share vow</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>M03. Early Done</strong><span>maker asks release</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="check">✓</div>
+            <div class="stamp">Early finish</div>
+            <h2 class="center small">Done already?<br><span class="gold">Ask Sarah.</span></h2>
+            <p class="sub center">If she confirms, your vow closes and your $50 comes back.</p>
+
+            <section class="card" style="width:100%; text-align:left">
+              <div class="label">Release request</div>
+              <p class="quote">"I finished the 10 miles."</p>
+              <div class="mini-meta">
+                <span class="meta-chip gold">$50 on hold</span>
+                <span class="meta-chip">Due Sunday</span>
+                <span class="meta-chip">Today is Thursday</span>
+              </div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta green">Ask Sarah to release me</button>
+            <button class="secondary">Keep vow running</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>M04. Release Sent</strong><span>waiting on witness</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="maker-status warn">Release requested</div>
+            <h2>Sarah has<br><span class="gold">the call.</span></h2>
+            <p class="sub">If she agrees you finished, the vow closes early and your money comes back.</p>
+
+            <section class="card hot compact-card">
+              <div class="label">The vow</div>
+              <p class="vow">Run 10 miles by Sunday.</p>
+              <div class="mini-meta">
+                <span class="meta-chip gold">$50 on hold</span>
+                <span class="meta-chip">Release pending</span>
+              </div>
+            </section>
+
+            <section class="one-job">
+              <div>
+                <b>Waiting for Sarah</b>
+                <span>She can release you early or keep the vow open.</span>
+              </div>
+              <div class="one-job-mark">…</div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta green">Text Sarah</button>
+            <button class="secondary">Back to dashboard</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>M05. Time Up</strong><span>waiting for verdict</span></div>
+        <div class="phone">
+          <div class="screen">
+            <div class="top">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="maker-status warn">Verdict due</div>
+            <h2>Time's up.<br><span class="gold">Sarah decides.</span></h2>
+            <p class="sub">She has the verdict link. Give her a nudge if you need to.</p>
+
+            <section class="card hot compact-card">
+              <div class="label">The vow</div>
+              <p class="vow">Run 10 miles by Sunday.</p>
+              <div class="mini-meta">
+                <span class="meta-chip gold">$50 at stake</span>
+                <span class="meta-chip">ALS if broken</span>
+                <span class="meta-chip">Ended today</span>
+              </div>
+            </section>
+
+            <section class="one-job">
+              <div>
+                <b>Now we wait</b>
+                <span>Kept means refund. Broken means donation.</span>
+              </div>
+              <div class="one-job-mark">?</div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta green">Nudge Sarah to decide</button>
+            <button class="secondary">Back to dashboard</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>M06A. Kept</strong><span>good cause</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="outcome-art trophy">✓</div>
+            <div class="stamp">Unbroken</div>
+            <h2 class="center small">You actually<br><span class="green">did it.</span></h2>
+            <p class="sub center">Sarah confirmed. Your word is gold. Your $50 comes back.</p>
+
+            <section class="card" style="width:100%; text-align:left">
+              <div class="label">The vow</div>
+              <p class="quote">"Run 10 miles by Sunday."</p>
+              <div class="grid2">
+                <div class="tile">
+                  <div class="label">Outcome</div>
+                  <strong style="color:var(--success)">Kept</strong>
+                  <span>verified by Sarah</span>
+                </div>
+                <div class="tile gold">
+                  <div class="label">Stake</div>
+                  <strong>$50</strong>
+                  <span>returned</span>
+                </div>
+              </div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta">Share your win</button>
+            <button class="secondary">Dare a friend</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>M06B. Kept</strong><span>bad cause</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="outcome-art shield">$</div>
+            <div class="stamp">Crisis averted</div>
+            <h2 class="center small">Trump got<br><span class="green">$0.</span></h2>
+            <p class="sub center">Sarah called it kept. You saved your $50 from the place you hate.</p>
+
+            <section class="card hot" style="width:100%; text-align:left">
+              <div class="label">The vow</div>
+              <p class="quote">"Run 10 miles by Sunday."</p>
+              <div class="grid2">
+                <div class="tile">
+                  <div class="label">Outcome</div>
+                  <strong style="color:var(--success)">Escaped</strong>
+                  <span>verified by Sarah</span>
+                </div>
+                <div class="tile gold">
+                  <div class="label">Saved</div>
+                  <strong>$50</strong>
+                  <span>not sent to Trump</span>
+                </div>
+              </div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta">Tell everyone you saved $50</button>
+            <button class="secondary">Make another vow</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>M06C. Broken</strong><span>good cause</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="outcome-art broken">!</div>
+            <div class="stamp">Vow broken</div>
+            <h2 class="center small">You broke<br><span class="red">it.</span></h2>
+            <p class="sub center">Sarah confirmed. $50 is on its way to ALS.</p>
+
+            <section class="card" style="width:100%; text-align:left">
+              <div class="label">The vow</div>
+              <p class="quote">"Run 10 miles by Sunday."</p>
+              <div class="grid2">
+                <div class="tile danger">
+                  <div class="label">Outcome</div>
+                  <strong>Broken</strong>
+                  <span>called by Sarah</span>
+                </div>
+                <div class="tile gold">
+                  <div class="label">Donation</div>
+                  <strong>$50</strong>
+                  <span>to ALS</span>
+                </div>
+              </div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta">Make a new vow</button>
+            <button class="secondary">Back to dashboard</button>
+          </div>
+        </div>
+      </article>
+
+      <article class="step">
+        <div class="step-title"><strong>M06D. Broken</strong><span>bad cause</span></div>
+        <div class="phone">
+          <div class="screen center-stack">
+            <div class="top" style="width:100%">
+              <div class="brand"><div class="mark">UV</div>Unbreakable <em>Vow</em></div>
+              <a href="#">Menu</a>
+            </div>
+            <div class="outcome-art brutal">$</div>
+            <div class="stamp">Vow broken</div>
+            <h2 class="center small">Brutal.<br><span class="red">You broke it.</span></h2>
+            <p class="sub center">Sarah called it broken. $50 just went to Trump.</p>
+
+            <section class="card" style="width:100%; text-align:left; border-color:rgba(248,113,113,.26); background:linear-gradient(180deg, rgba(248,113,113,.1), rgba(240,233,219,.025));">
+              <div class="label">The vow</div>
+              <p class="quote">"Run 10 miles by Sunday."</p>
+              <div class="grid2">
+                <div class="tile danger">
+                  <div class="label">Outcome</div>
+                  <strong>Broken</strong>
+                  <span>called by Sarah</span>
+                </div>
+                <div class="tile danger">
+                  <div class="label">Damage</div>
+                  <strong>$50</strong>
+                  <span>to Trump</span>
+                </div>
+              </div>
+            </section>
+
+            <div class="spacer"></div>
+            <button class="cta red">Make a new vow - win it back</button>
+            <button class="secondary">Post the damage</button>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

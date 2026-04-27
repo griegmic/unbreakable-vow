@@ -64,7 +64,7 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
   const EscapeBar = () => (
     <div style={{
       position: 'absolute', top: 18, left: 20, right: 20,
-      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+      display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
       gap: 16, zIndex: 2,
     }}>
       <Link
@@ -75,15 +75,6 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
         }}
       >
         &larr; Back to vow
-      </Link>
-      <Link
-        href="/quick-vow"
-        style={{
-          color: 'var(--uv-gold-bright)', textDecoration: 'none',
-          fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 800,
-        }}
-      >
-        Make a vow
       </Link>
     </div>
   );
@@ -298,15 +289,15 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
 
           {/* Growth CTAs */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 8 }}>
-            <Link href="/quick-vow" style={{ textDecoration: 'none' }}>
-              <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-serif)", fontSize: 17, fontWeight: 500, cursor: "pointer" }}>Make your own vow &rarr;</button>
+            <Link href="/cast" style={{ textDecoration: 'none' }}>
+              <button style={{ width: "100%", height: 62, borderRadius: 14, border: "none", background: "linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))", color: "var(--uv-text-on-gold)", fontFamily: "var(--uv-font-sans)", fontSize: 17, fontWeight: 800, cursor: "pointer" }}>Challenge {judgeName} to do it again</button>
             </Link>
             <div style={{ textAlign: 'center' }}>
               <Link
-                href="/cast"
+                href="/quick-vow"
                 style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-gold)', textDecoration: 'none', fontFamily: 'var(--uv-font-sans)' }}
               >
-                Dare {judgeName} &rarr;
+                Make your own vow &rarr;
               </Link>
             </div>
           </div>
@@ -413,83 +404,152 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
 
         {/* No "I'll tell the truth" checkbox — mock doesn't have it. Verdict buttons are unguarded. */}
 
-        {/* "YOUR CALL" section header per mock */}
-        <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
-          Your call
-        </div>
+        {isEarlyCompletion ? (
+          <>
+            <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
+              Your call
+            </div>
 
-        <div style={{ textAlign: 'center' }}>
-          <FrauncesH1 italic size="page">Did {judgeNameInline} keep <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>their word?</em></FrauncesH1>
-        </div>
+            <div style={{ textAlign: 'center' }}>
+              <FrauncesH1 italic size="page">Did {judgeNameInline} actually <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>finish?</em></FrauncesH1>
+            </div>
 
-        {/* Verdict buttons — side-by-side per mock (~120px tall each) */}
-        <div style={{ display: 'flex', gap: 12 }}>
-          <button
-            onClick={() => handleChoose('kept')}
-            disabled={busy || !truthSworn}
-            style={{
-              flex: 1,
-              minHeight: 120,
-              borderRadius: 18,
-              padding: 20,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              backgroundColor: 'var(--uv-bg-card)',
-              border: '1.5px solid var(--uv-success)',
-              cursor: !truthSworn ? 'not-allowed' : 'pointer',
-              opacity: !truthSworn ? 0.5 : 1,
-              transition: 'transform 120ms',
-            }}
-          >
-            <span style={{ fontSize: 22, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-serif)' }}>Yes</span>
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>Kept it</span>
-          </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <button
+                onClick={() => handleChoose('kept')}
+                disabled={busy || !truthSworn}
+                style={{
+                  minHeight: 58,
+                  borderRadius: 999,
+                  border: 'none',
+                  background: 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))',
+                  color: 'var(--uv-text-on-gold)',
+                  cursor: !truthSworn ? 'not-allowed' : 'pointer',
+                  opacity: !truthSworn ? 0.5 : 1,
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 17,
+                  fontWeight: 800,
+                }}
+              >
+                Yes, release {judgeName}
+              </button>
+              <Link
+                href={`/w/${token}`}
+                style={{
+                  minHeight: 48,
+                  borderRadius: 999,
+                  border: '1px solid var(--uv-border-strong)',
+                  background: 'var(--uv-bg-card)',
+                  color: 'var(--uv-text-muted)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  textDecoration: 'none',
+                  fontFamily: 'var(--uv-font-sans)',
+                  fontSize: 14,
+                  fontWeight: 700,
+                }}
+              >
+                Not yet - keep vow open
+              </Link>
+            </div>
 
-          <button
-            onClick={() => handleChoose('broken')}
-            disabled={busy || !truthSworn}
-            style={{
-              flex: 1,
-              minHeight: 120,
-              borderRadius: 18,
-              padding: 20,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              backgroundColor: 'var(--uv-bg-card)',
-              border: '1.5px solid var(--uv-danger)',
-              cursor: !truthSworn ? 'not-allowed' : 'pointer',
-              opacity: !truthSworn ? 0.5 : 1,
-              transition: 'transform 120ms',
-            }}
-          >
-            <span style={{ fontSize: 22, fontWeight: 600, color: 'var(--uv-danger)', fontFamily: 'var(--uv-font-serif)' }}>No</span>
-            <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>Broke it</span>
-          </button>
-        </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
+              <button
+                onClick={() => {
+                  const body = encodeURIComponent(`Hey - checking before I release you early. Did you finish the vow?`);
+                  window.location.href = `sms:&body=${body}`;
+                }}
+                style={{ background: 'none', border: 'none', fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)', cursor: 'pointer', padding: 0 }}
+              >
+                Need proof? <span style={{ color: 'var(--uv-gold)', fontWeight: 500 }}>Open Messages with {judgeNameInline}</span>
+              </button>
+              <p style={{ fontSize: 13, color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic' }}>
+                Early release is final. Be sure.
+              </p>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* "YOUR CALL" section header per mock */}
+            <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 9.5, fontWeight: 500, letterSpacing: '0.28em', textTransform: 'uppercase', color: 'var(--uv-text-dim)' }}>
+              Your call
+            </div>
 
-        {/* Footer per mock: "Open Messages" link + "Be honest" */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
-          <button
-            onClick={() => {
-              if (makerName) {
-                const body = encodeURIComponent(`Hey — just checking before I submit my verdict. Did you keep it?`);
-                window.location.href = `sms:&body=${body}`;
-              }
-            }}
-            style={{ background: 'none', border: 'none', fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)', cursor: 'pointer', padding: 0 }}
-          >
-            Need to check? <span style={{ color: 'var(--uv-gold)', fontWeight: 500 }}>Open Messages with {judgeNameInline}</span>
-          </button>
-          <p style={{ fontSize: 13, color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic' }}>
-            {isEarlyCompletion ? 'Early release counts. Be sure.' : 'Be honest. They&apos;re counting on it.'}
-          </p>
-        </div>
+            <div style={{ textAlign: 'center' }}>
+              <FrauncesH1 italic size="page">Did {judgeNameInline} keep <em style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>their word?</em></FrauncesH1>
+            </div>
+
+            {/* Verdict buttons — side-by-side per mock (~120px tall each) */}
+            <div style={{ display: 'flex', gap: 12 }}>
+              <button
+                onClick={() => handleChoose('kept')}
+                disabled={busy || !truthSworn}
+                style={{
+                  flex: 1,
+                  minHeight: 120,
+                  borderRadius: 18,
+                  padding: 20,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  backgroundColor: 'var(--uv-bg-card)',
+                  border: '1.5px solid var(--uv-success)',
+                  cursor: !truthSworn ? 'not-allowed' : 'pointer',
+                  opacity: !truthSworn ? 0.5 : 1,
+                  transition: 'transform 120ms',
+                }}
+              >
+                <span style={{ fontSize: 22, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-serif)' }}>Yes</span>
+                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>Kept it</span>
+              </button>
+
+              <button
+                onClick={() => handleChoose('broken')}
+                disabled={busy || !truthSworn}
+                style={{
+                  flex: 1,
+                  minHeight: 120,
+                  borderRadius: 18,
+                  padding: 20,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6,
+                  backgroundColor: 'var(--uv-bg-card)',
+                  border: '1.5px solid var(--uv-danger)',
+                  cursor: !truthSworn ? 'not-allowed' : 'pointer',
+                  opacity: !truthSworn ? 0.5 : 1,
+                  transition: 'transform 120ms',
+                }}
+              >
+                <span style={{ fontSize: 22, fontWeight: 600, color: 'var(--uv-danger)', fontFamily: 'var(--uv-font-serif)' }}>No</span>
+                <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)' }}>Broke it</span>
+              </button>
+            </div>
+
+            {/* Footer per mock: "Open Messages" link + "Be honest" */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'center' }}>
+              <button
+                onClick={() => {
+                  if (makerName) {
+                    const body = encodeURIComponent(`Hey - just checking before I submit my verdict. Did you keep it?`);
+                    window.location.href = `sms:&body=${body}`;
+                  }
+                }}
+                style={{ background: 'none', border: 'none', fontFamily: 'var(--uv-font-sans)', fontSize: 13, color: 'var(--uv-text-muted)', cursor: 'pointer', padding: 0 }}
+              >
+                Need to check? <span style={{ color: 'var(--uv-gold)', fontWeight: 500 }}>Open Messages with {judgeNameInline}</span>
+              </button>
+              <p style={{ fontSize: 13, color: 'var(--uv-text-faint)', margin: 0, fontFamily: 'var(--uv-font-serif)', fontStyle: 'italic' }}>
+                Be honest. They&apos;re counting on it.
+              </p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Undo toast */}

@@ -1,22 +1,7 @@
 import type { Metadata, Viewport } from 'next';
-import { Fraunces, Inter_Tight } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/providers/auth-provider';
 import { VowFlowProvider } from '@/providers/vow-flow';
-
-const fraunces = Fraunces({
-  subsets: ['latin'],
-  style: ['normal', 'italic'],
-  variable: '--font-serif',
-  display: 'swap',
-  axes: ['opsz'],
-});
-
-const interTight = Inter_Tight({
-  subsets: ['latin'],
-  variable: '--font-sans',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   title: 'Unbreakable Vow',
@@ -42,7 +27,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${interTight.variable}`}>
+    <html lang="en">
       <body>
         <AuthProvider>
           <VowFlowProvider>

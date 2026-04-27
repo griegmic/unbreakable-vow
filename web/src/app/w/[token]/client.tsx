@@ -2,8 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { Check } from 'lucide-react';
-import { FrauncesSub, GoldCTA, MutedSecondary, TimelineCard } from '@/components/primitives';
-import { useAuth } from '@/providers/auth-provider';
+import { FrauncesSub, GoldCTA } from '@/components/primitives';
 import { supabase } from '@/lib/supabase';
 
 interface Vow {
@@ -21,7 +20,6 @@ interface Vow {
 }
 
 export default function WitnessInviteClient({ vow, token, makerName, makerPhone }: { vow: Vow; token: string; makerName: string; makerPhone: string | null }) {
-  const { isAuthenticated } = useAuth();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<'pending' | 'accepted' | 'declined'>(
@@ -30,11 +28,8 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   // Post-accept flow: capturing (phone) → null (dashboard)
   const [acceptPhase, setAcceptPhase] = useState<'capturing' | null>(null);
   // Reminder capture
-  const [reminderExpanded, setReminderExpanded] = useState(false);
   const [reminderPhone, setReminderPhone] = useState('');
   const [reminderName, setReminderName] = useState('');
-  const [reminderSaved, setReminderSaved] = useState(false);
-  const [reminderSkipped, setReminderSkipped] = useState(false);
   const [reminderSaving, setReminderSaving] = useState(false);
 
   const needsWitnessName = !vow.witness_name || vow.witness_name === 'Just me' || vow.witness_name === 'Your witness';
@@ -60,7 +55,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         body: JSON.stringify({ token, action: 'save-reminder', phone: formatted, name: reminderName.trim() || undefined }),
       });
       if (res.ok) {
-        setReminderSaved(true);
+        setAcceptPhase(null);
       } else {
         setError('Could not save reminder. Please try again.');
       }
@@ -116,40 +111,6 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     }
   };
 
-  const handleDecline = async () => {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/accept-witness`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!}`,
-        },
-        body: JSON.stringify({ token, action: 'decline' }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        console.error('[accept-witness decline] Error:', data);
-        setError(`Failed to decline. Please try again. (${data?.error || res.status})`);
-        setBusy(false);
-        return;
-      }
-      if (data?.error) {
-        setError('Failed to decline. Please try again.');
-        setBusy(false);
-        return;
-      }
-      setStatus('declined');
-    } catch {
-      setError('Network error. Please check your connection and try again.');
-    } finally {
-      setBusy(false);
-    }
-  };
-
   // Elapsed computation for time-based nudges
   const getElapsed = (): number => {
     if (!vow.starts_at || !vow.ends_at) return 0;
@@ -160,7 +121,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   };
 
   const getNudgeSms = (elapsed: number): string => {
-    if (elapsed < 0.15) return "How's the vow going?";
+    if (elapsed < 0.15) return "I'm officially watching. Keep it clean.";
     if (elapsed < 0.85) return "Still keeping the vow? I'm paying attention.";
     return 'Almost verdict time. You good?';
   };
@@ -169,9 +130,9 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     const isJustAcceptedState = acceptPhase !== null;
     if (acceptPhase) setAcceptPhase(null);
     const smsBody = isJustAcceptedState
-      ? (vow.status === 'draft'
+        ? (vow.status === 'draft'
           ? "I accepted. Now ante up and finish staking your vow."
-          : "Just accepted your vow. I'm watching. \u{1F440}")
+          : "Just accepted your vow. I'm officially watching.")
       : getNudgeSms(getElapsed());
     const message = encodeURIComponent(smsBody);
     if (makerPhone) {
@@ -186,11 +147,12 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
   const displayMakerName = makerName.replace(/\D/g, '').length >= 7 ? 'Your friend' : makerName;
   // Use first name only for intimacy
   const makerFirstName = displayMakerName === 'Your friend' ? 'Your friend' : displayMakerName.split(' ')[0];
-  const makerLabel = displayMakerName === 'Your friend' ? 'your friend' : makerFirstName;
-
   const endDate = vow.ends_at
     ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
     : 'TBD';
+  const verdictWeekday = vow.ends_at
+    ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'long' })
+    : 'verdict day';
 
   // ─── RESOLVED STATE (voided/kept/broken) ───
   if (['voided', 'kept', 'broken'].includes(vow.status)) {
@@ -226,11 +188,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
   // ─── ACCEPTED STATE ───
   if (status === 'accepted') {
-    const now = new Date();
     const end = vow.ends_at ? new Date(vow.ends_at) : null;
-    const start = vow.starts_at ? new Date(vow.starts_at) : null;
-    const totalDays = (start && end) ? Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000)) : 7;
-    const daysLeft = end ? Math.ceil((end.getTime() - now.getTime()) / 86400000) : null;
     const needsMakerToFinish = vow.status === 'draft';
 
     return (
@@ -259,12 +217,37 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, textAlign: 'center' }}>
                 <h2 style={{ fontSize: 30, lineHeight: 1.05, fontWeight: 750, fontFamily: 'var(--uv-font-sans)', color: 'var(--uv-text)', margin: 0 }}>
-                  Where should we send your verdict link?
+                  Where should we text you?
                 </h2>
                 <p style={{ fontSize: 15, lineHeight: 1.4, color: 'var(--uv-text-muted)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-                  We&apos;ll text you on {endDate}. No password, no app install, no mystery inbox.
+                  We&apos;ll send the verdict link on {endDate}. That&apos;s the whole thing.
                 </p>
               </div>
+
+              <section style={{ width: '100%', borderRadius: 16, padding: '15px 15px 14px', background: 'linear-gradient(180deg, rgba(215,169,70,0.10), rgba(238,231,215,0.025))', border: '1px solid var(--uv-border-soft)', textAlign: 'left' }}>
+                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, letterSpacing: '0.24em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontWeight: 750, marginBottom: 9 }}>
+                  You accepted
+                </div>
+                <p style={{ margin: '0 0 12px', fontFamily: 'var(--uv-font-sans)', fontSize: 18, lineHeight: 1.25, color: 'var(--uv-text)', fontWeight: 750 }}>
+                  {vow.refined_text}
+                </p>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 12, borderTop: '1px solid var(--uv-border-soft)' }}>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 32, borderRadius: 999, border: '1px solid var(--uv-gold-line)', background: 'rgba(215,169,70,0.10)', color: 'var(--uv-gold-bright)', padding: '0 11px', fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, fontWeight: 750 }}>
+                    {vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} on the line` : 'Their word'}
+                  </span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 32, borderRadius: 999, border: '1px solid var(--uv-border-soft)', background: 'rgba(238,231,215,0.035)', color: 'var(--uv-text-muted)', padding: '0 11px', fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, fontWeight: 750 }}>
+                    {verdictWeekday === 'verdict day' ? 'Verdict day' : `${verdictWeekday} verdict`}
+                  </span>
+                </div>
+              </section>
+
+              <input
+                type="tel"
+                value={reminderPhone}
+                onChange={(e) => setReminderPhone(e.target.value)}
+                placeholder="Phone number"
+                style={{ width: '100%', height: 52, padding: '0 16px', borderRadius: 14, border: '1px solid var(--uv-border)', background: 'var(--uv-bg-card)', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', fontSize: 16, outline: 'none' }}
+              />
 
               {needsWitnessName && (
                 <input
@@ -276,13 +259,9 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 />
               )}
 
-              <input
-                type="tel"
-                value={reminderPhone}
-                onChange={(e) => setReminderPhone(e.target.value)}
-                placeholder="Phone number"
-                style={{ width: '100%', height: 52, padding: '0 16px', borderRadius: 14, border: '1px solid var(--uv-border)', background: 'var(--uv-bg-card)', color: 'var(--uv-text)', fontFamily: 'var(--uv-font-sans)', fontSize: 16, outline: 'none' }}
-              />
+              <p style={{ fontSize: 12, lineHeight: 1.35, color: 'var(--uv-text-dim)', margin: '-2px 0 0', fontFamily: 'var(--uv-font-sans)', textAlign: 'center' }}>
+                {needsWitnessName ? `${makerFirstName} will see who accepted.` : 'Just the verdict link. Nothing else.'}
+              </p>
 
               {error && (
                 <div style={{ borderRadius: 12, padding: '12px 16px', fontSize: 14, backgroundColor: 'rgba(220,38,38,0.1)', color: 'var(--uv-danger)', border: '1px solid var(--uv-danger)' }}>
@@ -303,9 +282,9 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                   disabled={!reminderPhone.trim() || reminderSaving}
                   style={{ width: '100%', height: 56, borderRadius: 999, border: 'none', background: !reminderPhone.trim() ? 'var(--uv-bg-elevated)' : 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold) 60%, var(--uv-gold-deep))', color: !reminderPhone.trim() ? 'var(--uv-text-dim)' : 'var(--uv-text-on-gold)', fontFamily: 'var(--uv-font-sans)', fontSize: 17, fontWeight: 800, cursor: !reminderPhone.trim() ? 'not-allowed' : 'pointer' }}
                 >
-                  Text me on verdict day
+                  Text me {verdictWeekday}
                 </button>
-                <button onClick={() => { setReminderSkipped(true); setAcceptPhase(null); }} style={{ background: "none", border: "none", color: "var(--uv-text-dim)", fontFamily: "var(--uv-font-sans)", fontSize: 13, lineHeight: 1.2, cursor: "pointer", padding: 0 }}>
+                <button onClick={() => { setAcceptPhase(null); }} style={{ background: "none", border: "none", color: "var(--uv-text-dim)", fontFamily: "var(--uv-font-sans)", fontSize: 13, lineHeight: 1.2, cursor: "pointer", padding: 0 }}>
                   Not now
                 </button>
               </div>
@@ -358,7 +337,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                   ) : (
                     <>
                       <strong style={{ color: 'var(--uv-text)', fontWeight: 500, fontStyle: 'normal' }}>That&apos;s it for now.</strong>{' '}
-                      We&apos;ll text you {vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'long' }) : 'verdict day'} at 9pm.
+                      We&apos;ll text you {vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'long' }) : 'verdict day'}. In the meantime, tasteful pestering is encouraged.
                     </>
                   )}
                 </FrauncesSub>
@@ -383,27 +362,26 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
                 </div>
               </div>
 
-              {/* Timeline card per V6 mock — static labels, PATH A */}
-              <TimelineCard
-                steps={[
-                  { label: 'Now', desc: `${makerFirstName} gets the green light.`, state: 'now' },
-                  { label: needsMakerToFinish ? 'Next' : `${daysLeft !== null && daysLeft > 1 ? 'Sat' : 'Tomorrow'} — 24h before`, desc: needsMakerToFinish ? `${makerFirstName} stakes the cash.` : "We'll text you a heads-up.", state: 'future' },
-                  { label: vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short' }) + ', 9pm' : 'Verdict day', desc: 'One tap: did they keep it?', state: 'future' },
-                ]}
-              />
+              <div style={{ width: '100%', borderRadius: 16, padding: '14px 16px', background: 'rgba(238,231,215,0.035)', border: '1px solid var(--uv-border-soft)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, color: 'var(--uv-text-dim)', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 650, marginBottom: 4 }}>Now</div>
+                  <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)', fontWeight: 650 }}>{makerFirstName} knows.</div>
+                </div>
+                <div>
+                  <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, color: 'var(--uv-text-dim)', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 650, marginBottom: 4 }}>
+                    {vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { weekday: 'short' }) : 'Verdict'}
+                  </div>
+                  <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14, color: 'var(--uv-text)', fontWeight: 650 }}>You call it.</div>
+                </div>
+              </div>
 
               {/* Spacer */}
               {/* iMessage-green CTA per V6 mock */}
               <GoldCTA
-                label={needsMakerToFinish ? `Text ${makerFirstName}: ante up` : `Text ${makerFirstName}: I've got you`}
+                label={needsMakerToFinish ? `Text ${makerFirstName}: ante up` : `Pester ${makerFirstName} responsibly`}
                 onPress={handleTextMaker}
                 variant="filled-imsg-green"
               />
-
-              {/* Footer per mock: preview text + micro */}
-              <div style={{ textAlign: 'center', fontFamily: 'var(--uv-font-sans)', fontSize: 12, lineHeight: 1.4, color: 'var(--uv-text-dim)' }}>
-                Opens Messages with: <em style={{ color: 'var(--uv-text-muted)', fontStyle: 'italic' }}>&ldquo;Just accepted your vow. I&apos;m watching.&rdquo;</em>
-              </div>
 
               <Link href="/quick-vow" style={{ color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 650, textDecoration: 'none' }}>
                 Make your own vow &rarr;
@@ -463,78 +441,57 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
               Unbreakable <em style={{ color: 'var(--uv-gold)', fontStyle: 'italic' }}>Vow</em>
             </div>
           </div>
-          <Link href="/quick-vow" style={{ textDecoration: 'none', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 750, color: 'var(--uv-gold)' }}>
-            Make a vow
-          </Link>
         </div>
 
         <section style={{ textAlign: 'left', marginBottom: 18 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, border: '1px solid var(--uv-gold-line)', borderRadius: 999, padding: '7px 11px', color: 'var(--uv-gold-bright)', fontFamily: 'var(--uv-font-sans)', fontSize: 10.5, fontWeight: 800, letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: 14 }}>
-            Judge invite
+            Witness invite
           </div>
           <h1 style={{ fontFamily: 'var(--uv-font-sans)', fontWeight: 800, fontSize: 42, lineHeight: 0.98, letterSpacing: 0, margin: '0 0 12px', color: 'var(--uv-text)' }}>
-            {makerFirstName} asked you to be their judge.
+            {makerFirstName} made a vow.<br/><span style={{ color: 'var(--uv-gold)' }}>They need you.</span>
           </h1>
           <p style={{ fontFamily: 'var(--uv-font-sans)', fontWeight: 500, fontSize: 17, color: 'var(--uv-text-muted)', lineHeight: 1.42, margin: 0 }}>
-            They put {stakeDisplay || 'their word'} on a promise. Accept, keep them honest, then call it kept or broken.
+            They put {stakeDisplay || 'their word'} on a promise. Your job is tiny but powerful: keep them honest, then call it kept or broken.
           </p>
         </section>
 
-        <section style={{ background: 'linear-gradient(180deg, rgba(238,231,215,0.055), rgba(238,231,215,0.025))', border: '1px solid var(--uv-border-soft)', borderRadius: 18, padding: '18px 18px 16px', marginBottom: 12 }}>
+        <section style={{ background: 'linear-gradient(180deg, rgba(215,169,70,0.11), rgba(238,231,215,0.025))', border: '1px solid var(--uv-gold-line)', borderRadius: 18, padding: '15px 15px 14px', marginBottom: 12 }}>
           <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, letterSpacing: '0.26em', textTransform: 'uppercase', color: 'var(--uv-text-dim)', fontWeight: 750, marginBottom: 10 }}>
             The vow
           </div>
-          <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 25, lineHeight: 1.12, color: 'var(--uv-text)', fontWeight: 750, letterSpacing: 0, marginBottom: 16 }}>
+          <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 23, lineHeight: 1.12, color: 'var(--uv-text)', fontWeight: 750, letterSpacing: 0, marginBottom: 14 }}>
             {vow.refined_text}
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, paddingTop: 14, borderTop: '1px solid var(--uv-border-soft)' }}>
-            <div style={{ borderRadius: 14, background: 'rgba(215,169,70,0.09)', border: '1px solid var(--uv-gold-line)', padding: '12px 12px' }}>
-              <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, color: 'var(--uv-text-dim)', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 750, marginBottom: 6 }}>On the line</div>
-              <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 18, color: 'var(--uv-gold-bright)', fontWeight: 800 }}>
-                {stakeDisplay || 'Their word'}
-              </div>
-              {stakeDisplay && <div style={{ marginTop: 4, fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, lineHeight: 1.25, color: 'var(--uv-text-muted)' }}>{vow.destination} if broken</div>}
-            </div>
-            <div style={{ borderRadius: 14, background: 'rgba(238,231,215,0.035)', border: '1px solid var(--uv-border-soft)', padding: '12px 12px' }}>
-              <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 10, color: 'var(--uv-text-dim)', letterSpacing: '0.18em', textTransform: 'uppercase', fontWeight: 750, marginBottom: 6 }}>Your call</div>
-              <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 18, color: 'var(--uv-text)', fontWeight: 800 }}>
-                {endDate?.replace(/,.*$/, '') || 'Verdict day'}
-              </div>
-              <div style={{ marginTop: 4, fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, color: 'var(--uv-text-muted)' }}>one tap verdict</div>
-            </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, paddingTop: 12, borderTop: '1px solid var(--uv-border-soft)' }}>
+            <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 34, borderRadius: 999, border: '1px solid var(--uv-gold-line)', background: 'rgba(215,169,70,0.1)', color: 'var(--uv-gold-bright)', padding: '0 12px', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 750 }}>
+              {stakeDisplay ? `${stakeDisplay} on the line` : 'Their word'}
+            </span>
+            {stakeDisplay && (
+              <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 34, borderRadius: 999, border: '1px solid var(--uv-border-soft)', background: 'rgba(238,231,215,0.035)', color: 'var(--uv-text-muted)', padding: '0 12px', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 750 }}>
+                {vow.destination} if broken
+              </span>
+            )}
+            <span style={{ display: 'inline-flex', alignItems: 'center', minHeight: 34, borderRadius: 999, border: '1px solid var(--uv-border-soft)', background: 'rgba(238,231,215,0.035)', color: 'var(--uv-text-muted)', padding: '0 12px', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 750 }}>
+              You call it {endDate?.replace(/,.*$/, '') || 'verdict day'}
+            </span>
           </div>
         </section>
 
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8, marginBottom: 14 }}>
-          {[
-            ['1', `${makerFirstName} knows it is real.`, 'The vow gets social pressure, not just good intentions.'],
-            ['2', 'Nudge if needed.', `One text can keep ${makerLabel} honest.`],
-            ['3', 'Make the verdict.', 'We send you the link. You tap kept or broken.'],
-          ].map(([num, title, desc]) => (
-            <div key={num} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '12px 0', borderBottom: num === '3' ? 'none' : '1px solid var(--uv-border-soft)' }}>
-              <div style={{ width: 28, height: 28, borderRadius: '50%', background: num === '1' ? 'var(--uv-gold)' : 'rgba(238,231,215,0.08)', color: num === '1' ? 'var(--uv-text-on-gold)' : 'var(--uv-text-muted)', display: 'grid', placeItems: 'center', flex: '0 0 28px', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 800 }}>
-                {num}
-              </div>
-              <div>
-                <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 15.5, color: 'var(--uv-text)', fontWeight: 750, lineHeight: 1.2 }}>{title}</div>
-                <div style={{ marginTop: 3, fontFamily: 'var(--uv-font-sans)', fontSize: 13.5, color: 'var(--uv-text-muted)', lineHeight: 1.35 }}>{desc}</div>
-              </div>
+        <section style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, padding: '13px 14px', border: '1px solid var(--uv-border-soft)', borderRadius: 16, background: 'rgba(238,231,215,0.035)', marginBottom: 14 }}>
+          <div>
+            <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 14.5, lineHeight: 1.2, color: 'var(--uv-text)', fontWeight: 750, marginBottom: 3 }}>Your job</div>
+            <div style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, lineHeight: 1.3, color: 'var(--uv-text-muted)' }}>
+              Accept, keep {makerFirstName} accountable, and we text you {endDate?.replace(/,.*$/, '') || 'verdict day'} to call it.
             </div>
-          ))}
+          </div>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', display: 'grid', placeItems: 'center', flex: '0 0 auto', color: 'var(--uv-text-on-gold)', background: 'linear-gradient(180deg, var(--uv-gold-bright), var(--uv-gold))', fontSize: 18, fontWeight: 900 }}>
+            ✓
+          </div>
         </section>
 
         <div style={{ marginTop: 'auto' }}>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
             <GoldCTA label={busy ? 'Accepting...' : `I'm in — hold ${makerFirstName} to it`} onPress={handleAccept} disabled={busy} />
-            <MutedSecondary label="Pass — I can't judge this one" onPress={handleDecline} />
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, paddingTop: 4 }}>
-              <Link href="/quick-vow" style={{ color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
-                Make your own vow
-              </Link>
-              <Link href="/cast" style={{ color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 700, textDecoration: 'none' }}>
-                Dare a friend
-              </Link>
-            </div>
           </div>
         </div>
 

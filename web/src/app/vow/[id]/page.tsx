@@ -95,6 +95,7 @@ import { HamburgerMenu } from '@/components/hamburger-menu';
 import Timeline from '@/components/timeline';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
+import { antiCauses } from '@/lib/vow-logic';
 import type { Database } from '@/lib/types';
 
 type VowRow = Database['public']['Tables']['vows']['Row'];
@@ -616,6 +617,9 @@ function VowDetailContent() {
   const stakeSubtitle = vow.stake_amount > 0
     ? `${stakeLabel} at stake \u00b7 ${vow.destination} if broken`
     : 'Accountability only';
+  const isAntiCause = vow.destination
+    ? antiCauses.some(cause => vow.destination.toLowerCase().includes(cause.toLowerCase()))
+    : false;
 
   // --- Handlers ---
 
@@ -1162,7 +1166,7 @@ function VowDetailContent() {
       : vow.witness_accepted_at && !vow.witness_phone
         ? 'Share vow'
         : vow.witness_phone
-        ? `Text ${witnessDisplayName}`
+        ? `Text ${witnessDisplayName} a check-in`
         : 'Send the invite';
     const showSecondaryShare = primaryLabel !== 'Share vow';
     const handleActiveShare = async () => {
@@ -1299,7 +1303,7 @@ function VowDetailContent() {
               fontWeight: 650,
               opacity: actionBusy ? 0.68 : 1,
             }}>
-              I did it early
+              I finished early
             </button>
           )}
           {showSecondaryShare && (
@@ -1536,9 +1540,14 @@ function VowDetailContent() {
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
           <StatusPill variant="kept">KEPT</StatusPill>
-          <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-success)', margin: 0 }}>
-            You kept your word.
+          <h1 style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 34, lineHeight: 1.04, fontWeight: 850, color: 'var(--uv-text)', margin: 0, textAlign: 'center' }}>
+            {isAntiCause ? 'Crisis averted.' : 'You actually did it.'}
           </h1>
+          <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: 0, textAlign: 'center', lineHeight: 1.45 }}>
+            {isAntiCause && stakeLabel
+              ? `${stakeLabel} stayed away from ${vow.destination}.`
+              : `${vow.witness_name} confirmed. Your word is gold.`}
+          </p>
         </div>
 
         <RitualCard>
@@ -1553,7 +1562,7 @@ function VowDetailContent() {
           {stakeLabel && (
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8 }}>
               <span style={{ fontSize: 13, color: 'var(--uv-text-faint)', fontFamily: 'var(--uv-font-sans)' }}>Stake</span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>{stakeLabel} protected</span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-success)', fontFamily: 'var(--uv-font-sans)' }}>{isAntiCause ? `${stakeLabel} saved` : `${stakeLabel} returned`}</span>
             </div>
           )}
           {vow.verdict_at && (
@@ -1573,7 +1582,7 @@ function VowDetailContent() {
             <ShareButton
               url={certificateUrl}
               text={`I kept my vow: "${vow.refined_text}"`}
-              buttonText="Share your certificate"
+              buttonText={isAntiCause && stakeLabel ? `Tell everyone you saved ${stakeLabel}` : 'Share your win'}
             />
           )}
           <DashboardButton />
@@ -1592,11 +1601,11 @@ function VowDetailContent() {
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16, paddingTop: 16 }}>
           <StatusPill variant="broken">BROKEN</StatusPill>
-          <h1 style={{ fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 400, color: 'var(--uv-danger)', margin: 0 }}>
-            You broke it.
+          <h1 style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 34, lineHeight: 1.04, fontWeight: 850, color: 'var(--uv-text)', margin: 0, textAlign: 'center' }}>
+            {isAntiCause ? 'Brutal. You broke it.' : 'You broke it.'}
           </h1>
           <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: 0 }}>
-            {stakeLabel ? `${stakeLabel} goes to ${vow.destination}.` : 'The vow was not honored.'}
+            {stakeLabel ? `${stakeLabel} ${isAntiCause ? 'just went to' : 'goes to'} ${vow.destination}.` : 'The vow was not honored.'}
           </p>
         </div>
 
@@ -1620,7 +1629,7 @@ function VowDetailContent() {
         <TimelineBlock />
 
         <div style={{ marginTop: 'auto', paddingTop: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <GoldCTA label="Make a new vow" onPress={() => router.push('/quick-vow')} />
+          <GoldCTA label={isAntiCause ? 'Make a new vow - win it back' : 'Make a new vow'} onPress={() => router.push('/quick-vow')} />
           <DashboardButton />
         </div>
       </RitualScreen>

@@ -55,9 +55,6 @@ export default async function VerdictPage({ params, searchParams }: Props) {
             <Link href={`/w/${token}`} style={{ color: 'var(--uv-gold-bright)', fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 700, textDecoration: 'none' }}>
               Back to vow
             </Link>
-            <Link href="/quick-vow" style={{ color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', fontSize: 14, fontWeight: 600, textDecoration: 'none' }}>
-              Make a vow
-            </Link>
           </div>
         </div>
       </div>
