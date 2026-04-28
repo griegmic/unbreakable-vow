@@ -1036,7 +1036,7 @@ export default function QuickVowPage() {
           <button
             type="button"
             className="qv-help-button"
-            onClick={() => router.push('/?guided=1')}
+            onClick={() => router.push('/guided')}
           >
             Need help? Guided setup
           </button>
