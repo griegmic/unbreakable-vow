@@ -11,9 +11,11 @@
  * Canonical source: IMPLEMENTATION-V6.md §4.4.1
  */
 
-import { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { sendSMS } from './twilio.ts';
+import { sendSMS, TwilioSMSFailure } from './twilio.ts';
 import { createAuditEvent } from './audit.ts';
+import { normalizePhoneE164 } from './phone.ts';
+
+type SupabaseLike = any;
 
 // ── Push payload types (§4.4) ──
 
@@ -100,7 +102,7 @@ function getPushBody(payload: PushPayload): string {
 // ── Channel dedup: maker notifications ──
 
 export async function notifyMaker(
-  supabase: SupabaseClient,
+  supabase: SupabaseLike,
   userId: string,
   push: PushPayload,
   sms: { to: string; body: string },
@@ -116,19 +118,22 @@ export async function notifyMaker(
 
   // Channel selection: push if healthy, else SMS
   // Cold-start: new users have push_token but no prior receipt — treat as healthy-on-first-attempt
-  const pushNeverTried = user.push_token != null && user.last_push_receipt_ok_at == null;
+  const pushToken = typeof user.push_token === 'string' ? user.push_token : null;
+  const lastPushReceiptOkAt = typeof user.last_push_receipt_ok_at === 'string' ? user.last_push_receipt_ok_at : null;
+  const smsOnlyPreference = Boolean(user.sms_only_preference);
+  const pushNeverTried = pushToken != null && lastPushReceiptOkAt == null;
   const pushRecentlyHealthy =
-    user.last_push_receipt_ok_at != null &&
-    Date.now() - new Date(user.last_push_receipt_ok_at).getTime() < 7 * 24 * 60 * 60 * 1000;
+    lastPushReceiptOkAt != null &&
+    Date.now() - new Date(lastPushReceiptOkAt).getTime() < 7 * 24 * 60 * 60 * 1000;
   const pushIsHealthy =
-    user.push_token != null &&
-    !user.sms_only_preference &&
+    pushToken != null &&
+    !smsOnlyPreference &&
     (pushNeverTried || pushRecentlyHealthy);
 
   let channel: 'push' | 'sms' = 'sms';
 
   if (pushIsHealthy) {
-    const ok = await sendPush(user.push_token, push);
+    const ok = await sendPush(pushToken, push);
     if (ok) {
       await supabase.from('users').update({ last_push_receipt_ok_at: new Date().toISOString() }).eq('id', userId);
       channel = 'push';
@@ -137,18 +142,7 @@ export async function notifyMaker(
   }
 
   if (channel === 'sms' && sms.to) {
-    try {
-      await sendSMS(sms.to, sms.body);
-    } catch (err) {
-      // Queue for retry instead of silently failing
-      await supabase.from('sms_retry_queue').insert({
-        vow_id: vowId || null,
-        to_phone: sms.to,
-        body: sms.body,
-        message_type: push.type,
-        next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
-      });
-    }
+    await sendSMSWithRetry(supabase, sms.to, sms.body, push.type, vowId);
   }
 
   // Audit — skip if no vowId (account-level notifications not tied to a vow)
@@ -159,28 +153,114 @@ export async function notifyMaker(
       user_id: userId,
     });
   }
+}
 
 // ── SMS with retry queue wrapper ──
 
 export async function sendSMSWithRetry(
-  supabase: SupabaseClient,
+  supabase: SupabaseLike,
   to: string,
   body: string,
   messageType: string,
   vowId?: string,
 ): Promise<string | null> {
-  try {
-    const sid = await sendSMS(to, body);
-    return sid;
-  } catch (err) {
-    // Insert into retry queue
-    await supabase.from('sms_retry_queue').insert({
-      vow_id: vowId || null,
-      to_phone: to,
-      body,
-      message_type: messageType,
-      next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
-    });
+  const normalizedTo = normalizePhoneE164(to);
+  if (!normalizedTo) {
+    await createSMSDeliveryAudit(supabase, vowId, messageType, 'invalid_phone', { to });
     return null;
   }
+  if (await isSMSOptedOut(supabase, normalizedTo)) {
+    await createSMSDeliveryAudit(supabase, vowId, messageType, 'opted_out', { to: normalizedTo });
+    return null;
+  }
+
+  try {
+    const sid = await sendSMS(normalizedTo, body);
+    return sid;
+  } catch (err) {
+    if (err instanceof TwilioSMSFailure && err.code === 21610) {
+      await markSMSOptedOut(supabase, normalizedTo, 'TWILIO_21610', 'STOP');
+      await createSMSDeliveryAudit(supabase, vowId, messageType, 'opted_out', { to: normalizedTo, twilio_code: err.code });
+      return null;
+    }
+    await enqueueSMSRetry(supabase, normalizedTo, body, messageType, vowId);
+    return null;
+  }
+}
+
+async function enqueueSMSRetry(
+  supabase: SupabaseLike,
+  to: string,
+  body: string,
+  messageType: string,
+  vowId?: string,
+): Promise<void> {
+  const normalizedTo = normalizePhoneE164(to);
+  if (!normalizedTo) return;
+  if (await isSMSOptedOut(supabase, normalizedTo)) return;
+
+  if (vowId) {
+    const { data: existing } = await supabase
+      .from('sms_retry_queue')
+      .select('id')
+      .eq('vow_id', vowId)
+      .eq('message_type', messageType)
+      .eq('status', 'queued')
+      .limit(1)
+      .maybeSingle();
+    if (existing) return;
+  }
+
+  await supabase.from('sms_retry_queue').insert({
+    vow_id: vowId || null,
+    to_phone: normalizedTo,
+    body,
+    message_type: messageType,
+    next_attempt_at: new Date(Date.now() + 60_000).toISOString(),
+  });
+}
+
+export async function isSMSOptedOut(supabase: SupabaseLike, phone: string): Promise<boolean> {
+  const normalizedPhone = normalizePhoneE164(phone);
+  if (!normalizedPhone) return true;
+  const { data } = await supabase
+    .from('sms_opt_outs')
+    .select('status')
+    .eq('phone_e164', normalizedPhone)
+    .eq('status', 'opted_out')
+    .limit(1)
+    .maybeSingle();
+  return !!data;
+}
+
+export async function markSMSOptedOut(
+  supabase: SupabaseLike,
+  phone: string,
+  keyword: string,
+  optOutType: 'STOP' | 'START',
+): Promise<void> {
+  const normalizedPhone = normalizePhoneE164(phone);
+  if (!normalizedPhone) return;
+  await supabase.from('sms_opt_outs').upsert({
+    phone_e164: normalizedPhone,
+    status: optOutType === 'STOP' ? 'opted_out' : 'opted_in',
+    last_keyword: keyword,
+    last_opt_out_type: optOutType,
+    updated_at: new Date().toISOString(),
+  });
+}
+
+async function createSMSDeliveryAudit(
+  supabase: SupabaseLike,
+  vowId: string | undefined,
+  messageType: string,
+  reason: string,
+  metadata: Record<string, unknown>,
+): Promise<void> {
+  if (!vowId) return;
+  await createAuditEvent(supabase, vowId, 'sms_delivery_skipped', 'system', null, {
+    message_type: messageType,
+    reason,
+    ...metadata,
+  });
 }

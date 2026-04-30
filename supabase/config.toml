@@ -404,6 +404,9 @@ verify_jwt = false
 [functions.stripe-webhook]
 verify_jwt = false
 
+[functions.twilio-inbound]
+verify_jwt = false
+
 [functions.verdict-page]
 verify_jwt = false
 

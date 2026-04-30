@@ -1,5 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { sendSMS } from '../_shared/twilio.ts';
+import { sendSMSWithRetry } from '../_shared/notify.ts';
 import { sealMessage, challengeMessage, makerSealConfirmMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
@@ -215,12 +215,14 @@ Deno.serve(async (req) => {
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
-          const twilioSid = await sendSMS(vow.target_phone, messageBody);
-          await supabase.from('sms_log').insert({
-            vow_id,
-            message_type: 'challenge_invite',
-            twilio_sid: twilioSid,
-          });
+          const twilioSid = await sendSMSWithRetry(supabase, vow.target_phone, messageBody, 'challenge_invite', vow_id);
+          if (twilioSid) {
+            await supabase.from('sms_log').insert({
+              vow_id,
+              message_type: 'challenge_invite',
+              twilio_sid: twilioSid,
+            });
+          }
           smsSent = true;
           break;
         } catch (smsErr) {
@@ -243,18 +245,20 @@ Deno.serve(async (req) => {
     } else if (vow.witness_phone && !vow.witness_accepted_at) {
       // Standard vow: send witness SMS (skip if witness already accepted during draft)
       const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
-      const messageBody = sealMessage(amountDollars, witnessUrl);
+      const messageBody = sealMessage(amountDollars, witnessUrl, ownerName);
       let smsSent = false;
 
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
           if (attempt > 0) await new Promise(r => setTimeout(r, 2000));
-          const twilioSid = await sendSMS(vow.witness_phone, messageBody);
-          await supabase.from('sms_log').insert({
-            vow_id,
-            message_type: 'seal',
-            twilio_sid: twilioSid,
-          });
+          const twilioSid = await sendSMSWithRetry(supabase, vow.witness_phone, messageBody, 'seal', vow_id);
+          if (twilioSid) {
+            await supabase.from('sms_log').insert({
+              vow_id,
+              message_type: 'seal',
+              twilio_sid: twilioSid,
+            });
+          }
           smsSent = true;
           break;
         } catch (smsErr) {
@@ -293,12 +297,14 @@ Deno.serve(async (req) => {
         .single();
       if (makerUser?.phone) {
         const sealConfirmBody = makerSealConfirmMessage(amountDollars);
-        const sid = await sendSMS(makerUser.phone, sealConfirmBody);
-        await supabase.from('sms_log').insert({
-          vow_id,
-          message_type: 'maker_seal_confirm',
-          twilio_sid: sid,
-        });
+        const sid = await sendSMSWithRetry(supabase, makerUser.phone, sealConfirmBody, 'maker_seal_confirm', vow_id);
+        if (sid) {
+          await supabase.from('sms_log').insert({
+            vow_id,
+            message_type: 'maker_seal_confirm',
+            twilio_sid: sid,
+          });
+        }
       }
     } catch (smsErr) {
       console.error('[seal-vow] maker seal confirm SMS failed:', smsErr);

@@ -44,6 +44,12 @@ function RootLayoutNav() {
       <Stack.Screen name="history" />
       <Stack.Screen name="settings" />
       <Stack.Screen name="quick-vow" />
+      <Stack.Screen name="guided" />
+      <Stack.Screen name="native-guided" />
+      <Stack.Screen name="native-quick-vow" />
+      <Stack.Screen name="native-seal" />
+      <Stack.Screen name="native-dashboard" />
+      <Stack.Screen name="native-vow-detail" />
       <Stack.Screen name="cast" />
       <Stack.Screen name="external-web" />
     </Stack>

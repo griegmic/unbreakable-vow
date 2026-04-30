@@ -1,6 +1,13 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { sendSMS } from '../_shared/twilio.ts';
-import { sealMessage, warmupMessage, verdictRequestMessage, outcomeMessage } from '../_shared/sms-templates.ts';
+import { sendSMSWithRetry } from '../_shared/notify.ts';
+import {
+  earlyCompletionRequestMessage,
+  outcomeMessage,
+  sealMessage,
+  verdictRequestMessage,
+  witnessReminderMessage,
+} from '../_shared/sms-templates.ts';
+import { normalizePhoneE164 } from '../_shared/phone.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -95,8 +102,14 @@ Deno.serve(async (req) => {
 
     const ownerName = profile?.display_name || 'Someone';
     const amountDollars = Math.round(vow.stake_amount / 100);
-    const endDate = vow.ends_at ? new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'soon';
-    const verdictUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}/verdict`;
+    const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
+    const verdictUrl = `${witnessUrl}/verdict`;
+    const toPhone = normalizePhoneE164(vow.witness_phone);
+    if (!toPhone) {
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'invalid_phone' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Build message
     let messageBody: string;
@@ -105,13 +118,16 @@ Deno.serve(async (req) => {
     } else {
       switch (message_type) {
         case 'seal':
-          messageBody = sealMessage(ownerName, vow.refined_text, amountDollars, endDate);
+          messageBody = sealMessage(amountDollars, witnessUrl, ownerName);
           break;
-        case 'warmup':
-          messageBody = warmupMessage(ownerName, vow.refined_text);
+        case 'witness_reminder':
+          messageBody = witnessReminderMessage(ownerName, witnessUrl);
           break;
         case 'verdict_request':
-          messageBody = verdictRequestMessage(ownerName, vow.refined_text, verdictUrl);
+          messageBody = verdictRequestMessage(ownerName, verdictUrl);
+          break;
+        case 'early_completion_request':
+          messageBody = earlyCompletionRequestMessage(ownerName, verdictUrl);
           break;
         case 'outcome':
           messageBody = outcomeMessage(ownerName, vow.verdict || 'broken', amountDollars, vow.destination);
@@ -124,17 +140,16 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Send SMS
-    const twilioSid = await sendSMS(vow.witness_phone, messageBody);
+    const twilioSid = await sendSMSWithRetry(supabase, toPhone, messageBody, message_type, vow_id);
+    if (twilioSid) {
+      await supabase.from('sms_log').insert({
+        vow_id,
+        message_type,
+        twilio_sid: twilioSid,
+      });
+    }
 
-    // Log to sms_log
-    await supabase.from('sms_log').insert({
-      vow_id,
-      message_type,
-      twilio_sid: twilioSid,
-    });
-
-    return new Response(JSON.stringify({ success: true, twilio_sid: twilioSid }), {
+    return new Response(JSON.stringify({ success: true, queued: !twilioSid, twilio_sid: twilioSid }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {

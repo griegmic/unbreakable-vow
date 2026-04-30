@@ -8,11 +8,31 @@
       "developmentClient": true,
       "distribution": "internal"
     },
+    "nativePerfectDevelopment": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "production",
+      "env": {
+        "EXPO_PUBLIC_USE_NATIVE_PERFECT": "1"
+      }
+    },
     "preview": {
       "distribution": "internal"
     },
+    "nativePerfect": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_USE_NATIVE_PERFECT": "1"
+      }
+    },
     "production": {
       "autoIncrement": true
+    },
+    "nativePerfectProduction": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_USE_NATIVE_PERFECT": "1"
+      }
     }
   },
   "submit": {

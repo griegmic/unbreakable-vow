@@ -1,5 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { sendSMS } from '../_shared/twilio.ts';
+import { sendSMSWithRetry } from '../_shared/notify.ts';
+import { vowVoidedMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
@@ -175,10 +176,14 @@ Deno.serve(async (req) => {
           .eq('id', user.id)
           .single();
         const ownerName = profile?.display_name || 'Someone';
-        const vowPreview = vow.refined_text.length > 60
-          ? vow.refined_text.substring(0, 57) + '...'
-          : vow.refined_text;
-        await sendSMS(vow.witness_phone, `${ownerName} withdrew their vow: "${vowPreview}"`);
+        const twilioSid = await sendSMSWithRetry(supabase, vow.witness_phone, vowVoidedMessage(ownerName), 'vow_voided', vow.id);
+        if (twilioSid) {
+          await supabase.from('sms_log').insert({
+            vow_id: vow.id,
+            message_type: 'vow_voided',
+            twilio_sid: twilioSid,
+          });
+        }
       } catch (smsErr) {
         console.error('Void SMS to witness failed:', smsErr);
       }

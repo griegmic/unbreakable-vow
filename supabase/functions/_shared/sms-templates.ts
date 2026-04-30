@@ -8,131 +8,138 @@
 
 // ─── WITNESS-FACING ───
 
-export function sealMessage(stake: number, witnessUrl: string): string {
+const BRAND = 'Unbreakable Vow';
+const OPT_OUT = ' Reply STOP to opt out.';
+
+export function sealMessage(stake: number, witnessUrl: string, makerName = 'Someone'): string {
   if (stake === 0) {
-    return `I made an Unbreakable Vow and picked you to hold me to it. Takes 5 sec: ${witnessUrl}`;
+    return `${BRAND}: ${makerName} picked you as witness. Review and accept in 5 sec: ${witnessUrl}${OPT_OUT}`;
   }
-  return `I made an Unbreakable Vow and put $${stake} on it. I picked you to hold me to it: ${witnessUrl}`;
+  return `${BRAND}: ${makerName} put $${stake} on a vow and picked you as witness. Review and accept: ${witnessUrl}${OPT_OUT}`;
 }
 
 export function witnessReminderMessage(makerName: string, witnessUrl: string): string {
-  return `Heads up — ${makerName} is waiting on you to confirm. Takes 5 sec: ${witnessUrl}`;
+  return `${BRAND}: ${makerName} is still waiting for a witness. Accept or pass here: ${witnessUrl}${OPT_OUT}`;
 }
 
 export function witnessAcceptConfirmMessage(makerName: string): string {
-  return `You're now the witness for ${makerName}'s vow. We'll text you 2-3 times this week, then once on verdict day. That's it.`;
+  return `${BRAND}: You're ${makerName}'s witness. We'll text only key checkpoints and verdict day.${OPT_OUT}`;
 }
 
 export function witness24hMessage(makerName: string): string {
-  return `Heads up: ${makerName}'s vow ends tomorrow. You'll get the verdict link.`;
+  return `${BRAND}: ${makerName}'s vow ends tomorrow. Keep an eye out; verdict link comes when time is up.${OPT_OUT}`;
 }
 
 export function verdictRequestMessage(makerName: string, verdictUrl: string): string {
-  return `Time to judge: did ${makerName} keep the vow? One tap: ${verdictUrl}`;
+  return `${BRAND}: Verdict time. Did ${makerName} keep the vow? Make the call here: ${verdictUrl}${OPT_OUT}`;
 }
 
 export function earlyCompletionRequestMessage(makerName: string, verdictUrl: string): string {
-  return `${makerName} says the vow is already done. If that's true, release them here: ${verdictUrl}`;
+  return `${BRAND}: ${makerName} says the vow is already done. If true, release them early: ${verdictUrl}${OPT_OUT}`;
 }
 
 export function outcomeMessage(makerName: string, verdict: 'kept' | 'broken', stake: number, destination: string): string {
   if (verdict === 'kept') {
     if (stake === 0) {
-      return `${makerName} kept the vow. Word honored.`;
+      return `${BRAND}: ${makerName} kept the vow. Word honored.${OPT_OUT}`;
     }
-    return `${makerName} kept the vow. $${stake} is being refunded.`;
+    return `${BRAND}: ${makerName} kept the vow. Word honored, wallet untouched.${OPT_OUT}`;
   }
   if (stake === 0) {
-    return `${makerName} broke the vow. The record stands.`;
+    return `${BRAND}: ${makerName} broke the vow. The record stands.${OPT_OUT}`;
   }
-  return `${makerName} broke the vow. $${stake} is going to ${destination}.`;
+  return `${BRAND}: ${makerName} broke the vow. $${stake} is going to ${destination}.${OPT_OUT}`;
 }
 
 // ─── MAKER-FACING ───
 
 export function makerSealConfirmMessage(stake: number): string {
   if (stake === 0) {
-    return `Your vow is sealed. We'll keep you posted.`;
+    return `${BRAND}: Your vow is sealed. We'll keep you posted.${OPT_OUT}`;
   }
-  return `Your vow is sealed. $${stake} on the line. We'll keep you posted.`;
+  return `${BRAND}: Your vow is sealed. $${stake} on the line. We'll keep you posted.${OPT_OUT}`;
 }
 
 export function makerWitnessAcceptedMessage(witnessName: string): string {
-  return `${witnessName} just accepted. Your vow is live. Don't break it.`;
+  return `${BRAND}: ${witnessName} accepted. Your vow is live. Don't break it.${OPT_OUT}`;
 }
 
 export function maker24hMessage(stake: number): string {
   if (stake === 0) {
-    return `24 hours left on your vow.`;
+    return `${BRAND}: 24 hours left. Finish clean.${OPT_OUT}`;
   }
-  return `24 hours left on your vow. $${stake} is still on the line.`;
+  return `${BRAND}: 24 hours left. $${stake} is still on the line. Finish clean.${OPT_OUT}`;
 }
 
 export function makerVerdictTimeMessage(witnessName: string): string {
-  return `Your vow ends now. ${witnessName} is delivering the verdict.`;
+  return `${BRAND}: Time's up. ${witnessName} has the verdict link now.${OPT_OUT}`;
 }
 
 export function makerOutcomeMessage(verdict: 'kept' | 'broken', stake: number, destination: string): string {
   if (verdict === 'kept') {
     if (stake === 0) {
-      return `Your word is gold. Vow kept.`;
+      return `${BRAND}: Your word is gold. Vow kept.${OPT_OUT}`;
     }
-    return `Your word is gold. $${stake} is being refunded.`;
+    return `${BRAND}: Your word is gold. Vow kept, wallet untouched.${OPT_OUT}`;
   }
   if (stake === 0) {
-    return `Verdict: broken. The record stands. Make a new one when you're ready.`;
+    return `${BRAND}: Verdict: broken. The record stands. Make a new one when you're ready.${OPT_OUT}`;
   }
-  return `Verdict: broken. $${stake} is going to ${destination}. Make a new one when you're ready.`;
+  return `${BRAND}: Verdict: broken. $${stake} is going to ${destination}. Make a new one when you're ready.${OPT_OUT}`;
 }
 
 // ─── CAST / DARE — target-side ───
 
 export function challengeMessage(challengerName: string, stake: number, acceptUrl: string): string {
   if (stake > 0) {
-    return `${challengerName} dared you. Accept it, stake $${stake}, and make them judge the result: ${acceptUrl}`;
+    return `${BRAND}: ${challengerName} challenged you. Accept, stake $${stake}, and make them judge it: ${acceptUrl}${OPT_OUT}`;
   }
-  return `${challengerName} dared you. Accept it, stake your word, and make them judge the result: ${acceptUrl}`;
+  return `${BRAND}: ${challengerName} challenged you. Accept, stake your word, and make them judge it: ${acceptUrl}${OPT_OUT}`;
 }
 
 // ─── CAST / DARE — maker-side (the darer) ───
 
 export function castAcceptedMessage(targetName: string): string {
-  return `${targetName} accepted your dare. The clock is ticking.`;
+  return `${BRAND}: ${targetName} accepted your challenge. The clock is ticking.${OPT_OUT}`;
 }
 
 export function castDeclinedMessage(targetName: string): string {
-  return `${targetName} declined your dare.`;
+  return `${BRAND}: ${targetName} passed on your challenge.${OPT_OUT}`;
 }
 
 export function castAutoVoidedMessage(targetName: string): string {
-  return `${targetName} didn't respond in 24h. Your dare voided.`;
+  return `${BRAND}: ${targetName} didn't respond in 48h. Challenge voided.${OPT_OUT}`;
 }
 
 export function castVerdictDayMessage(targetName: string, verdictUrl: string): string {
-  return `Time to rule on your dare to ${targetName}. Did they keep it? ${verdictUrl}`;
+  return `${BRAND}: Time to rule on your challenge to ${targetName}. Did they keep it? ${verdictUrl}${OPT_OUT}`;
 }
 
 // ─── CAST — verdict outcome to target ───
 
 export function castOutcomeMessage(makerName: string, verdict: 'kept' | 'broken', stake: number, destination: string): string {
   if (verdict === 'kept') {
-    return `${makerName} ruled: kept. The dare is closed. Nothing owed.`;
+    return `${BRAND}: ${makerName} ruled kept. Challenge closed. Nothing owed.${OPT_OUT}`;
   }
-  return `${makerName} ruled: broken. $${stake} went to ${destination}.`;
+  return `${BRAND}: ${makerName} ruled broken. $${stake} went to ${destination}.${OPT_OUT}`;
 }
 
 // ─── REFUND RETRY OUTCOMES (maker-side) ───
 
 export function refundSucceededMessage(stake: number): string {
-  return `Good news — your $${stake} refund went through.`;
+  return `${BRAND}: Good news. Your $${stake} refund went through.${OPT_OUT}`;
 }
 
 export function refundFailedFinalMessage(stake: number): string {
-  return `Heads up: we couldn't process your $${stake} refund after several tries. We're on it — reply HELP if you need us.`;
+  return `${BRAND}: We couldn't process your $${stake} refund after several tries. We're on it. Reply HELP for support.${OPT_OUT}`;
 }
 
 // ─── SELF-RESOLVE (witness notification) ───
 
 export function makerSelfResolvedToWitnessMessage(makerName: string, verdict: 'kept' | 'broken'): string {
-  return `${makerName} called their vow ${verdict} themselves. Nothing for you to rule.`;
+  return `${BRAND}: ${makerName} called their vow ${verdict} themselves. Nothing for you to rule.${OPT_OUT}`;
+}
+
+export function vowVoidedMessage(makerName: string): string {
+  return `${BRAND}: ${makerName} withdrew their vow. Nothing for you to judge.${OPT_OUT}`;
 }

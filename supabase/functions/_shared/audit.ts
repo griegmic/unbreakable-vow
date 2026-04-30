@@ -1,7 +1,7 @@
-import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+type SupabaseLike = any;
 
 export async function createAuditEvent(
-  supabase: SupabaseClient,
+  supabase: SupabaseLike,
   vowId: string,
   eventType: string,
   actorType: "maker" | "witness" | "target" | "system",

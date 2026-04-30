@@ -1,5 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { sendSMS } from '../_shared/twilio.ts';
+import { sendSMSWithRetry } from '../_shared/notify.ts';
 import { earlyCompletionRequestMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
@@ -134,16 +134,18 @@ Deno.serve(async (req) => {
     }
 
     const body = earlyCompletionRequestMessage(makerName, verdictUrl);
-    const twilioSid = await sendSMS(vow.witness_phone, body);
+    const twilioSid = await sendSMSWithRetry(supabase, vow.witness_phone, body, 'early_completion_request', vow.id);
 
-    await supabase.from('sms_log').insert({
-      vow_id: vow.id,
-      message_type: 'early_completion_request',
-      twilio_sid: twilioSid,
-    });
+    if (twilioSid) {
+      await supabase.from('sms_log').insert({
+        vow_id: vow.id,
+        message_type: 'early_completion_request',
+        twilio_sid: twilioSid,
+      });
+    }
 
     await createAuditEvent(supabase, vow.id, 'early_completion_requested', 'maker', user.id, {
-      delivery: 'sms',
+      delivery: twilioSid ? 'sms' : 'sms_queued',
       witness_name: vow.witness_name,
     });
 
@@ -157,7 +159,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ success: true, sent: true, verdict_url: verdictUrl }), {
+    return new Response(JSON.stringify({ success: true, sent: !!twilioSid, queued: !twilioSid, verdict_url: verdictUrl }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {

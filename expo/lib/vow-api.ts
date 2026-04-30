@@ -326,6 +326,7 @@ export interface VowRow {
   vow_type: 'self' | 'challenge';
   witness_name: string;
   witness_phone: string | null;
+  witness_invite_token: string | null;
   witness_user_id: string | null;
   witness_accepted_at: string | null;
   witness_declined: boolean;
@@ -361,7 +362,7 @@ export async function getMyVows(): Promise<VowRow[]> {
   const { data: myData, error: myError } = await supabase.from('vows')
     .select('*')
     .eq('user_id', session.user.id)
-    .in('status', ['draft', 'sealed', 'active', 'awaiting_verdict'])
+    .in('status', ['draft', 'sealed', 'active', 'awaiting_verdict', 'kept', 'broken'])
     .order('created_at', { ascending: false });
   if (myError) { console.error('[vow-api] getMyVows error:', myError); }
   // Also fetch accepted challenges where I'm the target (vow keeper)
@@ -448,6 +449,23 @@ export async function getVowDetail(vowId: string): Promise<VowRow | null> {
     .single();
   if (error) { console.error('[vow-api] getVowDetail error:', error); return null; }
   return data as VowRow;
+}
+
+export async function sealVow(vowId: string): Promise<{ success: boolean; error?: string }> {
+  console.log('[vow-api] sealVow:', vowId);
+  try {
+    const { error } = await supabase.functions.invoke('seal-vow', {
+      body: { vow_id: vowId },
+    });
+    if (error) {
+      console.error('[vow-api] sealVow edge function error:', error);
+      return { success: false, error: error.message || 'Could not seal vow.' };
+    }
+    return { success: true };
+  } catch (err) {
+    console.error('[vow-api] sealVow exception:', err);
+    return { success: false, error: err instanceof Error ? err.message : 'Could not seal vow.' };
+  }
 }
 
 export async function getVowTimeline(vowId: string): Promise<AuditEvent[]> {

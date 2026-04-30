@@ -26,7 +26,7 @@ export default function TermsPage() {
     <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', padding: '40px 20px' }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
         <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
-          Last updated: April 14, 2026
+          Last updated: April 27, 2026
         </p>
 
         <h1 style={{ fontSize: 32, fontWeight: 800, color: 'var(--gold)', marginBottom: 8 }}>
@@ -91,6 +91,7 @@ export default function TermsPage() {
         </p>
         <ul style={list}>
           <li style={{ marginBottom: 8 }}>Reply <strong style={{ color: 'var(--text)' }}>STOP</strong> at any time to opt out of SMS messages.</li>
+          <li style={{ marginBottom: 8 }}>Reply <strong style={{ color: 'var(--text)' }}>HELP</strong> for help or contact joe@therave.co.</li>
           <li style={{ marginBottom: 8 }}>Message and data rates may apply depending on your carrier and plan.</li>
           <li style={{ marginBottom: 8 }}>Message frequency varies based on your vow activity.</li>
         </ul>

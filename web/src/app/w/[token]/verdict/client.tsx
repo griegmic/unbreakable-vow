@@ -1,13 +1,11 @@
 'use client';
-import { useState, useRef, useEffect, useCallback } from 'react';
-import Link from 'next/link';
-import { CheckCheck, Share2, Undo2 } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { CheckCheck, Share2 } from 'lucide-react';
 import {
   FlowCard,
   FlowCTA,
   FlowGrid,
   FlowLabel,
-  FlowPill,
   FlowSecondary,
   FlowShell,
   FlowSpacer,
@@ -31,20 +29,6 @@ interface Vow {
 
 type VerdictChoice = 'kept' | 'broken' | null;
 type ViewState = 'choose' | 'confirm' | 'done';
-
-function formatRelativeTime(dateStr: string | null): string {
-  if (!dateStr) return 'recently';
-  const diff = Date.now() - new Date(dateStr).getTime();
-  if (diff < 0) return 'soon';
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  if (days === 1) return '1 day ago';
-  return `${days} days ago`;
-}
 
 function formatEndDate(dateStr: string | null): string {
   if (!dateStr) return '';
@@ -76,77 +60,15 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
   const busyRef = useRef(false);
   const [error, setError] = useState('');
   const [shared, setShared] = useState(false);
-  const [pendingVerdict, setPendingVerdict] = useState<VerdictChoice>(null);
-  const [toastProgress, setToastProgress] = useState(100);
-  // Checkbox removed per V6 mock (no "I'll tell the truth" gate). Buttons always enabled.
-  const truthSworn = true;
-  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const handleConfirmRef = useRef<(v: VerdictChoice) => Promise<void>>(null!);
-  const EscapeBar = () => (
-    <div style={{
-      position: 'absolute', top: 18, left: 20, right: 20,
-      display: 'flex', alignItems: 'center', justifyContent: 'flex-start',
-      gap: 16, zIndex: 2,
-    }}>
-      <Link
-        href={`/w/${token}`}
-        style={{
-          color: 'var(--uv-text-muted)', textDecoration: 'none',
-          fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 700,
-        }}
-      >
-        &larr; Back to vow
-      </Link>
-    </div>
-  );
-
-  // Cleanup timers on unmount
-  useEffect(() => {
-    return () => {
-      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
-
   const handleChoose = useCallback((verdict: VerdictChoice) => {
-    // Clear any previous timers
-    if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-
     setChoice(verdict);
-    setPendingVerdict(verdict);
     setError('');
-    setToastProgress(100);
-
-    // Start countdown
-    const startTime = Date.now();
-    intervalRef.current = setInterval(() => {
-      const elapsed = Date.now() - startTime;
-      const remaining = Math.max(0, 100 - (elapsed / 3000) * 100);
-      setToastProgress(remaining);
-      if (remaining <= 0 && intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    }, 50);
-
-    undoTimeoutRef.current = setTimeout(() => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      intervalRef.current = null;
-      undoTimeoutRef.current = null;
-      setPendingVerdict(null);
-      setView('confirm');
-      if (verdict) handleConfirmRef.current(verdict);
-    }, 3000);
+    setView('confirm');
   }, []);
 
   const handleUndo = useCallback(() => {
-    if (undoTimeoutRef.current) { clearTimeout(undoTimeoutRef.current); undoTimeoutRef.current = null; }
-    if (intervalRef.current) { clearInterval(intervalRef.current); intervalRef.current = null; }
-    setPendingVerdict(null);
     setChoice(null);
-    setToastProgress(100);
+    setView('choose');
   }, []);
 
   const handleConfirmDirect = async (verdict: VerdictChoice) => {
@@ -200,8 +122,6 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
       setBusy(false);
     }
   };
-  handleConfirmRef.current = handleConfirmDirect;
-
   // ─── DONE STATE ───
   if (view === 'done') {
     const isKept = choice === 'kept';
@@ -239,7 +159,7 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
         <FlowTitle small center>You called it<br/><span style={{ color: isKept ? 'var(--uv-success)' : 'var(--uv-danger)' }}>{isKept ? 'kept.' : 'broken.'}</span></FlowTitle>
         <FlowSub center>
           {isKept
-            ? `${judgeName} just got the news. ${vow.stake_amount > 0 ? `Their ${stakeDollars(vow.stake_amount)} comes back.` : ''}`
+            ? `${judgeName} just got the news. ${vow.stake_amount > 0 ? 'Wallet untouched. Honor intact.' : ''}`
             : `${judgeName} knows. ${vow.stake_amount > 0 ? `${stakeDollars(vow.stake_amount)} will be donated to ${vow.destination}.` : ''}`}
         </FlowSub>
         <FlowCard>
@@ -247,7 +167,7 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
           <FlowVow quote>{vow.refined_text}</FlowVow>
           <FlowGrid
             left={{ label: 'Outcome', value: isKept ? 'Kept' : 'Broken', sub: isKept ? 'word honored' : 'honesty noted', tone: isKept ? 'green' : 'red' }}
-            right={{ label: 'Stake', value: vow.stake_amount > 0 ? stakeDollars(vow.stake_amount) : 'Word', sub: isKept ? 'returned' : `to ${vow.destination || 'the record'}`, tone: 'gold' }}
+            right={{ label: 'Stake', value: vow.stake_amount > 0 ? stakeDollars(vow.stake_amount) : 'Word', sub: isKept ? 'untouched' : `to ${vow.destination || 'the record'}`, tone: 'gold' }}
           />
         </FlowCard>
         <FlowSpacer />
@@ -261,38 +181,35 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
     );
   }
 
-  // ─── CONFIRM (submitting) STATE ───
+  // ─── CONFIRM STATE ───
   if (view === 'confirm') {
+    const isKept = choice === 'kept';
     return (
-      <div style={{ position: 'relative', minHeight: '100dvh', background: 'var(--uv-bg)', backgroundImage: 'radial-gradient(ellipse at 50% 30%, rgba(200,155,60,0.06), var(--uv-bg) 70%)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '80px 36px 40px', textAlign: 'center' }}>
-        <EscapeBar />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: 'var(--uv-gold)', fontFamily: 'var(--uv-font-sans)' }}>
-            UNBREAKABLE VOW
-          </span>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '50vh' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
-              <div
-                style={{
-                  width: 32,
-                  height: 32,
-                  border: '2px solid var(--uv-gold)',
-                  borderTopColor: 'transparent',
-                  borderRadius: '50%',
-                  animation: 'uv-spin 600ms linear infinite',
-                }}
-              />
-              <style>{`@keyframes uv-spin{to{transform:rotate(360deg)}}`}</style>
-              <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Submitting verdict...</p>
-              {error && (
-                <div style={{ borderRadius: 12, padding: 12, backgroundColor: 'rgba(220,38,38,0.1)', border: '1px solid var(--uv-danger)' }}>
-                  <p style={{ fontSize: 14, textAlign: 'center', color: 'var(--uv-danger)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>{error}</p>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <FlowShell center tone={isKept ? 'success' : 'danger'}>
+        <FlowTop action="Back" onAction={handleUndo} />
+        <FlowStamp>Final check</FlowStamp>
+        <FlowTitle small center>
+          Call this vow<br/>
+          <span style={{ color: isKept ? 'var(--uv-success)' : 'var(--uv-danger)' }}>{isKept ? 'kept?' : 'broken?'}</span>
+        </FlowTitle>
+        <FlowSub center>
+          This closes the vow and sends the outcome to {judgeFirstInline}.
+        </FlowSub>
+        <FlowCard>
+          <FlowLabel>The vow</FlowLabel>
+          <FlowVow quote>{vow.refined_text}</FlowVow>
+          <FlowGrid
+            left={{ label: 'Your verdict', value: isKept ? 'Kept' : 'Broken', sub: isKept ? 'word honored' : 'record it', tone: isKept ? 'green' : 'red' }}
+            right={{ label: 'Stake', value: vow.stake_amount > 0 ? stakeDollars(vow.stake_amount) : 'Word', sub: isKept ? 'untouched' : `to ${destinationShort || 'the cause'}`, tone: 'gold' }}
+          />
+        </FlowCard>
+        {error && <ErrorText>{error}</ErrorText>}
+        <FlowSpacer />
+        <FlowCTA tone={isKept ? 'green' : 'red'} onClick={() => handleConfirmDirect(choice)} disabled={busy}>
+          {busy ? 'Submitting...' : isKept ? 'Submit kept' : 'Submit broken'}
+        </FlowCTA>
+        <FlowSecondary onClick={handleUndo}>Change verdict</FlowSecondary>
+      </FlowShell>
     );
   }
 
@@ -307,7 +224,7 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
           : <>{judgeFirstName}&apos;s vow<br/>is <span style={{ color: 'var(--uv-gold-bright)' }}>up.</span></>}
       </FlowTitle>
       {isEarlyCompletion && (
-        <FlowSub center>If you are sure, release them early. Their money comes back and the vow closes.</FlowSub>
+        <FlowSub center>If you are sure, release them early. Their wallet stays untouched and the vow closes.</FlowSub>
       )}
       <FlowCard hot compact={!isEarlyCompletion}>
         <FlowLabel>The vow</FlowLabel>
@@ -328,7 +245,7 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
             </p>
           </FlowCard>
           <FlowSpacer />
-          <FlowCTA tone="green" onClick={() => handleChoose('kept')} disabled={busy || !truthSworn}>Yes, release {judgeFirstName}</FlowCTA>
+          <FlowCTA tone="green" onClick={() => handleChoose('kept')} disabled={busy}>Yes, release {judgeFirstName}</FlowCTA>
           <FlowSecondary onClick={() => { window.location.href = `/w/${token}`; }}>Not yet - keep vow open</FlowSecondary>
           <button
             type="button"
@@ -346,8 +263,8 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
           <FlowStamp>Your call</FlowStamp>
           <FlowTitle small center>Did {judgeFirstInline} keep<br/><span style={{ color: 'var(--uv-gold-bright)' }}>their word?</span></FlowTitle>
           <div style={{ width: '100%', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 4 }}>
-            <VerdictButton label="Yes" sub="Kept it" tone="green" onClick={() => handleChoose('kept')} disabled={busy || !truthSworn} />
-            <VerdictButton label="No" sub="Broke it" tone="red" onClick={() => handleChoose('broken')} disabled={busy || !truthSworn} />
+            <VerdictButton label="Yes" sub="Kept it" tone="green" onClick={() => handleChoose('kept')} disabled={busy} />
+            <VerdictButton label="No" sub="Broke it" tone="red" onClick={() => handleChoose('broken')} disabled={busy} />
           </div>
           <FlowSpacer />
           <button
@@ -366,65 +283,8 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
         </>
       )}
 
-      {/* Undo toast */}
-      {pendingVerdict && (
-        <div style={{ position: 'fixed', bottom: 24, left: 16, right: 16, zIndex: 50, display: 'flex', justifyContent: 'center' }}>
-          <div
-            style={{
-              width: '100%',
-              maxWidth: 400,
-              borderRadius: 'var(--uv-radius-2xl)',
-              padding: 16,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 12,
-              backgroundColor: 'var(--uv-bg-elevated)',
-              border: '1px solid var(--uv-border-strong)',
-              boxShadow: 'var(--uv-shadow-xl)',
-            }}
-          >
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--uv-text)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>
-                Your verdict:{' '}
-                <span style={{ color: pendingVerdict === 'kept' ? 'var(--uv-success)' : 'var(--uv-danger)' }}>
-                  {pendingVerdict === 'kept' ? 'Kept' : 'Broken'}
-                </span>
-              </p>
-              <div style={{ marginTop: 8, height: 4, borderRadius: 2, overflow: 'hidden', backgroundColor: 'var(--uv-bg-card)' }}>
-                <div
-                  style={{
-                    height: '100%',
-                    borderRadius: 2,
-                    transition: 'width 100ms linear',
-                    width: `${toastProgress}%`,
-                    backgroundColor: pendingVerdict === 'kept' ? 'var(--uv-success)' : 'var(--uv-danger)',
-                  }}
-                />
-              </div>
-            </div>
-            <button
-              onClick={handleUndo}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                padding: '8px 16px',
-                borderRadius: 12,
-                backgroundColor: 'var(--uv-bg-card)',
-                border: '1px solid var(--uv-border-strong)',
-                cursor: 'pointer',
-                transition: 'transform 120ms',
-              }}
-            >
-              <Undo2 style={{ width: 14, height: 14, color: 'var(--uv-text-muted)' }} />
-              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>Undo</span>
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Error toast */}
-      {error && !pendingVerdict && (
+      {error && (
         <div style={{ position: 'fixed', bottom: 24, left: 16, right: 16, zIndex: 50, display: 'flex', justifyContent: 'center' }}>
           <div style={{ width: '100%', maxWidth: 400, borderRadius: 'var(--uv-radius-2xl)', padding: 16, backgroundColor: 'rgba(220,38,38,0.1)', border: '1px solid var(--uv-danger)' }}>
             <p style={{ fontSize: 14, textAlign: 'center', color: 'var(--uv-danger)', margin: 0, fontFamily: 'var(--uv-font-sans)' }}>{error}</p>
@@ -460,5 +320,13 @@ function VerdictButton({ label, sub, tone, onClick, disabled }: { label: string;
         <span style={{ display: 'block', color: 'var(--uv-text-dim)', fontFamily: 'var(--uv-font-sans)', fontSize: 10, fontWeight: 800, letterSpacing: '.18em', textTransform: 'uppercase' }}>{sub}</span>
       </span>
     </button>
+  );
+}
+
+function ErrorText({ children }: { children: string }) {
+  return (
+    <div style={{ borderRadius: 12, padding: '12px 14px', marginTop: 10, background: 'rgba(220,38,38,0.1)', color: 'var(--uv-danger)', border: '1px solid var(--uv-danger)', fontFamily: 'var(--uv-font-sans)', fontSize: 14 }}>
+      {children}
+    </div>
   );
 }

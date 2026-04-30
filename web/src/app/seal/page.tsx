@@ -382,10 +382,10 @@ export default function SealPage() {
       paymentVowIdRef.current = null;
       paymentWitnessTokenRef.current = null;
       resetVow();
-      router.replace(isSelfWitness ? `/vow/${sealedId}?sealed=1` : '/sent');
+      router.replace(isSelfWitness || vow.vowType === 'challenge' ? `/vow/${sealedId}?sealed=1` : '/sent');
     }, 2600);
     timersRef.current.push(t0, t1, t2, t3);
-  }, [activeVowText, isSelfWitness, resetVow, router, vow.deadlineIso, vow.rawInput, vow.refinedText, vow.stake.amount, vow.witnessInviteToken, vow.witnessName, vow.witnessPhone]);
+  }, [activeVowText, isSelfWitness, resetVow, router, vow.deadlineIso, vow.rawInput, vow.refinedText, vow.stake.amount, vow.vowType, vow.witnessInviteToken, vow.witnessName, vow.witnessPhone]);
 
   const createVowAndPay = useCallback(async () => {
     if (sealingRef.current) return;
@@ -1002,7 +1002,9 @@ export default function SealPage() {
                 Your vow is bound.
               </h1>
               <p style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 16, lineHeight: 1.45, color: 'var(--uv-text-muted)', margin: '4px 0 0', maxWidth: 300 }}>
-                {namedWitness
+                {vow.vowType === 'challenge'
+                  ? 'The dare is live.'
+                  : namedWitness
                   ? `Next: tell ${namedWitness}.`
                   : 'Next: send the witness link.'}
               </p>
@@ -1468,7 +1470,7 @@ export default function SealPage() {
           </p>
         )}
         <p style={{ fontSize: 10, textAlign: 'center', color: 'var(--uv-text-faint)', marginTop: 8, opacity: 0.8, lineHeight: 1.5 }}>
-          By signing in, you agree to receive transactional SMS (verification codes, vow updates). Your witness will receive a text when you seal. Reply STOP to opt out anytime.
+          By signing in, you agree to receive transactional SMS (verification codes, vow updates). {vow.witnessPhone ? 'Your witness will receive a text when you seal.' : 'After sealing, send your witness the invite link.'} Reply STOP to opt out anytime.
         </p>
       </RitualScreen>
 

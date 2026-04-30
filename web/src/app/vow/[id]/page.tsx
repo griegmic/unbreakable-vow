@@ -864,7 +864,7 @@ function VowDetailContent() {
     </div>
   );
 
-  const CountdownSection = () => (
+  const CountdownSection = ({ statusLabel = witnessLabel }: { statusLabel?: string } = {}) => (
     <div style={{ margin: '16px 0' }}>
       {vow.ends_at && (
         <Countdown endsAt={vow.ends_at} startsAt={vow.starts_at || vow.sealed_at || undefined} />
@@ -872,7 +872,7 @@ function VowDetailContent() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 12 }}>
         <div style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--uv-success)' }} />
         <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)' }}>
-          {witnessLabel}
+          {statusLabel}
         </span>
       </div>
       {endDateFormatted && (
@@ -942,7 +942,7 @@ function VowDetailContent() {
   const VoidConfirmModal = () => (
     <Modal open={voidModalOpen} onClose={() => setVoidModalOpen(false)} title="Withdraw vow?">
       <p style={{ fontSize: 14, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', marginBottom: 16, lineHeight: 1.5 }}>
-        This will cancel your vow{vow.stake_amount > 0 ? ' and refund your stake' : ''}. This cannot be undone.
+        This will cancel your vow{vow.stake_amount > 0 ? ' and leave your wallet untouched' : ''}. This cannot be undone.
       </p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <GoldCTA label={actionBusy ? 'Withdrawing...' : 'Yes, withdraw'} onPress={handleWithdraw} disabled={actionBusy} />
@@ -1218,7 +1218,7 @@ function VowDetailContent() {
             { label: 'Ended today' },
           ]} />
         </FlowCard>
-        <FlowJob title="Now we wait" body={stakeLabel ? 'Kept means refund. Broken means donation.' : 'Kept means honored. Broken means the record stands.'} mark="?" />
+        <FlowJob title="Now we wait" body={stakeLabel ? 'Kept means wallet untouched. Broken means donation.' : 'Kept means honored. Broken means the record stands.'} mark="?" />
         <FlowSpacer />
         {canSelfResolve && <FlowCTA onClick={() => router.push(`/self-resolve?id=${vow.id}`)}>Deliver your verdict</FlowCTA>}
         {isMaker && witnessAccepted && vow.witness_phone && (
@@ -1227,7 +1227,14 @@ function VowDetailContent() {
         {isMaker && witnessAccepted && !vow.witness_phone && (
           <FlowCTA tone="green" onClick={async () => {
             if (!witnessUrl) return;
-            if (navigator.share) await navigator.share({ text: `Time to deliver the verdict on my vow: "${vow.refined_text}"`, url: `${witnessUrl}/verdict` }).catch(() => {});
+            const verdictUrl = `${witnessUrl}/verdict`;
+            const text = `Time to deliver the verdict on my vow: "${vow.refined_text}"`;
+            if (navigator.share) {
+              await navigator.share({ text, url: verdictUrl }).catch(() => {});
+            } else {
+              await navigator.clipboard.writeText(`${text}\n${verdictUrl}`);
+              setActionMsg('Verdict link copied.');
+            }
           }}>Nudge {vow.witness_name} to decide</FlowCTA>
         )}
         {isWitness && vow.witness_invite_token && (
@@ -1287,6 +1294,7 @@ function VowDetailContent() {
   // ============================================================
   if (phase === 'challenge_watching') {
     const targetName = vow.target_phone ? vow.target_phone.slice(-4) : 'them';
+    const verdictLabel = endDateFormatted ? `You judge on ${endDateFormatted}.` : 'You judge when time is up.';
 
     return (
       <RitualScreen>
@@ -1295,7 +1303,7 @@ function VowDetailContent() {
 
         <VowTitle text={vow.refined_text} sub={`${targetName} accepted. The clock is ticking.`} />
 
-        <CountdownSection />
+        <CountdownSection statusLabel={verdictLabel} />
         <TimelineBlock />
         <DevVerdictButtons />
 
@@ -1493,7 +1501,7 @@ function VowDetailContent() {
           You called it off.
         </h1>
         <p style={{ fontSize: 15, color: 'var(--uv-text-muted)', fontFamily: 'var(--uv-font-sans)', margin: 0 }}>
-          {stakeLabel ? `${stakeLabel} was refunded.` : 'This vow was cancelled.'}
+          {stakeLabel ? `${stakeLabel} stays untouched.` : 'This vow was cancelled.'}
         </p>
       </div>
 

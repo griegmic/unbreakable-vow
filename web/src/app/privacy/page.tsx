@@ -26,7 +26,7 @@ export default function PrivacyPage() {
     <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', padding: '40px 20px' }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
         <p style={{ color: 'var(--text-secondary)', fontSize: 13, marginBottom: 8 }}>
-          Last updated: April 14, 2026
+          Last updated: April 27, 2026
         </p>
 
         <h1 style={{ fontSize: 32, fontWeight: 800, color: 'var(--text)', marginBottom: 8 }}>
@@ -67,6 +67,7 @@ export default function PrivacyPage() {
         <ul style={list}>
           <li><strong style={{ color: 'var(--text)' }}>Message frequency:</strong> Typically 1&ndash;3 messages per vow.</li>
           <li><strong style={{ color: 'var(--text)' }}>Opt-out:</strong> You may reply STOP to any message to stop receiving SMS from us.</li>
+          <li><strong style={{ color: 'var(--text)' }}>Help:</strong> Reply HELP for help or contact joe@therave.co.</li>
           <li><strong style={{ color: 'var(--text)' }}>Costs:</strong> Message and data rates may apply depending on your carrier and plan.</li>
         </ul>
 

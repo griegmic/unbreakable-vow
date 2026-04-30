@@ -1,7 +1,6 @@
-import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { BookOpen, Menu, Send, Settings, Sparkles, Trophy, Users, X, Zap } from 'lucide-react-native';
+import { BookOpen, Gauge, Menu, Send, Settings, Sparkles, Trophy, Users, X, Zap } from 'lucide-react-native';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
@@ -13,7 +12,8 @@ import {
   View,
 } from 'react-native';
 
-import { palette } from '@/constants/unbreakable';
+import { hapticPrimary, hapticSecondary, hapticSelection } from '@/lib/haptics';
+import { uvColors, uvFonts } from '@/lib/uv-tokens';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -39,12 +39,12 @@ export function AppMenuButton({ style }: AppMenuProps) {
   const itemSlides = useRef([0, 1, 2, 3, 4, 5, 6].map(() => new Animated.Value(-20))).current;
 
   const open = useCallback(() => {
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    hapticSecondary();
     setVisible(true);
   }, []);
 
-  const close = useCallback(() => {
-    void Haptics.selectionAsync();
+  const close = useCallback((withHaptic = true) => {
+    if (withHaptic) hapticSelection();
     Animated.parallel([
       Animated.timing(backdropOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
       Animated.timing(panelTranslate, { toValue: -SCREEN_HEIGHT, duration: 250, useNativeDriver: true }),
@@ -75,7 +75,8 @@ export function AppMenuButton({ style }: AppMenuProps) {
   }, [visible]);
 
   const navigateTo = useCallback((route: string) => {
-    close();
+    hapticPrimary();
+    close(false);
     setTimeout(() => {
       router.push(route as never);
     }, 280);
@@ -83,32 +84,38 @@ export function AppMenuButton({ style }: AppMenuProps) {
 
   const menuItems: MenuItemConfig[] = [
     {
-      icon: <Zap color={palette.goldBright} size={18} />,
+      icon: <Zap color={uvColors.goldBright} size={18} />,
       label: 'Quick Vow',
       description: 'Everything on one screen',
       route: '/quick-vow',
     },
     {
-      icon: <BookOpen color={palette.textSecondary} size={18} />,
+      icon: <BookOpen color={uvColors.goldBright} size={18} />,
+      label: 'Guided Flow',
+      description: 'The cinematic setup',
+      route: '/guided',
+    },
+    {
+      icon: <Gauge color={uvColors.textMuted} size={18} />,
       label: 'My Vows',
       description: 'Active and past vows',
       route: '/dashboard',
     },
     {
-      icon: <Send color={palette.goldBright} size={18} />,
+      icon: <Send color={uvColors.goldBright} size={18} />,
       label: 'Dare a Friend',
       description: 'Cast a vow on someone',
       route: '/cast',
     },
     {
-      icon: <Users color={palette.goldBright} size={18} />,
+      icon: <Users color={uvColors.goldBright} size={18} />,
       label: 'Group Challenges',
       description: 'Compete with hundreds on shared goals',
       route: '/challenges',
       badge: 'SOON',
     },
     {
-      icon: <Settings color={palette.textMuted} size={18} />,
+      icon: <Settings color={uvColors.textMuted} size={18} />,
       label: 'Settings',
       description: 'Account, notifications, payment',
       route: '/settings',
@@ -122,7 +129,7 @@ export function AppMenuButton({ style }: AppMenuProps) {
         style={[styles.menuButton, style]}
         testID="app-menu-button"
       >
-        <Menu color={palette.textSecondary} size={18} />
+        <Menu color={uvColors.textMuted} size={18} />
       </Pressable>
 
       <Modal
@@ -130,32 +137,32 @@ export function AppMenuButton({ style }: AppMenuProps) {
         transparent
         animationType="none"
         statusBarTranslucent
-        onRequestClose={close}
+        onRequestClose={() => close()}
       >
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
-          <Pressable style={StyleSheet.absoluteFill} onPress={close} />
+          <Pressable style={StyleSheet.absoluteFill} onPress={() => close()} />
         </Animated.View>
 
         <Animated.View style={[styles.panel, { transform: [{ translateY: panelTranslate }] }]}>
           <LinearGradient
-            colors={['#0B0F18', '#0E1320', '#111827']}
+            colors={['#15110d', '#0f0d0a', '#090806']}
             style={StyleSheet.absoluteFill}
           />
           <View style={styles.panelContent}>
             <View style={styles.panelHeader}>
               <View style={styles.panelBrand}>
                 <LinearGradient
-                  colors={[palette.goldBright, palette.gold, palette.goldDeep]}
+                  colors={[uvColors.goldBright, uvColors.gold, uvColors.goldDeep]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 1 }}
                   style={styles.brandIcon}
                 >
-                  <Sparkles color="#0B0D11" size={12} />
+                  <Sparkles color={uvColors.textOnGold} size={12} />
                 </LinearGradient>
                 <Text style={styles.brandLabel}>Unbreakable Vow</Text>
               </View>
-              <Pressable onPress={close} style={styles.closeButton} testID="menu-close">
-                <X color={palette.textSecondary} size={18} />
+              <Pressable onPress={() => close()} style={styles.closeButton} testID="menu-close">
+                <X color={uvColors.textMuted} size={18} />
               </Pressable>
             </View>
 
@@ -200,7 +207,7 @@ export function AppMenuButton({ style }: AppMenuProps) {
 
             <View style={styles.panelFooter}>
               <View style={styles.streakRow}>
-                <Trophy color={palette.goldBright} size={14} />
+                <Trophy color={uvColors.goldBright} size={14} />
                 <Text style={styles.streakText}>Keep your word. Build your streak.</Text>
               </View>
             </View>
@@ -216,9 +223,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: palette.surface,
+    backgroundColor: 'rgba(240,233,219,0.04)',
     borderWidth: 1,
-    borderColor: palette.border,
+    borderColor: uvColors.borderSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -264,16 +271,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   brandLabel: {
-    color: palette.textMuted,
-    fontSize: 13,
-    fontWeight: '600' as const,
-    letterSpacing: 0.3,
+    color: uvColors.text,
+    fontFamily: uvFonts.serifMedium,
+    fontSize: 16,
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.06)',
+    backgroundColor: 'rgba(240,233,219,0.05)',
+    borderWidth: 1,
+    borderColor: uvColors.borderSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -314,15 +322,16 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   menuLabel: {
-    color: palette.text,
+    color: uvColors.text,
+    fontFamily: uvFonts.sansSemibold,
     fontSize: 15,
-    fontWeight: '600' as const,
   },
   menuLabelDisabled: {
-    color: palette.textMuted,
+    color: uvColors.textMuted,
   },
   menuDesc: {
-    color: palette.textMuted,
+    color: uvColors.textMuted,
+    fontFamily: uvFonts.sans,
     fontSize: 12,
   },
   badge: {
@@ -334,9 +343,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(212,162,79,0.18)',
   },
   badgeText: {
-    color: palette.goldBright,
+    color: uvColors.goldBright,
+    fontFamily: uvFonts.sansSemibold,
     fontSize: 9,
-    fontWeight: '700' as const,
     letterSpacing: 0.6,
   },
   panelFooter: {
@@ -351,8 +360,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   streakText: {
-    color: palette.textMuted,
+    color: uvColors.textMuted,
+    fontFamily: uvFonts.sansMedium,
     fontSize: 13,
-    fontWeight: '500' as const,
   },
 });

@@ -12,6 +12,8 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY')!;
 
+type SupabaseLike = any;
+
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -70,7 +72,7 @@ async function getAuthUser(supabase: ReturnType<typeof createClient>, req: Reque
 }
 
 async function findUserByAuthField(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseLike,
   field: 'email' | 'phone',
   value: string,
 ) {
@@ -93,7 +95,7 @@ async function findUserByAuthField(
 }
 
 async function resolveTargetUser(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseLike,
   req: Request,
   input: { email?: string; phone?: string; display_name?: string },
 ) {
@@ -191,12 +193,16 @@ Deno.serve(async (req) => {
       if (!phone) {
         return jsonResponse({ error: 'phone required' }, 400);
       }
+      const normalizedPhone = normalizePhoneE164(phone);
+      if (!normalizedPhone) {
+        return jsonResponse({ error: 'invalid_phone' }, 400);
+      }
       if (vow.challenge_status !== 'accepted') {
         return jsonResponse({ error: 'vow_not_accepted' }, 400);
       }
       await supabase
         .from('vows')
-        .update({ target_phone: phone })
+        .update({ target_phone: normalizedPhone, target_phone_e164: normalizedPhone })
         .eq('id', vow.id);
       return jsonResponse({ success: true, action: 'phone_saved' });
     }
