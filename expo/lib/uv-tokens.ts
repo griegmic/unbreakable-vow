@@ -28,6 +28,12 @@ export const uvColors = {
   textDim: '#756c5d',
   textFaint: '#5A5346',
   textOnGold: '#1A1205',
+  textCopy: '#b4aa98',    // body copy (between text and muted)
+  textKicker: '#817766',  // kicker/label text (between muted and dim)
+  textCheeky: '#b0a691',  // cheeky/subtle copy
+  textQuiet: '#bdb39f',   // quiet button/link text
+  textNote: '#8f8573',    // note/footnote text
+  textMetaLabel: '#9b8f7d', // meta kicker labels
 
   // Gold (primary accent)
   gold: '#d6a83c',
