@@ -1,8 +1,10 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
+import { isSMSOptedOut, markSMSOptedOut, sendSMSWithRetry } from '../_shared/notify.ts';
+import { normalizePhoneE164 } from '../_shared/phone.ts';
 import {
   sealMessage, witnessReminderMessage, verdictRequestMessage,
-  outcomeMessage, challengeMessage,
+  challengeMessage,
   witness24hMessage,
   maker24hMessage, makerVerdictTimeMessage, makerOutcomeMessage,
 } from '../_shared/sms-templates.ts';
@@ -60,7 +62,20 @@ Deno.serve(async (req) => {
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const now = new Date();
-  const results: Record<string, unknown> = { witness_reminder: 0, warmup: 0, verdict_request: 0, auto_resolve: 0, sms_retry: 0, refund_retry: 0, vow_lifecycle: 0, challenge_expire: 0, push: 0, maker_sms: 0, witness_lifecycle_sms: 0, errors: [] as string[] };
+  const results = {
+    witness_reminder: 0,
+    warmup: 0,
+    verdict_request: 0,
+    auto_resolve: 0,
+    sms_retry: 0,
+    refund_retry: 0,
+    vow_lifecycle: 0,
+    challenge_expire: 0,
+    push: 0,
+    maker_sms: 0,
+    witness_lifecycle_sms: 0,
+    errors: [] as string[],
+  };
 
   // For challenge vows, the "vow keeper" is target_user_id, not user_id
   const getVowKeeperId = (vow: { vow_type?: string; target_user_id?: string; user_id: string }) =>
@@ -98,8 +113,10 @@ Deno.serve(async (req) => {
         const ownerName = profile?.display_name || 'Someone';
         const acceptUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
         const body = witnessReminderMessage(ownerName, acceptUrl);
-        const sid = await sendSMS(vow.witness_phone!, body);
-        await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_reminder', twilio_sid: sid });
+        const sid = await sendSMSWithRetry(supabase, vow.witness_phone!, body, 'witness_reminder', vow.id);
+        if (sid) {
+          await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_reminder', twilio_sid: sid });
+        }
 
         // Push notification to owner
         await supabase.from('push_queue').insert({
@@ -186,8 +203,10 @@ Deno.serve(async (req) => {
           const ownerName = profile?.display_name || 'Someone';
           const verdictUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}/verdict`;
           const body = verdictRequestMessage(ownerName, verdictUrl);
-          const sid = await sendSMS(vow.witness_phone, body);
-          await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'verdict_request', twilio_sid: sid });
+          const sid = await sendSMSWithRetry(supabase, vow.witness_phone, body, 'verdict_request', vow.id);
+          if (sid) {
+            await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'verdict_request', twilio_sid: sid });
+          }
         }
 
         // For challenge vows, also push-notify the target (vow keeper) that verdict time is here
@@ -292,9 +311,11 @@ Deno.serve(async (req) => {
             const keeperName = profile?.display_name || 'Someone';
             const body = noRealPayment
               ? `No verdict received. ${keeperName}'s vow auto-resolved as kept.`
-              : `No verdict received. ${keeperName}'s vow auto-resolved as kept. $${amountDollars} refunded.`;
-            const sid = await sendSMS(vow.witness_phone, body);
-            await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'outcome', twilio_sid: sid });
+              : `No verdict received. ${keeperName}'s vow auto-resolved as kept. Wallet untouched.`;
+            const sid = await sendSMSWithRetry(supabase, vow.witness_phone, body, 'outcome', vow.id);
+            if (sid) {
+              await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'outcome', twilio_sid: sid });
+            }
           } catch (smsErr) {
             results.errors.push(`auto-resolve sms ${vow.id}: ${smsErr}`);
           }
@@ -306,7 +327,7 @@ Deno.serve(async (req) => {
           title: 'Vow auto-resolved: Kept!',
           body: noRealPayment
             ? 'No verdict was received, so the vow was auto-resolved as kept.'
-            : `No verdict was received, so the vow was auto-resolved as kept. $${amountDollars} refunded.`,
+            : 'No verdict was received, so the vow was auto-resolved as kept. Wallet untouched.',
           data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict: 'kept' },
           send_after: now.toISOString(),
         });
@@ -318,7 +339,7 @@ Deno.serve(async (req) => {
             title: 'Vow auto-resolved: Kept!',
             body: noRealPayment
               ? 'No verdict was received, so your vow was auto-resolved as kept.'
-              : `No verdict was received, so your vow was auto-resolved as kept. $${amountDollars} refunded.`,
+              : 'No verdict was received, so your vow was auto-resolved as kept. Wallet untouched.',
             data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict: 'kept' },
             send_after: now.toISOString(),
           });
@@ -330,7 +351,107 @@ Deno.serve(async (req) => {
       }
     }
 
-    // === TASK 5: Retry failed SMS ===
+    // === TASK 5: Process queued SMS retries ===
+    try {
+      const { data: queuedSms } = await supabase
+        .from('sms_retry_queue')
+        .select('*')
+        .eq('status', 'queued')
+        .lte('next_attempt_at', now.toISOString())
+        .order('next_attempt_at', { ascending: true })
+        .limit(50);
+
+      for (const item of queuedSms || []) {
+        try {
+          if (item.vow_id) {
+            const { data: existingLog } = await supabase
+              .from('sms_log')
+              .select('id')
+              .eq('vow_id', item.vow_id)
+              .eq('message_type', item.message_type)
+              .limit(1)
+              .maybeSingle();
+
+            if (existingLog) {
+              await supabase
+                .from('sms_retry_queue')
+                .update({ status: 'sent', last_attempt_at: now.toISOString() })
+                .eq('id', item.id);
+              continue;
+            }
+          }
+
+          const normalizedTo = normalizePhoneE164(item.to_phone);
+          if (!normalizedTo || await isSMSOptedOut(supabase, normalizedTo)) {
+            await supabase
+              .from('sms_retry_queue')
+              .update({ status: 'dead', last_attempt_at: now.toISOString() })
+              .eq('id', item.id);
+            if (item.vow_id) {
+              await createAuditEvent(supabase, item.vow_id, 'sms_delivery_skipped', 'system', null, {
+                message_type: item.message_type,
+                reason: normalizedTo ? 'opted_out' : 'invalid_phone',
+              });
+            }
+            continue;
+          }
+
+          const sid = await sendSMS(normalizedTo, item.body);
+          if (item.vow_id) {
+            await supabase.from('sms_log').insert({
+              vow_id: item.vow_id,
+              message_type: item.message_type,
+              twilio_sid: sid,
+            });
+          }
+          await supabase
+            .from('sms_retry_queue')
+            .update({ status: 'sent', attempts: (item.attempts || 0) + 1, last_attempt_at: now.toISOString() })
+            .eq('id', item.id);
+          results.sms_retry++;
+        } catch (smsErr) {
+          if (smsErr && typeof smsErr === 'object' && 'code' in smsErr && smsErr.code === 21610) {
+            await markSMSOptedOut(supabase, item.to_phone, 'TWILIO_21610', 'STOP');
+            await supabase
+              .from('sms_retry_queue')
+              .update({ status: 'dead', attempts: (item.attempts || 0) + 1, last_attempt_at: now.toISOString() })
+              .eq('id', item.id);
+            if (item.vow_id) {
+              await createAuditEvent(supabase, item.vow_id, 'sms_delivery_skipped', 'system', null, {
+                message_type: item.message_type,
+                reason: 'opted_out',
+                twilio_code: 21610,
+              });
+            }
+            continue;
+          }
+          const attempts = (item.attempts || 0) + 1;
+          const isDead = attempts >= 5;
+          const delayMinutes = Math.min(60, 2 ** attempts);
+          await supabase
+            .from('sms_retry_queue')
+            .update({
+              attempts,
+              status: isDead ? 'dead' : 'queued',
+              last_attempt_at: now.toISOString(),
+              next_attempt_at: new Date(now.getTime() + delayMinutes * 60 * 1000).toISOString(),
+            })
+            .eq('id', item.id);
+
+          if (isDead && item.vow_id) {
+            await createAuditEvent(supabase, item.vow_id, 'sms_failed', 'system', null, {
+              message_type: item.message_type,
+              reason: smsErr instanceof Error ? smsErr.message : String(smsErr),
+            });
+          }
+        }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.errors.push(`sms_retry_queue: ${msg}`);
+    }
+
+    // === TASK 5b: Retry legacy failed seal SMS ===
     try {
       const { data: smsFailed } = await supabase
         .from('vows')
@@ -339,34 +460,12 @@ Deno.serve(async (req) => {
         .gte('sealed_at', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString());
 
       for (const vow of smsFailed || []) {
-        const { count } = await supabase
-          .from('sms_log')
-          .select('*', { count: 'exact', head: true })
-          .eq('vow_id', vow.id)
-          .eq('message_type', 'seal');
-
-        if ((count || 0) >= 3) {
-          // Give up — push notification to maker
-          await supabase.from('push_queue').insert({
-            user_id: vow.user_id,
-            title: 'Witness invite failed',
-            body: `We couldn't text your witness. Share the link manually.`,
-            data: { route: `/vow-detail?vowId=${vow.id}`, vowId: vow.id },
-            send_after: new Date().toISOString(),
-          });
-          await supabase.from('vows').update({ sms_failed: false }).eq('id', vow.id);
-          await createAuditEvent(supabase, vow.id, 'sms_failed', 'system', null, { reason: 'max_retries_exceeded' });
-          continue;
-        }
-
-        // Retry SMS
+        // Move legacy sms_failed rows onto the durable retry path and clear
+        // the flag so each failed invite is queued once instead of every cron run.
         try {
           const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
           const ownerName = profile?.display_name || 'Someone';
           const amountDollars = Math.round(vow.stake_amount / 100);
-          const endDate = vow.ends_at
-            ? new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-            : 'soon';
 
           let body: string;
           if (vow.vow_type === 'challenge' && vow.challenge_invite_token) {
@@ -374,14 +473,15 @@ Deno.serve(async (req) => {
             body = challengeMessage(ownerName, Math.round(vow.stake_amount / 100), challengeUrl);
           } else {
             const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
-            body = sealMessage(amountDollars, witnessUrl);
+            body = sealMessage(amountDollars, witnessUrl, ownerName);
           }
-          const sid = await sendSMS(vow.witness_phone!, body);
-          await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'seal', twilio_sid: sid });
+          const sid = await sendSMSWithRetry(supabase, vow.witness_phone!, body, 'seal', vow.id);
+          if (sid) {
+            await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'seal', twilio_sid: sid });
+          }
           await supabase.from('vows').update({ sms_failed: false }).eq('id', vow.id);
-          await createAuditEvent(supabase, vow.id, 'sms_retried', 'system');
+          await createAuditEvent(supabase, vow.id, sid ? 'sms_retried' : 'sms_retry_queued', 'system');
         } catch (smsErr) {
-          // Leave flag, will retry next cron run
           console.error(`[cron-runner] SMS retry failed for ${vow.id}:`, smsErr);
         }
         results.sms_retry++;
@@ -690,15 +790,17 @@ Deno.serve(async (req) => {
           // }
 
           // --- Maker 24h before SMS ---
-          if (twentyFourBefore > midpoint && now >= twentyFourBefore) {
+          if (twentyFourBefore >= midpoint && now >= twentyFourBefore) {
             if (!(await smsAlreadySent('maker_24h'))) {
               const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
               if (makerUser?.phone) {
                 const amountDollars = Math.round(vow.stake_amount / 100);
                 const body = maker24hMessage(amountDollars);
-                const sid = await sendSMS(makerUser.phone, body);
-                await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_24h', twilio_sid: sid });
-                results.maker_sms = (results.maker_sms as number) + 1;
+                const sid = await sendSMSWithRetry(supabase, makerUser.phone, body, 'maker_24h', vow.id);
+                if (sid) {
+                  await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_24h', twilio_sid: sid });
+                }
+                results.maker_sms++;
               }
             }
           }
@@ -709,9 +811,11 @@ Deno.serve(async (req) => {
               const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
               if (makerUser?.phone) {
                 const body = makerVerdictTimeMessage(vow.witness_name || 'your witness');
-                const sid = await sendSMS(makerUser.phone, body);
-                await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_verdict_time', twilio_sid: sid });
-                results.maker_sms = (results.maker_sms as number) + 1;
+                const sid = await sendSMSWithRetry(supabase, makerUser.phone, body, 'maker_verdict_time', vow.id);
+                if (sid) {
+                  await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_verdict_time', twilio_sid: sid });
+                }
+                results.maker_sms++;
               }
             }
           }
@@ -730,14 +834,16 @@ Deno.serve(async (req) => {
           // }
 
           // --- Witness 24h before SMS ---
-          if (vow.witness_phone && twentyFourBefore > midpoint && now >= twentyFourBefore) {
+          if (vow.witness_phone && twentyFourBefore >= midpoint && now >= twentyFourBefore) {
             if (!(await smsAlreadySent('witness_24h'))) {
               const { data: keeperProfile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
               const keeperName = keeperProfile?.display_name || 'your friend';
               const body = witness24hMessage(keeperName);
-              const sid = await sendSMS(vow.witness_phone, body);
-              await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_24h', twilio_sid: sid });
-              results.witness_lifecycle_sms = (results.witness_lifecycle_sms as number) + 1;
+              const sid = await sendSMSWithRetry(supabase, vow.witness_phone, body, 'witness_24h', vow.id);
+              if (sid) {
+                await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_24h', twilio_sid: sid });
+              }
+              results.witness_lifecycle_sms++;
             }
           }
         } catch (err) {
@@ -784,7 +890,7 @@ Deno.serve(async (req) => {
             send_after: now.toISOString(),
           });
 
-          results.challenge_expire = (results.challenge_expire || 0) + 1;
+          results.challenge_expire++;
         } catch (err) {
           results.errors.push(`challenge_expire ${vow.id}: ${err}`);
         }
@@ -792,6 +898,40 @@ Deno.serve(async (req) => {
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       results.errors.push(`challenge_expire: ${msg}`);
+    }
+
+    // === TASK 10: Clean up orphan drafts older than 24h ===
+    // Anonymous drafts that were never claimed or sealed within 24h are voided.
+    try {
+      const orphanCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      const { data: orphanDrafts } = await supabase
+        .from('vows')
+        .select('id')
+        .eq('status', 'draft')
+        .lt('created_at', orphanCutoff)
+        .is('user_id', null)
+        .not('anonymous_owner_token', 'is', null);
+
+      for (const draft of orphanDrafts || []) {
+        try {
+          const { data: voided } = await supabase
+            .from('vows')
+            .update({ status: 'voided' })
+            .eq('id', draft.id)
+            .eq('status', 'draft')
+            .select('id')
+            .maybeSingle();
+
+          if (voided) {
+            await createAuditEvent(supabase, draft.id, 'orphan_draft_voided', 'system');
+          }
+        } catch (err) {
+          results.errors.push(`orphan_cleanup ${draft.id}: ${err}`);
+        }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.errors.push(`orphan_cleanup: ${msg}`);
     }
 
     // === TASK 4: Process push notification queue ===

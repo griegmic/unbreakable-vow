@@ -1,7 +1,8 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { createAuditEvent } from '../_shared/audit.ts';
-import { sendSMS } from '../_shared/twilio.ts';
+import { sendSMSWithRetry } from '../_shared/notify.ts';
 import { witnessAcceptConfirmMessage, makerWitnessAcceptedMessage } from '../_shared/sms-templates.ts';
+import { normalizePhoneE164 } from '../_shared/phone.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,7 +55,17 @@ Deno.serve(async (req) => {
       }
       const updates: Record<string, string> = {};
       // Only set witness_phone if not already set (don't overwrite maker-provided phone)
-      if (reminderPhone && !vow.witness_phone) updates.witness_phone = reminderPhone;
+      if (reminderPhone && !vow.witness_phone) {
+        const normalizedPhone = normalizePhoneE164(reminderPhone);
+        if (!normalizedPhone) {
+          return new Response(JSON.stringify({ error: 'invalid_phone' }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        updates.witness_phone = normalizedPhone;
+        updates.witness_phone_e164 = normalizedPhone;
+      }
       if (reminderName && (!vow.witness_name || vow.witness_name === 'Just me' || vow.witness_name === 'Your witness')) updates.witness_name = reminderName;
       if (Object.keys(updates).length > 0) {
         await supabase.from('vows').update(updates).eq('id', vow.id);
@@ -62,6 +73,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Expiration guard: reject if vow deadline has passed + 72h auto-resolve window
+    if (vow.ends_at) {
+      const expiresAt = new Date(new Date(vow.ends_at).getTime() + 72 * 60 * 60 * 1000);
+      if (new Date() > expiresAt) {
+        return new Response(JSON.stringify({ error: 'token_expired' }), {
+          status: 410,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Check vow is in a state where acceptance makes sense
@@ -122,13 +144,15 @@ Deno.serve(async (req) => {
 
     // Atomic update — only set if still null
     const now = new Date().toISOString();
-    const { count } = await supabase
+    const { data: acceptedRow } = await supabase
       .from('vows')
       .update({ witness_accepted_at: now, witness_declined: false })
       .eq('id', vow.id)
-      .is('witness_accepted_at', null);
+      .is('witness_accepted_at', null)
+      .select('id')
+      .maybeSingle();
 
-    if (count === 0) {
+    if (!acceptedRow) {
       return new Response(JSON.stringify({ success: true, already_accepted: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -212,12 +236,14 @@ Deno.serve(async (req) => {
           .single();
         const makerName = makerProfile?.display_name || 'your friend';
         const confirmBody = witnessAcceptConfirmMessage(makerName);
-        const sid = await sendSMS(vow.witness_phone, confirmBody);
-        await supabase.from('sms_log').insert({
-          vow_id: vow.id,
-          message_type: 'witness_accept_confirm',
-          twilio_sid: sid,
-        });
+        const sid = await sendSMSWithRetry(supabase, vow.witness_phone, confirmBody, 'witness_accept_confirm', vow.id);
+        if (sid) {
+          await supabase.from('sms_log').insert({
+            vow_id: vow.id,
+            message_type: 'witness_accept_confirm',
+            twilio_sid: sid,
+          });
+        }
       } catch (smsErr) {
         console.error('[accept-witness] witness confirm SMS failed:', smsErr);
       }
@@ -233,12 +259,14 @@ Deno.serve(async (req) => {
       if (makerUser?.phone) {
         const witnessName = vow.witness_name || 'Your witness';
         const makerBody = makerWitnessAcceptedMessage(witnessName);
-        const sid = await sendSMS(makerUser.phone, makerBody);
-        await supabase.from('sms_log').insert({
-          vow_id: vow.id,
-          message_type: 'maker_witness_accepted',
-          twilio_sid: sid,
-        });
+        const sid = await sendSMSWithRetry(supabase, makerUser.phone, makerBody, 'maker_witness_accepted', vow.id);
+        if (sid) {
+          await supabase.from('sms_log').insert({
+            vow_id: vow.id,
+            message_type: 'maker_witness_accepted',
+            twilio_sid: sid,
+          });
+        }
       }
     } catch (smsErr) {
       console.error('[accept-witness] maker notify SMS failed:', smsErr);

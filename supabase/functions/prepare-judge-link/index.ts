@@ -23,6 +23,7 @@ type PreparePayload = {
   destination?: string;
   ends_at?: string;
   share_method?: ShareMethod;
+  anonymous_token?: string;
 };
 
 function json(data: unknown, status = 200) {
@@ -78,13 +79,24 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
-    if (!authHeader) return json({ error: 'missing_authorization' }, 401);
-
     const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (authError || !user) return json({ error: 'unauthorized' }, 401);
+
+    // Support both authenticated and anonymous drafts.
+    // Anonymous drafts use an anonymous_token for later claim-vow ownership transfer.
+    let userId: string | null = null;
+    if (authHeader) {
+      const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+      if (!authError && user) userId = user.id;
+    }
 
     const body = await req.json().catch(() => ({})) as PreparePayload;
+
+    // Anonymous callers must provide an anonymous_token
+    const anonymousToken = cleanString(body.anonymous_token) || null;
+    if (!userId && !anonymousToken) {
+      return json({ error: 'missing_authorization_or_anonymous_token' }, 401);
+    }
+
     const shareMethod = body.share_method === 'copy' || body.share_method === 'contact' ? body.share_method : 'share';
     const rawInput = cleanString(body.raw_input);
     const refinedText = cleanString(body.refined_text, rawInput);
@@ -119,12 +131,19 @@ Deno.serve(async (req) => {
     } | null = null;
 
     if (body.vow_id) {
-      const { data: existing, error: existingError } = await supabase
+      // Authenticated users look up by user_id; anonymous users look up by anonymous_owner_token
+      let query = supabase
         .from('vows')
         .select('id, status, witness_invite_token, witness_share_locked_at, terms_hash')
-        .eq('id', body.vow_id)
-        .eq('user_id', user.id)
-        .maybeSingle();
+        .eq('id', body.vow_id);
+
+      if (userId) {
+        query = query.eq('user_id', userId);
+      } else {
+        query = query.eq('anonymous_owner_token', anonymousToken!);
+      }
+
+      const { data: existing, error: existingError } = await query.maybeSingle();
       if (existingError) return json({ error: existingError.message }, 500);
       sourceDraft = existing;
     }
@@ -141,8 +160,7 @@ Deno.serve(async (req) => {
       ? crypto.randomUUID()
       : sourceDraft.witness_invite_token;
 
-    const draftPayload = {
-      user_id: user.id,
+    const draftPayload: Record<string, unknown> = {
       raw_input: terms.raw_input,
       refined_text: terms.refined_text,
       witness_name: witnessName,
@@ -158,6 +176,13 @@ Deno.serve(async (req) => {
       witness_share_method: shareMethod,
       terms_hash: termsHash,
     };
+
+    // Set ownership: authenticated user gets user_id, anonymous gets token
+    if (userId) {
+      draftPayload.user_id = userId;
+    } else {
+      draftPayload.anonymous_owner_token = anonymousToken;
+    }
 
     let draftId: string;
 
@@ -186,18 +211,18 @@ Deno.serve(async (req) => {
           .update({ status: 'voided', superseded_by_vow_id: draftId })
           .eq('id', sourceDraft.id)
           .eq('status', 'draft');
-        await createAuditEvent(supabase, sourceDraft.id, 'terms_changed_after_share', 'maker', user.id, { superseded_by_vow_id: draftId });
+        await createAuditEvent(supabase, sourceDraft.id, 'terms_changed_after_share', 'maker', userId, { superseded_by_vow_id: draftId });
       }
     }
 
     const witnessUrl = `${publicSiteUrl.replace(/\/$/, '')}/w/${token}`;
     const shareText = buildShareText(terms, witnessUrl);
     const eventType = shareMethod === 'copy' ? 'judge_link_copied' : 'judge_link_shared';
-    await createAuditEvent(supabase, draftId, 'judge_link_prompt_seen', 'maker', user.id, {
+    await createAuditEvent(supabase, draftId, 'judge_link_prompt_seen', 'maker', userId, {
       share_method: shareMethod,
       terms_hash: termsHash,
     });
-    await createAuditEvent(supabase, draftId, eventType, 'maker', user.id, {
+    await createAuditEvent(supabase, draftId, eventType, 'maker', userId, {
       share_method: shareMethod,
       terms_hash: termsHash,
     });
@@ -209,6 +234,7 @@ Deno.serve(async (req) => {
       shareText,
       termsHash,
       supersededVowId: shouldSupersede ? sourceDraft?.id : null,
+      anonymousToken: !userId ? anonymousToken : undefined,
     });
   } catch (err) {
     console.error('prepare-judge-link error:', err);

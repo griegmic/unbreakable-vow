@@ -1,5 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { sendSMS } from '../_shared/twilio.ts';
+import { sendSMSWithRetry } from '../_shared/notify.ts';
 import { outcomeMessage, makerOutcomeMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 import { upsertSettlement, recordSettlementEvent } from '../_shared/settlements.ts';
@@ -59,6 +59,17 @@ Deno.serve(async (req) => {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Expiration guard: reject if vow deadline has passed + 72h auto-resolve window
+    if (vow.ends_at) {
+      const expiresAt = new Date(new Date(vow.ends_at).getTime() + 72 * 60 * 60 * 1000);
+      if (new Date() > expiresAt) {
+        return new Response(JSON.stringify({ error: 'token_expired' }), {
+          status: 410,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Check status
@@ -323,12 +334,14 @@ Deno.serve(async (req) => {
 
       try {
         const body = outcomeMessage(keeperName, verdict as 'kept' | 'broken', amountDollars, vow.destination);
-        const twilioSid = await sendSMS(vow.witness_phone, body);
-        await supabase.from('sms_log').insert({
-          vow_id: vow.id,
-          message_type: 'outcome',
-          twilio_sid: twilioSid,
-        });
+        const twilioSid = await sendSMSWithRetry(supabase, vow.witness_phone, body, 'outcome', vow.id);
+        if (twilioSid) {
+          await supabase.from('sms_log').insert({
+            vow_id: vow.id,
+            message_type: 'outcome',
+            twilio_sid: twilioSid,
+          });
+        }
       } catch (smsErr) {
         console.error('Outcome SMS failed:', smsErr);
       }
@@ -344,12 +357,14 @@ Deno.serve(async (req) => {
       if (makerUser?.phone) {
         const amtDollars = Math.round(vow.stake_amount / 100);
         const makerBody = makerOutcomeMessage(verdict as 'kept' | 'broken', amtDollars, vow.destination);
-        const sid = await sendSMS(makerUser.phone, makerBody);
-        await supabase.from('sms_log').insert({
-          vow_id: vow.id,
-          message_type: 'maker_outcome',
-          twilio_sid: sid,
-        });
+        const sid = await sendSMSWithRetry(supabase, makerUser.phone, makerBody, 'maker_outcome', vow.id);
+        if (sid) {
+          await supabase.from('sms_log').insert({
+            vow_id: vow.id,
+            message_type: 'maker_outcome',
+            twilio_sid: sid,
+          });
+        }
       }
     } catch (smsErr) {
       console.error('[submit-verdict] Maker outcome SMS failed:', smsErr);
