@@ -63,3 +63,18 @@ export function hapticVoidConfirm() {
 export function hapticClockStart() {
   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
 }
+
+/** Sheet presents (02b, 02c, 03b, D9, D11, D17) */
+export function hapticSheetPresent() {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+}
+
+/** Copy-to-clipboard confirmation */
+export function hapticCopySuccess() {
+  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+}
+
+/** Witness accepts a draft vow (D4 only — distinct from full witness-accepted celebration) */
+export function hapticDraftAccepted() {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+}
