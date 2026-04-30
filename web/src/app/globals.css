@@ -81,8 +81,8 @@ html {
 @layer base {
   :root {
     /* ── Backgrounds ── */
-    --uv-bg: #0F0D0A;
-    --uv-bg-card: #181512;
+    --uv-bg: #0b0907;
+    --uv-bg-card: #17130f;
     --uv-bg-elevated: #1F1B16;
     --uv-bg-input: #1A1612;
     --uv-bg-selected: #2A2015;
@@ -110,49 +110,49 @@ html {
     /* ── Borders ── */
     --uv-border: #322D24;
     --uv-border-strong: #4A4036;
-    --uv-border-soft: rgba(240, 233, 219, 0.08);
-    --uv-border-gold: #C89B3C;
-    --uv-border-gold-soft: rgba(200, 155, 60, 0.22);
+    --uv-border-soft: rgba(244, 234, 216, 0.08);
+    --uv-border-gold: #d6a83c;
+    --uv-border-gold-soft: rgba(214, 168, 60, 0.22);
 
     /* ── Text ── */
-    --uv-text: #F0E9DB;
-    --uv-text-muted: #A49A85;
-    --uv-text-dim: #726A5A;
+    --uv-text: #f4ead8;
+    --uv-text-muted: #a99e8a;
+    --uv-text-dim: #756c5d;
     --uv-text-faint: #5A5346;
     --uv-text-on-gold: #1A1205;
 
     /* ── Gold accent ── */
-    --uv-gold: #C89B3C;
-    --uv-gold-bright: #E8B656;
-    --uv-gold-deep: #8B6820;
+    --uv-gold: #d6a83c;
+    --uv-gold-bright: #edc465;
+    --uv-gold-deep: #a87a22;
     --uv-gold-bg: #2A2015;
-    --uv-gold-glow: rgba(200, 155, 60, 0.28);
-    --uv-gold-line: rgba(200, 155, 60, 0.22);
-    --uv-gold-soft: rgba(200, 155, 60, 0.10);
+    --uv-gold-glow: rgba(214, 168, 60, 0.28);
+    --uv-gold-line: rgba(214, 168, 60, 0.22);
+    --uv-gold-soft: rgba(214, 168, 60, 0.10);
 
     /* ── Signals ── */
-    --uv-success: #4ADE80;
-    --uv-success-deep: #2AA84A;
-    --uv-success-bg: rgba(52, 199, 89, 0.10);
-    --uv-success-border: rgba(52, 199, 89, 0.28);
-    --uv-danger: #F87171;
-    --uv-danger-deep: #C84A4A;
-    --uv-danger-bg: rgba(248, 113, 113, 0.10);
-    --uv-danger-border: rgba(248, 113, 113, 0.25);
-    --uv-warn: #FB923C;
-    --uv-warn-bg: rgba(251, 146, 60, 0.10);
-    --uv-info: #60A5FA;
-    --uv-info-bg: rgba(96, 165, 250, 0.15);
+    --uv-success: #52d69a;
+    --uv-success-deep: #25ad6a;
+    --uv-success-bg: rgba(82, 214, 154, 0.10);
+    --uv-success-border: rgba(82, 214, 154, 0.28);
+    --uv-danger: #ef6b5f;
+    --uv-danger-deep: #c84a4a;
+    --uv-danger-bg: rgba(239, 107, 95, 0.10);
+    --uv-danger-border: rgba(239, 107, 95, 0.25);
+    --uv-warn: #f59a3d;
+    --uv-warn-bg: rgba(245, 154, 61, 0.10);
+    --uv-info: #79a8ff;
+    --uv-info-bg: rgba(121, 168, 255, 0.15);
 
     /* ── iMessage / system ── */
     --uv-imessage: #34C759;
-    --uv-imessage-deep: #2AA84A;
-    --uv-imessage-bg: rgba(52, 199, 89, 0.10);
-    --uv-imessage-border: rgba(52, 199, 89, 0.28);
+    --uv-imessage-deep: #25ad6a;
+    --uv-imessage-bg: rgba(82, 214, 154, 0.10);
+    --uv-imessage-border: rgba(82, 214, 154, 0.28);
 
     /* ── Selection states ── */
-    --uv-gold-selected-bg: rgba(200, 155, 60, 0.12);
-    --uv-gold-selected-shadow: rgba(200, 155, 60, 0.15);
+    --uv-gold-selected-bg: rgba(214, 168, 60, 0.12);
+    --uv-gold-selected-shadow: rgba(214, 168, 60, 0.15);
 
     /* ── Certificate ── */
     --uv-cert-paper: #14110D;

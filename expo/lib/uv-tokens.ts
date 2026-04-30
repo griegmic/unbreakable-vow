@@ -8,8 +8,8 @@
 
 export const uvColors = {
   // Surfaces
-  bg: '#0F0D0A',
-  bgCard: '#181512',
+  bg: '#0b0907',
+  bgCard: '#17130f',
   bgElevated: '#1F1B16',
   bgInput: '#1A1612',
   bgSelected: '#2A2015',
@@ -18,49 +18,49 @@ export const uvColors = {
   // Borders
   border: '#322D24',
   borderStrong: '#4A4036',
-  borderSoft: 'rgba(240, 233, 219, 0.08)',
-  borderGold: '#C89B3C', // same as gold
-  borderGoldSoft: 'rgba(200, 155, 60, 0.22)',
+  borderSoft: 'rgba(244, 234, 216, 0.08)',
+  borderGold: '#d6a83c',
+  borderGoldSoft: 'rgba(214, 168, 60, 0.22)',
 
   // Text
-  text: '#F0E9DB',
-  textMuted: '#A49A85',
-  textDim: '#726A5A',
+  text: '#f4ead8',
+  textMuted: '#a99e8a',
+  textDim: '#756c5d',
   textFaint: '#5A5346',
   textOnGold: '#1A1205',
 
   // Gold (primary accent)
-  gold: '#C89B3C',
-  goldBright: '#E8B656',
-  goldDeep: '#8B6820',
+  gold: '#d6a83c',
+  goldBright: '#edc465',
+  goldDeep: '#a87a22',
   goldBg: '#2A2015',
-  goldGlow: 'rgba(200, 155, 60, 0.28)',
-  goldLine: 'rgba(200, 155, 60, 0.22)',
-  goldSoft: 'rgba(200, 155, 60, 0.10)',
+  goldGlow: 'rgba(214, 168, 60, 0.28)',
+  goldLine: 'rgba(214, 168, 60, 0.22)',
+  goldSoft: 'rgba(214, 168, 60, 0.10)',
 
   // Status
-  success: '#4ADE80',
-  successDeep: '#2AA84A',
-  successBg: 'rgba(52, 199, 89, 0.10)',
-  successBorder: 'rgba(52, 199, 89, 0.28)',
-  danger: '#F87171',
-  dangerDeep: '#C84A4A',
-  dangerBg: 'rgba(248, 113, 113, 0.10)',
-  dangerBorder: 'rgba(248, 113, 113, 0.25)',
-  warn: '#FB923C',
-  warnBg: 'rgba(251, 146, 60, 0.10)',
-  info: '#60A5FA',
-  infoBg: 'rgba(96, 165, 250, 0.15)',
+  success: '#52d69a',
+  successDeep: '#25ad6a',
+  successBg: 'rgba(82, 214, 154, 0.10)',
+  successBorder: 'rgba(82, 214, 154, 0.28)',
+  danger: '#ef6b5f',
+  dangerDeep: '#c84a4a',
+  dangerBg: 'rgba(239, 107, 95, 0.10)',
+  dangerBorder: 'rgba(239, 107, 95, 0.25)',
+  warn: '#f59a3d',
+  warnBg: 'rgba(245, 154, 61, 0.10)',
+  info: '#79a8ff',
+  infoBg: 'rgba(121, 168, 255, 0.15)',
 
   // iMessage / system
   imessage: '#34C759',
-  imessageDeep: '#2AA84A',
-  imessageBg: 'rgba(52, 199, 89, 0.10)',
-  imessageBorder: 'rgba(52, 199, 89, 0.28)',
+  imessageDeep: '#25ad6a',
+  imessageBg: 'rgba(82, 214, 154, 0.10)',
+  imessageBorder: 'rgba(82, 214, 154, 0.28)',
 
   // Selection states
-  goldSelectedBg: 'rgba(200, 155, 60, 0.12)',
-  goldSelectedShadow: 'rgba(200, 155, 60, 0.15)',
+  goldSelectedBg: 'rgba(214, 168, 60, 0.12)',
+  goldSelectedShadow: 'rgba(214, 168, 60, 0.15)',
 
   // Certificate
   certPaper: '#14110D',
