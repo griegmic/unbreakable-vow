@@ -28,7 +28,7 @@ export async function initSounds(): Promise<void> {
 
   try {
     await Audio.setAudioModeAsync({
-      playsInSilentModeOnIOS: false, // respect silent-mode rocker
+      playsInSilentModeIOS: false, // respect silent-mode rocker
       staysActiveInBackground: false,
       shouldDuckAndroid: true,
     });

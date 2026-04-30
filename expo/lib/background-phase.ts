@@ -24,9 +24,9 @@ export type BackgroundPhase = 'default' | 'green' | 'gold' | 'blue';
 
 const PHASE_COLORS: Record<BackgroundPhase, string> = {
   default: uvColors.bg,
-  green: '#0a1a12',
-  gold: '#1a1508',
-  blue: '#0a0f1a',
+  green: uvColors.phaseBgGreen,
+  gold: uvColors.phaseBgGold,
+  blue: uvColors.phaseBgBlue,
 };
 
 interface BackgroundPhaseContext {

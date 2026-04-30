@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
-import { uvColors, uvFonts } from '../../lib/uv-tokens';
+
 
 interface QvReceiptProps {
   children: React.ReactNode;

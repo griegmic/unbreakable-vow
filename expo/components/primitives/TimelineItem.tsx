@@ -17,6 +17,7 @@ export function TimelineItem({
 }: TimelineItemProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (active) {
       Animated.loop(

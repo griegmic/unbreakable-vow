@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { uvColors, uvFonts, uvSpacing } from '../../lib/uv-tokens';
+import { uvColors, uvFonts } from '../../lib/uv-tokens';
 
 interface WatchPillProps {
   variant: 'watching' | 'pending' | 'none';

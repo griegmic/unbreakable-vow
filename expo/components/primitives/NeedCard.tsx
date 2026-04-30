@@ -14,6 +14,7 @@ interface NeedCardProps {
 export function NeedCard({ label, title, body, ctaLabel, onPress }: NeedCardProps) {
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     Animated.loop(
       Animated.sequence([

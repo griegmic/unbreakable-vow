@@ -65,6 +65,11 @@ export const uvColors = {
   // Certificate
   certPaper: '#14110D',
   certStampText: '#1A1205',
+
+  // Background phase tints (native-perfect)
+  phaseBgGreen: '#0a1a12',
+  phaseBgGold: '#1a1508',
+  phaseBgBlue: '#0a0f1a',
 } as const;
 
 export const uvSpacing = {

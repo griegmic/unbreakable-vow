@@ -13,6 +13,7 @@ export function ToastNetworkError({ message, onRetry, visible }: ToastNetworkErr
   const translateY = useRef(new Animated.Value(100)).current;
   const dismissTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (visible) {
       hapticOtpError();

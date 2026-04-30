@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, View, Text, StyleSheet, ScrollView } from 'react-native';
+import { Pressable, Text, StyleSheet, ScrollView } from 'react-native';
 import { uvColors, uvFonts } from '../../lib/uv-tokens';
 import { hapticSelection } from '../../lib/haptics';
 
