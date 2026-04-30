@@ -63,6 +63,7 @@ export default function WitnessScreen() {
 
   // Sheet state
   const [pickSheetVisible, setPickSheetVisible] = useState(false);
+  const [decideLaterSheetVisible, setDecideLaterSheetVisible] = useState(false);
 
   const hasWitness = witnessDecision === 'selected' && witnessName;
 
@@ -84,12 +85,16 @@ export default function WitnessScreen() {
 
   const handleDecideLater = useCallback(() => {
     hapticSecondary();
+    hapticSheetPresent();
+    setDecideLaterSheetVisible(true);
+  }, []);
+
+  const handleConfirmDecideLater = useCallback(() => {
+    hapticSecondary();
     setWitnessDecision('deferred');
-    router.push({
-      pathname: '/native-perfect/create/witness', // TODO: route to 04 (auth) in Phase 3
-      params: { ...params, witnessDecision: 'deferred' },
-    } as never);
-  }, [params]);
+    setDecideLaterSheetVisible(false);
+    // TODO: route to 04 (auth) in Phase 3, then 04d checkpoint before payment
+  }, []);
 
   const handleShareLink = useCallback(() => {
     hapticSecondary();
@@ -217,6 +222,29 @@ export default function WitnessScreen() {
         </View>
       )}
 
+      {/* ── Sheet 03a: Decide Later Confirmation ── */}
+      <BottomSheet
+        visible={decideLaterSheetVisible}
+        onDismiss={() => setDecideLaterSheetVisible(false)}
+      >
+        <Text style={styles.sheetTitle}>Pick one now, or after you seal.</Text>
+        <Text style={styles.sheetSub}>
+          Vows work better with a witness. You can still keep moving and choose later.
+        </Text>
+        <GoldCTA
+          label="Add a witness"
+          onPress={() => {
+            hapticPrimary();
+            setDecideLaterSheetVisible(false);
+            setPickSheetVisible(true);
+          }}
+        />
+        <OutlinedGoldCTA
+          label="Decide later"
+          onPress={handleConfirmDecideLater}
+        />
+      </BottomSheet>
+
       {/* ── Sheet 03b: Pick Witness ── */}
       <BottomSheet
         visible={pickSheetVisible}
@@ -224,16 +252,28 @@ export default function WitnessScreen() {
       >
         <Text style={styles.sheetTitle}>Pick your witness.</Text>
         <Text style={styles.sheetSub}>
-          Choose someone who'll hold you to it. They'll get a text when you seal.
+          Choose a close friend, roommate, or anyone who won't let you slide.
         </Text>
 
-        {/* Permission card / Choose from contacts */}
+        {/* Permission card / Sync contacts (V2) */}
         <View style={styles.permissionCard}>
-          <Text style={styles.permissionTitle}>Choose from Contacts</Text>
+          <Text style={styles.permissionTitle}>Sync contacts</Text>
           <Text style={styles.permissionSub}>
-            We'll only use this to send your witness an invite.
+            Find your witness faster. We only use the person you choose.
           </Text>
         </View>
+
+        <GoldCTA
+          label="Choose contact"
+          onPress={() => {
+            hapticPrimary();
+            // TODO: request contacts permission, then show 03b+ synced picker
+          }}
+        />
+
+        <Text style={styles.contactHint}>
+          iPhone will ask for permission next. We never message anyone until you send the invite.
+        </Text>
 
         {/* Recent contacts */}
         {RECENT_CONTACTS.map((contact) => (
@@ -470,6 +510,13 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: 16,
     color: uvColors.text,
+  },
+  contactHint: {
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 12,
+    lineHeight: 12 * 1.35,
+    color: uvColors.textNote,
+    marginTop: 10,
   },
   pickLabel: {
     fontFamily: uvFonts.sansSemibold,
