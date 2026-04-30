@@ -229,7 +229,7 @@ These rules are in force for every Phase 1+ build of the native-perfect rebuild.
 
 ### Source of Truth
 
-The HTML mocks at `design-alignment/native-perfect/project-perfect-final-build-mocks.html` are the absolute source of truth for the 32 mocked screens. Default to the mock in every case. Unauthorized deviation is automatic graduation hold.
+The V2 HTML mocks at `design-alignment/native-perfect/project-perfect-final-build-mocks-v2-witness-options.html` are the primary source of truth for the 39 mocked screens. The V1 file (`project-perfect-final-build-mocks.html`) remains as rollback baseline — do not overwrite it. Default to V2 in every case. Unauthorized deviation is automatic graduation hold.
 
 For the 20 derived screens (D1-D20), `design-alignment/native-perfect/build-plan/STEP_3_DERIVED_SCREENS.md` is the source of truth.
 
@@ -286,7 +286,8 @@ The hard gate: Phase 3 (auth + payment + seal) MUST complete fully before Phase 
 
 The frozen files list above remains frozen. Additionally, during the native-perfect build:
 
-- `design-alignment/native-perfect/project-perfect-final-build-mocks.html` — frozen. The agent does not modify mocks.
+- `design-alignment/native-perfect/project-perfect-final-build-mocks.html` — frozen (V1 rollback baseline).
+- `design-alignment/native-perfect/project-perfect-final-build-mocks-v2-witness-options.html` — frozen (V2 primary source of truth).
 - `design-alignment/native-perfect/build-plan/STEP_*.md` — frozen during build (these are contracts, not living docs). Update only if Joey explicitly approves a contract change.
 - `design-alignment/native-perfect/build-plan/MOCK_DEVIATIONS.md` — append-only via approved Proposals.
 

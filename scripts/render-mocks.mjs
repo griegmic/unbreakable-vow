@@ -17,7 +17,8 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
-const MOCK_HTML = path.join(ROOT, 'design-alignment/native-perfect/project-perfect-final-build-mocks.html');
+// V2 is the primary source of truth per V1_TO_V2_AGENTIC_BUILDER_HANDOFF.md
+const MOCK_HTML = path.join(ROOT, 'design-alignment/native-perfect/project-perfect-final-build-mocks-v2-witness-options.html');
 const OUT_DIR = path.join(ROOT, 'design-alignment/native-perfect/build-plan/mock-renders');
 
 await fs.mkdir(OUT_DIR, { recursive: true });
@@ -43,13 +44,16 @@ for (const shot of shots) {
 
   const labelText = (await labelEl.innerText()).trim();
   // Parse "Approved 02b. Verdict Date Sheet" → "02b"
-  // Also handles "Approved 13B. Project Perfect Menu" → "13B"
-  const idMatch = labelText.match(/Approved\s+([0-9]+[a-zA-Z]*)\./i);
+  // Also handles "V2 03. Choose Witness" → "V2-03"
+  // Also handles "V2 03b+. First-Time Contacts" → "V2-03b+"
+  // Also handles "V2 W1. Witness Invite" → "V2-W1"
+  const idMatch = labelText.match(/(?:Approved|V2)\s+([0-9a-zA-Z+]+)\./i);
   if (!idMatch) {
     console.warn(`Skipping label: ${labelText}`);
     continue;
   }
-  const id = idMatch[1];
+  const isV2 = labelText.startsWith('V2');
+  const id = isV2 ? `V2-${idMatch[1]}` : idMatch[1];
 
   const phoneEl = await shot.$('.phone');
   if (!phoneEl) {
