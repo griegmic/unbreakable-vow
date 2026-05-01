@@ -150,7 +150,7 @@ export default function VowScreen() {
           </View>
 
           {/* Safe area bottom spacer */}
-          <View style={{ height: insets.bottom + 50 }} />
+          <View style={{ height: 100 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>

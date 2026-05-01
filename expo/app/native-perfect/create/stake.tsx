@@ -249,8 +249,8 @@ export default function StakeScreen() {
           <GoldCTA label="Choose your witness →" onPress={handleNext} />
         </View>
 
-        {/* Safe area bottom spacer — guarantees CTA never clips */}
-        <View style={{ height: insets.bottom + 50 }} />
+        {/* Safe area bottom spacer */}
+        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* ── Sheet 02b: Verdict Date ── */}

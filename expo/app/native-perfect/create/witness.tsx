@@ -240,7 +240,7 @@ export default function WitnessScreen() {
         )}
 
         {/* Safe area bottom spacer */}
-        <View style={{ height: insets.bottom + 50 }} />
+        <View style={{ height: 100 }} />
       </ScrollView>
 
       {/* ── Sheet 03a: Decide Later Confirmation ── */}
