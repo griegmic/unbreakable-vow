@@ -6,7 +6,9 @@
     "start": "npx rork start -p vkqbtdzg60w057segl0gr --tunnel",
     "start-web": "npx rork start -p vkqbtdzg60w057segl0gr --web --tunnel",
     "start-web-dev": "DEBUG=expo* npx rork start -p vkqbtdzg60w057segl0gr --web --tunnel",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

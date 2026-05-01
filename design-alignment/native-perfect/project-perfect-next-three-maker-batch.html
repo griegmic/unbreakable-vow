@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unbreakable Vow - Project Perfect Next Three Maker Screens</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,30..100,0..1;1,9..144,400..700,30..100,0..1&family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+    :root{
+      --bg:#0b0907;--panel:#17130f;--text:#f4ead8;--muted:#a99e8a;--dim:#756c5d;
+      --gold:#d6a83c;--goldHi:#edc465;--goldDeep:#a87a22;--soft:rgba(244,234,216,.12);
+      --green:#52d69a;--orange:#f59a3d;--serif:"Fraunces",Georgia,serif;--sans:"Inter Tight",-apple-system,BlinkMacSystemFont,sans-serif;
+    }
+    *{box-sizing:border-box}
+    html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision}
+    body{margin:0;background:#151515;color:var(--text);font-family:var(--sans);font-kerning:normal}
+    .board{padding:42px;width:max-content;min-width:100vw}
+    .pageTitle{margin:0 0 8px;color:var(--text);font:800 22px/1 var(--sans)}
+    .pageNote{max-width:980px;margin:0 0 24px;color:var(--muted);font:500 15px/1.45 var(--sans)}
+    .row{display:flex;gap:30px;align-items:flex-start}
+    .shot{width:393px}
+    .label{margin:0 0 10px 8px;color:#beb4a4;font:800 12px/1.2 var(--sans);letter-spacing:.18em;text-transform:uppercase}
+    .phone{position:relative;width:393px;height:852px;overflow:hidden;border-radius:38px;background:radial-gradient(circle at 82% -8%,rgba(167,119,30,.16),transparent 34%),linear-gradient(180deg,#17130f 0%,#0f0d0a 50%,#080706 100%);box-shadow:0 22px 58px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)}
+    .status{height:50px;padding:16px 28px 0;display:flex;justify-content:space-between;color:#fff;font:800 18px/1 var(--sans)}
+    .statusRight{display:flex;align-items:center;gap:7px}.signal{display:flex;align-items:flex-end;gap:2px;height:13px}.signal i{display:block;width:3px;border-radius:3px;background:#fff}.signal i:nth-child(1){height:5px}.signal i:nth-child(2){height:8px}.signal i:nth-child(3){height:11px}.battery{font:800 15px/1 var(--sans)}
+    .safe{padding:22px}.head{display:flex;align-items:center;justify-content:space-between;margin:0 0 28px}.back{min-height:44px;display:flex;align-items:center;color:var(--muted);font:700 15px/1 var(--sans)}.step{color:var(--muted);font:800 16px/1 var(--sans);letter-spacing:.08em}.hamb{width:44px;height:44px;border-radius:50%;border:1px solid rgba(244,234,216,.1);display:grid;place-items:center;color:var(--muted);font-size:23px}.progress{height:4px;border-radius:99px;background:rgba(244,234,216,.08);overflow:hidden}.progress span{display:block;height:100%;border-radius:inherit;background:var(--gold)}
+    h1{margin:0;color:var(--text);font:600 50px/1.02 var(--serif)}em.gold{color:var(--gold);font-style:italic}.screenTitle{margin-top:34px}.sub{margin:13px 0 22px;color:var(--muted);font:600 17px/1.34 var(--sans)}
+    .kicker{color:#817766;font:800 12px/1 var(--sans);letter-spacing:.3em;text-transform:uppercase}.bottom{position:absolute;left:22px;right:22px;bottom:30px}.cta{min-height:62px;border-radius:24px;display:grid;place-items:center;color:#151006;background:linear-gradient(180deg,#f1cf7a,#c2912d);font:800 20px/1 var(--sans);box-shadow:0 18px 46px rgba(201,148,42,.22)}.quietLinks{display:flex;justify-content:center;gap:12px;margin-top:10px;color:#8f8573;font:800 13px/1 var(--sans)}.quietLinks span{min-height:44px;padding:0 10px;display:flex;align-items:center;justify-content:center}
+    .decisionCard{border:1px solid rgba(214,168,60,.34);border-radius:22px;background:rgba(27,22,15,.82);padding:18px;box-shadow:inset 0 0 0 1px rgba(214,168,60,.035)}.vowText{margin:14px 0 0;color:var(--text);font:600 25px/1.18 var(--serif)}.metaGrid{display:grid;grid-template-columns:.78fr 1.06fr .78fr;gap:13px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(244,234,216,.1)}.metaLabel{color:#817766;font:800 10px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase}.metaValue{margin-top:7px;color:var(--text);font:700 14px/1.15 var(--sans)}.metaValue.gold{color:var(--goldHi)}
+    .payStack{display:grid;grid-template-columns:1.1fr .9fr;gap:12px;margin-top:16px}.payTile{min-height:82px;border-radius:20px;border:1.3px solid rgba(244,234,216,.16);background:rgba(244,234,216,.025);padding:14px;color:var(--muted);display:flex;flex-direction:column;justify-content:center;gap:7px;font:800 20px/1 var(--sans)}.payTile.on{background:linear-gradient(180deg,rgba(241,207,122,.96),rgba(194,145,45,.96));border-color:var(--goldHi);color:#151006;box-shadow:0 18px 46px rgba(201,148,42,.22)}.payMark{font:800 15px/1 var(--sans);width:max-content;border-radius:4px;background:#fff;color:#111;padding:4px 6px}.paySub{font:700 12px/1 var(--sans);opacity:.78}
+    .trustCard{margin-top:12px;border:1px solid rgba(244,234,216,.1);border-radius:18px;background:rgba(244,234,216,.03);padding:13px 15px;color:var(--muted);font:600 13px/1.36 var(--sans)}.trustCard strong{color:var(--text);font-weight:800}.legal{margin-top:12px;color:#756c5d;font:600 12px/1.35 var(--sans);text-align:center}.legal u{color:#9e927f;text-underline-offset:3px}.paymentLegal{position:absolute;left:22px;right:22px;bottom:106px;margin:0}
+    .sealWrap{padding:66px 24px 0;text-align:center}.sealMoment{padding-top:150px}.sealMark{width:82px;height:82px;border-radius:50%;margin:0 auto 22px;display:grid;place-items:center;background:linear-gradient(180deg,#f1cf7a,#c2912d);color:#141006;font:800 34px/1 var(--sans);box-shadow:0 0 0 13px rgba(214,168,60,.1),0 16px 42px rgba(214,168,60,.24)}.sealMoment .sealMark{width:94px;height:94px;border-radius:26px;box-shadow:0 0 0 12px rgba(214,168,60,.08),0 0 0 28px rgba(214,168,60,.035),0 24px 70px rgba(214,168,60,.24)}.sealedTitle{font-size:44px}.sealMoment .sealedTitle{font-size:38px;line-height:1.04}.sealedTitle,.sendTitle,.detailTitle{font-weight:500;font-variation-settings:"SOFT" 55,"WONK" 0}.sealRule{width:92px;height:1px;margin:20px auto 16px;background:linear-gradient(90deg,transparent,rgba(214,168,60,.58),transparent)}.sealQuote{margin:0;color:var(--text);font:italic 560 20px/1.28 var(--serif)}.sealedSub{margin:12px auto 24px;max-width:300px;color:var(--muted);font:600 18px/1.35 var(--sans)}.messageCard{margin-top:20px;text-align:left;border:1px solid rgba(244,234,216,.14);border-radius:22px;background:rgba(24,21,18,.82);padding:18px}.messageText{margin:14px 0 0;color:#c7bca8;font:600 16px/1.34 var(--sans)}.url{margin-top:14px;padding-top:12px;border-top:1px solid rgba(244,234,216,.08);color:#8f8573;font:700 15px/1.2 var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.note{margin-top:13px;text-align:center;color:#8f8573;font:600 13px/1.3 var(--sans)}.sealedBottom{bottom:42px}.sendTitle{font-size:41px;line-height:1.04}
+    .detailSafe{padding:22px}.pill{display:inline-flex;align-items:center;gap:7px;min-height:30px;border-radius:99px;padding:0 12px;background:rgba(245,154,61,.12);color:var(--orange);font:800 12px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase}.detailTitle{font:500 42px/1.04 var(--serif);margin:16px 0 10px}.detailSub{color:var(--muted);font:600 17px/1.36 var(--sans);margin:0 0 24px}.waitCard{border:1px solid rgba(214,168,60,.34);border-radius:22px;background:rgba(27,22,15,.82);padding:18px}.waitTop{display:flex;gap:14px;align-items:flex-start}.clock{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;background:rgba(214,168,60,.14);color:var(--goldHi);font:800 22px/1 var(--sans)}.waitTitle{color:var(--text);font:800 19px/1.15 var(--sans)}.waitSub{margin-top:5px;color:var(--muted);font:600 14px/1.25 var(--sans)}.quote{margin:22px 0 18px;color:var(--text);font:500 23px/1.18 var(--serif);font-variation-settings:"SOFT" 55,"WONK" 0}.linkRow{margin-top:12px;display:grid;grid-template-columns:minmax(0,1fr) 116px;gap:10px}.linkBox{min-height:48px;border-radius:14px;border:1px solid rgba(244,234,216,.13);background:rgba(244,234,216,.025);display:flex;align-items:center;padding:0 12px;color:#827868;font:600 12px/1 var(--sans);overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.copyBtn{min-height:48px;border-radius:14px;border:1px solid rgba(244,234,216,.13);display:grid;place-items:center;color:#bdb39f;font:800 14px/1 var(--sans)}.softAction{min-height:56px;border-radius:18px;border:1px solid rgba(244,234,216,.1);display:grid;place-items:center;margin-top:12px;color:#a99e8a;font:800 15px/1 var(--sans)}.timeline{margin-top:24px}.timelineHead{color:#817766;font:800 12px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;margin-bottom:12px}.timelineBox{border:1px solid rgba(244,234,216,.1);border-radius:18px;background:rgba(244,234,216,.025);padding:14px}.timelineItem{display:grid;grid-template-columns:18px 1fr;gap:10px;padding:7px 0}.dot{width:9px;height:9px;border-radius:50%;background:var(--gold);margin-top:5px;box-shadow:0 0 12px rgba(214,168,60,.65)}.timelineCopy{color:#c7bca8;font:600 14px/1.28 var(--sans)}.timelineCopy span{display:block;color:#817766;font:800 10px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
+    .audit{margin-top:30px;max-width:1020px;border:1px solid rgba(244,234,216,.12);border-radius:18px;background:#1b1917;padding:18px 20px;color:#b8ae9d}.audit h2{margin:0 0 12px;color:var(--text);font:800 18px/1 var(--sans)}.audit p{margin:9px 0;font:500 14px/1.45 var(--sans)}.audit strong{color:var(--text)}
+  </style>
+</head>
+<body>
+  <main class="board">
+    <h1 class="pageTitle">Project Perfect Post-Payment Maker Sequence</h1>
+    <p class="pageNote">Final-draft candidates after phone/code/name: add payment, a beautiful sealed beat, the explicit send-invite action, and the persistent waiting-for-witness detail. These use mobile-web truth with native Apple Pay, native Messages handoff, and action-led app detail hierarchy.</p>
+
+    <section class="row">
+      <div class="shot">
+        <div class="label">Candidate 05. Add Payment</div>
+        <div class="phone">
+          <div class="status"><span>5:46</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="head"><div class="back">← Back</div><div class="step">5 / 5</div><div class="hamb">≡</div></div>
+            <div class="progress"><span style="width:100%"></span></div>
+            <h1 class="screenTitle">Add <em class="gold">payment.</em></h1>
+            <p class="sub">No charge now. Only if you break it.</p>
+            <div class="decisionCard">
+              <div class="kicker">You are sealing</div>
+              <p class="vowText">Run every morning this week.</p>
+              <div class="metaGrid">
+                <div><div class="metaLabel">Stake</div><div class="metaValue gold">$50</div></div>
+                <div><div class="metaLabel">Witness</div><div class="metaValue">Joe</div></div>
+                <div><div class="metaLabel">Verdict</div><div class="metaValue">Sunday</div></div>
+              </div>
+            </div>
+            <div class="payStack">
+              <div class="payTile on"><div class="payMark"> Pay</div><div>Apple Pay</div><div class="paySub">Fastest</div></div>
+              <div class="payTile"><div>Card</div><div class="paySub">Enter card</div></div>
+            </div>
+            <div class="trustCard"><strong>Nothing charges today.</strong> Apple Pay saves your payment method. You are charged only if the vow is broken.</div>
+            <div class="legal paymentLegal">By continuing you agree to the <u>terms</u>.</div>
+          </div>
+          <div class="bottom"><div class="cta">Seal this vow</div></div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 06. Sealed Moment</div>
+        <div class="phone">
+          <div class="status"><span>5:47</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="sealWrap sealMoment">
+            <div class="sealMark">✓</div>
+            <div class="kicker">Sealed</div>
+            <h1 class="sealedTitle">Your vow is<br><em class="gold">bound.</em></h1>
+            <div class="sealRule"></div>
+            <p class="sealQuote">“Run every morning this week.”</p>
+            <p class="sealedSub">Next: send the witness link.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 07. Send Witness Invite</div>
+        <div class="phone">
+          <div class="status"><span>5:48</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="sealWrap">
+            <div class="sealMark">✓</div>
+            <div class="kicker">Next</div>
+            <h1 class="sendTitle">Send Joe the<br><em class="gold">invite.</em></h1>
+            <p class="sealedSub">Joe accepts, then the vow starts.</p>
+            <div class="messageCard">
+              <div class="kicker">Your text to Joe</div>
+              <p class="messageText">I vowed to run every morning this week. $50 if I break it. You decide if I kept it:</p>
+              <div class="url">unbreakablevow.app/w/abc123</div>
+            </div>
+            <div class="note">We’ll open Messages. You choose when to send.</div>
+          </div>
+          <div class="bottom sealedBottom">
+            <div class="cta">Text Joe the invite</div>
+            <div class="quietLinks"><span>Copy link</span><span>I’ll do it later</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 08. Waiting Witness Detail</div>
+        <div class="phone">
+          <div class="status"><span>5:49</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="detailSafe">
+            <div class="head"><div class="back">← Dashboard</div><div></div><div class="hamb">≡</div></div>
+            <div class="pill">One tap away</div>
+            <h1 class="detailTitle">Waiting for <em class="gold">Joe.</em></h1>
+            <p class="detailSub">Your vow is sealed. Joe needs to accept before it starts.</p>
+            <div class="waitCard">
+              <div class="waitTop">
+                <div class="clock">◷</div>
+                <div><div class="waitTitle">Send the invite.</div><div class="waitSub">Joe accepts, then the vow starts.</div></div>
+              </div>
+              <div class="quote">“Run every morning this week.”</div>
+              <div class="cta">Text Joe the invite</div>
+              <div class="linkRow">
+                <div class="linkBox">unbreakablevow.app/w/abc123</div>
+                <div class="copyBtn">Copy link</div>
+              </div>
+            </div>
+            <div class="softAction">Judge it myself instead</div>
+            <div class="timeline">
+              <div class="timelineHead">What happens next</div>
+              <div class="timelineBox">
+                <div class="timelineItem"><div class="dot"></div><div class="timelineCopy"><span>Now</span>Joe accepts the job.</div></div>
+                <div class="timelineItem"><div class="dot" style="background:#817766;box-shadow:none"></div><div class="timelineCopy"><span>During</span>They keep you honest.</div></div>
+                <div class="timelineItem"><div class="dot" style="background:#817766;box-shadow:none"></div><div class="timelineCopy"><span>Sunday</span>One tap: kept it or broke it.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 07B. No Witness Picked</div>
+        <div class="phone">
+          <div class="status"><span>5:48</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="sealWrap">
+            <div class="sealMark">✓</div>
+            <div class="kicker">Next</div>
+            <h1 class="sendTitle">Share the<br><em class="gold">invite.</em></h1>
+            <p class="sealedSub">Whoever accepts becomes your witness. Then the vow starts.</p>
+            <div class="messageCard">
+              <div class="kicker">Your share text</div>
+              <p class="messageText">I vowed to run every morning this week. $50 if I break it. You decide if I kept it:</p>
+              <div class="url">unbreakablevow.app/w/abc123</div>
+            </div>
+            <div class="note">We’ll open the share sheet. You choose who gets it.</div>
+          </div>
+          <div class="bottom sealedBottom">
+            <div class="cta">Share witness invite</div>
+            <div class="quietLinks"><span>Copy link</span><span>I’ll do it later</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 08B. Returned After Messages</div>
+        <div class="phone">
+          <div class="status"><span>5:50</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="detailSafe">
+            <div class="head"><div class="back">← Dashboard</div><div></div><div class="hamb">≡</div></div>
+            <div class="pill">Waiting on Joe</div>
+            <h1 class="detailTitle">Waiting on<br><em class="gold">Joe.</em></h1>
+            <p class="detailSub">If you sent the text, you’re done for now. Joe must accept before the vow starts.</p>
+            <div class="waitCard">
+              <div class="waitTop">
+                <div class="clock">◷</div>
+                <div><div class="waitTitle">Waiting for acceptance.</div><div class="waitSub">We’ll update this page when Joe is in.</div></div>
+              </div>
+              <div class="quote">“Run every morning this week.”</div>
+              <div class="cta">Done</div>
+              <div class="linkRow">
+                <div class="linkBox">unbreakablevow.app/w/abc123</div>
+                <div class="copyBtn">Text again</div>
+              </div>
+            </div>
+            <div class="softAction">Judge it myself instead</div>
+            <div class="timeline">
+              <div class="timelineHead">What happens next</div>
+              <div class="timelineBox">
+                <div class="timelineItem"><div class="dot"></div><div class="timelineCopy"><span>Now</span>Joe accepts the job.</div></div>
+                <div class="timelineItem"><div class="dot" style="background:#817766;box-shadow:none"></div><div class="timelineCopy"><span>During</span>They keep you honest.</div></div>
+                <div class="timelineItem"><div class="dot" style="background:#817766;box-shadow:none"></div><div class="timelineCopy"><span>Sunday</span>One tap: kept it or broke it.</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="audit">
+      <h2>Deviation Notes</h2>
+      <p><strong>Native Advantage:</strong> Apple Pay is primary because native iOS can make saved payment setup faster and calmer than a generic web Payment Element.</p>
+      <p><strong>Native Advantage:</strong> The sealed screen opens Messages explicitly. The app does not imply it can text Joe silently.</p>
+      <p><strong>Upgrade Candidate:</strong> The vow detail is action-led around “Text Joe,” because pending-witness is not an archive state; it is an unfinished social conversion moment.</p>
+      <p><strong>No Witness Alternate:</strong> If the maker did not pick a contact, the invite screen says “Share the invite” and uses the native share sheet. The app should not invent a person or imply it can text someone silently.</p>
+      <p><strong>After Messages Return:</strong> If the maker already tapped the Messages handoff, the detail softens to “Waiting on Joe” with “Done” primary and “Text again” secondary, because we cannot know whether the text was actually sent.</p>
+    </section>
+  </main>
+</body>
+</html>

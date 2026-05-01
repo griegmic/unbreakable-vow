@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unbreakable Vow - Native Maker Flow</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,500..850,25,1&family=Inter+Tight:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #080705;
+      --panel: #12100d;
+      --card: #171410;
+      --elevated: #1e1811;
+      --line: rgba(238, 231, 215, 0.16);
+      --line-strong: rgba(214, 168, 70, 0.34);
+      --text: #f2eadc;
+      --muted: #a99f8b;
+      --faint: #746b5c;
+      --gold: #d4a63c;
+      --gold-bright: #f0c45a;
+      --gold-soft: rgba(212, 166, 60, 0.16);
+      --green: #33d16b;
+      --red: #f56a60;
+      --blue-shadow: rgba(35, 68, 103, 0.22);
+      --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+      --font-serif: "Fraunces", Georgia, serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: radial-gradient(circle at 6% 3%, rgba(30, 50, 75, 0.32), transparent 24%), var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      padding: 36px;
+    }
+    .intro {
+      width: 100%;
+      max-width: 1460px;
+      margin: 0 auto 28px;
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 20px;
+      align-items: end;
+    }
+    h1 {
+      margin: 0;
+      font: 750 42px/1 var(--font-serif);
+      letter-spacing: 0;
+    }
+    .intro p {
+      margin: 12px 0 0;
+      max-width: 760px;
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.45;
+    }
+    .principles {
+      border: 1px solid var(--line);
+      background: rgba(23, 20, 16, 0.72);
+      border-radius: 18px;
+      padding: 18px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .principles strong { color: var(--text); }
+    .flow {
+      width: 100%;
+      max-width: 1560px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 28px 24px;
+      align-items: start;
+    }
+    .screenBlock { display: flex; flex-direction: column; gap: 10px; }
+    .caption {
+      min-height: 52px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    .caption b {
+      display: block;
+      color: var(--gold-bright);
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-size: 11px;
+      margin-bottom: 4px;
+    }
+    .phone {
+      width: 360px;
+      height: 780px;
+      border-radius: 42px;
+      border: 1px solid rgba(238, 231, 215, 0.16);
+      background:
+        radial-gradient(circle at 108% 3%, rgba(212, 166, 60, 0.18), transparent 28%),
+        radial-gradient(circle at -18% 26%, var(--blue-shadow), transparent 25%),
+        linear-gradient(180deg, #17130e 0%, #0e0c09 46%, #080705 100%);
+      box-shadow: 0 28px 70px rgba(0,0,0,0.55), inset 0 0 0 10px rgba(255,255,255,0.018);
+      padding: 24px 20px 22px;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .phone.compact { height: 610px; }
+    .status {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 22px;
+      font-weight: 800;
+      font-size: 20px;
+      color: white;
+    }
+    .dots { letter-spacing: 2px; font-size: 18px; }
+    .top {
+      display: grid;
+      grid-template-columns: 54px 1fr 72px;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 26px;
+    }
+    .step { color: var(--muted); font-weight: 800; font-size: 18px; }
+    .bar { height: 4px; background: rgba(238,231,215,0.09); border-radius: 99px; overflow: hidden; }
+    .bar span { display: block; height: 100%; width: var(--w, 20%); border-radius: inherit; background: var(--gold-bright); }
+    .signin { text-align: right; color: var(--muted); font-size: 12px; letter-spacing: 0.22em; font-weight: 800; }
+    .back { color: var(--muted); font-size: 15px; font-weight: 650; }
+    .menu { justify-self: end; width: 42px; height: 42px; border-radius: 14px; border: 1px solid var(--line); display: grid; place-items: center; color: var(--muted); font-size: 22px; }
+    .brandTiny {
+      text-align: center;
+      color: var(--gold);
+      font-size: 11px;
+      letter-spacing: 0.28em;
+      font-weight: 800;
+      margin: -4px 0 24px;
+    }
+    .title {
+      margin: 0;
+      color: var(--text);
+      font: 760 42px/0.98 var(--font-serif);
+      letter-spacing: 0;
+    }
+    .title.sans {
+      font-family: var(--font-sans);
+      font-size: 34px;
+      line-height: 1.02;
+      letter-spacing: -0.01em;
+    }
+    .title .gold { color: var(--gold); font-style: italic; }
+    .sub {
+      color: var(--muted);
+      font-size: 17px;
+      line-height: 1.36;
+      margin: 16px 0 0;
+    }
+    .sub strong { color: var(--text); }
+    .inputCard {
+      margin-top: 28px;
+      border: 1px solid var(--line);
+      background: rgba(23,20,16,0.82);
+      border-radius: 18px;
+      padding: 20px;
+      min-height: 118px;
+    }
+    .label {
+      color: var(--faint);
+      text-transform: uppercase;
+      letter-spacing: 0.26em;
+      font-size: 11px;
+      font-weight: 800;
+      margin-bottom: 14px;
+    }
+    .placeholder {
+      color: rgba(169,159,139,0.45);
+      font: italic 560 30px/1.08 var(--font-serif);
+    }
+    .chipsTitle {
+      color: var(--faint);
+      text-transform: uppercase;
+      letter-spacing: 0.25em;
+      font-size: 11px;
+      font-weight: 800;
+      margin: 26px 0 10px;
+    }
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 11px 14px;
+      color: var(--muted);
+      background: rgba(23,20,16,0.72);
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .chip.small { font-size: 13px; padding: 8px 11px; }
+    .chip.active { color: var(--gold-bright); border-color: var(--gold); background: var(--gold-soft); }
+    .spacer { flex: 1; min-height: 20px; }
+    .cta {
+      width: 100%;
+      min-height: 58px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, #f2c65b, #c5942e);
+      color: #120d05;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: 800;
+      box-shadow: 0 18px 42px rgba(212,166,60,0.18);
+    }
+    .cta.secondary {
+      background: rgba(238,231,215,0.04);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      box-shadow: none;
+      min-height: 48px;
+      font-size: 16px;
+    }
+    .fine { text-align: center; color: var(--faint); font-size: 13px; margin-top: 12px; }
+    .recap {
+      border-left: 3px solid var(--gold);
+      padding-left: 12px;
+      margin-bottom: 22px;
+    }
+    .recapText { color: var(--text); font-size: 18px; font-weight: 700; line-height: 1.2; }
+    .recapMeta { color: var(--faint); font-size: 13px; margin-top: 4px; }
+    .stakeHero {
+      text-align: center;
+      color: var(--gold-bright);
+      font: 760 72px/0.9 var(--font-serif);
+      margin: 18px 0 8px;
+    }
+    .stakeNote { text-align: center; color: var(--muted); font-size: 15px; font-style: italic; margin-bottom: 18px; }
+    .tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 18px; }
+    .tile {
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(23,20,16,0.86);
+      min-height: 54px;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      font-weight: 800;
+      font-size: 17px;
+    }
+    .tile.active {
+      border-color: var(--gold);
+      color: var(--gold-bright);
+      background: linear-gradient(180deg, rgba(212,166,60,0.24), rgba(212,166,60,0.08));
+    }
+    .infoCard {
+      border: 1px solid var(--line);
+      background: rgba(23,20,16,0.8);
+      border-radius: 18px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .infoCard.gold { border-color: var(--line-strong); background: linear-gradient(180deg, rgba(212,166,60,0.1), rgba(23,20,16,0.8)); }
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .rowText { color: var(--text); font-size: 16px; font-weight: 700; }
+    .rowSub { color: var(--muted); font-size: 13px; line-height: 1.25; margin-top: 4px; }
+    .change { color: var(--gold-bright); font-weight: 800; font-size: 13px; }
+    .destination { color: var(--text); font-size: 15px; line-height: 1.4; }
+    .destination b { color: var(--text); font-weight: 800; }
+    .destination em { color: var(--gold-bright); font-style: italic; }
+    .sheet {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      background: #1b1610;
+      border-top: 1px solid var(--line-strong);
+      border-radius: 28px 28px 0 0;
+      padding: 18px 20px 24px;
+      box-shadow: 0 -18px 60px rgba(0,0,0,0.55);
+    }
+    .handle { width: 38px; height: 4px; border-radius: 99px; background: rgba(238,231,215,0.22); margin: 0 auto 18px; }
+    .sheet h3 {
+      margin: 0 0 5px;
+      font-size: 24px;
+      letter-spacing: -0.01em;
+    }
+    .sheet p { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+    .dateList { display: grid; gap: 8px; }
+    .dateOpt {
+      min-height: 50px;
+      border-radius: 14px;
+      border: 1px solid var(--line);
+      background: rgba(8,7,5,0.42);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 14px;
+      color: var(--text);
+      font-weight: 700;
+    }
+    .dateOpt span { color: var(--muted); font-size: 13px; font-weight: 600; }
+    .dateOpt.active { border-color: var(--gold); background: var(--gold-soft); color: var(--gold-bright); }
+    .sharpenOriginal {
+      color: var(--muted);
+      border: 1px solid var(--line);
+      background: rgba(23,20,16,0.62);
+      border-radius: 16px;
+      padding: 14px;
+      margin: 22px 0 12px;
+      font-style: italic;
+    }
+    .suggestionStack { display: grid; gap: 10px; margin-top: 16px; }
+    .suggestion {
+      border: 1px solid var(--line);
+      background: rgba(23,20,16,0.82);
+      border-radius: 16px;
+      padding: 15px;
+      color: var(--text);
+      font-size: 16px;
+      line-height: 1.25;
+      font-weight: 700;
+    }
+    .suggestion.active { border-color: var(--gold); background: var(--gold-soft); }
+    .judgeCard {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 20px;
+      background: rgba(23,20,16,0.8);
+      padding: 17px;
+      margin-top: 26px;
+    }
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--gold-soft);
+      border: 1px solid rgba(212,166,60,0.28);
+      display: grid;
+      place-items: center;
+      color: var(--gold-bright);
+      font-size: 23px;
+      font-weight: 800;
+      flex: none;
+    }
+    .contactRows { display: grid; gap: 10px; margin-top: 18px; }
+    .contactRow {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border: 1px solid var(--line);
+      background: rgba(8,7,5,0.28);
+      border-radius: 16px;
+      padding: 12px;
+    }
+    .miniAvatar {
+      width: 36px; height: 36px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: rgba(238,231,215,0.08);
+      color: var(--text); font-weight: 800;
+    }
+    .phoneInput {
+      border: 1px solid var(--line);
+      background: rgba(23,20,16,0.8);
+      border-radius: 19px;
+      min-height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 18px;
+      margin-top: 28px;
+      font-size: 25px;
+      font-weight: 700;
+    }
+    .phoneInput .country { color: var(--muted); border-right: 1px solid var(--line); padding-right: 12px; }
+    .otpGrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 28px; }
+    .otpBox { height: 54px; border-radius: 14px; border: 1px solid var(--line); background: rgba(23,20,16,0.8); display: grid; place-items: center; font-size: 22px; font-weight: 800; }
+    .payOptions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px; }
+    .payTile {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      min-height: 82px;
+      background: rgba(23,20,16,0.82);
+      padding: 14px;
+      color: var(--muted);
+      font-size: 17px;
+      font-weight: 800;
+      display: flex;
+      align-items: end;
+    }
+    .payTile.active { background: linear-gradient(180deg, #f2c65b, #c79533); color: #120d05; border-color: var(--gold-bright); }
+    .vowCard {
+      border: 1px solid var(--line);
+      background: rgba(23,20,16,0.82);
+      border-radius: 22px;
+      padding: 18px;
+      margin-top: 18px;
+    }
+    .vowText {
+      font: 650 23px/1.15 var(--font-sans);
+      color: var(--text);
+      margin: 0 0 16px;
+    }
+    .rule { height: 1px; background: var(--line); margin: 12px 0 16px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+    .grid2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    .gLabel { color: var(--faint); text-transform: uppercase; letter-spacing: 0.18em; font-size: 10px; font-weight: 800; margin-bottom: 6px; }
+    .gValue { color: var(--text); font-size: 16px; font-weight: 800; line-height: 1.15; }
+    .gValue.gold { color: var(--gold-bright); }
+    .celebration {
+      margin: 34px auto 22px;
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--gold-bright);
+      display: grid; place-items: center;
+      color: #110d06;
+      font-size: 35px;
+      box-shadow: 0 0 34px rgba(212,166,60,0.28);
+    }
+    .timeline { display: grid; gap: 14px; margin-top: 16px; }
+    .timeItem { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: start; }
+    .dot { width: 10px; height: 10px; background: var(--faint); border-radius: 50%; margin-top: 5px; }
+    .dot.gold { background: var(--gold-bright); box-shadow: 0 0 16px rgba(212,166,60,0.65); }
+    .actionGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
+    .miniAction { border: 1px solid var(--line); border-radius: 18px; min-height: 82px; padding: 14px; background: rgba(23,20,16,0.74); }
+    .miniAction.gold { border-color: var(--line-strong); background: var(--gold-soft); }
+    .miniAction b { display: block; color: var(--text); font-size: 18px; margin-top: 4px; }
+    .miniAction span { color: var(--muted); font-size: 13px; }
+    .footerPad { height: 14px; }
+    .callout {
+      margin-top: 36px;
+      max-width: 1560px;
+      margin-left: auto;
+      margin-right: auto;
+      border: 1px solid var(--line);
+      background: rgba(23,20,16,0.72);
+      border-radius: 22px;
+      padding: 20px;
+      color: var(--muted);
+      line-height: 1.5;
+      font-size: 15px;
+    }
+    .callout h2 { margin: 0 0 10px; color: var(--text); font-size: 22px; }
+    .callout ul { margin: 0; padding-left: 18px; }
+    @media (max-width: 1100px) {
+      body { padding: 22px; }
+      .intro { grid-template-columns: 1fr; }
+      .flow { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <section class="intro">
+    <div>
+      <h1>Native Maker Flow - Full Screen Diagram</h1>
+      <p>
+        This is the recommended app-native vow maker journey: mobile-web copy and hierarchy as the baseline, with native-only upgrades where they are clearly better: contact picking, haptics, Apple Pay-first payment, and push permission timing.
+      </p>
+    </div>
+    <div class="principles">
+      <strong>Flow spine:</strong> Cinematic -> vow -> optional sharpen -> stake/date/cause -> witness -> phone OTP -> name if missing -> Apple Pay/card -> sealed/share -> dashboard -> active detail.
+      <br><strong>Rule:</strong> no payment UI on phone auth; no contact permission until the user taps Add judge; no auto-advancing celebration.
+    </div>
+  </section>
+
+  <main class="flow">
+    <div class="screenBlock">
+      <div class="caption"><b>00 Cinematic</b>Short, optional first-run ritual. Haptic: soft rise, then medium on “I swear it.”</div>
+      <section class="phone compact">
+        <div class="status"><span>5:37</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="spacer"></div>
+        <div class="celebration">◆</div>
+        <h2 class="title" style="text-align:center;font-size:34px;">I do solemnly swear<br><span class="gold">to keep my word.</span></h2>
+        <p class="sub" style="text-align:center;margin-top:18px;">This week.</p>
+        <div class="spacer"></div>
+        <div class="cta" style="width:190px;margin:0 auto;">I swear it</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>01 Make A Vow</b>No date selector here. Smart date runs silently from text. Suggestions are a safety net, not the main path.</div>
+      <section class="phone">
+        <div class="status"><span>5:37</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="step">1 / 5</div><div class="bar" style="--w:20%"><span></span></div><div class="signin">SIGN IN</div></div>
+        <div class="brandTiny">UNBREAKABLE VOW</div>
+        <h2 class="title">Make a vow.<br><span class="gold">Mean it.</span></h2>
+        <p class="sub"><strong>Flake and lose it all.</strong> Stake real cash on your word. Your friend judges. No mercy.</p>
+        <div class="inputCard"><div class="label">I vow to</div><div class="placeholder">Run every morning this week</div></div>
+        <div class="chipsTitle">Or start here</div>
+        <div class="chips">
+          <div class="chip">Gym 3x this week</div>
+          <div class="chip">No alcohol, 2 weeks</div>
+          <div class="chip">Delete TikTok</div>
+          <div class="chip">No phone til noon</div>
+          <div class="chip">Call my mom</div>
+          <div class="chip">10k steps daily</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="cta">Next →</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>01b Smart Date</b>If no date is inferred, the app asks after intent is clear. Otherwise it quietly carries “Sunday night” forward.</div>
+      <section class="phone">
+        <div class="status"><span>5:38</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">← Back</div><div class="bar" style="--w:20%"><span></span></div><div></div></div>
+        <h2 class="title sans">When should your friend judge it?</h2>
+        <p class="sub">We only ask when the vow does not already imply a deadline.</p>
+        <div class="sheet" style="position:static;margin-top:28px;border-radius:24px;padding-bottom:20px;">
+          <div class="handle"></div>
+          <div class="dateList">
+            <div class="dateOpt active">End of this week <span>Sun night</span></div>
+            <div class="dateOpt">Tomorrow <span>9pm</span></div>
+            <div class="dateOpt">7 days <span>Next week</span></div>
+            <div class="dateOpt">30 days <span>Long haul</span></div>
+            <div class="dateOpt">Pick a date <span>Custom</span></div>
+          </div>
+        </div>
+        <div class="spacer"></div>
+        <div class="cta">Set verdict →</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>01c Sharpen</b>Only for vague vows like “be more productive.” It turns ambiguity into something judgeable.</div>
+      <section class="phone">
+        <div class="status"><span>5:39</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">← Back</div><div class="bar" style="--w:20%"><span></span></div><div></div></div>
+        <h2 class="title sans">Sharpen the vow.</h2>
+        <p class="sub">Your witness needs to know what counts.</p>
+        <div class="sharpenOriginal">“Be more productive”</div>
+        <div class="label">Pick a sharper version</div>
+        <div class="suggestionStack">
+          <div class="suggestion active">Work for 90 focused minutes on 4 days this week.</div>
+          <div class="suggestion">Complete 3 deep-work blocks this week.</div>
+          <div class="suggestion">No social media during work hours all week.</div>
+        </div>
+        <div class="spacer"></div>
+        <div class="cta">Use this vow →</div>
+        <div class="fine">Keep mine anyway</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>02 Set The Stake</b>Core focus is stake. Vow/date/cause are present but lightweight and editable.</div>
+      <section class="phone">
+        <div class="status"><span>5:40</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">← Back</div><div class="bar" style="--w:40%"><span></span></div><div></div></div>
+        <div class="recap"><div class="label">The vow</div><div class="recapText">Run every morning this week.</div></div>
+        <h2 class="title sans">Set the stake.</h2>
+        <p class="sub">Pick what you’d hate to lose.</p>
+        <div class="stakeHero">$50</div>
+        <div class="stakeNote">Enough to hurt. Not enough to be stupid.</div>
+        <div class="tiles"><div class="tile">$10</div><div class="tile">$25</div><div class="tile active">$50</div><div class="tile">$100</div></div>
+        <div class="infoCard"><div class="row"><div><div class="rowText">Verdict Sunday night</div><div class="rowSub">Smart date from “this week”</div></div><div class="change">Change</div></div></div>
+        <div class="infoCard gold"><div class="destination">If broken, <b>$50</b> goes to <em>ALS Association</em>.</div><div class="change" style="margin-top:10px;">Change destination</div></div>
+        <div class="spacer"></div>
+        <div class="cta">Choose witness →</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>02b Date Edit</b>Smaller sheet from Set Stake. It does not compete with the stake decision.</div>
+      <section class="phone">
+        <div class="status"><span>5:40</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="recap" style="margin-top:50px;"><div class="label">Changing verdict</div><div class="recapText">Run every morning this week.</div></div>
+        <div class="spacer"></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <h3>Verdict by when?</h3>
+          <p>Choose when your witness decides.</p>
+          <div class="dateList">
+            <div class="dateOpt active">Sunday night <span>Recommended</span></div>
+            <div class="dateOpt">Tomorrow <span>9pm</span></div>
+            <div class="dateOpt">7 days <span>May 5</span></div>
+            <div class="dateOpt">Pick a date <span>Custom</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>02c Destination</b>Keep choice short. Good causes + “cause you hate” are understandable and not overexplained.</div>
+      <section class="phone">
+        <div class="status"><span>5:41</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="sheet" style="position:static;margin-top:auto;border-radius:28px;padding-bottom:22px;">
+          <div class="handle"></div>
+          <h3>If you break it...</h3>
+          <p>Where should the money go?</p>
+          <div class="chips" style="margin-bottom:14px;">
+            <div class="chip active">Good cause</div><div class="chip">Cause you hate</div>
+          </div>
+          <div class="chips">
+            <div class="chip active">ALS Association</div>
+            <div class="chip">St. Jude</div>
+            <div class="chip">Feeding America</div>
+            <div class="chip">NRA</div>
+            <div class="chip">PETA</div>
+          </div>
+          <div class="cta" style="margin-top:20px;">Done</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>03 Choose Witness</b>Native improvement: contact picker. Permission only appears after Add judge tap.</div>
+      <section class="phone">
+        <div class="status"><span>5:42</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">← Back</div><div class="bar" style="--w:60%"><span></span></div><div class="menu">☰</div></div>
+        <h2 class="title">Choose your <span class="gold">witness.</span></h2>
+        <p class="sub">They get the final say. Pick someone you’d hate to disappoint.</p>
+        <div class="vowCard"><div class="label">Ready to seal</div><p class="vowText">Run every morning this week.</p><div class="grid3"><div><div class="gLabel">Stake</div><div class="gValue gold">$50</div></div><div><div class="gLabel">If broken</div><div class="gValue">ALS</div></div><div><div class="gLabel">Verdict</div><div class="gValue">Sun</div></div></div></div>
+        <div class="judgeCard"><div class="avatar">+</div><div style="flex:1;"><div class="rowText">Add a judge →</div><div class="rowSub">Pick from contacts. Share link still works.</div></div></div>
+        <div class="spacer"></div>
+        <div class="cta">Continue →</div>
+        <div class="fine">Go solo</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>03b Contact Sheet</b>Permission is contextual and trust-forward. Haptic on selection.</div>
+      <section class="phone">
+        <div class="status"><span>5:42</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="spacer"></div>
+        <div class="sheet">
+          <div class="handle"></div>
+          <h3>Pick your judge.</h3>
+          <p>We only use the person you choose.</p>
+          <div class="contactRows">
+            <div class="contactRow"><div class="miniAvatar">J</div><div><div class="rowText">Joe</div><div class="rowSub">(860) 751-9907</div></div></div>
+            <div class="contactRow"><div class="miniAvatar">N</div><div><div class="rowText">Nick</div><div class="rowSub">Recent judge</div></div></div>
+            <div class="contactRow"><div class="miniAvatar">S</div><div><div class="rowText">Sarah</div><div class="rowSub">From contacts</div></div></div>
+          </div>
+          <div class="cta secondary" style="margin-top:16px;">Share link instead</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>03c Witness Selected</b>Now the social commitment is visible. This should feel more emotionally important than payment.</div>
+      <section class="phone">
+        <div class="status"><span>5:43</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">← Back</div><div class="bar" style="--w:60%"><span></span></div><div class="menu">☰</div></div>
+        <h2 class="title">Joe gets the <span class="gold">final say.</span></h2>
+        <p class="sub">Seal the vow, then send Joe the invite.</p>
+        <div class="judgeCard"><div class="avatar">J</div><div style="flex:1;"><div class="rowText">Judged by Joe</div><div class="rowSub">They’ll accept on mobile web.</div></div><div class="change">Change</div></div>
+        <div class="vowCard"><div class="label">The vow</div><p class="vowText">Run every morning this week.</p><div class="grid3"><div><div class="gLabel">On line</div><div class="gValue gold">$50</div></div><div><div class="gLabel">Judge</div><div class="gValue">Joe</div></div><div><div class="gLabel">By</div><div class="gValue">Sun</div></div></div></div>
+        <div class="spacer"></div>
+        <div class="cta">Seal this vow →</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>04 Phone Auth</b>Clean Twilio screen. Number first, OTP second. No payment choices here.</div>
+      <section class="phone">
+        <div class="status"><span>5:44</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">← Back</div><div class="bar" style="--w:78%"><span></span></div><div></div></div>
+        <h2 class="title sans">What’s your number?</h2>
+        <p class="sub">We’ll text the code that seals your vow. No password.</p>
+        <div class="phoneInput"><span class="country">🇺🇸 +1</span><span>(860) 751-9907</span></div>
+        <p class="rowSub" style="margin-top:12px;">For verification and vow updates only.</p>
+        <div class="spacer"></div>
+        <div class="cta">Text me the code</div>
+        <div class="fine">Google is secondary</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>04b OTP / Name</b>Name only appears after verification and only if missing, so witness copy has a real sender.</div>
+      <section class="phone">
+        <div class="status"><span>5:45</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">← Back</div><div class="bar" style="--w:82%"><span></span></div><div></div></div>
+        <h2 class="title sans">Enter the code.</h2>
+        <p class="sub">Sent to •••9907.</p>
+        <div class="otpGrid"><div class="otpBox">4</div><div class="otpBox">1</div><div class="otpBox">8</div><div class="otpBox">2</div><div class="otpBox">9</div><div class="otpBox">6</div></div>
+        <div class="infoCard" style="margin-top:24px;"><div class="rowText">What should Joe call you?</div><div class="rowSub">Joseph Rosenfield</div></div>
+        <div class="spacer"></div>
+        <div class="cta">Continue →</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>05 Payment</b>Dedicated trust moment. Apple Pay default where available; card fallback. Copy is charge-if-broken.</div>
+      <section class="phone">
+        <div class="status"><span>5:46</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">← Back</div><div class="bar" style="--w:92%"><span></span></div><div></div></div>
+        <h2 class="title">Almost <span class="gold">there.</span></h2>
+        <p class="sub">No charge now. Only if you break it.</p>
+        <div class="vowCard"><div class="label">You are sealing</div><p class="vowText">Run every morning this week.</p><div class="grid3"><div><div class="gLabel">Stake</div><div class="gValue gold">$50</div></div><div><div class="gLabel">Judge</div><div class="gValue">Joe</div></div><div><div class="gLabel">By</div><div class="gValue">Sun</div></div></div></div>
+        <div class="payOptions"><div class="payTile active"> Pay</div><div class="payTile">Card</div></div>
+        <div class="infoCard"><div class="rowSub">By continuing, you authorize Unbreakable Vow to save this payment method and charge only if the vow is broken.</div></div>
+        <div class="spacer"></div>
+        <div class="cta">Seal the vow</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>06 Sealed + Share</b>Persistent, not auto-dismissed. Sending Joe is the completion moment.</div>
+      <section class="phone">
+        <div class="status"><span>5:47</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="celebration">✓</div>
+        <h2 class="title" style="text-align:center;font-size:35px;">Your vow is <span class="gold">sealed.</span></h2>
+        <p class="sub" style="text-align:center;">Now get Joe in.</p>
+        <div class="vowCard"><div class="label">Your text to Joe</div><p class="rowSub" style="font-size:17px;color:var(--muted);">I vowed to run every morning this week. $50 on the line — you’re the judge. Takes 5 sec to accept:</p><div class="rowSub" style="margin-top:10px;">unbreakablevow.app/w/abc123</div></div>
+        <div class="spacer"></div>
+        <div class="cta">Text Joe</div>
+        <div class="fine">Copy link instead · I’ll do it later</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>07 Dashboard - Needs Witness</b>Action-led card. The job is not “view archive”; it is “get Joe to accept.”</div>
+      <section class="phone">
+        <div class="status"><span>5:48</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div></div><div class="brandTiny" style="margin:0;">UNBREAKABLE VOW</div><div class="menu">☰</div></div>
+        <h2 class="title sans">Hey, Joseph.</h2>
+        <div class="chipsTitle">Your vows · 1</div>
+        <div class="vowCard gold">
+          <div class="row"><div class="chip small active">NEEDS JOE</div><div class="change">Send invite</div></div>
+          <p class="vowText" style="margin-top:18px;">Run every morning this week.</p>
+          <div class="rule"></div>
+          <div class="grid3"><div><div class="gLabel">On line</div><div class="gValue gold">$50</div></div><div><div class="gLabel">Starts when</div><div class="gValue">Joe accepts</div></div><div><div class="gLabel">Verdict</div><div class="gValue">Sun</div></div></div>
+        </div>
+        <div class="spacer"></div>
+        <div class="cta">New vow →</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>08 Active Vow Detail</b>Full vow card: state, stake, judge, destination, countdown, and next best actions.</div>
+      <section class="phone">
+        <div class="status"><span>5:49</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">←</div><div class="brandTiny" style="margin:0;color:var(--green);">● VOW LIVE</div><div class="menu">☰</div></div>
+        <div class="vowCard">
+          <div class="label">The vow</div>
+          <p class="vowText">Run every morning this week.</p>
+          <div class="rule"></div>
+          <div class="grid3"><div><div class="gLabel">On line</div><div class="gValue gold">$50</div></div><div><div class="gLabel">Judge</div><div class="gValue">Joe</div></div><div><div class="gLabel">If broken</div><div class="gValue">ALS</div></div></div>
+        </div>
+        <div class="infoCard gold" style="text-align:center;"><div class="label">Time until verdict</div><div class="stakeHero" style="font-size:46px;margin:8px 0;">6d 4h</div><div class="rowSub">Sunday at 9pm</div></div>
+        <div class="actionGrid"><div class="miniAction gold"><span>→</span><b>Nudge Joe</b><span>Keep it social</span></div><div class="miniAction"><span>↗</span><b>Share</b><span>Brag a little</span></div></div>
+        <div class="infoCard gold"><div class="row"><div><div class="rowText">I kept it early</div><div class="rowSub">Ask Joe to confirm now.</div></div><div class="change">→</div></div></div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>09 Awaiting Verdict</b>Deadline passed. The maker’s job is to nudge, not panic.</div>
+      <section class="phone">
+        <div class="status"><span>5:50</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="top"><div class="back">←</div><div class="brandTiny" style="margin:0;color:var(--gold);">VERDICT DUE</div><div class="menu">☰</div></div>
+        <h2 class="title sans">Joe decides now.</h2>
+        <p class="sub">They have the verdict link. Give them a nudge if you need to.</p>
+        <div class="vowCard"><div class="label">The vow</div><p class="vowText">Run every morning this week.</p><div class="grid2"><div><div class="gLabel">On line</div><div class="gValue gold">$50</div></div><div><div class="gLabel">If broken</div><div class="gValue">ALS Association</div></div></div></div>
+        <div class="spacer"></div>
+        <div class="cta">Text Joe</div>
+        <div class="cta secondary" style="margin-top:10px;">View dashboard</div>
+      </section>
+    </div>
+
+    <div class="screenBlock">
+      <div class="caption"><b>10 Outcome</b>Resolved state. Serious, readable, shareable without clutter.</div>
+      <section class="phone">
+        <div class="status"><span>5:51</span><span class="dots">▮▮▮ 43%</span></div>
+        <div class="celebration">✓</div>
+        <h2 class="title" style="text-align:center;font-size:35px;">You kept your <span class="gold">word.</span></h2>
+        <p class="sub" style="text-align:center;">Joe confirmed. Your $50 stays yours.</p>
+        <div class="vowCard"><div class="label">Witnessed vow</div><p class="vowText">Run every morning this week.</p><div class="rule"></div><div class="grid2"><div><div class="gLabel">Judge</div><div class="gValue">Joe</div></div><div><div class="gLabel">Verdict</div><div class="gValue" style="color:var(--green);">Kept</div></div></div></div>
+        <div class="spacer"></div>
+        <div class="cta">Make another vow →</div>
+        <div class="fine">Share receipt</div>
+      </section>
+    </div>
+  </main>
+
+  <section class="callout">
+    <h2>Product Notes</h2>
+    <ul>
+      <li><strong>“Or start here” pills:</strong> six total, wrapping on the web-style mock but implemented as a horizontally scrollable/safe native row if vertical space is tight: Gym 3x this week, No alcohol 2 weeks, Delete TikTok, No phone til noon, Call my mom, 10k steps daily.</li>
+      <li><strong>Smart date:</strong> infer from vow text. “this week” -> Sunday night, “tomorrow” -> tomorrow 9pm, “2 weeks” -> 14 days, “30 days” -> 30 days. If no date is inferred, show the compact date sheet before terms.</li>
+      <li><strong>Sharpen:</strong> not part of the normal path. It appears only when the vow logic marks the vow as vague. It should not punish good-enough vows.</li>
+      <li><strong>Witness:</strong> the strongest native improvement is the contact picker, but it must be user-initiated. This screen should feel like accountability, not permissions.</li>
+      <li><strong>Auth/payment:</strong> phone OTP and payment are separate because they solve different anxieties. Twilio verifies identity; Apple Pay/card saves the stake method.</li>
+      <li><strong>Full vow card:</strong> every post-seal state should show the vow, stake, judge, destination, and verdict date so the maker always knows exactly what is at stake.</li>
+    </ul>
+  </section>
+</body>
+</html>

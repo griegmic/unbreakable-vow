@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unbreakable Vow - Project Perfect Active + Verdict Batch</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,30..100,0..1;1,9..144,400..700,30..100,0..1&family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+    :root{--bg:#0b0907;--panel:#17130f;--text:#f4ead8;--muted:#a99e8a;--dim:#756c5d;--gold:#d6a83c;--goldHi:#edc465;--goldDeep:#a87a22;--green:#52d69a;--orange:#f59a3d;--blue:#79a8ff;--soft:rgba(244,234,216,.12);--serif:"Fraunces",Georgia,serif;--sans:"Inter Tight",-apple-system,BlinkMacSystemFont,sans-serif}
+    *{box-sizing:border-box}
+    html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision}
+    body{margin:0;background:#151515;color:var(--text);font-family:var(--sans);font-kerning:normal}
+    .board{padding:42px;width:max-content;min-width:100vw}
+    .pageTitle{margin:0 0 8px;color:var(--text);font:800 22px/1 var(--sans)}
+    .pageNote{max-width:1060px;margin:0 0 24px;color:var(--muted);font:500 15px/1.45 var(--sans)}
+    .row{display:flex;gap:30px;align-items:flex-start}
+    .shot{width:393px}
+    .label{margin:0 0 10px 8px;color:#beb4a4;font:800 12px/1.2 var(--sans);letter-spacing:.18em;text-transform:uppercase}
+    .phone{position:relative;width:393px;height:852px;overflow:hidden;border-radius:38px;background:radial-gradient(circle at 82% -8%,rgba(167,119,30,.16),transparent 34%),linear-gradient(180deg,#17130f 0%,#0f0d0a 50%,#080706 100%);box-shadow:0 22px 58px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)}
+    .phone.green{background:radial-gradient(circle at 85% -8%,rgba(82,214,154,.12),transparent 34%),linear-gradient(180deg,#11170f 0%,#0f0d0a 54%,#080706 100%)}
+    .phone.gold{background:radial-gradient(circle at 82% -8%,rgba(214,168,60,.2),transparent 34%),linear-gradient(180deg,#1a130a 0%,#0f0d0a 54%,#080706 100%)}
+    .phone.blue{background:radial-gradient(circle at 82% -8%,rgba(121,168,255,.12),transparent 34%),linear-gradient(180deg,#11131a 0%,#0f0d0a 54%,#080706 100%)}
+    .status{height:50px;padding:16px 28px 0;display:flex;justify-content:space-between;color:#fff;font:800 18px/1 var(--sans)}
+    .statusRight{display:flex;align-items:center;gap:7px}.signal{display:flex;align-items:flex-end;gap:2px;height:13px}.signal i{display:block;width:3px;border-radius:3px;background:#fff}.signal i:nth-child(1){height:5px}.signal i:nth-child(2){height:8px}.signal i:nth-child(3){height:11px}.battery{font:800 15px/1 var(--sans)}
+    .safe{padding:22px}
+    .head{display:flex;align-items:center;justify-content:space-between;margin:0 0 26px}.back{min-height:44px;display:flex;align-items:center;color:var(--muted);font:700 15px/1 var(--sans)}.hamb{width:44px;height:44px;border-radius:50%;border:1px solid rgba(244,234,216,.1);display:grid;place-items:center;color:var(--muted);font-size:23px}
+    .pill{display:inline-flex;align-items:center;gap:7px;min-height:30px;border-radius:99px;padding:0 12px;background:rgba(82,214,154,.13);color:var(--green);font:800 12px/1 var(--sans);letter-spacing:.06em;text-transform:uppercase}.pill.gold{background:rgba(245,154,61,.12);color:var(--orange)}.pill.blue{background:rgba(121,168,255,.12);color:var(--blue)}
+    h1{margin:0;color:var(--text);font:500 43px/1.04 var(--serif);font-variation-settings:"SOFT" 55,"WONK" 0}em.gold{color:var(--gold);font-style:italic}em.green{color:var(--green);font-style:italic}em.blue{color:var(--blue);font-style:italic}
+    .title{margin:16px 0 10px}.sub{margin:0 0 22px;color:var(--muted);font:600 17px/1.36 var(--sans)}
+    .card{border:1px solid rgba(244,234,216,.12);border-radius:22px;background:rgba(24,21,18,.82);padding:18px}.card.hot{border-color:rgba(214,168,60,.34);background:rgba(27,22,15,.82);box-shadow:inset 0 0 0 1px rgba(214,168,60,.035)}
+    .kicker{color:#817766;font:800 12px/1 var(--sans);letter-spacing:.3em;text-transform:uppercase}.vowText{margin:13px 0 0;color:var(--text);font:500 25px/1.18 var(--serif);font-variation-settings:"SOFT" 55,"WONK" 0}.quote{margin:22px 0 18px;color:var(--text);font:500 23px/1.18 var(--serif);font-variation-settings:"SOFT" 55,"WONK" 0}
+    .metaGrid{display:grid;grid-template-columns:1fr 1.15fr;gap:13px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(244,234,216,.1)}.metaLabel{color:#817766;font:800 10px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase}.metaValue{margin-top:7px;color:var(--text);font:700 14px/1.15 var(--sans)}.metaValue.gold{color:var(--goldHi)}.metaValue.green{color:var(--green)}
+    .countCard{margin-top:14px;border-color:rgba(214,168,60,.26)}.countHead{display:flex;align-items:center;justify-content:space-between}.countBig{margin:10px 0 10px;color:var(--goldHi);font:800 44px/1 var(--sans);font-variant-numeric:tabular-nums}.countSub{color:var(--muted);font:500 14.5px/1.4 var(--sans)}.meter{height:6px;margin-top:15px;border-radius:99px;background:rgba(244,234,216,.08);overflow:hidden}.meter span{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--goldHi),var(--goldDeep))}
+    .job{margin-top:14px;border:1px solid rgba(244,234,216,.1);border-radius:18px;background:rgba(244,234,216,.025);padding:15px;display:flex;gap:12px}.mark{width:38px;height:38px;border-radius:50%;flex:0 0 auto;display:grid;place-items:center;background:rgba(214,168,60,.14);color:var(--goldHi);font:800 20px/1 var(--sans)}.jobTitle{color:var(--text);font:800 18px/1.15 var(--sans)}.jobBody{margin-top:5px;color:var(--muted);font:500 14px/1.3 var(--sans)}
+    .bottom{position:absolute;left:22px;right:22px;bottom:30px}.cta{min-height:62px;border-radius:24px;display:grid;place-items:center;color:#151006;background:linear-gradient(180deg,#f1cf7a,#c2912d);font:800 20px/1 var(--sans);box-shadow:0 18px 46px rgba(201,148,42,.22)}.cta.green{background:linear-gradient(180deg,#63e1a5,#25ad6a);color:#06140d;box-shadow:0 18px 46px rgba(37,173,106,.22)}.quietLinks{display:flex;justify-content:center;gap:12px;margin-top:10px;color:#8f8573;font:800 13px/1 var(--sans)}.quietLinks span{min-height:44px;padding:0 10px;display:flex;align-items:center;justify-content:center}
+    .center{padding:78px 24px 0;text-align:center}.sealMark{width:82px;height:82px;border-radius:50%;margin:0 auto 22px;display:grid;place-items:center;background:linear-gradient(180deg,#63e1a5,#25ad6a);color:#06140d;font:800 34px/1 var(--sans);box-shadow:0 0 0 13px rgba(82,214,154,.09),0 16px 42px rgba(82,214,154,.2)}.centerTitle{font-size:40px}.centerSub{margin:14px auto 22px;max-width:300px;color:var(--muted);font:600 17px/1.36 var(--sans)}
+    .timeline{margin-top:18px}.timelineHead{color:#817766;font:800 12px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;margin-bottom:10px}.timelineBox{border:1px solid rgba(244,234,216,.1);border-radius:18px;background:rgba(244,234,216,.025);padding:13px}.timelineItem{display:grid;grid-template-columns:18px 1fr;gap:10px;padding:7px 0}.dot{width:9px;height:9px;border-radius:50%;background:var(--gold);margin-top:5px;box-shadow:0 0 12px rgba(214,168,60,.65)}.timelineCopy{color:#c7bca8;font:600 14px/1.28 var(--sans)}.timelineCopy span{display:block;color:#817766;font:800 10px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}
+    .audit{margin-top:30px;max-width:1100px;border:1px solid rgba(244,234,216,.12);border-radius:18px;background:#1b1917;padding:18px 20px;color:#b8ae9d}.audit h2{margin:0 0 12px;color:var(--text);font:800 18px/1 var(--sans)}.audit p{margin:9px 0;font:500 14px/1.45 var(--sans)}.audit strong{color:var(--text)}
+  </style>
+</head>
+<body>
+  <main class="board">
+    <h1 class="pageTitle">Project Perfect Active + Verdict Maker States</h1>
+    <p class="pageNote">These continue after the witness-share states: Joe accepts, the vow is live mid-run, the deadline is close, and the verdict window is open while the maker waits for the witness decision. Copy and hierarchy follow the mobile-web vow detail state machine, with native haptic/share/push behavior noted for implementation.</p>
+    <section class="row">
+      <div class="shot">
+        <div class="label">Candidate 08C. Shared Link, No Name</div>
+        <div class="phone">
+          <div class="status"><span>5:51</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="head"><div class="back">← Dashboard</div><div></div><div class="hamb">≡</div></div>
+            <div class="pill gold">Waiting for witness</div>
+            <h1 class="title">Waiting for<br><em class="gold">a witness.</em></h1>
+            <p class="sub">If you shared the link, you’re done for now. Whoever accepts becomes your witness, then the vow starts.</p>
+            <div class="card hot">
+              <div class="kicker">The vow</div>
+              <p class="vowText">Run every morning this week.</p>
+              <div class="metaGrid"><div><div class="metaLabel">Stake</div><div class="metaValue gold">$50 at stake</div></div><div><div class="metaLabel">If broken</div><div class="metaValue">ALS Association</div></div></div>
+            </div>
+            <div class="job"><div class="mark">↗</div><div><div class="jobTitle">Need to resend?</div><div class="jobBody">Share the invite again or copy the link.</div></div></div>
+          </div>
+          <div class="bottom"><div class="cta">Done</div><div class="quietLinks"><span>Share again</span><span>Copy link</span></div></div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 09. Joe Accepted</div>
+        <div class="phone green">
+          <div class="status"><span>5:52</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="center">
+            <div class="sealMark">✓</div>
+            <div class="kicker">You’re live</div>
+            <h1 class="centerTitle">Joe is<br><em class="green">watching.</em></h1>
+            <p class="centerSub">Your vow has started. Keep your word until Sunday night.</p>
+            <div class="card hot" style="text-align:left">
+              <div class="kicker">The vow</div>
+              <p class="vowText">Run every morning this week.</p>
+              <div class="metaGrid"><div><div class="metaLabel">Stake</div><div class="metaValue gold">$50 on the line</div></div><div><div class="metaLabel">Judge</div><div class="metaValue green">Joe accepted</div></div></div>
+            </div>
+          </div>
+          <div class="bottom"><div class="cta green">See my vow</div></div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 10. Mid-Vow Active</div>
+        <div class="phone green">
+          <div class="status"><span>5:53</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="head"><div class="back">← Dashboard</div><div></div><div class="hamb">≡</div></div>
+            <div class="pill">Vow live</div>
+            <h1 class="title">Keep<br><em class="green">going.</em></h1>
+            <p class="sub">Joe decides if you kept your word.</p>
+            <div class="card hot">
+              <div class="kicker">The vow</div>
+              <p class="vowText">Run every morning this week.</p>
+              <div class="metaGrid"><div><div class="metaLabel">Stake</div><div class="metaValue gold">$50 on hold</div></div><div><div class="metaLabel">Judge</div><div class="metaValue green">Joe is watching</div></div></div>
+            </div>
+            <div class="card countCard">
+              <div class="countHead"><div class="kicker">Time left</div><div class="metaValue">Sunday night</div></div>
+              <div class="countBig">4 days left</div>
+              <div class="countSub">Verdict by Sun, May 3 at 9:00 PM.</div>
+              <div class="meter"><span style="width:38%"></span></div>
+            </div>
+          </div>
+          <div class="bottom"><div class="cta green">Done</div><div class="quietLinks"><span>Text Joe a check-in</span><span>Share vow</span></div></div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 11. Almost Verdict Time</div>
+        <div class="phone gold">
+          <div class="status"><span>5:54</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="head"><div class="back">← Dashboard</div><div></div><div class="hamb">≡</div></div>
+            <div class="pill gold">Almost verdict time</div>
+            <h1 class="title">Last<br><em class="gold">stretch.</em></h1>
+            <p class="sub">Joe calls it soon. Finish clean.</p>
+            <div class="card hot">
+              <div class="kicker">The vow</div>
+              <p class="vowText">Run every morning this week.</p>
+              <div class="metaGrid"><div><div class="metaLabel">Stake</div><div class="metaValue gold">$50 on hold</div></div><div><div class="metaLabel">If broken</div><div class="metaValue">ALS Association</div></div></div>
+            </div>
+            <div class="card countCard">
+              <div class="countHead"><div class="kicker">Time left</div><div class="metaValue">Tonight</div></div>
+              <div class="countBig">2h 14m</div>
+              <div class="countSub">Verdict by Sun, May 3 at 9:00 PM.</div>
+              <div class="meter"><span style="width:91%"></span></div>
+            </div>
+          </div>
+          <div class="bottom"><div class="cta">Text Joe a final check-in</div><div class="quietLinks"><span>Back to dashboard</span><span>Share vow</span></div></div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 12. Verdict Due, Waiting</div>
+        <div class="phone blue">
+          <div class="status"><span>9:01</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="head"><div class="back">← Dashboard</div><div></div><div class="hamb">≡</div></div>
+            <div class="pill blue">Verdict due</div>
+            <h1 class="title">Time’s up.<br><em class="blue">Joe decides.</em></h1>
+            <p class="sub">Joe can decide now. Nudge them if you need to.</p>
+            <div class="card hot">
+              <div class="kicker">The vow</div>
+              <p class="vowText">Run every morning this week.</p>
+              <div class="metaGrid"><div><div class="metaLabel">Stake</div><div class="metaValue gold">$50 at stake</div></div><div><div class="metaLabel">Ended</div><div class="metaValue">Today</div></div></div>
+            </div>
+            <div class="timeline">
+              <div class="timelineHead">What happens next</div>
+              <div class="timelineBox">
+                <div class="timelineItem"><div class="dot"></div><div class="timelineCopy"><span>Now</span>Joe can deliver the verdict.</div></div>
+                <div class="timelineItem"><div class="dot" style="background:#817766;box-shadow:none"></div><div class="timelineCopy"><span>If kept</span>Nothing charges.</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="bottom"><div class="cta">Nudge Joe to decide</div><div class="quietLinks"><span>Back to dashboard</span></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="audit">
+      <h2>Donald Pre-Audit Notes</h2>
+      <p><strong>Parity:</strong> These states follow the web phases: witness pending, active, and verdict waiting.</p>
+      <p><strong>Native Advantage:</strong> Joe accepted gets a brief success state with haptic success, then lands on active detail. The web can skip this, but native should acknowledge the push/event.</p>
+      <p><strong>Truthfulness:</strong> Shared-link states use future-role language until someone accepts. The app never claims a text was delivered or that Joe already has the verdict link.</p>
+      <p><strong>CTA Strategy:</strong> Active states use one primary action. Mid-vow lets the maker exit cleanly; near-deadline makes the final check-in primary; verdict due shifts to witness nudge.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unbreakable Vow - Witness Contact Batch</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,30..100,0..1&family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+    :root {
+      --bg:#0b0907; --panel:#17130f; --text:#f4ead8; --muted:#a99e8a; --dim:#7d7465;
+      --gold:#d6a83c; --goldHi:#edc465; --goldDeep:#a87a22; --soft:rgba(244,234,216,.12);
+      --green:#52d69a; --serif:"Fraunces", Georgia, serif; --sans:"Inter Tight",-apple-system,BlinkMacSystemFont,sans-serif;
+    }
+    *{box-sizing:border-box}
+    html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision}
+    body{margin:0;background:#151515;color:var(--text);font-family:var(--sans);font-kerning:normal}
+    .board{padding:42px;width:max-content;min-width:100vw}
+    .pageTitle{margin:0 0 8px;color:var(--text);font:800 22px/1 var(--sans)}
+    .pageNote{max-width:860px;margin:0 0 24px;color:#a99e8a;font:500 15px/1.45 var(--sans)}
+    .row{display:flex;gap:30px;align-items:flex-start}.shot{width:393px}.label{margin:0 0 10px 8px;color:#beb4a4;font:800 12px/1.2 var(--sans);letter-spacing:.18em;text-transform:uppercase}
+    .phone{position:relative;width:393px;height:852px;overflow:hidden;border-radius:38px;background:radial-gradient(circle at 82% -8%,rgba(167,119,30,.16),transparent 34%),linear-gradient(180deg,#17130f 0%,#0f0d0a 50%,#080706 100%);box-shadow:0 22px 58px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)}
+    .status{height:50px;padding:16px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;color:#fff;font:800 18px/1 var(--sans)}
+    .statusRight{display:flex;align-items:center;gap:7px}.signal{display:flex;align-items:flex-end;gap:2px;height:13px}.signal i{display:block;width:3px;border-radius:3px;background:#fff}.signal i:nth-child(1){height:5px}.signal i:nth-child(2){height:8px}.signal i:nth-child(3){height:11px}.battery{font:800 15px/1 var(--sans)}
+    .safe{padding:22px}.head{display:grid;grid-template-columns:74px 1fr 48px;gap:12px;align-items:center;margin-bottom:24px}.back{min-height:44px;display:flex;align-items:center;color:var(--muted);font:800 15px/1 var(--sans)}.step{text-align:center;color:var(--muted);font:800 16px/1 var(--sans);letter-spacing:.08em}.hamb{width:44px;height:44px;border-radius:50%;border:1px solid rgba(244,234,216,.1);display:grid;place-items:center;color:var(--muted);font-size:23px}.progress{height:4px;border-radius:99px;background:rgba(244,234,216,.08);overflow:hidden;margin-bottom:44px}.progress span{display:block;height:100%;border-radius:inherit;background:var(--gold)}
+    h1{margin:0;color:var(--text);font:560 48px/1.02 var(--serif)}em.gold{color:var(--gold);font-style:italic}.sub{margin:13px 0 24px;color:var(--muted);font:560 18px/1.35 var(--sans)}
+    .decisionCard{border:1px solid rgba(214,168,60,.34);border-radius:22px;background:rgba(27,22,15,.82);padding:18px;box-shadow:inset 0 0 0 1px rgba(214,168,60,.035)}
+    .kicker{color:#817766;font:800 11px/1 var(--sans);letter-spacing:.3em;text-transform:uppercase}.vowText{margin:14px 0 0;color:var(--text);font:560 25px/1.18 var(--serif)}
+    .metaGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:13px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(244,234,216,.1)}.metaGrid.witnessMeta{grid-template-columns:.7fr 1.55fr .75fr}.metaLabel{color:#817766;font:800 10px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase}.metaValue{margin-top:7px;color:var(--text);font:760 14px/1.15 var(--sans)}.metaValue.gold{color:var(--goldHi)}.metaValue.small{font-size:13px;line-height:1.18}
+    .judgeCard{margin-top:18px;min-height:78px;border:1.3px solid rgba(214,168,60,.48);border-radius:20px;background:rgba(214,168,60,.08);display:flex;align-items:center;gap:14px;padding:14px}.avatar{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:rgba(214,168,60,.14);border:1px solid rgba(214,168,60,.18);color:var(--goldHi);font:850 24px/1 var(--sans)}.rowTitle{color:var(--text);font:850 18px/1.1 var(--sans)}.rowSub{margin-top:5px;color:var(--muted);font:560 14px/1.25 var(--sans)}.rowAction{color:var(--goldHi);font:850 20px/1 var(--sans)}
+    .quietActions{display:flex;gap:10px;margin-top:12px}.quietBtn{min-height:44px;border-radius:99px;border:1px solid rgba(244,234,216,.13);display:flex;align-items:center;justify-content:center;padding:0 16px;color:#bdb39f;background:rgba(244,234,216,.02);font:760 14px/1 var(--sans)}.moneyNote{margin-top:14px;text-align:center;color:#8f8573;font:650 13px/1.2 var(--sans)}
+    .bottom{position:absolute;left:22px;right:22px;bottom:30px}.cta{height:62px;border-radius:24px;display:grid;place-items:center;color:#151006;background:linear-gradient(180deg,#f1cf7a,#c2912d);font:850 20px/1 var(--sans);box-shadow:0 18px 46px rgba(201,148,42,.22)}.cta.disabled{color:#756c5d;background:rgba(244,234,216,.06);box-shadow:none}.fine{margin-top:14px;text-align:center;color:var(--muted);font:760 14px/1 var(--sans)}
+    .dimScreen:before{content:"";position:absolute;inset:0;background:rgba(0,0,0,.34);z-index:3}.sheet{position:absolute;z-index:4;left:0;right:0;bottom:0;border-radius:30px 30px 0 0;background:linear-gradient(180deg,#211b15,#15110d);border:1px solid rgba(244,234,216,.12);padding:12px 22px 26px;box-shadow:0 -22px 60px rgba(0,0,0,.5)}.handle{width:46px;height:5px;border-radius:99px;background:rgba(244,234,216,.28);margin:0 auto 20px}.sheet h2{margin:0;color:var(--text);font:560 35px/1.06 var(--serif)}.sheet p{margin:8px 0 18px;color:var(--muted);font:560 15px/1.35 var(--sans)}
+    .permissionCard{border:1px solid rgba(214,168,60,.32);border-radius:20px;background:rgba(214,168,60,.06);padding:16px;margin-bottom:12px}.permissionTitle{color:var(--text);font:850 18px/1 var(--sans)}.permissionSub{margin-top:6px;color:var(--muted);font:560 14px/1.3 var(--sans)}
+    .contactRow{min-height:58px;border:1px solid rgba(244,234,216,.1);border-radius:17px;background:rgba(244,234,216,.03);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;margin-top:9px}.contactLeft{display:flex;align-items:center;gap:11px;min-width:0}.miniAvatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;color:#151006;background:var(--goldHi);font:850 15px/1 var(--sans)}.pick{color:var(--goldHi);font:850 13px/1 var(--sans)}.sheetCta{height:50px;border-radius:17px;display:grid;place-items:center;margin-top:12px;color:#151006;background:linear-gradient(180deg,#f1cf7a,#c2912d);font:850 16px/1 var(--sans)}.sheetQuiet{height:46px;border-radius:16px;border:1px solid rgba(244,234,216,.12);display:grid;place-items:center;margin-top:10px;color:var(--muted);font:800 15px/1 var(--sans)}
+    .audit{max-width:850px;margin-top:28px;border:1px solid rgba(244,234,216,.12);border-radius:18px;background:#1b1917;padding:18px 20px;color:#c9bfad}.audit h2{margin:0 0 12px;color:var(--text);font:800 18px/1 var(--sans)}.audit p{margin:9px 0;color:#b8ae9d;font:500 14px/1.45 var(--sans)}.audit strong{color:var(--text)}
+  </style>
+</head>
+<body>
+  <main class="board">
+    <h1 class="pageTitle">Project Perfect Batch 2: Witness + Native Contact Moment</h1>
+    <p class="pageNote">This keeps the web/native product spine intact: choose the person who will judge you. The only meaningful native deviation is contacts, and it appears only after the user taps Add a judge.</p>
+
+    <section class="row">
+      <div class="shot">
+        <div class="label">3. Choose Witness</div>
+        <div class="phone">
+          <div class="status"><span>5:41</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="head"><div class="back">← Back</div><div class="step">3 / 5</div><div class="hamb">≡</div></div>
+            <div class="progress"><span style="width:60%"></span></div>
+            <h1>Choose your <em class="gold">witness.</em></h1>
+            <p class="sub">They keep you honest. They decide whether you kept it.</p>
+
+            <div class="decisionCard">
+              <div class="kicker">Ready to seal</div>
+              <p class="vowText">Run every morning this week.</p>
+              <div class="metaGrid witnessMeta">
+                <div><div class="metaLabel">Stake</div><div class="metaValue gold">$50</div></div>
+                <div><div class="metaLabel">If Broken</div><div class="metaValue small">$50 to ALS Association</div></div>
+                <div><div class="metaLabel">Verdict</div><div class="metaValue">Sunday</div></div>
+              </div>
+            </div>
+
+            <div class="judgeCard">
+              <div class="avatar">+</div>
+              <div style="flex:1">
+                <div class="rowTitle">Add a judge</div>
+                <div class="rowSub">Contacts first. Share link still works.</div>
+              </div>
+              <div class="rowAction">→</div>
+            </div>
+
+            <div class="quietActions">
+              <div class="quietBtn">Share link</div>
+              <div class="quietBtn">Go solo</div>
+            </div>
+            <div class="moneyNote">Nothing charges unless you break it.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">3b. Contact Sheet After Tap</div>
+        <div class="phone dimScreen">
+          <div class="status"><span>5:41</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="head"><div class="back">← Back</div><div class="step">3 / 5</div><div class="hamb">≡</div></div>
+            <div class="progress"><span style="width:60%"></span></div>
+            <h1>Choose your <em class="gold">witness.</em></h1>
+            <p class="sub">They keep you honest. They decide whether you kept it.</p>
+            <div class="judgeCard">
+              <div class="avatar">+</div>
+              <div style="flex:1">
+                <div class="rowTitle">Add a judge</div>
+                <div class="rowSub">Contacts first. Share link still works.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sheet">
+            <div class="handle"></div>
+            <h2>Pick your judge.</h2>
+            <p>Recent judges first. Contacts when you want them.</p>
+            <div class="permissionCard">
+              <div class="permissionTitle">Sync contacts?</div>
+              <div class="permissionSub">Find the judge faster. We only use the person you pick.</div>
+              <div class="sheetCta">Choose contact</div>
+            </div>
+            <div class="contactRow">
+              <div class="contactLeft"><div class="miniAvatar">J</div><div><div class="rowTitle">Joe</div><div class="rowSub">Recent judge</div></div></div>
+              <div class="pick">Pick</div>
+            </div>
+            <div class="contactRow">
+              <div class="contactLeft"><div class="miniAvatar">N</div><div><div class="rowTitle">Nick</div><div class="rowSub">Used last time</div></div></div>
+              <div class="pick">Pick</div>
+            </div>
+            <div class="sheetQuiet">Share link instead</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="audit">
+      <h2>Batch 2 Scorecard</h2>
+      <p><strong>Delta from mobile web:</strong> web uses share/copy as the primary witness mechanic. Native uses Add a judge with contacts because this is a clear Native Advantage. Copy stays very close; the extra contact-permission copy is allowed native-only trust copy.</p>
+      <p><strong>Delta from current native:</strong> current native jumps quickly into a generic contact picker. This version makes the social decision visible first, then shows contacts only after intent. It keeps share link and solo as quieter escape hatches.</p>
+      <p><strong>Why this is best for native:</strong> choosing a witness should feel like accountability, not a permissions task. The empty state makes the job obvious; the sheet makes contact sync contextual and calm.</p>
+      <p><strong>Mobile web recommendation:</strong> no change yet. Mobile web should remain share-first unless we later build a web contacts/address-book path. Native earns the deviation because contacts are materially better in-app.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unbreakable Vow - Project Perfect Dashboard Phase</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,30..100,0..1;1,9..144,400..700,30..100,0..1&family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+    :root{--bg:#0b0907;--panel:#17130f;--panel2:#1f1a14;--text:#f4ead8;--muted:#a99e8a;--dim:#756c5d;--gold:#d6a83c;--goldHi:#edc465;--goldDeep:#a87a22;--green:#52d69a;--orange:#f59a3d;--blue:#79a8ff;--red:#ef6b5f;--soft:rgba(244,234,216,.12);--serif:"Fraunces",Georgia,serif;--sans:"Inter Tight",-apple-system,BlinkMacSystemFont,sans-serif}
+    *{box-sizing:border-box}
+    html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision}
+    body{margin:0;background:#151515;color:var(--text);font-family:var(--sans);font-kerning:normal}
+    .board{padding:42px;width:max-content;min-width:100vw}
+    .pageTitle{margin:0 0 8px;color:var(--text);font:800 22px/1 var(--sans)}
+    .pageNote{max-width:1120px;margin:0 0 24px;color:var(--muted);font:500 15px/1.45 var(--sans)}
+    .row{display:flex;gap:30px;align-items:flex-start}.shot{width:393px}.label{margin:0 0 10px 8px;color:#beb4a4;font:800 12px/1.2 var(--sans);letter-spacing:.18em;text-transform:uppercase}
+    .phone{position:relative;width:393px;height:852px;overflow:hidden;border-radius:38px;background:radial-gradient(circle at 82% -8%,rgba(167,119,30,.16),transparent 34%),linear-gradient(180deg,#17130f 0%,#0f0d0a 50%,#080706 100%);box-shadow:0 22px 58px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)}
+    .status{height:50px;padding:16px 28px 0;display:flex;justify-content:space-between;color:#fff;font:800 18px/1 var(--sans)}
+    .statusRight{display:flex;align-items:center;gap:7px}.signal{display:flex;align-items:flex-end;gap:2px;height:13px}.signal i{display:block;width:3px;border-radius:3px;background:#fff}.signal i:nth-child(1){height:5px}.signal i:nth-child(2){height:8px}.signal i:nth-child(3){height:11px}.battery{font:800 15px/1 var(--sans)}
+    .safe{height:802px;padding:22px;overflow:hidden}.scroll{height:100%;overflow:hidden;padding-bottom:94px}.head{display:flex;align-items:center;justify-content:space-between;margin:0 0 22px}.hamb{width:44px;height:44px;border-radius:50%;border:1px solid rgba(244,234,216,.1);display:grid;place-items:center;color:var(--muted);font-size:23px}.wordmark{font:italic 500 16px/1 var(--serif);color:var(--text)}.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#f1cf7a,#c2912d);color:#151006;font:800 15px/1 var(--serif)}.back{min-height:44px;display:flex;align-items:center;color:var(--muted);font:700 15px/1 var(--sans)}
+    h1{margin:0;color:var(--text);font:500 43px/1.04 var(--serif);font-variation-settings:"SOFT" 55,"WONK" 0}em.gold{color:var(--gold);font-style:italic}em.green{color:var(--green);font-style:italic}em.blue{color:var(--blue);font-style:italic}.dashTitle{font:800 36px/1.02 var(--sans);letter-spacing:-.01em;margin:0 0 6px}.dashSub{margin:0 0 22px;color:var(--muted);font:600 15px/1.34 var(--sans)}
+    .rolePills{display:flex;gap:8px;margin:0 0 16px;overflow:hidden}.rolePill{height:34px;display:inline-flex;align-items:center;gap:7px;border-radius:999px;border:1px solid rgba(244,234,216,.1);padding:0 11px;color:var(--muted);font:800 12px/1 var(--sans);white-space:nowrap}.rolePill.on{border-color:rgba(214,168,60,.36);background:rgba(214,168,60,.1);color:var(--goldHi)}.rolePill i{min-width:7px;width:7px;height:7px;border-radius:50%;background:var(--orange)}
+    .sectionHead{display:flex;align-items:baseline;gap:7px;margin:18px 0 10px;padding-bottom:8px;border-bottom:1px solid rgba(214,168,60,.22)}.sectionHead span:first-child{color:var(--goldHi);font:800 12px/1 var(--sans);letter-spacing:.28em;text-transform:uppercase}.sectionHead span:last-child{color:var(--muted);font:700 12px/1 var(--sans)}
+    .needCard{border:1.4px solid rgba(245,154,61,.34);border-left:3px solid var(--orange);border-radius:18px;background:linear-gradient(180deg,rgba(245,154,61,.1),rgba(245,154,61,.035));padding:14px;margin-bottom:10px}.needTop{display:flex;align-items:center;gap:9px;margin-bottom:9px}.pulse{width:9px;height:9px;border-radius:50%;background:var(--orange);box-shadow:0 0 0 5px rgba(245,154,61,.12)}.needLabel{color:var(--orange);font:800 11px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase}.needTitle{color:var(--text);font:800 18px/1.15 var(--sans)}.needBody{margin-top:4px;color:var(--muted);font:600 13px/1.3 var(--sans)}.needCta{height:44px;border-radius:14px;margin-top:12px;display:grid;place-items:center;background:linear-gradient(180deg,#f1cf7a,#c2912d);color:#151006;font:800 15px/1 var(--sans)}
+    .vowCard,.smallCard{border:1px solid rgba(244,234,216,.1);border-left:3px solid var(--gold);border-radius:18px;background:rgba(24,21,18,.82);padding:14px;margin-bottom:10px}.vowCard.pending{border-left-color:var(--orange);background:linear-gradient(180deg,rgba(31,26,20,.9),rgba(24,21,18,.74))}.vowCard.blue{border-left-color:var(--blue)}.cardTop{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}.pill{display:inline-flex;align-items:center;min-height:26px;border-radius:99px;padding:0 10px;background:rgba(214,168,60,.12);color:var(--goldHi);font:800 10px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase}.pill.orange{background:rgba(245,154,61,.12);color:var(--orange)}.pill.green{background:rgba(82,214,154,.13);color:var(--green)}.pill.blue{background:rgba(121,168,255,.12);color:var(--blue)}.time{color:var(--muted);font:700 12px/1 var(--sans)}.time strong{color:var(--text);font-weight:800}.vowText{margin:0 0 13px;color:var(--text);font:600 22px/1.16 var(--serif);font-variation-settings:"SOFT" 55,"WONK" 0}.vowCard.pending .vowText{color:#c9bfae}.meta{display:flex;align-items:center;gap:14px;padding-top:10px;border-top:1px dashed rgba(244,234,216,.09)}.mc{display:flex;flex-direction:column;gap:3px}.mk{color:#817766;font:800 9px/1 var(--sans);letter-spacing:.2em;text-transform:uppercase}.mv{color:var(--text);font:800 14px/1 var(--sans)}.mv.gold{color:var(--goldHi)}.mv.orange{color:var(--orange)}.watch{margin-left:auto;display:inline-flex;align-items:center;gap:6px;min-height:30px;border-radius:99px;padding:0 10px;border:1px solid rgba(244,234,216,.1);color:#c7bca8;font:700 12px/1 var(--sans)}.watch i{width:7px;height:7px;border-radius:50%;background:var(--green)}.watch.pending{color:var(--orange);border-color:rgba(245,154,61,.22);background:rgba(245,154,61,.05)}.watch.pending i{background:var(--orange)}
+    .moduleRow{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}.miniModule{min-height:78px;border:1px solid rgba(244,234,216,.1);border-radius:17px;background:rgba(244,234,216,.025);padding:13px}.miniNum{color:var(--goldHi);font:800 24px/1 var(--sans)}.miniLabel{margin-top:6px;color:var(--muted);font:700 12px/1.2 var(--sans)}
+    .menuOverlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,7,6,.72),rgba(8,7,6,.9));backdrop-filter:blur(6px);padding:64px 18px 18px}.menuPanel{border-radius:24px;border:1px solid rgba(244,234,216,.12);background:rgba(24,21,18,.96);box-shadow:0 22px 60px rgba(0,0,0,.55);overflow:hidden}.menuTop{display:flex;align-items:center;justify-content:space-between;padding:16px 16px 10px}.menuName{color:var(--text);font:800 18px/1 var(--sans)}.menuClose{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(244,234,216,.12);color:var(--muted);font:700 22px/1 var(--sans)}.menuSection{padding:12px 16px 6px;color:var(--dim);font:900 9px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;border-top:1px solid rgba(244,234,216,.08)}.menuSection:first-of-type{border-top:0}.menuItem{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:54px;padding:0 16px}.menuItem.hero{margin:0 12px 8px;min-height:58px;border:1px solid rgba(214,168,60,.32);border-radius:18px;background:linear-gradient(180deg,rgba(214,168,60,.13),rgba(214,168,60,.05));padding:0 13px}.menuItemMain{display:flex;align-items:center;gap:11px;min-width:0}.menuIcon{min-width:32px;width:32px;height:32px;border-radius:13px;display:grid;place-items:center;background:rgba(214,168,60,.11);color:var(--goldHi);font:800 15px/1 var(--sans)}.menuIcon.quiet{background:rgba(244,234,216,.055);color:var(--muted)}.menuCopy{display:flex;flex-direction:column;gap:4px;min-width:0}.menuTitle{color:var(--text);font:800 14px/1 var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.menuSub{color:var(--muted);font:650 11.5px/1.1 var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.menuBadge{min-width:23px;height:23px;border-radius:99px;display:grid;place-items:center;background:rgba(245,154,61,.14);color:var(--orange);font:800 11px/1 var(--sans)}.menuFooter{padding:12px 16px 16px;color:var(--dim);font:650 11.5px/1.35 var(--sans)}.tinyLinks{display:flex;gap:14px;margin-top:10px;color:#8e8473}.tinyLinks span{text-decoration:underline;text-underline-offset:3px}
+    .listRow{min-height:64px;border:1px solid rgba(244,234,216,.1);border-radius:16px;background:rgba(244,234,216,.025);display:flex;align-items:center;gap:11px;padding:11px 12px;margin-bottom:9px}.letter{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(244,234,216,.05);border:1px solid rgba(244,234,216,.09);color:var(--muted);font:800 15px/1 var(--serif)}.rowMain{min-width:0;flex:1}.rowName{display:flex;align-items:center;justify-content:space-between;gap:8px;color:var(--text);font:800 14px/1.15 var(--sans)}.rowCopy{margin-top:4px;color:var(--muted);font:600 13px/1.2 var(--sans);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.stake{color:var(--goldHi);font:800 13px/1 var(--sans)}.seeAll{height:48px;border-radius:16px;border:1px solid rgba(214,168,60,.22);background:rgba(214,168,60,.06);display:flex;align-items:center;justify-content:space-between;padding:0 14px;color:var(--goldHi);font:800 14px/1 var(--sans);margin-top:8px}
+    .footer{position:absolute;left:22px;right:22px;bottom:28px}.cta{height:62px;border-radius:24px;display:grid;place-items:center;background:linear-gradient(180deg,#f1cf7a,#c2912d);color:#151006;font:800 20px/1 var(--sans);box-shadow:0 18px 46px rgba(201,148,42,.22)}
+    .tabBar{display:flex;gap:8px;margin:-4px 0 16px}.tab{height:38px;border-radius:99px;border:1px solid rgba(244,234,216,.1);display:flex;align-items:center;padding:0 13px;color:var(--muted);font:800 13px/1 var(--sans)}.tab.on{border-color:rgba(214,168,60,.38);background:rgba(214,168,60,.1);color:var(--goldHi)}
+    .audit{margin-top:30px;max-width:1160px;border:1px solid rgba(244,234,216,.12);border-radius:18px;background:#1b1917;padding:18px 20px;color:#b8ae9d}.audit h2{margin:0 0 12px;color:var(--text);font:800 18px/1 var(--sans)}.audit p{margin:9px 0;font:500 14px/1.45 var(--sans)}.audit strong{color:var(--text)}
+  </style>
+</head>
+<body>
+  <main class="board">
+    <h1 class="pageTitle">Project Perfect Dashboard Phase</h1>
+    <p class="pageNote">Recommended dashboard architecture: one dashboard with role filters only when the user has multiple roles. The app should feel like a single home, not a set of side rooms.</p>
+    <section class="row">
+      <div class="shot">
+        <div class="label">Candidate 13. Dashboard Command Center</div>
+        <div class="phone">
+          <div class="status"><span>5:56</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="scroll">
+              <div class="head"><div class="hamb">≡</div><div class="wordmark">Unbreakable Vow</div><div class="avatar">J</div></div>
+              <h1 class="dashTitle">Hey, Joseph.</h1>
+              <p class="dashSub">Open loops first. Quiet vows after.</p>
+              <div class="rolePills">
+                <div class="rolePill">All</div>
+                <div class="rolePill on">My vows</div>
+                <div class="rolePill"><i></i>Judging · 1</div>
+                <div class="rolePill">Dares · 2</div>
+              </div>
+
+              <div class="needCard">
+                <div class="needTop"><div class="pulse"></div><div class="needLabel">Needs you now</div></div>
+                <div class="needTitle">Sarah needs your verdict.</div>
+                <div class="needBody">“No alcohol, 2 weeks.” Decide if she kept it.</div>
+                <div class="needCta">Give verdict →</div>
+              </div>
+
+              <div class="sectionHead"><span>Your vows</span><span>· 3</span></div>
+              <div class="vowCard">
+                <div class="cardTop"><div class="pill green">Active · Day 4 of 7</div><div class="time"><strong>3 days</strong> left</div></div>
+                <div class="vowText">Run every morning this week.</div>
+                <div class="meta"><div class="mc"><div class="mk">On line</div><div class="mv gold">$50</div></div><div class="mc"><div class="mk">Until</div><div class="mv">Sun · 9pm</div></div><div class="watch"><i></i>Joe</div></div>
+              </div>
+              <div class="vowCard pending">
+                <div class="cardTop"><div class="pill orange">Waiting on Nick</div><div class="time">sealed <strong>2h</strong> ago</div></div>
+                <div class="vowText">Finish the Europe itinerary.</div>
+                <div class="meta"><div class="mc"><div class="mk">On line</div><div class="mv gold">$25</div></div><div class="mc"><div class="mk">Starts when</div><div class="mv orange">Nick accepts</div></div><div class="watch pending"><i></i>Pending</div></div>
+              </div>
+
+              <div class="moduleRow">
+                <div class="miniModule"><div class="miniNum">6</div><div class="miniLabel">you’re witnessing</div></div>
+                <div class="miniModule"><div class="miniNum">2</div><div class="miniLabel">dares you sent</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="footer"><div class="cta">Make a vow →</div></div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 13B. Project Perfect Menu</div>
+        <div class="phone">
+          <div class="status"><span>5:56</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="scroll">
+              <div class="head"><div class="hamb">≡</div><div class="wordmark">Unbreakable Vow</div><div class="avatar">J</div></div>
+              <h1 class="dashTitle">Hey, Joseph.</h1>
+              <p class="dashSub">Open loops first. Quiet vows after.</p>
+              <div class="rolePills">
+                <div class="rolePill">All</div>
+                <div class="rolePill on">My vows</div>
+                <div class="rolePill"><i></i>Judging · 1</div>
+                <div class="rolePill">Dares · 2</div>
+              </div>
+              <div class="needCard" style="opacity:.42">
+                <div class="needTop"><div class="pulse"></div><div class="needLabel">Needs you now</div></div>
+                <div class="needTitle">Sarah needs your verdict.</div>
+                <div class="needBody">“No alcohol, 2 weeks.” Decide if she kept it.</div>
+                <div class="needCta">Give verdict →</div>
+              </div>
+            </div>
+          </div>
+          <div class="menuOverlay">
+            <div class="menuPanel">
+              <div class="menuTop"><div><div class="menuName">Joseph</div><div class="menuSub">Unbreakable Vow</div></div><div class="menuClose">×</div></div>
+              <div class="menuItem hero">
+                <div class="menuItemMain"><div class="menuIcon">＋</div><div class="menuCopy"><div class="menuTitle">Make a vow</div><div class="menuSub">Put money on your word</div></div></div>
+                <div style="color:var(--goldHi);font:900 18px/1 var(--sans)">→</div>
+              </div>
+              <div class="menuSection">Dashboard</div>
+              <div class="menuItem">
+                <div class="menuItemMain"><div class="menuIcon">✓</div><div class="menuCopy"><div class="menuTitle">My vows</div><div class="menuSub">Active, waiting, and resolved</div></div></div>
+                <div class="menuBadge" style="background:rgba(214,168,60,.14);color:var(--goldHi)">3</div>
+              </div>
+              <div class="menuItem">
+                <div class="menuItemMain"><div class="menuIcon">◐</div><div class="menuCopy"><div class="menuTitle">People I’m judging</div><div class="menuSub">Verdicts and active watches</div></div></div>
+                <div class="menuBadge">1</div>
+              </div>
+              <div class="menuItem">
+                <div class="menuItemMain"><div class="menuIcon">↗</div><div class="menuCopy"><div class="menuTitle">Dares I sent</div><div class="menuSub">Pending, accepted, verdict due</div></div></div>
+                <div class="menuBadge" style="background:rgba(244,234,216,.08);color:var(--muted)">2</div>
+              </div>
+              <div class="menuSection">Challenges</div>
+              <div class="menuItem">
+                <div class="menuItemMain"><div class="menuIcon quiet">↗</div><div class="menuCopy"><div class="menuTitle">Dare someone</div><div class="menuSub">Send a challenge link</div></div></div>
+              </div>
+              <div class="menuSection">Account</div>
+              <div class="menuItem">
+                <div class="menuItemMain"><div class="menuIcon quiet">⚙</div><div class="menuCopy"><div class="menuTitle">Settings</div><div class="menuSub">Profile, payments, notifications</div></div></div>
+              </div>
+              <div class="menuItem">
+                <div class="menuItemMain"><div class="menuIcon quiet">?</div><div class="menuCopy"><div class="menuTitle">Help</div><div class="menuSub">How stakes, judges, and charges work</div></div></div>
+              </div>
+              <div class="menuFooter">Urgent verdicts still appear on the dashboard first, even when they belong to someone else’s vow.<div class="tinyLinks"><span>Terms</span><span>Privacy</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 14. Witnessing View</div>
+        <div class="phone">
+          <div class="status"><span>5:57</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="scroll">
+              <div class="head"><div class="back">← Dashboard</div><div></div><div class="hamb">≡</div></div>
+              <h1>People you’re<br><em class="blue">holding to it.</em></h1>
+              <p class="dashSub">Verdicts due soon rise to the top.</p>
+              <div class="tabBar"><div class="tab on">All</div><div class="tab">Needs verdict</div><div class="tab">Watching</div></div>
+
+              <div class="needCard">
+                <div class="needTop"><div class="pulse"></div><div class="needLabel">Verdict due</div></div>
+                <div class="needTitle">Sarah’s time is up.</div>
+                <div class="needBody">“No alcohol, 2 weeks.” $100 on the line.</div>
+                <div class="needCta">Give verdict →</div>
+              </div>
+              <div class="listRow"><div class="letter">M</div><div class="rowMain"><div class="rowName"><span>Marcus</span><span class="time">2 days left</span></div><div class="rowCopy">Run 5k three times this week.</div></div><div class="stake">$25</div></div>
+              <div class="listRow"><div class="letter">A</div><div class="rowMain"><div class="rowName"><span>Alex</span><span class="time">5 days left</span></div><div class="rowCopy">Write every morning before email.</div></div><div class="stake">$50</div></div>
+              <div class="listRow"><div class="letter">P</div><div class="rowMain"><div class="rowName"><span>Priya</span><span class="time">6 days left</span></div><div class="rowCopy">Eight hours sleep, weekdays.</div></div><div class="stake">$40</div></div>
+              <div class="listRow"><div class="letter">N</div><div class="rowMain"><div class="rowName"><span>Nick</span><span class="time">9 days left</span></div><div class="rowCopy">No TikTok after 9pm.</div></div><div class="stake">$20</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">Candidate 15. Dares You Sent</div>
+        <div class="phone">
+          <div class="status"><span>5:58</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="scroll">
+              <div class="head"><div class="back">← Dashboard</div><div></div><div class="hamb">≡</div></div>
+              <h1>Dares you<br><em class="gold">sent.</em></h1>
+              <p class="dashSub">See who accepted, who’s stalling, and what needs a resend.</p>
+              <div class="tabBar"><div class="tab on">Open</div><div class="tab">Accepted</div><div class="tab">Done</div></div>
+
+              <div class="vowCard pending">
+                <div class="cardTop"><div class="pill orange">Waiting</div><div class="time"><strong>18h</strong> left</div></div>
+                <div class="vowText">Delete TikTok for a week.</div>
+                <div class="meta"><div class="mc"><div class="mk">Sent to</div><div class="mv">Marcus</div></div><div class="mc"><div class="mk">Suggested</div><div class="mv gold">$50</div></div><div class="watch pending"><i></i>Pending</div></div>
+              </div>
+              <div class="seeAll"><span>Resend invite</span><span>→</span></div>
+
+              <div class="vowCard">
+                <div class="cardTop"><div class="pill green">Accepted</div><div class="time"><strong>4 days</strong> left</div></div>
+                <div class="vowText">No phone in bed for 7 days.</div>
+                <div class="meta"><div class="mc"><div class="mk">Accepted by</div><div class="mv">Ana</div></div><div class="mc"><div class="mk">At stake</div><div class="mv gold">$25</div></div><div class="watch"><i></i>You judge</div></div>
+              </div>
+              <div class="vowCard blue">
+                <div class="cardTop"><div class="pill blue">Your verdict</div><div class="time">ended today</div></div>
+                <div class="vowText">Ship the landing page.</div>
+                <div class="meta"><div class="mc"><div class="mk">Accepted by</div><div class="mv">Dana</div></div><div class="mc"><div class="mk">If broken</div><div class="mv">PETA</div></div><div class="watch"><i style="background:var(--blue)"></i>Decide</div></div>
+              </div>
+            </div>
+          </div>
+          <div class="footer"><div class="cta">Dare someone →</div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="audit">
+      <h2>Dashboard Recommendation</h2>
+      <p><strong>Main dashboard:</strong> Keep it action-led, with role filters only when there are multiple roles. If the user has one vow, show the vow. If they have vows plus judging/dares, show All, My vows, Judging, Dares.</p>
+      <p><strong>Witnessing and dares:</strong> Do not make them feel like separate apps. Urgent witness obligations promote into “Needs you now”; the Judging/Dares filters reveal the fuller list. This is cleaner than sending people into too many side sections.</p>
+      <p><strong>Native delta:</strong> Role filters are a native-leaning improvement over mobile web because app users return more often and need quick switching without losing the dashboard as home.</p>
+      <p><strong>Menu system:</strong> The hamburger should be a safety net. It gets Make a vow, My vows, People I’m judging, Dares I sent, Dare someone, Settings, Help. No separate Quick Vow vs Guided entries; guided lives as a secondary option inside Make a vow.</p>
+      <p><strong>Section choice:</strong> “People I’m judging” is clearer in the menu than “Witnessing” because the user’s job there is verdict/action. In the maker flow, keep “witness” because it feels more human and less legalistic.</p>
+      <p><strong>Donald pass:</strong> The main screen avoids a tab trap, keeps the primary CTA visible, and uses urgent color only for real action. Remaining risk: if a user is primarily a witness and has no vows, the Witnessing module should be promoted above “Your vows.”</p>
+    </section>
+  </main>
+</body>
+</html>

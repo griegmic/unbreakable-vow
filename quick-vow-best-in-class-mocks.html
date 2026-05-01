@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unbreakable Vow — Fast Seal Mocks</title>
+<style>
+  :root {
+    --page: #181614;
+    --ink: #F2EADB;
+    --muted: #A79B88;
+    --dim: #706758;
+    --line: rgba(242,234,219,0.10);
+    --line-strong: rgba(229,184,92,0.32);
+    --gold: #C99B3E;
+    --gold-bright: #E8BA5E;
+    --gold-deep: #8F6827;
+    --green: #7EA27C;
+    --red: #C36E5E;
+    --blue: #7E93A7;
+    --surface: #15120F;
+    --surface-2: #1D1914;
+    --surface-3: #262118;
+    --serif: "Fraunces", "Iowan Old Style", Georgia, serif;
+    --sans: "Inter Tight", "Avenir Next", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(ellipse 900px 520px at 50% -140px, rgba(201,155,62,0.12), transparent 66%),
+      linear-gradient(180deg, #211E1A, var(--page) 44%, #11100E);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    padding: 34px 28px 56px;
+  }
+
+  .board {
+    max-width: 1540px;
+    margin: 0 auto;
+  }
+
+  .board-head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 26px;
+  }
+
+  .board-kicker {
+    color: var(--gold-bright);
+    font: 780 11px/1 var(--sans);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    font: 500 40px/0.98 var(--serif);
+    letter-spacing: 0;
+    margin: 0;
+  }
+
+  h1 em {
+    color: var(--gold-bright);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .board-note {
+    max-width: 470px;
+    color: var(--muted);
+    font: 500 14px/1.45 var(--sans);
+  }
+
+  .mock-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(300px, 1fr));
+    gap: 22px;
+    align-items: start;
+  }
+
+  .mock {
+    display: grid;
+    gap: 12px;
+  }
+
+  .mock-label {
+    min-height: 70px;
+  }
+
+  .mock-label strong {
+    display: block;
+    color: var(--ink);
+    font: 780 13px/1.25 var(--sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .mock-label span {
+    color: var(--muted);
+    font: 520 13px/1.35 var(--sans);
+  }
+
+  .phone {
+    width: 100%;
+    max-width: 393px;
+    height: 852px;
+    margin: 0 auto;
+    background:
+      radial-gradient(ellipse 430px 280px at 50% -40px, rgba(201,155,62,0.11), transparent 68%),
+      var(--surface);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 34px;
+    overflow: hidden;
+    box-shadow: 0 34px 90px rgba(0,0,0,0.52);
+    position: relative;
+  }
+
+  .screen {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 19px 20px 16px;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font: 500 15px/1 var(--serif);
+  }
+
+  .brand em {
+    color: var(--gold-bright);
+    font-style: italic;
+  }
+
+  .mark {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--gold);
+    transform: rotate(45deg);
+    display: grid;
+    place-items: center;
+  }
+
+  .mark::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background: var(--gold-bright);
+  }
+
+  .avatar, .ghost {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    border: 1px solid rgba(242,234,219,0.10);
+    color: var(--gold-bright);
+    background: rgba(242,234,219,0.025);
+    font: 750 14px/1 var(--sans);
+  }
+
+  .kicker {
+    color: var(--gold-bright);
+    font: 780 10px/1 var(--sans);
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    margin-bottom: 9px;
+  }
+
+  .title {
+    font: 500 34px/0.98 var(--serif);
+    letter-spacing: 0;
+    margin: 0 0 17px;
+  }
+
+  .title em {
+    color: var(--gold-bright);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(242,234,219,0.055), rgba(242,234,219,0.02));
+    border-radius: 18px;
+    box-shadow: 0 22px 54px rgba(0,0,0,0.30);
+  }
+
+  .label {
+    color: var(--dim);
+    font: 790 9.5px/1 var(--sans);
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+  }
+
+  .vow-card {
+    padding: 16px 17px 13px;
+    margin-bottom: 12px;
+  }
+
+  .vow {
+    min-height: 103px;
+    display: flex;
+    align-items: center;
+    color: rgba(242,234,219,0.40);
+    font: 790 31px/1.03 var(--sans);
+    letter-spacing: 0;
+    padding: 9px 0 12px;
+  }
+
+  .rule {
+    height: 1px;
+    background: rgba(201,155,62,0.28);
+    margin-bottom: 11px;
+  }
+
+  .date-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--muted);
+    font: 520 13px/1.2 var(--sans);
+  }
+
+  .date-row strong {
+    color: var(--ink);
+    font-weight: 780;
+  }
+
+  .date-pill {
+    padding: 8px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(242,234,219,0.025);
+    color: var(--ink);
+    font: 760 12px/1 var(--sans);
+  }
+
+  .examples {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .example {
+    min-height: 38px;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: rgba(242,234,219,0.024);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    padding: 0 12px;
+    font: 700 12.5px/1 var(--sans);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .consequence {
+    border: 1px solid var(--line-strong);
+    border-radius: 20px;
+    background:
+      radial-gradient(ellipse 250px 150px at 75% 0%, rgba(232,186,94,0.15), transparent 70%),
+      linear-gradient(180deg, rgba(201,155,62,0.11), rgba(242,234,219,0.022));
+    padding: 16px 14px 14px;
+    margin-bottom: 10px;
+  }
+
+  .amount-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .amount {
+    color: var(--gold-bright);
+    font: 500 55px/0.88 var(--serif);
+    letter-spacing: 0;
+    text-shadow: 0 14px 34px rgba(201,155,62,0.16);
+  }
+
+  .amount-copy {
+    color: var(--muted);
+    text-align: right;
+    max-width: 150px;
+    font: italic 500 13px/1.25 var(--serif);
+  }
+
+  .amounts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .amount-chip {
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    background: rgba(0,0,0,0.12);
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    font: 790 15px/1 var(--sans);
+  }
+
+  .amount-chip.on {
+    border-color: var(--gold);
+    background: linear-gradient(180deg, rgba(232,186,94,0.24), rgba(201,155,62,0.12));
+    color: var(--gold-bright);
+  }
+
+  .receipt {
+    text-align: center;
+    color: var(--ink);
+    font: 610 14px/1.35 var(--sans);
+    margin: 10px 0 12px;
+  }
+
+  .receipt strong {
+    font-weight: 820;
+  }
+
+  .witness {
+    min-height: 66px;
+    border-radius: 17px;
+    border: 1px solid rgba(201,155,62,0.24);
+    background: rgba(242,234,219,0.025);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    margin-bottom: 10px;
+  }
+
+  .witness .plus {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(201,155,62,0.14);
+    color: var(--gold-bright);
+    border: 1px solid rgba(201,155,62,0.20);
+    font: 850 18px/1 var(--sans);
+  }
+
+  .witness strong {
+    display: block;
+    color: var(--ink);
+    font: 820 16px/1.1 var(--sans);
+  }
+
+  .witness span {
+    display: block;
+    color: var(--dim);
+    font: 650 12.5px/1.25 var(--sans);
+    margin-top: 4px;
+  }
+
+  .spacer { flex: 1; min-height: 10px; }
+
+  .cta {
+    height: 58px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    color: #15100A;
+    background: linear-gradient(180deg, #F0C96E, #D8A542 62%, #A97B2C);
+    font: 850 17px/1 var(--sans);
+    box-shadow: 0 1px 0 rgba(255,244,210,0.38) inset, 0 22px 48px rgba(201,155,62,0.22);
+  }
+
+  .secondary {
+    text-align: center;
+    color: var(--dim);
+    font: 700 12.5px/1 var(--sans);
+    margin-top: 13px;
+  }
+
+  /* Concept B */
+  .b .screen {
+    background:
+      linear-gradient(180deg, rgba(126,147,167,0.08), transparent 42%),
+      var(--surface);
+  }
+
+  .b .title {
+    font-size: 32px;
+    margin-bottom: 13px;
+  }
+
+  .seal-panel {
+    min-height: 292px;
+    border-radius: 28px;
+    border: 1px solid rgba(232,186,94,0.30);
+    background:
+      radial-gradient(circle 115px at 50% 34%, rgba(232,186,94,0.19), transparent 70%),
+      linear-gradient(180deg, rgba(201,155,62,0.13), rgba(242,234,219,0.025));
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 22px;
+    margin-bottom: 14px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .seal-panel::before, .seal-panel::after {
+    content: "";
+    position: absolute;
+    border: 1px solid rgba(232,186,94,0.18);
+    transform: rotate(45deg);
+  }
+
+  .seal-panel::before {
+    width: 164px;
+    height: 164px;
+  }
+
+  .seal-panel::after {
+    width: 220px;
+    height: 220px;
+    opacity: 0.38;
+  }
+
+  .seal-inner {
+    position: relative;
+    z-index: 1;
+  }
+
+  .seal-amount {
+    font: 500 66px/0.9 var(--serif);
+    color: var(--gold-bright);
+    margin-bottom: 12px;
+  }
+
+  .seal-text {
+    font: 500 18px/1.28 var(--serif);
+    color: var(--ink);
+  }
+
+  .seal-text em {
+    color: var(--gold-bright);
+    font-style: italic;
+  }
+
+  .terms-list {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .term {
+    min-height: 58px;
+    border-radius: 15px;
+    border: 1px solid var(--line);
+    background: rgba(242,234,219,0.025);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+  }
+
+  .term b {
+    display: block;
+    font: 820 14px/1.15 var(--sans);
+  }
+
+  .term span {
+    display: block;
+    color: var(--dim);
+    font: 650 12px/1.2 var(--sans);
+    margin-top: 4px;
+  }
+
+  .term .val {
+    color: var(--gold-bright);
+    font: 780 13px/1 var(--sans);
+  }
+
+  /* Concept C */
+  .c .topbar { margin-bottom: 28px; }
+
+  .statement {
+    border-left: 1px solid rgba(232,186,94,0.42);
+    padding-left: 17px;
+    margin-bottom: 20px;
+  }
+
+  .statement .small {
+    color: var(--dim);
+    font: 780 10px/1 var(--sans);
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    margin-bottom: 11px;
+  }
+
+  .statement .promise {
+    font: 500 41px/1.02 var(--serif);
+    letter-spacing: 0;
+  }
+
+  .statement .promise em {
+    color: var(--gold-bright);
+    font-style: italic;
+  }
+
+  .ledger {
+    display: grid;
+    gap: 1px;
+    overflow: hidden;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    margin-bottom: 14px;
+  }
+
+  .ledger-row {
+    min-height: 76px;
+    background: rgba(242,234,219,0.028);
+    display: grid;
+    grid-template-columns: 96px 1fr;
+    align-items: center;
+    padding: 0 16px;
+    gap: 14px;
+  }
+
+  .ledger-row .key {
+    color: var(--dim);
+    font: 790 10px/1 var(--sans);
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+
+  .ledger-row .value {
+    font: 820 17px/1.2 var(--sans);
+  }
+
+  .ledger-row .value.sub {
+    color: var(--muted);
+    font-weight: 670;
+    font-size: 14px;
+  }
+
+  .meter {
+    height: 10px;
+    background: rgba(242,234,219,0.06);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 9px;
+  }
+
+  .meter div {
+    width: 58%;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--green), var(--gold-bright), var(--red));
+  }
+
+  .microcopy {
+    color: var(--dim);
+    text-align: center;
+    font: italic 500 13px/1.35 var(--serif);
+    margin-bottom: 10px;
+  }
+
+  /* Concept D */
+  .d .phone {
+    background:
+      radial-gradient(ellipse 360px 240px at 72% 18%, rgba(126,162,124,0.12), transparent 72%),
+      var(--surface);
+  }
+
+  .d .screen { padding-top: 18px; }
+
+  .d .title {
+    font-size: 31px;
+    margin-bottom: 15px;
+  }
+
+  .compact-vow {
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: rgba(242,234,219,0.034);
+    padding: 15px 16px 14px;
+    margin-bottom: 11px;
+  }
+
+  .compact-vow .filled {
+    color: var(--ink);
+    font: 790 27px/1.05 var(--sans);
+    margin: 9px 0 11px;
+  }
+
+  .choice-stack {
+    display: grid;
+    gap: 9px;
+    margin-bottom: 11px;
+  }
+
+  .choice {
+    min-height: 72px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: rgba(242,234,219,0.025);
+    display: grid;
+    grid-template-columns: 46px 1fr auto;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+  }
+
+  .choice.hot {
+    border-color: rgba(201,155,62,0.36);
+    background: linear-gradient(180deg, rgba(201,155,62,0.11), rgba(242,234,219,0.025));
+  }
+
+  .choice-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(242,234,219,0.04);
+    color: var(--gold-bright);
+    font: 820 18px/1 var(--sans);
+  }
+
+  .choice b {
+    display: block;
+    font: 830 15px/1.1 var(--sans);
+  }
+
+  .choice span {
+    display: block;
+    color: var(--dim);
+    font: 650 12.5px/1.2 var(--sans);
+    margin-top: 4px;
+  }
+
+  .choice .edit {
+    color: var(--gold-bright);
+    font: 780 12px/1 var(--sans);
+  }
+
+  .truth-line {
+    color: var(--muted);
+    font: 500 15px/1.36 var(--serif);
+    text-align: center;
+    padding: 0 8px;
+    margin: 8px 0 12px;
+  }
+
+  .truth-line em {
+    color: var(--gold-bright);
+  }
+
+  @media (max-width: 1320px) {
+    .mock-grid { grid-template-columns: repeat(2, minmax(300px, 1fr)); }
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 24px 14px 42px; }
+    .board-head { display: block; }
+    .board-note { margin-top: 12px; }
+    .mock-grid { grid-template-columns: 1fr; }
+    h1 { font-size: 34px; }
+  }
+</style>
+</head>
+<body>
+  <main class="board">
+    <header class="board-head">
+      <div>
+        <div class="board-kicker">Design mocks</div>
+        <h1>Fast seal, not “QuickVow.” <em>Four hierarchy tests.</em></h1>
+      </div>
+      <p class="board-note">These intentionally test different emotional jobs: help me start, make it feel real, show me the contract, and let me review before sealing.</p>
+    </header>
+
+    <section class="mock-grid">
+      <article class="mock a">
+        <div class="mock-label">
+          <strong>A. Make A Vow</strong>
+          <span>Best default: promise first, consequence second, witness third. Examples are present but quiet.</span>
+        </div>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar">
+              <div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div>
+              <div class="avatar">J</div>
+            </div>
+            <div class="kicker">Make a vow</div>
+            <h2 class="title">Name the promise.<br><em>Then make it hurt.</em></h2>
+            <div class="card vow-card">
+              <div class="label">I vow to</div>
+              <div class="vow">No takeout all week</div>
+              <div class="rule"></div>
+              <div class="date-row"><span>Verdict by</span><strong>Sun, May 3</strong></div>
+            </div>
+            <div class="examples">
+              <div class="example">Gym 3x this week</div>
+              <div class="example">Delete TikTok</div>
+            </div>
+            <div class="consequence">
+              <div class="amount-row">
+                <div>
+                  <div class="label" style="margin-bottom: 8px;">On the line</div>
+                  <div class="amount">$50</div>
+                </div>
+                <div class="amount-copy">Enough to sting. Not enough to be stupid.</div>
+              </div>
+              <div class="amounts">
+                <div class="amount-chip">$10</div>
+                <div class="amount-chip">$25</div>
+                <div class="amount-chip on">$50</div>
+                <div class="amount-chip">$100</div>
+              </div>
+            </div>
+            <div class="witness">
+              <div class="plus">+</div>
+              <div><strong>Choose a witness</strong><span>They accept, then call kept or broken.</span></div>
+            </div>
+            <div class="receipt">If broken, <strong>$50</strong> goes to <strong>ALS Association</strong></div>
+            <div class="spacer"></div>
+            <div class="cta">Seal this vow</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="mock b">
+        <div class="mock-label">
+          <strong>B. Put Money On It</strong>
+          <span>Stake-first drama. Strongest visual flare, but slightly less natural for first-time users.</span>
+        </div>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar">
+              <div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div>
+              <div class="ghost">J</div>
+            </div>
+            <div class="kicker">Put money on it</div>
+            <h2 class="title">This is the part where it becomes real.</h2>
+            <div class="seal-panel">
+              <div class="seal-inner">
+                <div class="seal-amount">$50</div>
+                <div class="seal-text">Break the vow and it goes to <em>ALS Association</em>.</div>
+              </div>
+            </div>
+            <div class="terms-list">
+              <div class="term"><div><b>No takeout all week</b><span>The promise</span></div><div class="val">Edit</div></div>
+              <div class="term"><div><b>Jordan judges</b><span>Private witness link after sealing</span></div><div class="val">Change</div></div>
+              <div class="term"><div><b>Sun, May 3</b><span>Verdict due</span></div><div class="val">Change</div></div>
+            </div>
+            <div class="spacer"></div>
+            <div class="cta">Seal the $50 vow</div>
+            <div class="secondary">Lower stake</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="mock c">
+        <div class="mock-label">
+          <strong>C. The Contract</strong>
+          <span>Most premium and legible. Less playful, more serious, very good for trust.</span>
+        </div>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar">
+              <div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div>
+              <div class="ghost">J</div>
+            </div>
+            <div class="statement">
+              <div class="small">Vow draft</div>
+              <div class="promise">No takeout<br><em>all week.</em></div>
+            </div>
+            <div class="ledger">
+              <div class="ledger-row">
+                <div class="key">Stake</div>
+                <div>
+                  <div class="value">$50 on the line</div>
+                  <div class="meter"><div></div></div>
+                </div>
+              </div>
+              <div class="ledger-row">
+                <div class="key">Broken</div>
+                <div class="value">ALS Association receives it</div>
+              </div>
+              <div class="ledger-row">
+                <div class="key">Judge</div>
+                <div class="value">Jordan gets the private link</div>
+              </div>
+              <div class="ledger-row">
+                <div class="key">Verdict</div>
+                <div class="value sub">Due Sunday, May 3</div>
+              </div>
+            </div>
+            <div class="microcopy">A vow works because Future You cannot quietly renegotiate it.</div>
+            <div class="spacer"></div>
+            <div class="cta">Agree and seal</div>
+            <div class="secondary">Change terms</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="mock d">
+        <div class="mock-label">
+          <strong>D. Review And Seal</strong>
+          <span>Best for users who arrive ready. No inspiration bubbles; every row is an editable decision.</span>
+        </div>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar">
+              <div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div>
+              <div class="ghost">J</div>
+            </div>
+            <div class="kicker">Seal a vow</div>
+            <h2 class="title">Review the terms.<br><em>No wiggle room.</em></h2>
+            <div class="compact-vow">
+              <div class="label">I vow to</div>
+              <div class="filled">No takeout all week</div>
+              <div class="date-row"><span>Verdict</span><strong>Sunday night</strong></div>
+            </div>
+            <div class="choice-stack">
+              <div class="choice hot">
+                <div class="choice-icon">$</div>
+                <div><b>$50 stake</b><span>Break it and ALS Association gets paid.</span></div>
+                <div class="edit">Edit</div>
+              </div>
+              <div class="choice">
+                <div class="choice-icon">J</div>
+                <div><b>Jordan witnesses</b><span>They decide kept or broken.</span></div>
+                <div class="edit">Edit</div>
+              </div>
+              <div class="choice">
+                <div class="choice-icon">✓</div>
+                <div><b>Private until sealed</b><span>You share the judge link after payment.</span></div>
+                <div class="edit">Edit</div>
+              </div>
+            </div>
+            <div class="truth-line">Small enough to choose today. <em>Real enough to remember tomorrow.</em></div>
+            <div class="spacer"></div>
+            <div class="cta">Seal this vow</div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

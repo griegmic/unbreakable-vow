@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unbreakable Vow — Clickable Quick Flow</title>
+<style>
+  :root {
+    --page:#1b1814; --phone:#100e0b; --surface:#181511; --surface2:#211c16;
+    --ink:#f0e8d8; --soft:#c9beaa; --muted:#998d7a; --dim:#6f6556;
+    --line:rgba(240,232,216,.105); --line2:rgba(240,232,216,.07);
+    --gold:#b88a35; --gold2:#d8b25c; --gold3:#e7c674; --green:#7fa978; --blue:#4d97d8; --red:#bd7668;
+    --serif:"Fraunces","Iowan Old Style",Georgia,serif;
+    --sans:"Inter Tight","Avenir Next",-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;min-height:100vh;background:radial-gradient(ellipse 900px 500px at 50% -140px,rgba(184,138,53,.12),transparent 66%),linear-gradient(180deg,#25211c,var(--page) 42%,#11100e);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;padding:28px}
+  .wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:393px 1fr;gap:28px;align-items:start}
+  .phone{width:393px;height:852px;border-radius:34px;border:1px solid rgba(255,255,255,.075);overflow:hidden;background:radial-gradient(ellipse 420px 260px at 50% -42px,rgba(184,138,53,.105),transparent 68%),var(--phone);box-shadow:0 34px 90px rgba(0,0,0,.5)}
+  .screen{height:100%;display:flex;flex-direction:column;padding:18px 20px 16px;overflow:hidden}
+  .top{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+  .brand{display:flex;align-items:center;gap:10px;font:430 15px/1 var(--serif)}
+  .brand em{color:var(--gold3)}
+  .mark{width:22px;height:22px;border:1px solid var(--gold);transform:rotate(45deg);display:grid;place-items:center}
+  .mark:after{content:"";width:6px;height:6px;background:var(--gold3)}
+  .avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:var(--gold3);background:rgba(240,232,216,.026);border:1px solid rgba(240,232,216,.1);font-weight:620}
+  .eyebrow{color:var(--gold3);font-size:10px;font-weight:630;letter-spacing:.23em;text-transform:uppercase;margin-bottom:9px}
+  h1{margin:0 0 14px;font:430 31px/1.02 var(--serif);letter-spacing:0}
+  h1 em{color:var(--gold3);font-style:italic;font-weight:400}
+  p{margin:0;color:var(--muted);font-size:14px;line-height:1.42;font-weight:430}
+  .card{border-radius:18px;border:1px solid var(--line);background:linear-gradient(180deg,rgba(240,232,216,.05),rgba(240,232,216,.02));box-shadow:0 20px 48px rgba(0,0,0,.28)}
+  .label{color:var(--dim);font-size:9.5px;font-weight:660;letter-spacing:.27em;text-transform:uppercase}
+  .vow-card{padding:16px 17px 13px;margin-bottom:10px}
+  .vow{min-height:76px;display:flex;align-items:center;color:var(--ink);font-size:28px;line-height:1.06;font-weight:520;padding:9px 0 11px}
+  .rule{height:1px;background:rgba(184,138,53,.25);margin-bottom:10px}
+  .meta{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:13px}.meta strong{color:var(--ink);font-weight:610}
+  .consequence{border-radius:20px;border:1px solid rgba(184,138,53,.27);background:radial-gradient(ellipse 230px 150px at 84% 0%,rgba(231,198,116,.12),transparent 72%),linear-gradient(180deg,rgba(184,138,53,.088),rgba(240,232,216,.022));padding:15px 14px 13px;margin-bottom:9px}
+  .moneyrow{display:flex;align-items:start;justify-content:space-between;gap:12px;margin-bottom:12px}.money{color:var(--gold3);font:430 47px/.9 var(--serif)}.note{max-width:158px;text-align:right;color:var(--muted);font:italic 400 13px/1.25 var(--serif)}
+  .amounts{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.amt{height:42px;border-radius:12px;border:1px solid var(--line2);display:grid;place-items:center;color:var(--muted);font-weight:600}.amt.on{color:var(--gold3);border-color:rgba(231,198,116,.54);background:linear-gradient(180deg,rgba(231,198,116,.18),rgba(184,138,53,.088))}
+  .row{min-height:62px;border-radius:17px;border:1px solid rgba(184,138,53,.2);background:rgba(240,232,216,.024);display:flex;align-items:center;gap:12px;padding:0 14px;margin-bottom:8px}
+  .bubble{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(184,138,53,.12);color:var(--gold3);border:1px solid rgba(184,138,53,.18);font-weight:650;flex:0 0 auto}
+  .row b,.term b{display:block;color:var(--ink);font-size:15.5px;line-height:1.12;font-weight:640}.row span,.term span{display:block;color:var(--dim);font-size:12.5px;line-height:1.25;font-weight:480;margin-top:4px}
+  .receipt{text-align:center;color:var(--soft);font-size:14px;line-height:1.35;margin-bottom:8px}.receipt strong{color:var(--ink);font-weight:620}
+  .stack{display:grid;gap:8px;margin-bottom:10px}.term{min-height:57px;border-radius:15px;border:1px solid var(--line2);background:rgba(240,232,216,.024);display:flex;align-items:center;justify-content:space-between;gap:12px;padding:0 14px}.term .right{color:var(--gold3);font-size:12px;font-weight:610}
+  .spacer{flex:1;min-height:8px}.cta{height:58px;border-radius:999px;display:grid;place-items:center;color:#171209;background:linear-gradient(180deg,#eac46e,#cfa047 62%,#a77a2e);font-size:17px;font-weight:690;box-shadow:0 1px 0 rgba(255,244,210,.34) inset,0 20px 42px rgba(184,138,53,.18);cursor:pointer;user-select:none}.cta.alt{background:rgba(240,232,216,.035);border:1px solid var(--line2);color:var(--ink);box-shadow:none}.cta.green{background:linear-gradient(180deg,#63d47d,#36ad54);color:white}.cta.blue{background:linear-gradient(180deg,#6ab4f3,#347fd0);color:white}
+  .subcta{text-align:center;color:var(--dim);font-size:12.5px;font-weight:560;margin-top:12px;cursor:pointer}
+  .paybox{border-radius:22px;border:1px solid rgba(240,232,216,.12);background:#f7f4ee;color:#18120a;padding:17px;margin:12px 0}.paybox .apple{height:52px;border-radius:13px;background:#050505;color:#fff;display:grid;place-items:center;font-weight:700;font-size:18px;margin-top:12px}.payrow{display:flex;justify-content:space-between;border-top:1px solid rgba(0,0,0,.1);padding-top:10px;margin-top:10px;font-size:13px}.payrow b{font-weight:700}
+  .contacts{display:grid;gap:8px;margin:12px 0}.contact{height:58px;border-radius:16px;border:1px solid var(--line2);background:rgba(240,232,216,.026);display:flex;align-items:center;gap:12px;padding:0 14px;cursor:pointer}.contact strong{font-size:15px;font-weight:620}.contact span{display:block;color:var(--dim);font-size:12px;margin-top:3px}
+  .modal{margin:auto 0;border-radius:24px;border:1px solid rgba(240,232,216,.12);background:linear-gradient(180deg,rgba(240,232,216,.07),rgba(240,232,216,.025));padding:22px 18px;text-align:center}.modal .icon{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;margin:0 auto 15px;background:rgba(184,138,53,.13);border:1px solid rgba(231,198,116,.24);color:var(--gold3);font-size:24px}.modal h1{font-size:30px;margin-bottom:8px}
+  .sms{background:#0b84ff;color:white;padding:11px 14px 12px;border-radius:18px;border-bottom-right-radius:5px;font:-apple-system-body;font-family:-apple-system,BlinkMacSystemFont,sans-serif;font-size:13.5px;line-height:1.36;margin:12px 0 0 30px}.status{display:flex;align-items:center;gap:8px;color:var(--green);font-size:13px;font-weight:600;margin:10px 0}
+  .side{padding-top:6px}.side h2{margin:0 0 10px;font:430 32px/1.04 var(--serif)}.side h2 em{color:var(--gold3)}.audit{border:1px solid var(--line);border-radius:20px;background:rgba(240,232,216,.025);padding:18px;margin-bottom:16px}.audit h3{margin:0 0 8px;font-size:13px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold3)}.audit p,.audit li{color:var(--soft);font-size:14px;line-height:1.48}.audit ul{margin:8px 0 0 18px;padding:0}.steps{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.chip{border:1px solid var(--line2);border-radius:999px;color:var(--muted);padding:8px 10px;font-size:12px;cursor:pointer}.chip.on{border-color:rgba(231,198,116,.5);color:var(--gold3);background:rgba(184,138,53,.1)}
+  @media(max-width:880px){body{padding:16px}.wrap{display:block}.side{margin-top:24px}.phone{margin:auto}}
+</style>
+</head>
+<body>
+<main class="wrap">
+  <section class="phone"><div id="screen" class="screen"></div></section>
+  <aside class="side">
+    <h2>Clickable quick-vow flow.<br><em>No hidden commitment terms.</em></h2>
+    <div class="audit">
+      <h3>Product call</h3>
+      <p>The fast path stays one screen until sealing. Contact selection and payment are focused overlays/screens because they are OS-level trust moments. Sharing happens only after the payment method is authorized and the vow record is sealed.</p>
+    </div>
+    <div class="audit">
+      <h3>Order of operations</h3>
+      <ul>
+        <li>Create draft locally/server-side with vow terms.</li>
+        <li>Pick witness via fake contact sync or manual entry.</li>
+        <li>Authorize stake with Apple Pay/card. Do not send witness link yet.</li>
+        <li>Seal vow, create judge token, then prompt sharing.</li>
+        <li>After send: vow is pending witness acceptance.</li>
+        <li>Witness accepts: vow becomes active and verdict reminders are scheduled.</li>
+      </ul>
+    </div>
+    <div class="audit">
+      <h3>Jump to state</h3>
+      <div id="steps" class="steps"></div>
+    </div>
+  </aside>
+</main>
+<script>
+const S = [
+  ["draft","Draft"],
+  ["contactsAsk","Contact sync"],
+  ["contactsList","Pick witness"],
+  ["payment","Payment"],
+  ["processing","Processing"],
+  ["sealed","Sealed"],
+  ["share","Share"],
+  ["pending","Pending"],
+  ["witness","Witness accept"],
+  ["active","Active"]
+];
+let state = "draft";
+const el = document.getElementById("screen");
+const steps = document.getElementById("steps");
+function topbar(){return `<div class="top"><div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div><div class="avatar">J</div></div>`}
+function sealScreen(){
+return `${topbar()}<div class="eyebrow">Seal a vow</div><h1>One promise.<br><em>Real consequence.</em></h1>
+<div class="card vow-card"><div class="label">I vow to</div><div class="vow">No takeout all week</div><div class="rule"></div><div class="meta"><span>Verdict</span><strong>Sunday night</strong></div></div>
+<div class="consequence"><div class="moneyrow"><div><div class="label" style="margin-bottom:8px">On the line</div><div class="money">$50</div></div><div class="note">Small enough to choose today. Real enough to remember tomorrow.</div></div><div class="amounts"><div class="amt">$10</div><div class="amt">$25</div><div class="amt on">$50</div><div class="amt">$100</div></div></div>
+<div class="row" onclick="go('contactsAsk')"><div class="bubble">+</div><div><b>Choose a witness</b><span>Pick from contacts or enter a phone number.</span></div></div>
+<div class="receipt">If broken, <strong>$50</strong> goes to <strong>ALS Association</strong>.</div><div class="spacer"></div><div class="cta" onclick="go('contactsAsk')">Continue</div><div class="subcta">Need help? Guided setup</div>`}
+function contactsAsk(){
+return `${topbar()}<div class="modal"><div class="icon">◎</div><h1>Find your witness faster.</h1><p>We can show contacts on this device. Nothing is uploaded until you choose someone.</p><div style="height:18px"></div><div class="cta" onclick="go('contactsList')">Sync contacts</div><div class="subcta" onclick="go('manual')">Enter phone manually</div></div>`}
+function contactsList(){
+return `${topbar()}<div class="eyebrow">Choose witness</div><h1>Who will actually call it?</h1><p>Pick someone who will be fair, not someone who will let you negotiate.</p>
+<div class="contacts"><div class="contact" onclick="go('payment')"><div class="bubble">J</div><div><strong>Jordan Lee</strong><span>(415) 555-0142 · likely witness</span></div></div><div class="contact" onclick="go('payment')"><div class="bubble">M</div><div><strong>Maya Chen</strong><span>(415) 555-0188</span></div></div><div class="contact" onclick="go('manual')"><div class="bubble">+</div><div><strong>Enter a number</strong><span>Use this if they are not in contacts.</span></div></div></div>
+<div class="spacer"></div><div class="cta alt" onclick="go('draft')">Back</div>`}
+function manual(){
+return `${topbar()}<div class="eyebrow">Manual witness</div><h1>Add their number.</h1><p>They receive the judge link only after your stake is authorized.</p><div class="card vow-card"><div class="label">Witness phone</div><div class="vow" style="font-size:27px;min-height:96px">(415) 555-0142</div><div class="rule"></div><div class="meta"><span>Name</span><strong>Jordan</strong></div></div><div class="spacer"></div><div class="cta" onclick="go('payment')">Use Jordan</div><div class="subcta" onclick="go('contactsList')">Back to contacts</div>`}
+function payment(){
+return `${topbar()}<div class="eyebrow">Authorize stake</div><h1>Put your card where your word is.</h1><p>Apple Pay authorizes the stake. The witness link is created after this succeeds.</p>
+<div class="paybox"><div style="font-weight:700;font-size:16px">Apple Pay</div><div class="payrow"><span>Stake authorization</span><b>$50.00</b></div><div class="payrow"><span>Paid only if broken</span><b>ALS Association</b></div><div class="apple" onclick="go('processing')"> Pay</div></div>
+<div class="stack"><div class="term"><div><b>Witness</b><span>Jordan gets the judge link after sealing.</span></div><div class="right">Set</div></div><div class="term"><div><b>Vow</b><span>No takeout all week.</span></div><div class="right">Ready</div></div></div><div class="spacer"></div><div class="cta alt" onclick="go('contactsList')">Change witness</div>`}
+function processing(){
+setTimeout(()=>{if(state==="processing")go("sealed")},900);
+return `${topbar()}<div class="modal"><div class="icon">⌁</div><h1>Sealing your vow.</h1><p>Authorizing the stake, creating the judge token, and locking the terms.</p></div>`}
+function sealed(){
+return `${topbar()}<div class="modal"><div class="icon">✓</div><h1>Vow sealed.</h1><p>The stake is authorized. Now send Jordan the judge link so this cannot stay private in your head.</p><div style="height:18px"></div><div class="cta" onclick="go('share')">Share judge link</div><div class="subcta" onclick="go('pending')">I'll share later</div></div>`}
+function share(){
+return `${topbar()}<div class="eyebrow">Share motion</div><h1>Send this to Jordan.</h1><p>The app opens your share sheet or messages with the judge link ready.</p><div class="card vow-card"><div class="label">Message preview</div><div class="sms">I made a vow: “No takeout all week.” $50 on the line. You’re the judge Sunday night: unbroken.vow/j7k2</div></div><div class="spacer"></div><div class="cta blue" onclick="go('pending')">Send message</div><div class="subcta" onclick="go('pending')">Copy link instead</div>`}
+function pending(){
+return `${topbar()}<div class="modal"><div class="icon">…</div><h1>Waiting on Jordan.</h1><p>Your vow is sealed, but not active until your witness accepts. We’ll nudge them in 24 hours.</p></div><div class="stack"><div class="term"><div><b>Status</b><span>Judge link delivered.</span></div><div class="right">Pending</div></div><div class="term"><div><b>Your vow</b><span>No takeout all week · $50 stake.</span></div><div class="right">Sealed</div></div></div><div class="spacer"></div><div class="cta alt" onclick="go('share')">Share again</div><div class="subcta" onclick="go('witness')">Preview witness acceptance</div>`}
+function witness(){
+return `<div class="screen" style="padding-top:30px"><div class="brand" style="justify-content:center;margin-bottom:18px"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div><h1 style="text-align:center">Joey needs you<br>to hold him to this.</h1><p style="text-align:center;font-family:var(--serif);font-style:italic">He put $50 on it. If he breaks his word, <strong style="color:var(--ink);font-style:normal">you call it.</strong></p><div style="height:18px"></div><div class="card vow-card"><div class="label" style="text-align:center">The vow</div><div class="vow" style="text-align:center;justify-content:center;font-family:var(--serif);font-weight:430;font-style:italic">“No takeout all week.”</div><div class="rule"></div><div class="meta"><span>Stake</span><strong>$50</strong></div><div class="meta" style="margin-top:8px"><span>Verdict</span><strong>Sunday night</strong></div></div><div class="spacer"></div><div class="cta" onclick="go('active')">I'm in</div><div class="subcta">Pass — I can't</div></div>`}
+function active(){
+return `${topbar()}<div class="modal"><div class="icon">✓</div><h1>Jordan accepted.</h1><p>Your vow is active. You both get reminders before Sunday night.</p></div><div class="stack"><div class="term"><div><b>No takeout all week</b><span>Verdict due Sunday night.</span></div><div class="right">Active</div></div><div class="term"><div><b>$50 stake</b><span>ALS Association if broken.</span></div><div class="right">Locked</div></div><div class="term"><div><b>Jordan judges</b><span>They can submit kept or broken.</span></div><div class="right">Accepted</div></div></div><div class="spacer"></div><div class="cta" onclick="go('draft')">Start another vow</div>`}
+const renderers={draft:sealScreen,contactsAsk,contactsList,manual,payment,processing,sealed,share,pending,witness,active};
+function renderSteps(){steps.innerHTML=S.map(([id,label])=>`<div class="chip ${id===state?'on':''}" onclick="go('${id}')">${label}</div>`).join("")}
+function go(s){state=s;el.innerHTML=renderers[s]();renderSteps()}
+go("draft");
+</script>
+</body>
+</html>

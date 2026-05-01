@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { hapticPrimary } from '@/lib/haptics';
@@ -15,8 +15,8 @@ export function GoldCTA({ label, onPress, disabled = false, variant = 'filled-go
   const isGreen = variant === 'filled-imsg-green';
   const colors = isGreen
     ? [uvColors.imessage, uvColors.imessageDeep] as const
-    : [uvColors.goldBright, uvColors.gold, uvColors.goldDeep] as const;
-  const textColor = isGreen ? '#FFFFFF' : uvColors.textOnGold;
+    : ['#f1cf7a', '#c2912d'] as const;
+  const textColor = isGreen ? '#FFFFFF' : '#151006';
 
   const handlePress = () => {
     if (!disabled) {
@@ -25,21 +25,30 @@ export function GoldCTA({ label, onPress, disabled = false, variant = 'filled-go
     }
   };
 
+  if (disabled) {
+    return (
+      <View style={[styles.button, styles.disabled]}>
+        <View style={[styles.gradient, styles.disabledBg]}>
+          <Text style={[styles.label, styles.disabledLabel]}>{label}</Text>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <Pressable
       onPress={handlePress}
-      disabled={disabled}
       style={({ pressed }) => [
         styles.button,
-        disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
+        styles.enabled,
+        pressed && styles.pressed,
       ]}
     >
       <LinearGradient
-        colors={disabled ? [uvColors.bgElevated, uvColors.bgElevated] : [...colors]}
+        colors={[...colors]}
         style={styles.gradient}
       >
-        <Text style={[styles.label, { color: disabled ? uvColors.textDim : textColor }]}>
+        <Text style={[styles.label, { color: textColor }]}>
           {label}
         </Text>
       </LinearGradient>
@@ -51,12 +60,14 @@ const styles = StyleSheet.create({
   button: {
     width: '100%',
     height: 62,
-    borderRadius: 14,
+    borderRadius: 24,
     overflow: 'hidden',
-    shadowColor: uvColors.gold,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.28,
-    shadowRadius: 20,
+  },
+  enabled: {
+    shadowColor: 'rgba(201,148,42,1)',
+    shadowOffset: { width: 0, height: 18 },
+    shadowOpacity: 0.22,
+    shadowRadius: 46,
   },
   gradient: {
     flex: 1,
@@ -64,13 +75,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontFamily: uvFonts.serifMedium,
-    fontSize: 17,
-    fontWeight: '500',
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 20,
+    fontWeight: '800',
   },
   disabled: {
-    opacity: 0.5,
     shadowOpacity: 0,
+  },
+  disabledBg: {
+    backgroundColor: 'rgba(244,234,216,0.06)',
+  },
+  disabledLabel: {
+    color: uvColors.textDim,
   },
   pressed: {
     transform: [{ scale: 0.97 }],

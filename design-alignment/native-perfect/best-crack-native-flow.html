@@ -1,0 +1,561 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unbreakable Vow - Native Best Crack Flow</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,30..100,0..1&family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+    :root {
+      --bg: #0b0907;
+      --panel: #17130f;
+      --panel-2: #1e1913;
+      --text: #f3ead9;
+      --muted: #a79b87;
+      --dim: #746b5b;
+      --gold: #d6a83c;
+      --gold-hi: #edc465;
+      --gold-deep: #a57922;
+      --line: rgba(232, 196, 101, 0.25);
+      --soft-line: rgba(243, 234, 217, 0.13);
+      --danger: #ff6969;
+      --green: #35c86b;
+      --serif: "Fraunces", Georgia, serif;
+      --sans: "Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #151515;
+      color: var(--text);
+      font-family: var(--sans);
+    }
+    .board {
+      padding: 42px;
+      width: max-content;
+      min-width: 100vw;
+    }
+    .board-title {
+      margin: 0 0 24px;
+      font: 700 22px/1 var(--sans);
+      color: var(--text);
+      letter-spacing: .02em;
+    }
+    .phones {
+      display: flex;
+      gap: 28px;
+      align-items: flex-start;
+    }
+    .shot { width: 393px; }
+    .label {
+      margin: 0 0 10px 8px;
+      color: #bbb1a2;
+      font: 700 12px/1.2 var(--sans);
+      text-transform: uppercase;
+      letter-spacing: .18em;
+    }
+    .phone {
+      position: relative;
+      width: 393px;
+      height: 852px;
+      overflow: hidden;
+      border-radius: 38px;
+      background:
+        radial-gradient(circle at 83% -3%, rgba(160, 116, 31, .18), transparent 31%),
+        radial-gradient(circle at -18% 40%, rgba(39, 57, 94, .18), transparent 28%),
+        linear-gradient(180deg, #17130f 0%, #0f0d0a 48%, #080706 100%);
+      box-shadow: 0 22px 60px rgba(0,0,0,.5), inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    .status {
+      height: 48px;
+      padding: 15px 28px 0;
+      display: flex;
+      justify-content: space-between;
+      color: #fff;
+      font: 800 18px/1 var(--sans);
+    }
+    .safe {
+      padding: 18px 22px 0;
+    }
+    .flow-top {
+      display: grid;
+      grid-template-columns: 72px 1fr 76px;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 26px;
+    }
+    .step {
+      color: var(--muted);
+      font: 800 16px/1 var(--sans);
+      letter-spacing: .08em;
+    }
+    .progress {
+      height: 4px;
+      border-radius: 99px;
+      background: rgba(243,234,217,.08);
+      overflow: hidden;
+    }
+    .progress span { display: block; height: 100%; border-radius: inherit; background: var(--gold); }
+    .signin, .menu {
+      justify-self: end;
+      color: var(--muted);
+      font: 800 12px/1 var(--sans);
+      letter-spacing: .26em;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 28px;
+      font: 500 20px/1 var(--serif);
+    }
+    .brand .mark {
+      width: 31px; height: 31px;
+      border: 1.5px solid var(--gold);
+      transform: rotate(45deg);
+      display: grid; place-items: center;
+    }
+    .brand .mark::after {
+      content: "";
+      width: 9px; height: 9px;
+      background: var(--gold-hi);
+    }
+    em.gold { color: var(--gold); font-style: italic; }
+    h1 {
+      margin: 0;
+      color: var(--text);
+      font: 560 58px/0.98 var(--serif);
+      letter-spacing: 0;
+    }
+    .hero-copy {
+      margin: 24px 0 28px;
+      color: var(--muted);
+      font: 500 18px/1.38 var(--sans);
+    }
+    .hero-copy strong { color: var(--text); font-weight: 800; }
+    .input-card {
+      min-height: 112px;
+      border: 1.3px solid rgba(243,234,217,.25);
+      border-radius: 22px;
+      background: rgba(24,21,18,.75);
+      padding: 20px 18px;
+      box-shadow: 0 18px 44px rgba(0,0,0,.22);
+    }
+    .kicker {
+      color: var(--dim);
+      font: 800 12px/1 var(--sans);
+      letter-spacing: .34em;
+      text-transform: uppercase;
+    }
+    .placeholder {
+      margin-top: 26px;
+      color: rgba(167,155,135,.42);
+      font: italic 500 28px/1.1 var(--serif);
+    }
+    .screen-1 .safe { padding-top: 26px; }
+    .screen-1 .flow-top { margin-bottom: 42px; }
+    .screen-1 h1 {
+      font-size: 64px;
+      line-height: .98;
+      margin-top: 8px;
+    }
+    .screen-1 .hero-copy {
+      margin-top: 28px;
+      margin-bottom: 34px;
+      font-size: 18px;
+      line-height: 1.45;
+    }
+    .screen-1 .input-card {
+      min-height: 130px;
+      padding: 22px 20px;
+      border-color: rgba(243,234,217,.28);
+    }
+    .screen-1 .placeholder {
+      margin-top: 28px;
+      font-size: 27px;
+      line-height: 1.12;
+    }
+    .screen-1 .or { margin-top: 30px; }
+    .screen-1 .bottom { bottom: 36px; }
+    .or {
+      margin: 26px 0 12px;
+      color: var(--dim);
+      font: 800 12px/1 var(--sans);
+      letter-spacing: .34em;
+      text-transform: uppercase;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 9px; }
+    .chip {
+      min-height: 43px;
+      padding: 0 16px;
+      border-radius: 99px;
+      border: 1px solid rgba(243,234,217,.12);
+      display: flex; align-items: center;
+      color: #b9ae9a;
+      background: rgba(243,234,217,.025);
+      font: 650 15px/1 var(--sans);
+    }
+    .bottom {
+      position: absolute;
+      left: 22px; right: 22px; bottom: 26px;
+    }
+    .cta {
+      height: 62px;
+      border-radius: 24px;
+      display: grid;
+      place-items: center;
+      color: #151006;
+      background: linear-gradient(180deg, #f1cf7a, #c2912d);
+      font: 800 20px/1 var(--sans);
+      box-shadow: 0 18px 46px rgba(201,148,42,.22);
+    }
+    .micro {
+      margin-top: 16px;
+      color: var(--dim);
+      text-align: center;
+      font: 650 13px/1 var(--sans);
+      letter-spacing: .03em;
+    }
+    .micro strong { color: var(--text); }
+    .screen-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin: 4px 0 30px;
+    }
+    .back { color: var(--muted); font: 700 15px/1 var(--sans); }
+    .hamb {
+      width: 42px; height: 42px; border-radius: 50%;
+      border: 1px solid rgba(243,234,217,.1);
+      display: grid; place-items: center;
+      color: var(--muted); font-size: 23px;
+    }
+    .title2 {
+      margin-top: 48px;
+      font-size: 47px;
+      line-height: 1.03;
+    }
+    .sub {
+      margin: 12px 0 24px;
+      color: var(--muted);
+      font: 500 18px/1.35 var(--sans);
+    }
+    .card {
+      border: 1px solid var(--soft-line);
+      border-radius: 22px;
+      background: rgba(24,21,18,.78);
+      padding: 18px;
+    }
+    .vow-line {
+      margin-top: 18px;
+      font: 560 26px/1.15 var(--serif);
+    }
+    .stake-box {
+      margin-top: 14px;
+      border-color: rgba(214,168,60,.32);
+      background: rgba(26,21,14,.82);
+    }
+    .tiles { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin: 16px 0 12px; }
+    .tile {
+      height: 66px;
+      border-radius: 17px;
+      border: 1px solid rgba(243,234,217,.11);
+      display: grid; place-items: center;
+      color: var(--muted);
+      font: 800 20px/1 var(--sans);
+    }
+    .tile.on {
+      background: rgba(214,168,60,.18);
+      border-color: var(--gold);
+      color: var(--gold-hi);
+      box-shadow: 0 0 24px rgba(214,168,60,.1);
+    }
+    .cheeky {
+      color: var(--muted);
+      text-align: center;
+      font: italic 500 15px/1.3 var(--serif);
+      margin-bottom: 14px;
+    }
+    .consequence {
+      border-radius: 16px;
+      border: 1px solid rgba(214,77,44,.22);
+      background: rgba(56,25,18,.26);
+      padding: 13px 14px;
+      color: var(--text);
+      font: 500 15px/1.35 var(--sans);
+      display: flex; justify-content: space-between; gap: 10px;
+    }
+    .consequence strong { font-weight: 850; }
+    .consequence .change { color: var(--gold-hi); font-weight: 800; }
+    .deadline {
+      margin-top: 14px;
+      display: flex; justify-content: space-between; align-items: center;
+      color: var(--muted); font: 700 16px/1 var(--sans);
+    }
+    .judge-card {
+      margin-top: 34px;
+      min-height: 92px;
+      display: flex; gap: 14px; align-items: center;
+      border-color: rgba(214,168,60,.3);
+    }
+    .avatar {
+      width: 52px; height: 52px; border-radius: 50%;
+      display: grid; place-items: center;
+      background: rgba(214,168,60,.16);
+      color: var(--gold-hi); font: 800 27px/1 var(--sans);
+    }
+    .judge-title { color: var(--text); font: 800 20px/1 var(--sans); }
+    .judge-sub { margin-top: 5px; color: var(--muted); font: 500 14px/1.25 var(--sans); }
+    .sheet {
+      position: absolute; left: 0; right: 0; bottom: 0;
+      border-radius: 30px 30px 0 0;
+      border-top: 1px solid rgba(243,234,217,.12);
+      background: rgba(31,26,20,.98);
+      padding: 26px 22px 30px;
+      box-shadow: 0 -20px 70px rgba(0,0,0,.5);
+    }
+    .grab { width: 46px; height: 5px; border-radius: 99px; background: rgba(243,234,217,.25); margin: 0 auto 24px; }
+    .sheet h2 { margin:0 0 8px; font: 650 31px/1 var(--serif); }
+    .sheet p { margin: 0 0 18px; color: var(--muted); font: 500 17px/1.32 var(--sans); }
+    .sheet .row-btn { height: 54px; border-radius: 18px; display:grid; place-items:center; margin-top: 10px; font:800 17px/1 var(--sans); }
+    .row-btn.gold { background: linear-gradient(180deg, #efca72, #bd892a); color: #130f08; }
+    .row-btn.muted { border:1px solid rgba(243,234,217,.12); color: var(--muted); }
+    .auth-wrap { padding: 86px 22px 0; text-align: center; }
+    .auth-wrap h1 { font: 800 36px/1.08 var(--sans); }
+    .auth-wrap .sub { font-size: 18px; max-width: 300px; margin: 16px auto 42px; }
+    .phone-input {
+      height: 76px; border-radius: 20px; border: 1.2px solid rgba(243,234,217,.25);
+      display:flex; align-items:center; gap: 12px; padding: 0 20px;
+      background: rgba(24,21,18,.78); text-align:left;
+      color: var(--text); font: 650 25px/1 var(--sans);
+    }
+    .helper { margin: 14px 0 34px; color: var(--dim); text-align:left; font: 500 14px/1 var(--sans); }
+    .pay-sheet { bottom: 0; }
+    .payment-options { display:flex; gap: 12px; margin: 20px 0 18px; }
+    .payment {
+      flex:1; height: 82px; border-radius: 18px; border:1px solid rgba(243,234,217,.13);
+      padding: 12px; display:flex; flex-direction:column; justify-content:center; gap: 6px;
+      color: var(--muted); font: 800 18px/1 var(--sans);
+    }
+    .payment.on { background: linear-gradient(180deg, #edc465, #bd892a); color: #130f08; border-color: transparent; }
+    .legal { color: var(--muted); font: 500 13px/1.35 var(--sans); margin-bottom: 16px; }
+    .sealed { padding: 88px 25px 0; text-align: center; }
+    .check {
+      width:72px; height:72px; border-radius:50%; background: var(--gold-hi);
+      color:#120f08; display:grid; place-items:center; margin:0 auto 26px;
+      font:900 34px/1 var(--sans); box-shadow:0 0 40px rgba(214,168,60,.24);
+    }
+    .sealed h1 { font-size: 48px; }
+    .sealed .bound { margin-top: 8px; color: var(--muted); font: 600 19px/1.25 var(--sans); }
+    .sealed .card { margin-top: 28px; text-align:left; }
+    .sealed .now { margin-top: 18px; display:flex; gap: 12px; text-align:left; align-items:center; border-color: rgba(214,168,60,.28); }
+    .mini-title { color:var(--text); font:800 18px/1.1 var(--sans); }
+    .mini-sub { margin-top: 5px; color:var(--muted); font:500 14px/1.25 var(--sans); }
+    .dash { padding: 72px 22px 0; }
+    .dash h1 { font: 800 44px/1.02 var(--sans); margin-bottom: 28px; }
+    .section-row { display:flex; align-items:center; gap:8px; color:var(--gold-hi); font:800 13px/1 var(--sans); letter-spacing:.28em; text-transform:uppercase; margin-bottom:16px; }
+    .vow-card {
+      border-radius: 23px;
+      border: 1px solid rgba(214,168,60,.25);
+      background: rgba(24,21,18,.8);
+      padding: 18px;
+      margin-bottom: 14px;
+    }
+    .status-pill {
+      display:inline-flex; align-items:center; gap:7px; height:30px; padding:0 12px; border-radius:99px;
+      background:rgba(214,168,60,.13); color:var(--gold-hi); font:800 12px/1 var(--sans); letter-spacing:.12em; text-transform:uppercase;
+    }
+    .card-title { margin:18px 0 14px; color:var(--text); font:700 25px/1.08 var(--sans); }
+    .card-meta { color:var(--muted); font:600 15px/1.3 var(--sans); }
+    .action-chip {
+      margin-top:18px; height:44px; border-radius:18px; display:grid; place-items:center;
+      background:rgba(214,168,60,.18); border:1px solid rgba(214,168,60,.38); color:var(--gold-hi); font:800 15px/1 var(--sans);
+    }
+    .live-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:16px; }
+    .small-action { height:48px; border-radius:17px; display:grid; place-items:center; border:1px solid rgba(243,234,217,.11); color:var(--text); font:800 14px/1 var(--sans); background:rgba(243,234,217,.035); }
+  </style>
+</head>
+<body>
+  <main class="board">
+    <h1 class="board-title">Project Perfect - Native “Best Crack” Flow</h1>
+    <section class="phones">
+      <div class="shot">
+        <div class="label">1. First Screen After Cinematic</div>
+        <div class="phone screen-1">
+          <div class="status"><span>5:37</span><span>▮▮ ))) 43%</span></div>
+          <div class="safe">
+            <div class="flow-top">
+              <div class="step">1 / 5</div>
+              <div class="progress"><span style="width:20%"></span></div>
+              <div class="signin">SIGN IN</div>
+            </div>
+            <h1>Make a vow.<br><em class="gold">Mean it.</em></h1>
+            <p class="hero-copy"><strong>Flake and lose it all.</strong> Stake real cash on your word. Your friend judges. No mercy.</p>
+            <div class="input-card">
+              <div class="kicker">I Vow To</div>
+              <div class="placeholder">Run every morning this week</div>
+            </div>
+            <div class="or">Or Start Here</div>
+            <div class="chips">
+              <div class="chip">Gym 3x this week</div>
+              <div class="chip">No alcohol, 2 weeks</div>
+              <div class="chip">Delete TikTok for a week</div>
+            </div>
+          </div>
+          <div class="bottom">
+            <div class="cta">Next →</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">2. Terms</div>
+        <div class="phone">
+          <div class="status"><span>5:38</span><span>▮▮ ))) 43%</span></div>
+          <div class="safe">
+            <div class="screen-head">
+              <div class="back">← Back</div>
+              <div class="step">2 / 5</div>
+              <div class="hamb">≡</div>
+            </div>
+            <div class="progress" style="margin-bottom:34px"><span style="width:40%"></span></div>
+            <h1 class="title2">Set the <em class="gold">terms.</em></h1>
+            <p class="sub">A vow without weight is a wish.</p>
+            <div class="card">
+              <div class="kicker">The Vow</div>
+              <div class="vow-line"><em class="gold">I’ll</em> Run every morning this week.</div>
+            </div>
+            <div class="card stake-box">
+              <div class="kicker">The Stake</div>
+              <div class="tiles">
+                <div class="tile">$20</div><div class="tile on">$50</div><div class="tile">$100</div><div class="tile">Other</div>
+              </div>
+              <div class="cheeky">Enough to hurt. Not enough to be stupid.</div>
+              <div class="consequence"><span>If you break it, <strong>$50</strong> goes to <strong>ALS Association.</strong></span><span class="change">Change</span></div>
+            </div>
+            <div class="card deadline"><span>Verdict by</span><strong>Sunday night</strong></div>
+          </div>
+          <div class="bottom"><div class="cta">Choose your witness →</div></div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">3. Witness / Native Contacts After Tap</div>
+        <div class="phone">
+          <div class="status"><span>5:39</span><span>▮▮ ))) 44%</span></div>
+          <div class="safe">
+            <div class="screen-head">
+              <div class="back">← Back</div>
+              <div class="step">3 / 5</div>
+              <div class="hamb">≡</div>
+            </div>
+            <div class="progress" style="margin-bottom:46px"><span style="width:60%"></span></div>
+            <h1 class="title2">Choose your <em class="gold">witness.</em></h1>
+            <p class="sub">They get the final say.</p>
+            <div class="card judge-card">
+              <div class="avatar">+</div>
+              <div>
+                <div class="judge-title">Add a judge →</div>
+                <div class="judge-sub">Pick from contacts. Share link still works.</div>
+              </div>
+            </div>
+          </div>
+          <div class="sheet">
+            <div class="grab"></div>
+            <h2>Sync contacts?</h2>
+            <p>Find the judge faster. We only use the person you pick.</p>
+            <div class="row-btn gold">Choose contact</div>
+            <div class="row-btn muted">Not now</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">4. Auth Then Apple Pay</div>
+        <div class="phone">
+          <div class="status"><span>5:40</span><span>▮▮ ))) 44%</span></div>
+          <div class="auth-wrap">
+            <div class="back" style="text-align:left;margin-bottom:58px">← Back</div>
+            <h1>What’s your number?</h1>
+            <p class="sub">We’ll text the code that seals your vow. No password.</p>
+            <div class="phone-input"><span>🇺🇸</span><span style="color:var(--muted)">+1</span><span style="color:var(--dim)">|</span><span>(860) 751-9907</span></div>
+            <div class="helper">For verification and vow updates only.</div>
+            <div class="cta">Text me the code</div>
+          </div>
+          <div class="sheet pay-sheet">
+            <div class="grab"></div>
+            <h2>Save your card</h2>
+            <p>No charge now. Only if you break it.</p>
+            <div class="payment-options">
+              <div class="payment on">Pay<br><span style="font-size:12px;font-weight:700">Primary</span></div>
+              <div class="payment">Card<br><span style="font-size:12px;font-weight:700">Fallback</span></div>
+            </div>
+            <div class="legal">By continuing, you allow payment only if this vow is broken.</div>
+            <div class="row-btn gold">Seal the vow</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">5. Sealed / Get Witness In</div>
+        <div class="phone">
+          <div class="status"><span>5:41</span><span>▮▮ ))) 45%</span></div>
+          <div class="sealed">
+            <div class="check">✓</div>
+            <div class="kicker" style="color:var(--gold);">Sealed</div>
+            <h1 style="margin-top:18px">Your vow is<br><em class="gold">sealed.</em></h1>
+            <div class="bound">You put real stakes behind your word.</div>
+            <div class="card">
+              <div class="kicker">The Vow</div>
+              <div class="vow-line">Run every morning this week.</div>
+              <div style="height:1px;background:var(--line);margin:18px 0"></div>
+              <div style="color:var(--muted);font:650 14px/1.3 var(--sans)">$50 if broken · verdict Sunday night</div>
+            </div>
+            <div class="card now">
+              <div class="avatar" style="width:44px;height:44px;font-size:18px">J</div>
+              <div>
+                <div class="mini-title">Now get Joe in.</div>
+                <div class="mini-sub">They accept, then the vow starts.</div>
+              </div>
+            </div>
+          </div>
+          <div class="bottom">
+            <div class="cta">Send to Joe →</div>
+            <div class="micro">I’ll do it later</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">6. Dashboard / Action-Led Detail</div>
+        <div class="phone">
+          <div class="status"><span>5:42</span><span>▮▮ ))) 45%</span></div>
+          <div class="dash">
+            <div class="screen-head" style="margin-bottom:34px">
+              <div class="back">Unbreakable <em class="gold">Vow</em></div>
+              <div class="hamb">≡</div>
+            </div>
+            <h1>Hey, Joseph.</h1>
+            <div class="section-row"><span>Your Vows</span><span style="color:var(--muted);letter-spacing:0">· 3</span></div>
+            <div class="vow-card">
+              <div class="status-pill">Needs Witness</div>
+              <div class="card-title">Run every morning this week.</div>
+              <div class="card-meta">$50 on the line · Joe needs to accept</div>
+              <div class="action-chip">Send invite →</div>
+            </div>
+            <div class="vow-card">
+              <div class="status-pill" style="color:#75e6a0;background:rgba(53,200,107,.12);border-color:rgba(53,200,107,.22)">Vow Live</div>
+              <div class="card-title">No alcohol, 2 weeks.</div>
+              <div class="card-meta">Joe watching · Verdict Sunday night</div>
+              <div class="live-grid">
+                <div class="small-action">Nudge Joe</div>
+                <div class="small-action">I kept it early</div>
+              </div>
+            </div>
+          </div>
+          <div class="bottom"><div class="cta">New vow →</div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

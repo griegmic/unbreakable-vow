@@ -29,9 +29,10 @@ export function BrandWordmark({ variant }: BrandWordmarkProps) {
 const styles = StyleSheet.create({
   // tinybrand
   tinybrand: {
+    fontFamily: uvFonts.sansSemibold,
     textAlign: 'center',
     textTransform: 'uppercase',
-    letterSpacing: 5,
+    letterSpacing: 10 * 0.34,
     fontSize: 10,
     fontWeight: '800',
     color: uvColors.textDim,

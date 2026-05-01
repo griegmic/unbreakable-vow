@@ -23,14 +23,14 @@ export function VowInputCard({
     <View
       style={[
         styles.card,
-        { borderColor: focused ? uvColors.border : uvColors.borderSoft },
+        focused && styles.cardFocused,
       ]}
     >
       <Text style={styles.kicker}>{kicker}</Text>
       <TextInput
         style={styles.input}
         placeholder={placeholder}
-        placeholderTextColor={uvColors.textDim}
+        placeholderTextColor="rgba(185,174,154,0.58)"
         value={value}
         onChangeText={onChangeText}
         onFocus={() => {
@@ -47,24 +47,33 @@ export function VowInputCard({
 
 const styles = StyleSheet.create({
   card: {
+    minHeight: 128,
     borderWidth: 1.3,
+    borderColor: 'rgba(244,234,216,0.3)',
     borderRadius: uvRadius['2xl'],
-    padding: 20,
-    backgroundColor: uvColors.bgCard,
-    gap: 10,
+    paddingTop: 21,
+    paddingBottom: 21,
+    paddingHorizontal: 18,
+    backgroundColor: 'rgba(24,21,18,0.82)',
+  },
+  cardFocused: {
+    borderColor: uvColors.gold,
   },
   kicker: {
-    fontSize: 11,
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 3,
+    letterSpacing: 12 * 0.34,
     textTransform: 'uppercase',
-    color: uvColors.textDim,
+    color: uvColors.textKicker,
   },
   input: {
     fontFamily: uvFonts.serifItalic,
-    fontSize: 22,
+    fontSize: 27,
+    lineHeight: 27 * 1.12,
+    fontStyle: 'italic',
     color: uvColors.text,
-    minHeight: 60,
+    marginTop: 29,
     padding: 0,
   },
 });

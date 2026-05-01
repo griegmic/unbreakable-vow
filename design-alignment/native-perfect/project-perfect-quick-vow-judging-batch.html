@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unbreakable Vow - Quick Vow + Judging Batch</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT,WONK@0,9..144,400..700,30..100,0..1;1,9..144,400..700,30..100,0..1&family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+    :root{--bg:#0f0d0a;--panel:#171410;--panel2:#211c16;--text:#f0e9db;--muted:#a89e8c;--dim:#756d60;--gold:#c89b3c;--goldHi:#e8b656;--goldDeep:#a67a27;--green:#52d69a;--orange:#f59a3d;--red:#ef6b5f;--line:rgba(240,233,219,.10);--goldLine:rgba(200,155,60,.24);--onGold:#15100a;--serif:"Fraunces",Georgia,serif;--sans:"Inter Tight",-apple-system,BlinkMacSystemFont,sans-serif}
+    *{box-sizing:border-box}
+    html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision}
+    body{margin:0;background:#151515;color:var(--text);font-family:var(--sans);font-kerning:normal}
+    .board{padding:42px;width:max-content;min-width:100vw}.pageTitle{margin:0 0 8px;color:var(--text);font:800 24px/1 var(--sans)}.pageNote{max-width:1100px;margin:0 0 24px;color:var(--muted);font:600 15px/1.45 var(--sans)}
+    .row{display:flex;gap:30px;align-items:flex-start}.shot{width:393px}.label{margin:0 0 10px 8px;color:#beb4a4;font:800 12px/1.2 var(--sans);letter-spacing:.18em;text-transform:uppercase}
+    .phone{position:relative;width:393px;height:852px;overflow:hidden;border-radius:38px;background:radial-gradient(circle at 80% -8%,rgba(200,155,60,.13),transparent 34%),linear-gradient(180deg,#17130f 0%,#0f0d0a 52%,#080706 100%);box-shadow:0 22px 58px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)}
+    .status{height:48px;padding:15px 28px 0;display:flex;justify-content:space-between;color:white;font:800 18px/1 var(--sans)}.statusRight{display:flex;gap:7px;align-items:center}.signal{display:flex;align-items:flex-end;gap:2px;height:13px}.signal i{display:block;width:3px;border-radius:3px;background:#fff}.signal i:nth-child(1){height:5px}.signal i:nth-child(2){height:8px}.signal i:nth-child(3){height:11px}.battery{font:800 15px/1 var(--sans)}
+    .screen{height:804px;padding:14px 20px 18px;display:flex;flex-direction:column;overflow:hidden}.topbar,.head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}.brand{display:flex;align-items:center;gap:10px;font:500 15px/1 var(--serif);color:var(--text)}.brand em{color:var(--gold);font-style:italic}.mark{width:22px;height:22px;border:1px solid var(--gold);display:grid;place-items:center;transform:rotate(45deg)}.mark:after{content:"";width:6px;height:6px;background:var(--gold)}.avatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,var(--goldHi),var(--gold));color:var(--onGold);font:800 15px/1 var(--sans)}.hamb{width:42px;height:42px;border-radius:50%;border:1px solid rgba(244,234,216,.1);display:grid;place-items:center;color:var(--muted);font:800 20px/1 var(--sans)}.back{min-height:42px;display:flex;align-items:center;color:var(--muted);font:800 15px/1 var(--sans)}
+    .kicker{color:var(--goldHi);font:800 11px/1 var(--sans);letter-spacing:.24em;text-transform:uppercase;margin:0 0 7px}.title{margin:0 0 14px;color:var(--text);font:500 36px/1.02 var(--serif);font-variation-settings:"SOFT" 55,"WONK" 0}.title.big{font-size:42px}.title em{color:var(--gold);font-style:italic}.title .green{color:var(--green);font-style:italic}.sub{margin:-4px 0 18px;color:var(--muted);font:700 16px/1.32 var(--sans)}
+    .vowCard{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px 13px;box-shadow:0 18px 44px rgba(0,0,0,.28);margin-bottom:10px}.vowCard.gold{border-color:rgba(200,155,60,.26);background:linear-gradient(180deg,rgba(31,26,20,.96),rgba(23,20,16,.9))}.labelSmall{color:var(--dim);font:800 10px/1 var(--sans);letter-spacing:.28em;text-transform:uppercase;margin-bottom:12px}.input{min-height:72px;color:var(--text);font:700 29px/1.08 var(--sans);letter-spacing:-.01em;display:flex;align-items:flex-start}.placeholder{color:rgba(168,158,140,.55);font-style:italic}.rule{height:1px;background:var(--goldLine);margin:0 0 11px}.dateRow{min-height:26px;display:inline-flex;align-items:center;gap:9px;color:var(--muted);font:600 13px/1 var(--sans)}.dateRow em{color:var(--dim);font-style:italic}.dateRow strong{color:var(--text);font-weight:700}.pencil{width:20px;height:20px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(244,234,216,.12);color:var(--goldHi);font-size:11px}
+    .chipsWrap{position:relative;margin:0 -20px 10px 0}.chips{display:flex;gap:8px;overflow:hidden;padding:0 22px 0 0}.chipsWrap:after{content:"";position:absolute;top:0;right:0;width:36px;height:100%;background:linear-gradient(90deg,transparent,var(--bg));pointer-events:none}.chip{white-space:nowrap;border:1px solid var(--line);background:rgba(240,233,219,.025);color:var(--muted);border-radius:999px;padding:8px 12px;font:650 13px/1 var(--sans)}
+    .stake{margin-top:0;text-align:center;color:var(--gold);font:500 56px/.95 var(--serif);text-shadow:0 10px 34px rgba(200,155,60,.18)}.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:12px 0 8px}.tile{height:52px;border-radius:14px;border:1px solid var(--line);display:grid;place-items:center;background:rgba(240,233,219,.025);color:var(--muted);font:700 18px/1 var(--sans)}.tile.on{background:linear-gradient(180deg,rgba(232,182,86,.22),rgba(200,155,60,.13));border-color:var(--gold);color:var(--goldHi);box-shadow:0 0 0 1px rgba(232,182,86,.08),0 16px 34px rgba(200,155,60,.10)}.stakeNote{text-align:center;min-height:18px;color:var(--dim);font:italic 600 13px/1.25 var(--sans);margin-bottom:10px}
+    .witness{min-height:64px;border-radius:17px;border:1px solid rgba(200,155,60,.24);background:rgba(23,20,16,.96);display:flex;align-items:center;gap:12px;padding:0 15px;margin-bottom:11px}.circle{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:rgba(200,155,60,.14);border:1px solid rgba(200,155,60,.18);color:var(--goldHi);font:800 17px/1 var(--sans)}.witnessCopy{min-width:0;flex:1}.witnessTitle{color:var(--text);font:800 16px/1 var(--sans)}.witnessSub{margin-top:4px;color:var(--dim);font:650 12.5px/1.25 var(--sans)}.arrow{color:var(--goldHi);font:800 22px/1 var(--sans)}.receipt{min-height:46px;border:1px solid rgba(200,70,40,.18);background:rgba(96,35,22,.14);border-radius:14px;display:flex;align-items:center;justify-content:center;padding:0 14px;text-align:center;color:var(--text);font:600 14.5px/1.25 var(--sans)}.receipt strong{font-weight:800}.spacer{flex:1}.cta{height:58px;border-radius:999px;border:0;display:grid;place-items:center;background:linear-gradient(180deg,#edc66b,#d6a339 62%,#b88930);color:var(--onGold);font:800 18px/1 var(--sans);box-shadow:0 1px 0 rgba(255,244,210,.35) inset,0 22px 48px rgba(200,155,60,.18)}.helper{text-align:center;margin-top:11px;color:var(--muted);font:700 12.5px/1 var(--sans)}
+    .stamp{display:inline-flex;align-self:flex-start;min-height:30px;align-items:center;border-radius:99px;background:rgba(214,168,60,.12);color:var(--goldHi);padding:0 11px;font:800 11px/1 var(--sans);letter-spacing:.12em;text-transform:uppercase;margin:4px 0 14px}.stamp.green{background:rgba(82,214,154,.13);color:var(--green)}.docTitle{margin:0 0 16px;color:var(--text);font:600 30px/1.08 var(--serif)}.quote{font:600 26px/1.14 var(--serif);margin:0 0 16px;color:var(--text)}.quote.sm{font-size:22px}.metaGrid{display:grid;grid-template-columns:1fr 1fr;gap:14px;border-top:1px dashed rgba(244,234,216,.1);padding-top:13px}.metaK{color:var(--dim);font:800 10px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;margin-bottom:6px}.metaV{color:var(--text);font:800 16px/1.15 var(--sans)}.metaV.gold{color:var(--goldHi)}.metaV.green{color:var(--green)}.timeline{border:1px solid var(--line);border-radius:18px;background:rgba(24,21,18,.72);padding:16px;margin-top:14px}.tlTitle{color:var(--dim);font:800 10px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase;margin-bottom:13px}.tlRow{display:flex;gap:12px;padding:10px 0;border-top:1px dashed rgba(244,234,216,.07)}.tlRow:first-of-type{border-top:0}.dot{width:9px;height:9px;border-radius:50%;background:var(--dim);margin-top:6px}.dot.on{background:var(--goldHi);box-shadow:0 0 10px rgba(232,182,86,.55)}.tlK{color:var(--goldHi);font:800 10px/1 var(--sans);letter-spacing:.18em;text-transform:uppercase;margin-bottom:4px}.tlV{color:var(--text);font:700 15px/1.25 var(--sans)}
+    .buttonRow{display:grid;grid-template-columns:1fr 1fr;gap:10px}.yes,.no{height:68px;border-radius:17px;border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:rgba(244,234,216,.025);font:800 18px/1 var(--sans)}.yes{border-color:rgba(82,214,154,.34);background:rgba(82,214,154,.08);color:var(--green)}.no{border-color:rgba(239,107,95,.30);background:rgba(239,107,95,.06);color:#ef8d82}.btnSub{color:var(--muted);font:800 10px/1 var(--sans);letter-spacing:.16em;text-transform:uppercase}.quietLink{text-align:center;color:var(--muted);font:800 13px/1 var(--sans);margin-top:14px}.greenCta{height:58px;border-radius:999px;display:grid;place-items:center;background:linear-gradient(180deg,#66e3a8,#22b96b);color:#06150d;font:800 17px/1 var(--sans);box-shadow:0 18px 42px rgba(82,214,154,.18)}
+    .sheetBackdrop{position:absolute;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);display:flex;align-items:flex-end}.sheet{width:100%;border-radius:28px 28px 0 0;border:1px solid rgba(244,234,216,.12);background:#201b15;padding:24px 22px 26px;box-shadow:0 -18px 60px rgba(0,0,0,.55)}.grab{width:42px;height:5px;border-radius:99px;background:rgba(244,234,216,.25);margin:0 auto 22px}.sheet h2{margin:0;color:var(--text);font:500 31px/1.05 var(--serif)}.sheet p{margin:8px 0 18px;color:var(--muted);font:600 15px/1.35 var(--sans)}.contactRow{min-height:64px;border-radius:17px;border:1px solid rgba(244,234,216,.1);background:rgba(244,234,216,.025);display:flex;align-items:center;gap:12px;padding:0 14px;margin-bottom:9px}.contactAvatar{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:rgba(214,168,60,.12);color:var(--goldHi);font:800 15px/1 var(--serif)}.contactName{color:var(--text);font:800 15px/1 var(--sans)}.contactSub{margin-top:4px;color:var(--dim);font:650 12px/1 var(--sans)}.sheetAction{height:54px;border-radius:999px;display:grid;place-items:center;background:linear-gradient(180deg,#edc66b,#c2912d);color:var(--onGold);font:800 16px/1 var(--sans);margin-top:14px}.secondarySheet{height:50px;border-radius:16px;border:1px solid rgba(244,234,216,.1);display:grid;place-items:center;color:var(--muted);font:800 14px/1 var(--sans);margin-top:10px}
+    .audit{margin-top:30px;max-width:1160px;border:1px solid rgba(244,234,216,.12);border-radius:18px;background:#1b1917;padding:18px 20px;color:#b8ae9d}.audit h2{margin:0 0 12px;color:var(--text);font:800 18px/1 var(--sans)}.audit p{margin:9px 0;font:500 14px/1.45 var(--sans)}.audit strong{color:var(--text)}
+  </style>
+</head>
+<body>
+  <main class="board">
+    <h1 class="pageTitle">Project Perfect: Quick Vow + Judging/Witness Batch</h1>
+    <p class="pageNote">Quick Vow stays very close to mobile web. Judging views use mobile-web witness/verdict structure, translated into native dashboard navigation and app-safe CTAs.</p>
+    <section class="row">
+      <div class="shot">
+        <div class="label">QV-01. Quick Vow Main</div>
+        <div class="phone">
+          <div class="status"><span>6:02</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="screen">
+            <div class="topbar"><div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div><div class="avatar">J</div></div>
+            <div class="kicker">Seal a vow</div>
+            <h1 class="title">One promise.<br><em>Real consequence.</em></h1>
+            <div class="vowCard">
+              <div class="labelSmall">I vow to</div>
+              <div class="input"><span class="placeholder">skip takeout all week</span></div>
+              <div class="rule"></div>
+              <div class="dateRow"><span>Verdict</span><em>by</em><strong>Sunday night</strong><span class="pencil">✎</span></div>
+            </div>
+            <div class="chipsWrap"><div class="chips"><div class="chip">Gym 3x this week</div><div class="chip">Delete TikTok for a week</div><div class="chip">Dry, 2 weeks</div><div class="chip">No texting my ex</div></div></div>
+            <div class="stake">$50</div>
+            <div class="tiles"><div class="tile">$10</div><div class="tile">$25</div><div class="tile on">$50</div><div class="tile">$100</div></div>
+            <div class="stakeNote">Enough to sting. Not enough to be stupid.</div>
+            <div class="witness"><div class="circle">+</div><div class="witnessCopy"><div class="witnessTitle">Add a witness</div><div class="witnessSub">Contacts first. Share link still works.</div></div><div class="arrow">→</div></div>
+            <div class="receipt">If broken, <strong>&nbsp;$50&nbsp;</strong> goes to <strong>&nbsp;ALS Association</strong>.</div>
+            <div class="spacer"></div>
+            <div class="cta">Stake $50 →</div>
+            <div class="helper">Need help? Guided setup</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">QV-02. Native Witness Sheet</div>
+        <div class="phone">
+          <div class="status"><span>6:03</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="screen" style="filter:brightness(.43)">
+            <div class="topbar"><div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div><div class="avatar">J</div></div>
+            <div class="kicker">Seal a vow</div><h1 class="title">One promise.<br><em>Real consequence.</em></h1>
+            <div class="vowCard"><div class="labelSmall">I vow to</div><div class="input">Gym 3x this week</div><div class="rule"></div><div class="dateRow"><span>Verdict</span><em>by</em><strong>Sunday night</strong></div></div>
+          </div>
+          <div class="sheetBackdrop">
+            <div class="sheet">
+              <div class="grab"></div>
+              <h2>Add a witness.</h2>
+              <p>Pick someone who won’t let you slide. They decide if you kept it or pay.</p>
+              <div class="contactRow"><div class="contactAvatar">J</div><div><div class="contactName">Joe</div><div class="contactSub">Recent witness</div></div></div>
+              <div class="contactRow"><div class="contactAvatar">N</div><div><div class="contactName">Nick</div><div class="contactSub">From contacts</div></div></div>
+              <div class="sheetAction">Choose from contacts</div>
+              <div class="secondarySheet">Share link instead</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">J-01. Judging Detail / Watching</div>
+        <div class="phone">
+          <div class="status"><span>6:08</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="screen">
+            <div class="head"><div class="back">← Dashboard</div><div class="hamb">≡</div></div>
+            <div class="stamp green">You’re judging</div>
+            <h1 class="title big">Sarah is<br><span class="green">on the hook.</span></h1>
+            <p class="sub">You decide Sunday night if she kept her word.</p>
+            <div class="vowCard gold">
+              <div class="labelSmall">The vow</div>
+              <div class="quote">No alcohol, 2 weeks.</div>
+              <div class="metaGrid">
+                <div><div class="metaK">On line</div><div class="metaV gold">$100</div></div>
+                <div><div class="metaK">If broken</div><div class="metaV">ALS Association</div></div>
+              </div>
+            </div>
+            <div class="timeline">
+              <div class="tlTitle">What happens next</div>
+              <div class="tlRow"><div class="dot on"></div><div><div class="tlK">Now</div><div class="tlV">Keep Sarah honest.</div></div></div>
+              <div class="tlRow"><div class="dot"></div><div><div class="tlK">24h before</div><div class="tlV">We’ll text you a heads-up.</div></div></div>
+              <div class="tlRow"><div class="dot"></div><div><div class="tlK">Sunday</div><div class="tlV">One tap: kept it or broke it.</div></div></div>
+            </div>
+            <div class="spacer"></div>
+            <div class="greenCta">Text Sarah: I’m watching</div>
+            <div class="quietLink">Make your own vow →</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">J-02. Verdict Due</div>
+        <div class="phone">
+          <div class="status"><span>6:09</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="screen">
+            <div class="head"><div class="back">← Judging</div><div class="hamb">≡</div></div>
+            <div class="stamp">Verdict day</div>
+            <h1 class="title big">Sarah’s vow<br>is <em>up.</em></h1>
+            <p class="sub">Be honest. She picked you for a reason.</p>
+            <div class="vowCard gold">
+              <div class="labelSmall">The vow</div>
+              <div class="quote sm">No alcohol, 2 weeks.</div>
+              <div class="metaGrid">
+                <div><div class="metaK">On line</div><div class="metaV gold">$100</div></div>
+                <div><div class="metaK">Ended</div><div class="metaV">2h ago</div></div>
+              </div>
+            </div>
+            <div class="kicker" style="text-align:center;margin-top:12px">Your call</div>
+            <h2 style="margin:0 0 18px;text-align:center;color:var(--text);font:500 27px/1.1 var(--serif)">Did Sarah keep it?</h2>
+            <div class="buttonRow">
+              <div class="yes">Yes<div class="btnSub">Kept it</div></div>
+              <div class="no">No<div class="btnSub">Broke it</div></div>
+            </div>
+            <div class="spacer"></div>
+            <div class="quietLink">Need to ask? Text Sarah first</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">W-01. Witness Invite / Accept</div>
+        <div class="phone">
+          <div class="status"><span>6:10</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="screen">
+            <div class="topbar"><div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div><div class="helper" style="margin:0;color:var(--goldHi)">Make a vow</div></div>
+            <h1 class="title big">Joe needs you<br>to hold him to this.</h1>
+            <p class="sub">He put $50 on it. If he breaks his word, you call it.</p>
+            <div class="vowCard gold">
+              <div class="labelSmall" style="text-align:center">The vow</div>
+              <div class="quote sm" style="text-align:center">“Run every morning this week.”</div>
+              <div class="metaGrid">
+                <div><div class="metaK">On line</div><div class="metaV gold">$50</div></div>
+                <div><div class="metaK">You decide</div><div class="metaV">Sunday night</div></div>
+              </div>
+            </div>
+            <div class="timeline">
+              <div class="tlTitle">Your job</div>
+              <div class="tlRow"><div class="dot on"></div><div><div class="tlK">Accept</div><div class="tlV">Joe gets the green light.</div></div></div>
+              <div class="tlRow"><div class="dot"></div><div><div class="tlK">During</div><div class="tlV">Keep him honest.</div></div></div>
+              <div class="tlRow"><div class="dot"></div><div><div class="tlK">Sunday</div><div class="tlV">One tap: kept it or broke it.</div></div></div>
+            </div>
+            <div class="spacer"></div>
+            <div class="cta">I’m in →</div>
+            <div class="quietLink">Pass — I can’t</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">W-02. Witness Accepted</div>
+        <div class="phone">
+          <div class="status"><span>6:11</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="screen" style="align-items:center;text-align:center;padding-top:72px">
+            <div style="width:86px;height:86px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(180deg,#66e3a8,#22b96b);color:#06150d;font:900 44px/1 var(--sans);box-shadow:0 0 0 18px rgba(82,214,154,.1),0 28px 58px rgba(82,214,154,.18)">✓</div>
+            <div class="kicker" style="margin-top:36px">You’re in</div>
+            <h1 class="title big">Joe knows<br>you’ve got <span class="green">him.</span></h1>
+            <p class="sub" style="max-width:300px">That’s it for now. We’ll text you Sunday at 9pm.</p>
+            <div class="vowCard gold" style="width:100%;text-align:left;margin-top:8px">
+              <div class="labelSmall">You’re watching</div>
+              <div class="quote sm">Run every morning this week.</div>
+              <div class="metaGrid">
+                <div><div class="metaK">On line</div><div class="metaV gold">$50</div></div>
+                <div><div class="metaK">If broken</div><div class="metaV">ALS Association</div></div>
+              </div>
+            </div>
+            <div class="spacer"></div>
+            <div class="greenCta" style="width:100%">Text Joe: I’ve got you</div>
+            <div class="quietLink">Make your own vow →</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot">
+        <div class="label">W-03. Witness Declined</div>
+        <div class="phone">
+          <div class="status"><span>6:12</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="battery">43%</span></span></div>
+          <div class="screen" style="align-items:center;text-align:center;padding:106px 30px 28px">
+            <div style="width:78px;height:78px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(200,155,60,.22);background:rgba(200,155,60,.08);color:var(--goldHi);font:700 28px/1 var(--serif);font-style:italic;opacity:.72">UV</div>
+            <div class="kicker" style="margin-top:34px;color:var(--dim)">You passed on this one</div>
+            <h1 class="title big">You sat<br>this one out.</h1>
+            <p class="sub" style="max-width:300px">Joe knows you declined. He can find someone else, or let the vow go.</p>
+            <div class="spacer"></div>
+            <div class="witness" style="width:100%;justify-content:center;background:transparent"><div class="witnessTitle" style="color:var(--goldHi)">Change of heart? Text Joe →</div></div>
+            <div class="quietLink">Make your own vow →</div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="audit">
+      <h2>Donald Pass</h2>
+      <p><strong>Quick Vow:</strong> This is intentionally the mobile-web power page, not a new native invention. The one native delta is contacts-first witness selection, because the app has the address book and the social step is high leverage.</p>
+      <p><strong>Judging detail:</strong> The screen answers three questions in three seconds: who am I holding accountable, what did they vow, and when do I decide? The primary action while active is relational, not administrative: text them.</p>
+      <p><strong>Verdict due:</strong> The CTA pair is deliberately blunt. At verdict time, the user does not need more education; they need to make the call. “Text Sarah first” stays quiet for empathy.</p>
+      <p><strong>Witness accept/deny:</strong> This stays close to mobile web public witness flow. It does not assume the witness has the app. The app-native version can reuse this design if a future installed-app witness path exists.</p>
+    </section>
+  </main>
+</body>
+</html>

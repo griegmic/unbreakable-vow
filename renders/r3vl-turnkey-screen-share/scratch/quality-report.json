@@ -1,0 +1,24 @@
+{
+  "workspace": "/Users/joey/rork-unbreakable-vow/renders/r3vl-turnkey-screen-share",
+  "pptx": "/Users/joey/rork-unbreakable-vow/renders/r3vl-turnkey-screen-share/output/r3vl-turnkey-screen-share-swimlane.pptx",
+  "checks": {
+    "pptx_package": {
+      "slide_count": 1,
+      "media_count": 0,
+      "chart_count": 0,
+      "zero_byte_media": [],
+      "invalid_png_media": [],
+      "placeholder_text": [],
+      "debug_line_colors": [],
+      "slide_numbers": [],
+      "warnings": [],
+      "failures": []
+    },
+    "output_hygiene": {
+      "output_dir": "/Users/joey/rork-unbreakable-vow/renders/r3vl-turnkey-screen-share/output",
+      "unexpected_files": []
+    }
+  },
+  "failures": [],
+  "warnings": []
+}

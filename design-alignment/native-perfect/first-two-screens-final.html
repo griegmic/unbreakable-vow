@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Unbreakable Vow - First Two Native Screens</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..700,30..100,0..1&family=Inter+Tight:wght@400;500;600;700;800&display=swap');
+    :root {
+      --bg:#0b0907; --panel:#17130f; --text:#f4ead8; --muted:#a99e8a; --dim:#756c5d;
+      --gold:#d6a83c; --goldHi:#edc465; --goldDeep:#a87a22; --soft:rgba(244,234,216,.12);
+      --serif:"Fraunces", Georgia, serif; --sans:"Inter Tight",-apple-system,BlinkMacSystemFont,sans-serif;
+    }
+    *{box-sizing:border-box}
+    html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:geometricPrecision}
+    body{margin:0;background:#151515;color:var(--text);font-family:var(--sans);font-kerning:normal}
+    .board{padding:42px;width:max-content;min-width:100vw}
+    .title{margin:0 0 22px;color:var(--text);font:800 22px/1 var(--sans)}
+    .row{display:flex;gap:30px}.shot{width:393px}.label{margin:0 0 10px 8px;color:#beb4a4;font:800 12px/1.2 var(--sans);letter-spacing:.18em;text-transform:uppercase}
+    .phone{position:relative;width:393px;height:852px;overflow:hidden;border-radius:38px;background:radial-gradient(circle at 82% -8%,rgba(167,119,30,.16),transparent 34%),linear-gradient(180deg,#17130f 0%,#0f0d0a 50%,#080706 100%);box-shadow:0 22px 58px rgba(0,0,0,.55),inset 0 0 0 1px rgba(255,255,255,.08)}
+    .status{height:50px;padding:16px 28px 0;display:flex;justify-content:space-between;align-items:flex-start;color:#fff;font:800 18px/1 var(--sans)}
+    .statusRight{display:flex;align-items:center;gap:7px}
+    .signal{display:flex;align-items:flex-end;gap:2px;height:13px}.signal i{display:block;width:3px;border-radius:3px;background:#fff}.signal i:nth-child(1){height:5px}.signal i:nth-child(2){height:8px}.signal i:nth-child(3){height:11px}
+    .wifi{display:none}.battery{display:flex;align-items:center;gap:3px;font:800 15px/1 var(--sans)}
+    .safe{padding:22px}.top{display:grid;grid-template-columns:58px 1fr 72px;gap:12px;align-items:center;margin-bottom:38px}.step{color:var(--muted);font:800 16px/1 var(--sans);letter-spacing:.08em}.signin{justify-self:end;color:var(--muted);font:800 12px/1 var(--sans);letter-spacing:.26em}.progress{height:4px;border-radius:99px;background:rgba(244,234,216,.08);overflow:hidden}.progress span{display:block;height:100%;border-radius:inherit;background:var(--gold)}
+    .tinybrand{margin:-14px 0 22px;text-align:center;color:var(--dim);font:800 10px/1 var(--sans);letter-spacing:.34em;text-transform:uppercase}
+    h1{margin:0;color:var(--text);font:560 61px/.98 var(--serif)}em.gold{color:var(--gold);font-style:italic}
+    .copy{font:560 15px/1.38 var(--sans);margin:22px 0 30px;max-width:349px;color:#b4aa98}.copy strong{color:var(--text);font-weight:850}
+    .input{min-height:128px;border:1.3px solid rgba(244,234,216,.3);border-radius:22px;background:rgba(24,21,18,.82);padding:21px 18px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.018)}.kicker{color:#817766;font:800 12px/1 var(--sans);letter-spacing:.34em;text-transform:uppercase}.ph{margin-top:29px;color:rgba(185,174,154,.58);font:italic 520 27px/1.12 var(--serif)}
+    .or{margin:28px 0 12px;color:#817766;font:800 12px/1 var(--sans);letter-spacing:.34em;text-transform:uppercase}.chipViewport{position:relative;overflow:hidden;margin-right:-22px;padding-right:22px}.chipViewport:before{content:"";position:absolute;right:2px;top:16px;width:18px;height:18px;border-top:2px solid rgba(237,196,101,.72);border-right:2px solid rgba(237,196,101,.72);transform:rotate(45deg);z-index:2;pointer-events:none}.chipViewport:after{content:"";position:absolute;right:0;top:0;bottom:0;width:58px;pointer-events:none;background:linear-gradient(90deg,rgba(15,13,10,0),#0f0d0a 74%)}.chips{display:flex;gap:9px;overflow-x:auto;padding-right:52px;scrollbar-width:none}.chips::-webkit-scrollbar{display:none}.chip{white-space:nowrap;min-height:42px;padding:0 15px;border-radius:99px;border:1px solid rgba(244,234,216,.15);display:flex;align-items:center;color:#c1b7a5;background:rgba(244,234,216,.035);font:650 15px/1 var(--sans)}
+    .bottom{position:absolute;left:22px;right:22px;bottom:30px}.cta{height:62px;border-radius:24px;display:grid;place-items:center;color:#151006;background:linear-gradient(180deg,#f1cf7a,#c2912d);font:850 20px/1 var(--sans);box-shadow:0 18px 46px rgba(201,148,42,.22)}
+    .head{display:flex;align-items:center;justify-content:space-between;margin:0 0 28px}.back{color:var(--muted);font:700 15px/1 var(--sans)}.hamb{width:42px;height:42px;border-radius:50%;border:1px solid rgba(244,234,216,.1);display:grid;place-items:center;color:var(--muted);font-size:23px}
+    .h2{font-size:47px;line-height:1.03;margin-top:44px}.sub{margin:12px 0 24px;color:var(--muted);font:500 18px/1.35 var(--sans)}
+    .card{border:1px solid var(--soft);border-radius:22px;background:rgba(24,21,18,.78);padding:18px}.stakeFocus{margin-top:12px;border-color:rgba(214,168,60,.46);background:rgba(27,22,15,.88);padding:20px;box-shadow:inset 0 0 0 1px rgba(214,168,60,.045)}.money{text-align:center;color:var(--goldHi);font:560 76px/.9 var(--serif);margin:10px 0 16px}.tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.tile{height:62px;border-radius:17px;border:1px solid rgba(244,234,216,.16);display:grid;place-items:center;color:#b7ad9b;background:rgba(244,234,216,.018);font:850 19px/1 var(--sans)}.tile.on{background:linear-gradient(180deg,rgba(214,168,60,.25),rgba(168,122,34,.18));border-color:var(--gold);color:var(--goldHi);box-shadow:0 0 0 1px rgba(237,196,101,.08)}
+    .cheeky{text-align:center;color:#b0a691;font:italic 500 15px/1.25 var(--serif);margin:14px 0}.consequence{border-radius:16px;border:1px solid rgba(214,77,44,.28);background:rgba(56,25,18,.28);padding:13px 14px;color:var(--text);font:650 15px/1.35 var(--sans);display:flex;justify-content:space-between;gap:10px}.consequence span:last-child{color:var(--goldHi);font-weight:850}
+    .lightMeta{margin-top:16px;padding:13px 2px;border-top:1px solid rgba(244,234,216,.08);color:var(--muted);font:650 14px/1.2 var(--sans);display:flex;justify-content:space-between}
+    .verdictSelect{margin-top:12px;border:1px solid rgba(214,168,60,.31);border-radius:15px;background:rgba(214,168,60,.055);padding:11px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px}.verdictSelect .left{display:flex;align-items:baseline;gap:8px;min-width:0}.verdictSelect .cap{color:#817766;font:800 10px/1 var(--sans);letter-spacing:.22em;text-transform:uppercase}.verdictSelect .date{color:var(--text);font:800 15px/1.1 var(--sans);white-space:nowrap}.verdictSelect .change{color:var(--goldHi);font:850 13px/1 var(--sans);white-space:nowrap}
+  </style>
+</head>
+<body>
+  <main class="board">
+    <h1 class="title">Recommended Native First Two Screens</h1>
+    <section class="row">
+      <div class="shot">
+        <div class="label">1. Vow Only, Quiet Start Chips</div>
+        <div class="phone">
+          <div class="status"><span>5:37</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="wifi"></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="top"><div class="step">1 / 5</div><div class="progress"><span style="width:20%"></span></div><div class="signin">SIGN IN</div></div>
+            <div class="tinybrand">Unbreakable Vow</div>
+            <h1>Make a vow.<br><em class="gold">Mean it.</em></h1>
+            <p class="copy"><strong>Flake and lose it all.</strong> Stake real cash on your word. Your friend judges. No mercy.</p>
+            <div class="input"><div class="kicker">I Vow To</div><div class="ph">Run every morning this week</div></div>
+            <div class="or">Or Start Here</div>
+            <div class="chipViewport"><div class="chips"><div class="chip">Gym 3x this week</div><div class="chip">No alcohol, 2 weeks</div><div class="chip">Delete TikTok</div><div class="chip">10k steps</div><div class="chip">Call mom weekly</div></div></div>
+          </div>
+          <div class="bottom"><div class="cta">Next →</div></div>
+        </div>
+      </div>
+      <div class="shot">
+        <div class="label">2. Stake First, Selectable Verdict</div>
+        <div class="phone">
+          <div class="status"><span>5:38</span><span class="statusRight"><span class="signal"><i></i><i></i><i></i></span><span class="wifi"></span><span class="battery">43%</span></span></div>
+          <div class="safe">
+            <div class="head"><div class="back">← Back</div><div class="step">2 / 5</div><div class="hamb">≡</div></div>
+            <div class="progress"><span style="width:40%"></span></div>
+            <h1 class="h2">Set the <em class="gold">stake.</em></h1>
+            <p class="sub">Pick what you’d hate to lose.</p>
+            <div class="card stakeFocus">
+              <div class="kicker">The Stake</div>
+              <div class="money">$50</div>
+              <div class="tiles"><div class="tile">$20</div><div class="tile on">$50</div><div class="tile">$100</div><div class="tile">Other</div></div>
+              <div class="cheeky">Enough to hurt. Not enough to be stupid.</div>
+              <div class="consequence"><div>If you break it, <strong>$50</strong> goes to <strong>ALS Association.</strong></div><span>Change</span></div>
+            </div>
+            <div class="lightMeta"><span>Vow</span><strong>Run every morning</strong></div>
+            <div class="verdictSelect">
+              <div class="left"><div class="cap">Verdict</div><div class="date">Sunday night</div></div>
+              <div class="change">Change →</div>
+            </div>
+          </div>
+          <div class="bottom"><div class="cta">Choose your witness →</div></div>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

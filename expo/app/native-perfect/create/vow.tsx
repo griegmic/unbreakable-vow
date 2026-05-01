@@ -9,6 +9,7 @@
  * No DB writes — local rawInput state only.
  */
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useState } from 'react';
 import {
   KeyboardAvoidingView,
@@ -27,7 +28,7 @@ import {
   SuggestionChipScroll,
   VowInputCard,
 } from '@/components/primitives';
-import { uvColors, uvFonts, uvSpacing } from '@/lib/uv-tokens';
+import { uvColors, uvFonts } from '@/lib/uv-tokens';
 
 const SUGGESTION_CHIPS = [
   'Gym 3x this week',
@@ -62,6 +63,30 @@ export default function VowScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Subtle gold radial gradient at top-right */}
+      <LinearGradient
+        colors={['rgba(167,119,30,0.16)', 'transparent']}
+        start={{ x: 0.82, y: 0 }}
+        end={{ x: 0.48, y: 0.34 }}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+      {/* Vertical gradient overlay */}
+      <LinearGradient
+        colors={['#17130f', '#0f0d0a', '#080706']}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+      {/* Gold radial on top of vertical gradient */}
+      <LinearGradient
+        colors={['rgba(167,119,30,0.16)', 'transparent']}
+        start={{ x: 0.82, y: 0 }}
+        end={{ x: 0.48, y: 0.34 }}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -138,7 +163,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: uvSpacing.xl,
+    paddingHorizontal: 22,
     paddingBottom: 120,
   },
   brandWrap: {
@@ -160,6 +185,7 @@ const styles = StyleSheet.create({
   },
   copy: {
     fontFamily: uvFonts.sansSemibold,
+    fontWeight: '600',
     fontSize: 15,
     lineHeight: 15 * 1.38,
     color: uvColors.textCopy,
@@ -185,8 +211,8 @@ const styles = StyleSheet.create({
   },
   bottomCta: {
     position: 'absolute',
-    left: uvSpacing.xl,
-    right: uvSpacing.xl,
+    left: 22,
+    right: 22,
     bottom: 0,
   },
 });

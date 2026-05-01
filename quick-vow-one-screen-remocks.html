@@ -1,0 +1,836 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unbreakable Vow — One Screen Seal v2</title>
+<style>
+  :root {
+    --page: #1C1915;
+    --phone: #100E0B;
+    --surface: #181511;
+    --surface-2: #211C16;
+    --ink: #F0E8D8;
+    --soft: #C9BEAA;
+    --muted: #9A8F7D;
+    --dim: #6F6556;
+    --line: rgba(240,232,216,0.105);
+    --line-soft: rgba(240,232,216,0.072);
+    --gold: #B88A35;
+    --gold-soft: #D2A851;
+    --gold-pale: #E7C674;
+    --good: #8FA782;
+    --bad: #BD7668;
+    --serif: "Fraunces", "Iowan Old Style", Georgia, serif;
+    --sans: "Inter Tight", "Avenir Next", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 34px 28px 56px;
+    color: var(--ink);
+    font-family: var(--sans);
+    background:
+      radial-gradient(ellipse 840px 460px at 50% -120px, rgba(184,138,53,0.11), transparent 67%),
+      linear-gradient(180deg, #25211C, var(--page) 42%, #11100E);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .board {
+    max-width: 1540px;
+    margin: 0 auto;
+  }
+
+  .head {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 30px;
+    margin-bottom: 28px;
+  }
+
+  .eyebrow {
+    color: var(--gold-pale);
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 620;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  h1 {
+    margin: 0;
+    max-width: 830px;
+    font-family: var(--serif);
+    font-size: 40px;
+    line-height: 1.02;
+    font-weight: 430;
+    letter-spacing: 0;
+  }
+
+  h1 em {
+    color: var(--gold-pale);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .decision {
+    max-width: 520px;
+    color: var(--soft);
+    font-size: 14px;
+    line-height: 1.5;
+    font-weight: 440;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(286px, 1fr));
+    gap: 22px;
+    align-items: start;
+  }
+
+  .mock {
+    display: grid;
+    gap: 12px;
+  }
+
+  .mock-label {
+    min-height: 100px;
+  }
+
+  .mock-label strong {
+    display: block;
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 680;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 7px;
+  }
+
+  .mock-label span {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.38;
+    font-weight: 430;
+  }
+
+  .phone {
+    width: 100%;
+    max-width: 393px;
+    height: 852px;
+    margin: 0 auto;
+    border-radius: 34px;
+    border: 1px solid rgba(255,255,255,0.075);
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 420px 260px at 50% -42px, rgba(184,138,53,0.105), transparent 68%),
+      var(--phone);
+    box-shadow: 0 34px 90px rgba(0,0,0,0.50);
+  }
+
+  .screen {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 18px 20px 16px;
+    overflow: hidden;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--serif);
+    font-size: 15px;
+    line-height: 1;
+    font-weight: 430;
+  }
+
+  .brand em {
+    color: var(--gold-pale);
+    font-style: italic;
+  }
+
+  .mark {
+    width: 22px;
+    height: 22px;
+    border: 1px solid var(--gold);
+    transform: rotate(45deg);
+    display: grid;
+    place-items: center;
+  }
+
+  .mark::after {
+    content: "";
+    width: 6px;
+    height: 6px;
+    background: var(--gold-pale);
+  }
+
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    color: var(--gold-pale);
+    background: rgba(240,232,216,0.026);
+    border: 1px solid rgba(240,232,216,0.10);
+    font-size: 14px;
+    font-weight: 620;
+  }
+
+  .screen-eyebrow {
+    color: var(--gold-pale);
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 630;
+    letter-spacing: 0.23em;
+    text-transform: uppercase;
+    margin-bottom: 9px;
+  }
+
+  .title {
+    margin: 0 0 14px;
+    color: var(--ink);
+    font-family: var(--serif);
+    font-size: 31px;
+    line-height: 1.02;
+    font-weight: 430;
+    letter-spacing: 0;
+  }
+
+  .title em {
+    color: var(--gold-pale);
+    font-style: italic;
+    font-weight: 400;
+  }
+
+  .card {
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(240,232,216,0.050), rgba(240,232,216,0.020));
+    box-shadow: 0 20px 48px rgba(0,0,0,0.28);
+  }
+
+  .label {
+    color: var(--dim);
+    font-size: 9.5px;
+    line-height: 1;
+    font-weight: 660;
+    letter-spacing: 0.27em;
+    text-transform: uppercase;
+  }
+
+  .vow-card {
+    padding: 16px 17px 13px;
+    margin-bottom: 10px;
+  }
+
+  .vow-text {
+    min-height: 76px;
+    display: flex;
+    align-items: center;
+    color: var(--ink);
+    font-size: 28px;
+    line-height: 1.06;
+    font-weight: 640;
+    letter-spacing: 0;
+    padding: 9px 0 11px;
+  }
+
+  .vow-empty {
+    color: rgba(240,232,216,0.43);
+    font-weight: 620;
+  }
+
+  .rule {
+    height: 1px;
+    background: rgba(184,138,53,0.25);
+    margin-bottom: 10px;
+  }
+
+  .inline-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.2;
+    font-weight: 440;
+  }
+
+  .inline-meta strong {
+    color: var(--ink);
+    font-weight: 610;
+  }
+
+  .assist {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: -1px 0 10px;
+  }
+
+  .assist span {
+    min-height: 32px;
+    max-width: 150px;
+    border-radius: 999px;
+    border: 1px solid var(--line-soft);
+    background: rgba(240,232,216,0.022);
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    padding: 0 11px;
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 540;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .consequence {
+    border-radius: 20px;
+    border: 1px solid rgba(184,138,53,0.27);
+    background:
+      radial-gradient(ellipse 230px 150px at 84% 0%, rgba(231,198,116,0.12), transparent 72%),
+      linear-gradient(180deg, rgba(184,138,53,0.088), rgba(240,232,216,0.022));
+    padding: 15px 14px 13px;
+    margin-bottom: 9px;
+  }
+
+  .money-row {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .money {
+    color: var(--gold-pale);
+    font-family: var(--serif);
+    font-size: 47px;
+    line-height: 0.9;
+    font-weight: 430;
+    text-shadow: 0 12px 30px rgba(184,138,53,0.11);
+  }
+
+  .money-note {
+    max-width: 158px;
+    text-align: right;
+    color: var(--muted);
+    font-family: var(--serif);
+    font-size: 13px;
+    line-height: 1.25;
+    font-weight: 400;
+    font-style: italic;
+  }
+
+  .amounts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .amt {
+    height: 42px;
+    border-radius: 12px;
+    border: 1px solid var(--line-soft);
+    background: rgba(0,0,0,0.10);
+    color: var(--muted);
+    display: grid;
+    place-items: center;
+    font-size: 15px;
+    line-height: 1;
+    font-weight: 600;
+  }
+
+  .amt.on {
+    color: var(--gold-pale);
+    border-color: rgba(231,198,116,0.54);
+    background: linear-gradient(180deg, rgba(231,198,116,0.18), rgba(184,138,53,0.088));
+  }
+
+  .witness {
+    min-height: 62px;
+    border-radius: 17px;
+    border: 1px solid rgba(184,138,53,0.20);
+    background: rgba(240,232,216,0.024);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px;
+    margin-bottom: 8px;
+  }
+
+  .bubble {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: rgba(184,138,53,0.12);
+    color: var(--gold-pale);
+    border: 1px solid rgba(184,138,53,0.18);
+    font-size: 17px;
+    line-height: 1;
+    font-weight: 650;
+    flex: 0 0 auto;
+  }
+
+  .witness b {
+    display: block;
+    color: var(--ink);
+    font-size: 15.5px;
+    line-height: 1.12;
+    font-weight: 640;
+  }
+
+  .witness span {
+    display: block;
+    color: var(--dim);
+    font-size: 12.5px;
+    line-height: 1.25;
+    font-weight: 480;
+    margin-top: 4px;
+  }
+
+  .receipt {
+    color: var(--soft);
+    text-align: center;
+    font-size: 14px;
+    line-height: 1.35;
+    font-weight: 470;
+    margin-bottom: 8px;
+  }
+
+  .receipt strong {
+    color: var(--ink);
+    font-weight: 620;
+  }
+
+  .spacer { flex: 1; min-height: 8px; }
+
+  .cta {
+    height: 58px;
+    border-radius: 999px;
+    display: grid;
+    place-items: center;
+    color: #171209;
+    background: linear-gradient(180deg, #EAC46E, #CFA047 62%, #A77A2E);
+    font-size: 17px;
+    line-height: 1;
+    font-weight: 690;
+    box-shadow: 0 1px 0 rgba(255,244,210,0.34) inset, 0 20px 42px rgba(184,138,53,0.18);
+  }
+
+  .cta.disabled {
+    color: rgba(23,18,9,0.48);
+    background: linear-gradient(180deg, rgba(234,196,110,0.44), rgba(167,122,46,0.34));
+    box-shadow: 0 10px 26px rgba(184,138,53,0.07);
+  }
+
+  .sub-cta {
+    color: var(--dim);
+    text-align: center;
+    font-size: 12.5px;
+    line-height: 1;
+    font-weight: 560;
+    margin-top: 12px;
+  }
+
+  .stack {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+
+  .term {
+    min-height: 57px;
+    border-radius: 15px;
+    border: 1px solid var(--line-soft);
+    background: rgba(240,232,216,0.024);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 14px;
+  }
+
+  .term b {
+    display: block;
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 1.14;
+    font-weight: 640;
+  }
+
+  .term span {
+    display: block;
+    margin-top: 4px;
+    color: var(--dim);
+    font-size: 12px;
+    line-height: 1.2;
+    font-weight: 480;
+  }
+
+  .term .edit {
+    color: var(--gold-pale);
+    font-size: 12px;
+    line-height: 1;
+    font-weight: 610;
+  }
+
+  .sealed-hero {
+    border-radius: 24px;
+    border: 1px solid rgba(184,138,53,0.24);
+    background:
+      radial-gradient(circle 125px at 50% 22%, rgba(231,198,116,0.12), transparent 72%),
+      linear-gradient(180deg, rgba(184,138,53,0.08), rgba(240,232,216,0.020));
+    padding: 22px 18px 19px;
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .seal-icon {
+    width: 58px;
+    height: 58px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 15px;
+    background: rgba(184,138,53,0.13);
+    border: 1px solid rgba(231,198,116,0.24);
+    color: var(--gold-pale);
+    font-size: 24px;
+    font-weight: 520;
+  }
+
+  .sealed-title {
+    margin: 0 0 8px;
+    font-family: var(--serif);
+    font-size: 30px;
+    line-height: 1.03;
+    font-weight: 430;
+  }
+
+  .sealed-copy {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.42;
+    font-weight: 430;
+    margin: 0;
+  }
+
+  .share-card {
+    min-height: 76px;
+    border-radius: 18px;
+    border: 1px solid rgba(184,138,53,0.20);
+    background: rgba(240,232,216,0.024);
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 0 14px;
+    margin-bottom: 10px;
+  }
+
+  .share-card b {
+    display: block;
+    color: var(--ink);
+    font-size: 16px;
+    line-height: 1.12;
+    font-weight: 640;
+  }
+
+  .share-card span {
+    display: block;
+    color: var(--dim);
+    font-size: 12.5px;
+    line-height: 1.25;
+    font-weight: 470;
+    margin-top: 4px;
+  }
+
+  .mini-vow {
+    border-radius: 18px;
+    border: 1px solid var(--line-soft);
+    background: rgba(240,232,216,0.022);
+    padding: 15px 16px;
+    margin-bottom: 10px;
+  }
+
+  .mini-vow .quote {
+    margin-top: 9px;
+    color: var(--ink);
+    font-size: 20px;
+    line-height: 1.12;
+    font-weight: 580;
+  }
+
+  .share-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+    margin-top: 9px;
+  }
+
+  .secondary-btn {
+    height: 48px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line-soft);
+    color: var(--ink);
+    background: rgba(240,232,216,0.035);
+    font-size: 14px;
+    font-weight: 590;
+  }
+
+  .short .phone { height: 700px; }
+  .short .screen { padding: 12px 20px 10px; }
+  .short .topbar { margin-bottom: 10px; }
+  .short .screen-eyebrow { display: none; }
+  .short .title { font-size: 23px; line-height: 1; margin-bottom: 8px; }
+  .short .vow-card { padding: 13px 16px 11px; margin-bottom: 8px; }
+  .short .vow-text { min-height: 52px; font-size: 24px; padding: 7px 0 8px; }
+  .short .consequence { padding: 11px; margin-bottom: 7px; }
+  .short .money { font-size: 31px; }
+  .short .money-row { margin-bottom: 8px; }
+  .short .money-note { font-size: 12px; max-width: 170px; }
+  .short .amt { height: 39px; }
+  .short .witness { min-height: 54px; margin-bottom: 6px; }
+  .short .bubble { width: 31px; height: 31px; }
+  .short .witness b { font-size: 15px; }
+  .short .witness span { font-size: 12px; }
+  .short .receipt { font-size: 13px; margin-bottom: 4px; }
+  .short .sub-cta { display: none; }
+  .short .cta { height: 54px; }
+
+  @media (max-width: 1320px) {
+    .grid { grid-template-columns: repeat(2, minmax(286px, 1fr)); }
+  }
+
+  @media (max-width: 720px) {
+    body { padding: 24px 14px 42px; }
+    .head { display: block; }
+    .decision { margin-top: 12px; }
+    h1 { font-size: 34px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <main class="board">
+    <header class="head">
+      <div>
+        <div class="eyebrow">Product decision</div>
+        <h1>One screen should feel calm, binding, and <em>screenshottable.</em></h1>
+      </div>
+      <p class="decision">Favorite: the focused one-screen seal. The user sees the whole deal without scrolling, then seals. The empty state gives tiny inspiration, not a template gallery. The after-screen turns anxiety into progress: share the witness link, see the vow, move on.</p>
+    </header>
+
+    <section class="grid">
+      <article class="mock">
+        <div class="mock-label">
+          <strong>1. Empty State</strong>
+          <span>Job: help me start without making me browse. Examples are small, temporary, and disappear once the user writes.</span>
+        </div>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar">
+              <div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div>
+              <div class="avatar">J</div>
+            </div>
+            <div class="screen-eyebrow">Make a vow</div>
+            <h2 class="title">What are you done negotiating?</h2>
+            <div class="card vow-card">
+              <div class="label">I vow to</div>
+              <div class="vow-text vow-empty">Write the thing you keep putting off</div>
+              <div class="rule"></div>
+              <div class="inline-meta"><span>Verdict</span><strong>Pick after writing</strong></div>
+            </div>
+            <div class="assist">
+              <span>No takeout all week</span>
+              <span>Gym 3x this week</span>
+            </div>
+            <div class="consequence">
+              <div class="money-row">
+                <div>
+                  <div class="label" style="margin-bottom:8px;">Default stake</div>
+                  <div class="money">$50</div>
+                </div>
+                <div class="money-note">You can change this after the vow is written.</div>
+              </div>
+              <div class="amounts">
+                <div class="amt">$10</div>
+                <div class="amt">$25</div>
+                <div class="amt on">$50</div>
+                <div class="amt">$100</div>
+              </div>
+            </div>
+            <div class="witness">
+              <div class="bubble">+</div>
+              <div><b>Choose witness later</b><span>Or judge it yourself if this is private.</span></div>
+            </div>
+            <div class="spacer"></div>
+            <div class="cta disabled">Write a vow first</div>
+            <div class="sub-cta">Need help? Guided setup</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="mock">
+        <div class="mock-label">
+          <strong>2. Favorite: Ready To Seal</strong>
+          <span>Job: show me the whole commitment at once. No scroll, no surprise terms, no loud type.</span>
+        </div>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar">
+              <div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div>
+              <div class="avatar">J</div>
+            </div>
+            <div class="screen-eyebrow">Seal a vow</div>
+            <h2 class="title">One promise.<br><em>Real consequence.</em></h2>
+            <div class="card vow-card">
+              <div class="label">I vow to</div>
+              <div class="vow-text">No takeout all week</div>
+              <div class="rule"></div>
+              <div class="inline-meta"><span>Verdict</span><strong>Sunday night</strong></div>
+            </div>
+            <div class="consequence">
+              <div class="money-row">
+                <div>
+                  <div class="label" style="margin-bottom:8px;">On the line</div>
+                  <div class="money">$50</div>
+                </div>
+                <div class="money-note">Small enough to choose today. Real enough to remember tomorrow.</div>
+              </div>
+              <div class="amounts">
+                <div class="amt">$10</div>
+                <div class="amt">$25</div>
+                <div class="amt on">$50</div>
+                <div class="amt">$100</div>
+              </div>
+            </div>
+            <div class="witness">
+              <div class="bubble">J</div>
+              <div><b>Jordan judges</b><span>They get a private kept-or-broken link.</span></div>
+            </div>
+            <div class="receipt">If broken, <strong>$50</strong> goes to <strong>ALS Association</strong>.</div>
+            <div class="spacer"></div>
+            <div class="cta">Seal this vow</div>
+            <div class="sub-cta">Need more help? Guided setup</div>
+          </div>
+        </div>
+      </article>
+
+      <article class="mock">
+        <div class="mock-label">
+          <strong>3. After Seal</strong>
+          <span>Job: reassure me it worked, then make the next action obvious. This should be screenshot-clean.</span>
+        </div>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar">
+              <div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div>
+              <div class="avatar">J</div>
+            </div>
+            <div class="sealed-hero">
+              <div class="seal-icon">✓</div>
+              <h2 class="sealed-title">Vow sealed.</h2>
+              <p class="sealed-copy">The stake is locked. Now send Jordan the judge link so this cannot stay private in your head.</p>
+            </div>
+            <div class="share-card">
+              <div class="bubble">J</div>
+              <div><b>Send judge link to Jordan</b><span>They accept, then call kept or broken on Sunday.</span></div>
+            </div>
+            <div class="mini-vow">
+              <div class="label">Sealed vow</div>
+              <div class="quote">No takeout all week</div>
+            </div>
+            <div class="stack">
+              <div class="term">
+                <div><b>$50 stake</b><span>Broken vows pay ALS Association.</span></div>
+                <div class="edit">Locked</div>
+              </div>
+              <div class="term">
+                <div><b>Verdict Sunday night</b><span>Reminder sends before the deadline.</span></div>
+                <div class="edit">Set</div>
+              </div>
+            </div>
+            <div class="spacer"></div>
+            <div class="cta">Share judge link</div>
+            <div class="share-actions">
+              <div class="secondary-btn">Copy link</div>
+              <div class="secondary-btn">View vow</div>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <article class="mock short">
+        <div class="mock-label">
+          <strong>4. Short Phone Proof</strong>
+          <span>Job: prove the no-scroll claim at 393x700. If this fails, the product decision is fantasy.</span>
+        </div>
+        <div class="phone">
+          <div class="screen">
+            <div class="topbar">
+              <div class="brand"><span class="mark"></span><span>Unbreakable <em>Vow</em></span></div>
+              <div class="avatar">J</div>
+            </div>
+            <div class="screen-eyebrow">Seal a vow</div>
+            <h2 class="title">One promise.<br><em>Real consequence.</em></h2>
+            <div class="card vow-card">
+              <div class="label">I vow to</div>
+              <div class="vow-text">No takeout all week</div>
+              <div class="rule"></div>
+              <div class="inline-meta"><span>Verdict</span><strong>Sunday night</strong></div>
+            </div>
+            <div class="consequence">
+              <div class="money-row">
+                <div>
+                  <div class="label" style="margin-bottom:8px;">On the line</div>
+                  <div class="money">$50</div>
+                </div>
+                <div class="money-note">Real enough to remember tomorrow.</div>
+              </div>
+              <div class="amounts">
+                <div class="amt">$10</div>
+                <div class="amt">$25</div>
+                <div class="amt on">$50</div>
+                <div class="amt">$100</div>
+              </div>
+            </div>
+            <div class="witness">
+              <div class="bubble">J</div>
+              <div><b>Jordan judges</b><span>Private kept-or-broken link.</span></div>
+            </div>
+            <div class="receipt">If broken, <strong>$50</strong> goes to <strong>ALS Association</strong>.</div>
+            <div class="spacer"></div>
+            <div class="cta">Seal this vow</div>
+          </div>
+        </div>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
