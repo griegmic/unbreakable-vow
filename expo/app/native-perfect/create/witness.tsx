@@ -143,12 +143,15 @@ export default function WitnessScreen() {
       />
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 34) + 90 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Chrome header */}
         <ChromeHeader
-          onBack={() => router.replace('/native-perfect/create/stake')}
+          onBack={() => router.back()}
           centerText="3 / 5"
           onMenu={() => {/* TODO: open app menu */}}
         />

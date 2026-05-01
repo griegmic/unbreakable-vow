@@ -173,12 +173,12 @@ export default function StakeScreen() {
 
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 34) + 90 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Chrome header */}
         <ChromeHeader
-          onBack={() => router.replace('/native-perfect/create/vow')}
+          onBack={() => router.back()}
           centerText="2 / 5"
           onMenu={() => {
             // TODO: open app menu overlay
