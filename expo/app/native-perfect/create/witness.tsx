@@ -234,7 +234,7 @@ export default function WitnessScreen() {
 
         {/* Bottom CTA — only when witness selected */}
         {hasWitness && (
-          <View style={styles.bottomCta}>
+          <View style={[styles.bottomCta, { paddingBottom: Math.max(insets.bottom, 34) }]}>
             <GoldCTA label="Continue →" onPress={handleContinue} />
           </View>
         )}

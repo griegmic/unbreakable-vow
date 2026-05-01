@@ -245,7 +245,7 @@ export default function StakeScreen() {
         </VowDateCard>
 
         {/* Bottom CTA — inside scroll so nothing clips */}
-        <View style={styles.bottomCta}>
+        <View style={[styles.bottomCta, { paddingBottom: Math.max(insets.bottom, 34) }]}>
           <GoldCTA label="Choose your witness →" onPress={handleNext} />
         </View>
       </ScrollView>

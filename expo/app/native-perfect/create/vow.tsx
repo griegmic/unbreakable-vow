@@ -141,7 +141,7 @@ export default function VowScreen() {
           />
 
           {/* Bottom CTA */}
-          <View style={styles.bottomCta}>
+          <View style={[styles.bottomCta, { paddingBottom: Math.max(insets.bottom, 34) }]}>
             <GoldCTA
               label="Next →"
               onPress={handleNext}
