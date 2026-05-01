@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, Text, StyleSheet } from 'react-native';
+import { Pressable, Text, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { hapticSelection } from '@/lib/haptics';
 
@@ -10,24 +11,32 @@ interface StakeTileProps {
   onPress: () => void;
 }
 
-export function StakeTile({ amount, label, selected, onPress }: StakeTileProps) {
+export function StakeTile({ label, selected, onPress }: StakeTileProps) {
   const handlePress = () => {
     hapticSelection();
     onPress();
   };
 
+  if (selected) {
+    return (
+      <Pressable onPress={handlePress} style={styles.tileOuter}>
+        <LinearGradient
+          colors={['rgba(214,168,60,0.25)', 'rgba(168,122,34,0.18)']}
+          style={styles.tileSelected}
+        >
+          <Text style={[styles.label, styles.labelSelected]}>
+            {label}
+          </Text>
+        </LinearGradient>
+      </Pressable>
+    );
+  }
+
   return (
-    <Pressable
-      onPress={handlePress}
-      style={[
-        styles.tile,
-        selected && styles.selected,
-      ]}
-    >
-      <Text style={[styles.amount, selected && styles.amountSelected]}>
-        ${amount}
+    <Pressable onPress={handlePress} style={styles.tile}>
+      <Text style={styles.label}>
+        {label}
       </Text>
-      <Text style={styles.label}>{label}</Text>
     </Pressable>
   );
 }
@@ -35,32 +44,40 @@ export function StakeTile({ amount, label, selected, onPress }: StakeTileProps) 
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    minWidth: 80,
-    padding: 16,
-    borderRadius: 14,
+    height: 62,
+    borderRadius: 17,
     borderWidth: 1,
-    borderColor: uvColors.border,
-    backgroundColor: uvColors.bgCard,
+    borderColor: 'rgba(244,234,216,0.16)',
+    backgroundColor: 'rgba(244,234,216,0.018)',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
   },
-  selected: {
-    borderWidth: 1.5,
+  tileOuter: {
+    flex: 1,
+    height: 62,
+    borderRadius: 17,
+    overflow: 'hidden',
+    borderWidth: 1,
     borderColor: uvColors.gold,
-    backgroundColor: uvColors.goldBg,
+    // box-shadow: 0 0 0 1px rgba(237,196,101,.08) approximated
+    shadowColor: 'rgba(237,196,101,1)',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.08,
+    shadowRadius: 1,
   },
-  amount: {
-    fontFamily: uvFonts.sansSemibold,
-    fontSize: 20,
-    fontWeight: '600',
-    color: uvColors.text,
-  },
-  amountSelected: {
-    color: uvColors.goldBright,
+  tileSelected: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 16,
   },
   label: {
-    fontFamily: uvFonts.sans,
-    fontSize: 11,
-    color: uvColors.textDim,
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 19,
+    fontWeight: '800',
+    color: '#b7ad9b',
+  },
+  labelSelected: {
+    color: uvColors.goldBright,
   },
 });

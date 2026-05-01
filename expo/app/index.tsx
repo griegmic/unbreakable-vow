@@ -7,6 +7,7 @@ import { USE_NATIVE_PERFECT } from '@/lib/native-flags';
 import NativeQuickVowScreen from './native-quick-vow';
 
 export default function NativeRoot() {
-  if (USE_NATIVE_PERFECT) return <Redirect href="/native-perfect/create/vow" />;
+  // TEMP: redirect to stake for screen 02 testing
+  if (USE_NATIVE_PERFECT) return <Redirect href="/native-perfect/create/stake?rawInput=Run+every+morning+this+week" />;
   return <LiveWebShell path="/quick-vow" />;
 }

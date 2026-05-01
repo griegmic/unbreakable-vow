@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { uvColors } from '@/lib/uv-tokens';
+import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { hapticSecondary } from '@/lib/haptics';
 
 interface VowDateLineProps {
@@ -49,33 +49,41 @@ export function VowDateLine({
 
 const styles = StyleSheet.create({
   row: {
+    minHeight: 31,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    gap: 8,
+    gap: 10,
   },
   tappableRow: {
-    backgroundColor: uvColors.goldSoft,
-    borderRadius: 8,
+    minHeight: 44,
+    backgroundColor: 'rgba(214,168,60,0.035)',
+    borderRadius: 12,
+    marginHorizontal: -8,
+    paddingHorizontal: 8,
   },
   label: {
     width: 82,
-    fontSize: 13,
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 14,
+    lineHeight: 14 * 1.2,
     fontWeight: '600',
     color: uvColors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
   },
   value: {
     flex: 1,
+    fontFamily: uvFonts.sansSemibold,
     fontSize: 15,
-    color: uvColors.text,
+    lineHeight: 15 * 1.2,
+    fontWeight: '800',
+    color: '#d5cbb8',
+    textAlign: 'left',
   },
   editLink: {
+    fontFamily: uvFonts.sansSemibold,
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '800',
     color: uvColors.goldBright,
+    opacity: 0.84,
   },
   pressed: {
     opacity: 0.8,

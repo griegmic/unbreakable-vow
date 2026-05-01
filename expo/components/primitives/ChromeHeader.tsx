@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { uvColors } from '@/lib/uv-tokens';
+import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { hapticSecondary } from '@/lib/haptics';
 
 interface ChromeHeaderProps {
@@ -53,44 +53,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    minHeight: 48,
+    marginBottom: 28,
   },
   backButton: {
-    paddingVertical: 4,
+    minHeight: 44,
+    justifyContent: 'center',
     paddingRight: 8,
   },
   backText: {
+    fontFamily: uvFonts.sansSemibold,
     fontSize: 15,
+    fontWeight: '700',
     color: uvColors.textMuted,
-    fontWeight: '500',
   },
   backPlaceholder: {
-    width: 60,
+    width: 58,
   },
   centerText: {
-    flex: 1,
     textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '600',
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 16,
+    fontWeight: '800',
     color: uvColors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 2,
+    letterSpacing: 16 * 0.08,
   },
   menuButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
     borderWidth: 1,
-    borderColor: uvColors.border,
+    borderColor: 'rgba(244,234,216,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   menuIcon: {
-    fontSize: 22,
+    fontSize: 23,
     color: uvColors.textMuted,
-    lineHeight: 24,
+    lineHeight: 26,
   },
   menuPlaceholder: {
     width: 44,

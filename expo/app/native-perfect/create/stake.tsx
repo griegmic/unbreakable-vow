@@ -33,7 +33,7 @@ import {
   VowDateLine,
 } from '@/components/primitives';
 import { hapticPrimary, hapticSecondary, hapticSelection, hapticSheetPresent } from '@/lib/haptics';
-import { uvColors, uvFonts, uvSpacing } from '@/lib/uv-tokens';
+import { uvColors, uvFonts } from '@/lib/uv-tokens';
 
 const STAKE_OPTIONS = [20, 50, 100, -1]; // -1 = "Other"
 const STAKE_LABELS: Record<number, string> = { 20: '$20', 50: '$50', 100: '$100', [-1]: 'Other' };
@@ -163,6 +163,9 @@ export default function StakeScreen() {
         <ChromeHeader
           onBack={() => router.back()}
           centerText="2 / 5"
+          onMenu={() => {
+            // TODO: open app menu overlay
+          }}
         />
 
         {/* Progress bar */}
@@ -209,6 +212,10 @@ export default function StakeScreen() {
         {/* Vow date card */}
         <VowDateCard>
           <VowDateLine
+            label="Vow"
+            value={rawInput || 'Run every morning'}
+          />
+          <VowDateLine
             label="Verdict"
             value={formatDate(deadlineDate)}
             tappable
@@ -216,7 +223,7 @@ export default function StakeScreen() {
               hapticSecondary();
               setDateSheetVisible(true);
             }}
-            editLabel="Change"
+            editLabel={'\u270E'}
           />
         </VowDateCard>
       </ScrollView>
@@ -339,7 +346,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: uvSpacing.xl,
+    paddingHorizontal: 22,
     paddingBottom: 120,
   },
   progressTrack: {
@@ -374,6 +381,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   stakeCard: {
+    marginTop: 12,
     borderWidth: 1,
     borderColor: 'rgba(214,168,60,0.46)',
     borderRadius: 22,
@@ -395,7 +403,6 @@ const styles = StyleSheet.create({
   tiles: {
     flexDirection: 'row',
     gap: 10,
-    marginTop: 4,
   },
   cheeky: {
     textAlign: 'center',
@@ -408,8 +415,8 @@ const styles = StyleSheet.create({
   },
   bottomCta: {
     position: 'absolute',
-    left: uvSpacing.xl,
-    right: uvSpacing.xl,
+    left: 22,
+    right: 22,
     bottom: 0,
   },
   // Sheet styles

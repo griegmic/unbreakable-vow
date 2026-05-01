@@ -20,9 +20,12 @@ export function MoneyDisplay({ amount, variant = 'large' }: MoneyDisplayProps) {
 const styles = StyleSheet.create({
   large: {
     textAlign: 'center',
-    fontFamily: uvFonts.serif,
+    fontFamily: uvFonts.serifSemibold,
     fontSize: 76,
+    lineHeight: 76 * 0.9,
     color: uvColors.goldBright,
+    marginTop: 10,
+    marginBottom: 16,
   },
   compact: {
     textAlign: 'center',

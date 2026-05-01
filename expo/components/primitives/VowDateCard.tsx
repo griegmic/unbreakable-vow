@@ -12,9 +12,10 @@ export function VowDateCard({ children }: VowDateCardProps) {
 
 const styles = StyleSheet.create({
   card: {
+    marginTop: 16,
     borderTopWidth: 1,
-    borderTopColor: uvColors.border,
-    paddingTop: 16,
+    borderTopColor: 'rgba(244,234,216,0.08)',
+    paddingTop: 12,
     gap: 9,
   },
 });
