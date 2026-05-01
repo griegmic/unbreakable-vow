@@ -148,7 +148,7 @@ export default function WitnessScreen() {
       >
         {/* Chrome header */}
         <ChromeHeader
-          onBack={() => router.back()}
+          onBack={() => router.canGoBack() ? router.back() : router.replace('/native-perfect/create/stake')}
           centerText="3 / 5"
           onMenu={() => {/* TODO: open app menu */}}
         />

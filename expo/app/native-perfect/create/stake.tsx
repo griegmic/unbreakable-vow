@@ -178,7 +178,7 @@ export default function StakeScreen() {
       >
         {/* Chrome header */}
         <ChromeHeader
-          onBack={() => router.back()}
+          onBack={() => router.canGoBack() ? router.back() : router.replace('/native-perfect/create/vow')}
           centerText="2 / 5"
           onMenu={() => {
             // TODO: open app menu overlay
