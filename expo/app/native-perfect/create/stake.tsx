@@ -9,6 +9,7 @@
  * Spec: STEP_9 §screen-02, §screen-02b, §screen-02c.
  */
 import { router, useLocalSearchParams } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ScrollView,
@@ -154,6 +155,22 @@ export default function StakeScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Vertical gradient overlay */}
+      <LinearGradient
+        colors={['#17130f', '#0f0d0a', '#080706']}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+      {/* Gold radial on top-right */}
+      <LinearGradient
+        colors={['rgba(167,119,30,0.16)', 'transparent']}
+        start={{ x: 0.82, y: 0 }}
+        end={{ x: 0.48, y: 0.34 }}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scrollContent}
@@ -347,6 +364,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: 22,
+    paddingTop: 6,
     paddingBottom: 120,
   },
   progressTrack: {
@@ -377,6 +395,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     lineHeight: 18 * 1.35,
     color: uvColors.textMuted,
+    fontWeight: '500',
     marginTop: 12,
     marginBottom: 24,
   },
@@ -387,10 +406,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     backgroundColor: 'rgba(27,22,15,0.88)',
     padding: 20,
-    shadowColor: 'rgba(214,168,60,0.045)',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 1,
   },
   kicker: {
     fontFamily: uvFonts.sansSemibold,
@@ -406,9 +421,10 @@ const styles = StyleSheet.create({
   },
   cheeky: {
     textAlign: 'center',
-    color: uvColors.textCheeky,
+    color: '#b0a691',
     fontFamily: uvFonts.serifMedium,
     fontStyle: 'italic',
+    fontWeight: '500',
     fontSize: 15,
     lineHeight: 15 * 1.25,
     marginVertical: 14,
