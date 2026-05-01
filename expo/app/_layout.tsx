@@ -52,6 +52,7 @@ function RootLayoutNav() {
       <Stack.Screen name="native-vow-detail" />
       <Stack.Screen name="cast" />
       <Stack.Screen name="external-web" />
+      <Stack.Screen name="native-perfect" />
     </Stack>
   );
 }
