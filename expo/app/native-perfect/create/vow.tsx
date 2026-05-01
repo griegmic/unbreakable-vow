@@ -73,7 +73,7 @@ export default function VowScreen() {
       />
       {/* Vertical gradient overlay */}
       <LinearGradient
-        colors={['#17130f', '#0f0d0a', '#080706']}
+        colors={[uvColors.bgCard, uvColors.bgGradMid, uvColors.bgGradDeep]}
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFillObject}
         pointerEvents="none"

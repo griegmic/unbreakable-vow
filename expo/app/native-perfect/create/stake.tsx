@@ -157,7 +157,7 @@ export default function StakeScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       {/* Vertical gradient overlay */}
       <LinearGradient
-        colors={['#17130f', '#0f0d0a', '#080706']}
+        colors={[uvColors.bgCard, uvColors.bgGradMid, uvColors.bgGradDeep]}
         locations={[0, 0.5, 1]}
         style={StyleSheet.absoluteFillObject}
         pointerEvents="none"
@@ -178,7 +178,7 @@ export default function StakeScreen() {
       >
         {/* Chrome header */}
         <ChromeHeader
-          onBack={() => router.back()}
+          onBack={() => router.replace('/native-perfect/create/vow')}
           centerText="2 / 5"
           onMenu={() => {
             // TODO: open app menu overlay
@@ -246,7 +246,7 @@ export default function StakeScreen() {
       </ScrollView>
 
       {/* Bottom CTA */}
-      <View style={[styles.bottomCta, { paddingBottom: Math.max(insets.bottom, 16) + 14 }]}>
+      <View style={styles.bottomCta}>
         <GoldCTA label="Choose your witness →" onPress={handleNext} />
       </View>
 
@@ -421,7 +421,7 @@ const styles = StyleSheet.create({
   },
   cheeky: {
     textAlign: 'center',
-    color: '#b0a691',
+    color: uvColors.textCheeky,
     fontFamily: uvFonts.serifMedium,
     fontStyle: 'italic',
     fontWeight: '500',
@@ -433,7 +433,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 22,
     right: 22,
-    bottom: 0,
+    bottom: 30,
   },
   // Sheet styles
   sheetTitle: {

@@ -13,6 +13,8 @@ export const uvColors = {
   bgElevated: '#1F1B16',
   bgInput: '#1A1612',
   bgSelected: '#2A2015',
+  bgGradMid: '#0f0d0a',   // phone gradient midpoint
+  bgGradDeep: '#080706',  // phone gradient endpoint
   bgOverlay: 'rgba(5, 4, 4, 0.72)',
 
   // Borders
