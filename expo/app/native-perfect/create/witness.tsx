@@ -22,8 +22,10 @@ import {
   ChromeHeader,
   GoldCTA,
   OutlinedGoldCTA,
+  QuietPill,
   WitnessJudgeCard,
 } from '@/components/primitives';
+import { LinearGradient } from 'expo-linear-gradient';
 import {
   hapticPrimary,
   hapticSecondary,
@@ -124,6 +126,21 @@ export default function WitnessScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* Vertical gradient base */}
+      <LinearGradient
+        colors={[uvColors.bgCard, uvColors.bgGradMid, uvColors.bgGradDeep]}
+        locations={[0, 0.5, 1]}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+      {/* Gold radial approximation at top-right */}
+      <LinearGradient
+        colors={['rgba(167,119,30,0.16)', 'transparent']}
+        start={{ x: 0.82, y: 0 }}
+        end={{ x: 0.48, y: 0.34 }}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
       <ScrollView
         style={styles.flex}
         contentContainerStyle={styles.scrollContent}
@@ -131,8 +148,9 @@ export default function WitnessScreen() {
       >
         {/* Chrome header */}
         <ChromeHeader
-          onBack={() => router.back()}
+          onBack={() => router.replace('/native-perfect/create/stake')}
           centerText="3 / 5"
+          onMenu={() => {/* TODO: open app menu */}}
         />
 
         {/* Progress bar */}
@@ -146,7 +164,7 @@ export default function WitnessScreen() {
           <Text style={styles.h1GoldItalic}>witness.</Text>
         </Text>
         <Text style={styles.sub}>
-          They'll decide if you kept your word. Pick someone who won't go easy on you.
+          They decide kept or broken. Nothing is sent until you seal.
         </Text>
 
         {/* Decision card — vow summary */}
@@ -156,30 +174,30 @@ export default function WitnessScreen() {
           </Text>
           <Text style={styles.vowText}>{rawInput}</Text>
 
-          {/* Meta grid */}
+          {/* Meta grid — .witnessMeta 3-column (.7fr 1.55fr .75fr) */}
           <View style={styles.metaGrid}>
-            <View>
+            <View style={styles.metaCol1}>
               <Text style={styles.metaLabel}>STAKE</Text>
               <Text style={[styles.metaValue, styles.metaGold]}>
                 {stakeAmount > 0 ? `$${stakeAmount}` : '$0'}
               </Text>
             </View>
-            <View>
+            <View style={styles.metaCol2}>
+              <Text style={styles.metaLabel}>IF BROKEN</Text>
+              <Text style={[styles.metaValue, styles.metaSmall]}>
+                {stakeAmount > 0
+                  ? `$${stakeAmount} to ${params.destination || 'ALS Association'}`
+                  : params.destination || 'ALS Association'}
+              </Text>
+            </View>
+            <View style={styles.metaCol3}>
               <Text style={styles.metaLabel}>VERDICT</Text>
               <Text style={styles.metaValue}>
                 {params.deadlineIso
                   ? new Date(params.deadlineIso).toLocaleDateString('en-US', {
-                      weekday: 'short',
-                      month: 'short',
-                      day: 'numeric',
+                      weekday: 'long',
                     })
-                  : '1 week'}
-              </Text>
-            </View>
-            <View>
-              <Text style={styles.metaLabel}>GOES TO</Text>
-              <Text style={[styles.metaValue, styles.metaSmall]}>
-                {params.destination || 'ALS Association'}
+                  : 'Sunday'}
               </Text>
             </View>
           </View>
@@ -204,8 +222,8 @@ export default function WitnessScreen() {
         {/* Quiet actions (only when no witness selected) */}
         {!hasWitness && (
           <View style={styles.quietActions}>
-            <OutlinedGoldCTA label="Decide later" onPress={handleDecideLater} />
-            <OutlinedGoldCTA label="Share link" onPress={handleShareLink} />
+            <QuietPill label="Share link" onPress={handleShareLink} />
+            <QuietPill label="Decide later" onPress={handleDecideLater} />
           </View>
         )}
 
@@ -342,11 +360,11 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   sub: {
-    fontFamily: uvFonts.sansSemibold,
-    fontSize: 17,
-    lineHeight: 17 * 1.34,
+    fontFamily: uvFonts.sansMedium,
+    fontSize: 18,
+    lineHeight: 18 * 1.35,
     color: uvColors.textMuted,
-    marginTop: 13,
+    marginTop: 12,
     marginBottom: 24,
   },
   decisionCard: {
@@ -382,6 +400,16 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: 1,
     borderTopColor: 'rgba(244,234,216,0.1)',
+  },
+  // .witnessMeta column proportions: .7fr 1.55fr .75fr (total 3fr)
+  metaCol1: {
+    flex: 0.7,
+  },
+  metaCol2: {
+    flex: 1.55,
+  },
+  metaCol3: {
+    flex: 0.75,
   },
   metaLabel: {
     fontFamily: uvFonts.sansSemibold,

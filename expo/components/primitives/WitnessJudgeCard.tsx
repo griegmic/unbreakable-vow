@@ -35,8 +35,9 @@ export function WitnessJudgeCard({
         </View>
         <View style={styles.content}>
           <Text style={styles.title}>Add a witness</Text>
-          <Text style={styles.subtitle}>Someone to keep you honest</Text>
+          <Text style={styles.subtitle}>Pick someone who won't let you slide.</Text>
         </View>
+        <Text style={styles.rowAction}>{'\u2192'}</Text>
       </Pressable>
     );
   }
@@ -86,38 +87,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 14,
     minHeight: 78,
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 14,
+    marginTop: 18,
     borderRadius: 20,
     borderWidth: 1.3,
-    borderColor: 'rgba(214,168,60,.48)',
-    backgroundColor: uvColors.bgCard,
+    borderColor: 'rgba(214,168,60,0.48)',
+    backgroundColor: 'rgba(214,168,60,0.08)',
   },
   pressed: {
     transform: [{ scale: 0.97 }],
     opacity: 0.85,
   },
   avatarEmpty: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    borderWidth: 1.5,
-    borderColor: uvColors.gold,
-    borderStyle: 'dashed',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(214,168,60,0.18)',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: uvColors.goldBg,
+    backgroundColor: 'rgba(214,168,60,0.14)',
   },
   plusIcon: {
-    fontSize: 22,
-    color: uvColors.gold,
-    fontWeight: '300',
-    marginTop: -1,
+    fontSize: 24,
+    color: uvColors.goldBright,
+    fontFamily: uvFonts.sansSemibold,
+    fontWeight: '800',
   },
   avatarFilled: {
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -129,18 +130,26 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    gap: 2,
+    gap: 5,
   },
   title: {
-    fontFamily: uvFonts.sansMedium,
-    fontSize: 15,
-    fontWeight: '500',
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 18,
+    fontWeight: '800',
     color: uvColors.text,
+    lineHeight: 18 * 1.1,
   },
   subtitle: {
-    fontFamily: uvFonts.sans,
+    fontFamily: uvFonts.sansSemibold,
     fontSize: 13,
-    color: uvColors.textDim,
+    lineHeight: 13 * 1.25,
+    color: uvColors.textMuted,
+  },
+  rowAction: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: uvColors.goldBright,
+    fontFamily: uvFonts.sansSemibold,
   },
   name: {
     fontFamily: uvFonts.sansMedium,

@@ -67,6 +67,7 @@ export { PayTile } from './PayTile';
 export { PayOptionBig } from './PayOptionBig';
 export { SeeAllButton } from './SeeAllButton';
 export { SectionHead } from './SectionHead';
+export { QuietPill } from './QuietPill';
 
 // ─── Timeline ───
 export { Timeline } from './Timeline';
