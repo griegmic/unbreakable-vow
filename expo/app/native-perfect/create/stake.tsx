@@ -173,7 +173,7 @@ export default function StakeScreen() {
 
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 34) + 90 }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Chrome header */}
@@ -244,10 +244,13 @@ export default function StakeScreen() {
           />
         </VowDateCard>
 
-        {/* Bottom CTA — inside scroll so nothing clips */}
-        <View style={[styles.bottomCta, { paddingBottom: Math.max(insets.bottom, 34) }]}>
+        {/* Bottom CTA */}
+        <View style={styles.bottomCta}>
           <GoldCTA label="Choose your witness →" onPress={handleNext} />
         </View>
+
+        {/* Safe area bottom spacer — guarantees CTA never clips */}
+        <View style={{ height: insets.bottom + 50 }} />
       </ScrollView>
 
       {/* ── Sheet 02b: Verdict Date ── */}

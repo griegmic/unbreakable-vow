@@ -143,10 +143,7 @@ export default function WitnessScreen() {
       />
       <ScrollView
         style={styles.flex}
-        contentContainerStyle={[
-          styles.scrollContent,
-          { paddingBottom: Math.max(insets.bottom, 34) + 90 },
-        ]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {/* Chrome header */}
@@ -237,10 +234,13 @@ export default function WitnessScreen() {
 
         {/* Bottom CTA — only when witness selected */}
         {hasWitness && (
-          <View style={[styles.bottomCta, { paddingBottom: Math.max(insets.bottom, 34) }]}>
+          <View style={styles.bottomCta}>
             <GoldCTA label="Continue →" onPress={handleContinue} />
           </View>
         )}
+
+        {/* Safe area bottom spacer */}
+        <View style={{ height: insets.bottom + 50 }} />
       </ScrollView>
 
       {/* ── Sheet 03a: Decide Later Confirmation ── */}

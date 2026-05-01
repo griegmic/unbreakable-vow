@@ -94,7 +94,7 @@ export default function VowScreen() {
       >
         <ScrollView
           style={styles.flex}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom, 34) + 90 }]}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -141,13 +141,16 @@ export default function VowScreen() {
           />
 
           {/* Bottom CTA */}
-          <View style={[styles.bottomCta, { paddingBottom: Math.max(insets.bottom, 34) }]}>
+          <View style={styles.bottomCta}>
             <GoldCTA
               label="Next →"
               onPress={handleNext}
               disabled={!isNextEnabled}
             />
           </View>
+
+          {/* Safe area bottom spacer */}
+          <View style={{ height: insets.bottom + 50 }} />
         </ScrollView>
       </KeyboardAvoidingView>
     </View>
