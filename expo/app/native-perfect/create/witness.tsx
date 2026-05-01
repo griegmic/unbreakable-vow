@@ -231,14 +231,14 @@ export default function WitnessScreen() {
         <Text style={styles.moneyNote}>
           Nothing charges unless you break it.
         </Text>
-      </ScrollView>
 
-      {/* Bottom CTA — only when witness selected */}
-      {hasWitness && (
-        <View style={[styles.bottomCta, { paddingBottom: Math.max(insets.bottom, 16) + 14 }]}>
-          <GoldCTA label="Continue →" onPress={handleContinue} />
-        </View>
-      )}
+        {/* Bottom CTA — only when witness selected */}
+        {hasWitness && (
+          <View style={styles.bottomCta}>
+            <GoldCTA label="Continue →" onPress={handleContinue} />
+          </View>
+        )}
+      </ScrollView>
 
       {/* ── Sheet 03a: Decide Later Confirmation ── */}
       <BottomSheet
@@ -459,10 +459,8 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   bottomCta: {
-    position: 'absolute',
-    left: uvSpacing.xl,
-    right: uvSpacing.xl,
-    bottom: 0,
+    marginTop: 24,
+    marginBottom: 30,
   },
   // Sheet styles
   sheetTitle: {

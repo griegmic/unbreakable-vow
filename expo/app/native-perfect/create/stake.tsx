@@ -243,12 +243,12 @@ export default function StakeScreen() {
             editLabel={'\u270E'}
           />
         </VowDateCard>
-      </ScrollView>
 
-      {/* Bottom CTA */}
-      <View style={styles.bottomCta}>
-        <GoldCTA label="Choose your witness →" onPress={handleNext} />
-      </View>
+        {/* Bottom CTA — inside scroll so nothing clips */}
+        <View style={styles.bottomCta}>
+          <GoldCTA label="Choose your witness →" onPress={handleNext} />
+        </View>
+      </ScrollView>
 
       {/* ── Sheet 02b: Verdict Date ── */}
       <BottomSheet
@@ -365,7 +365,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 22,
     paddingTop: 6,
-    paddingBottom: 120,
+    paddingBottom: 20,
   },
   progressTrack: {
     height: 4,
@@ -430,10 +430,8 @@ const styles = StyleSheet.create({
     marginVertical: 14,
   },
   bottomCta: {
-    position: 'absolute',
-    left: 22,
-    right: 22,
-    bottom: 30,
+    marginTop: 24,
+    marginBottom: 30,
   },
   // Sheet styles
   sheetTitle: {

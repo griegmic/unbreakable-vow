@@ -139,16 +139,16 @@ export default function VowScreen() {
             chips={SUGGESTION_CHIPS}
             onSelect={handleChipSelect}
           />
-        </ScrollView>
 
-        {/* Bottom CTA */}
-        <View style={[styles.bottomCta, { paddingBottom: Math.max(insets.bottom, 16) + 14 }]}>
-          <GoldCTA
-            label="Next →"
-            onPress={handleNext}
-            disabled={!isNextEnabled}
-          />
-        </View>
+          {/* Bottom CTA */}
+          <View style={styles.bottomCta}>
+            <GoldCTA
+              label="Next →"
+              onPress={handleNext}
+              disabled={!isNextEnabled}
+            />
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </View>
   );
@@ -210,9 +210,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   bottomCta: {
-    position: 'absolute',
-    left: 22,
-    right: 22,
+    marginTop: 24,
+    marginBottom: 30,
     bottom: 0,
   },
 });
