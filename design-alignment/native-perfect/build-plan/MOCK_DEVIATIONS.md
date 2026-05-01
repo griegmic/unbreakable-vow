@@ -12,6 +12,7 @@ The reviewer subagents (Step 6) treat this file as authoritative — any deviati
 |---|---|---|---|---|---|
 | 1 | 2026-04-30 | 06 (Sealed Moment) | sealMark halo via stacked box-shadows | APPROVED | Worked example — RN API limitation (single boxShadow only). Compose via View layers. |
 | 2 | 2026-04-30 | 16 / 16B (Quick Vow) | primary path skips 16B when saved payment method exists | APPROVED | Quick Vow is returning-user-only. `Stake $X ->` launches Apple Pay / PaymentSheet directly; 16B is fallback-only. |
+| 3 | 2026-04-30 | 01 (Vow Only) | Body copy text | APPROVED | Joey directed copy change: "Flake and lose it all. Stake real cash..." → "Stake real cash on your word. Your friend calls it. **Flake, and it goes to charity.**" |
 
 ---
 

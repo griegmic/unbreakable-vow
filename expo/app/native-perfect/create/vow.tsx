@@ -119,8 +119,8 @@ export default function VowScreen() {
 
           {/* Copy */}
           <Text style={styles.copy}>
-            <Text style={styles.copyBold}>Flake and lose it all.</Text>
-            {' Stake real cash on your word. Your friend decides. No mercy.'}
+            {'Stake real cash on your word. Your friend calls it. '}
+            <Text style={styles.copyBold}>Flake, and it goes to charity.</Text>
           </Text>
 
           {/* Vow input card */}
