@@ -1,5 +1,4 @@
 import * as Contacts from 'expo-contacts';
-import { Alert } from 'react-native';
 
 export interface ContactEntry {
   id: string;
@@ -7,14 +6,17 @@ export interface ContactEntry {
   phone: string;
 }
 
-export async function requestAndLoadContacts(): Promise<{ granted: boolean; contacts: ContactEntry[] }> {
-  const { status } = await Contacts.requestPermissionsAsync();
+export interface ContactPermissionResult {
+  granted: boolean;
+  contacts: ContactEntry[];
+  status: Contacts.PermissionStatus;
+  canAskAgain: boolean;
+}
+
+export async function requestAndLoadContacts(): Promise<ContactPermissionResult> {
+  const { status, canAskAgain } = await Contacts.requestPermissionsAsync();
   if (status !== 'granted') {
-    Alert.alert(
-      'Contacts access needed',
-      'Go to Settings \u2192 Unbreakable Vow \u2192 Contacts to allow access.',
-    );
-    return { granted: false, contacts: [] };
+    return { granted: false, contacts: [], status, canAskAgain };
   }
 
   const { data } = await Contacts.getContactsAsync({
@@ -36,13 +38,8 @@ export async function requestAndLoadContacts(): Promise<{ granted: boolean; cont
   }
 
   if (parsed.length === 0) {
-    Alert.alert(
-      'No contacts found',
-      'We couldn\'t find contacts with phone numbers.',
-      [{ text: 'OK', style: 'cancel' }],
-    );
-    return { granted: true, contacts: [] };
+    return { granted: true, contacts: [], status, canAskAgain };
   }
 
-  return { granted: true, contacts: parsed };
+  return { granted: true, contacts: parsed, status, canAskAgain };
 }

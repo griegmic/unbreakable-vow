@@ -1,5 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { sendSMSWithRetry } from '../_shared/notify.ts';
+import { queuePush, sendSMSWithRetry } from '../_shared/notify.ts';
 import { sealMessage, challengeMessage, makerSealConfirmMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
@@ -278,24 +278,37 @@ Deno.serve(async (req) => {
       }
 
       await createAuditEvent(supabase, vow.id, 'witness_invited', 'system', null);
+    } else if (vow.witness_accepted_at) {
+      const liveBody = `${ownerName}'s vow is live. You're the witness.`;
+      if (vow.witness_phone) {
+        const twilioSid = await sendSMSWithRetry(supabase, vow.witness_phone, `Unbreakable Vow: ${liveBody} Reply STOP to opt out.`, 'witness_vow_live', vow.id);
+        if (twilioSid) {
+          await supabase.from('sms_log').insert({
+            vow_id,
+            message_type: 'witness_vow_live',
+            twilio_sid: twilioSid,
+          });
+        }
+      }
+      if (vow.witness_user_id) {
+        await queuePush(
+          supabase,
+          vow.witness_user_id,
+          { type: 'witness_vow_live', vowId: vow.id, makerName: ownerName },
+          now,
+        );
+      }
     }
 
-    await supabase.from('push_queue').insert({
-      user_id: user.id,
-      title: 'Vow sealed',
-      body: "It's done. No turning back.",
-      data: { route: `/vow-detail?vowId=${vow_id}`, vow_id, event: 'vow_sealed' },
-      send_after: now,
-    });
-
-    // SMS to maker confirming vow is sealed
+    // SMS to maker confirming vow is sealed only when push is not involved.
+    // Native/web already shows the seal ceremony, so this is a quiet fallback receipt.
     try {
       const { data: makerUser } = await supabase
         .from('users')
-        .select('phone')
+        .select('phone, push_token')
         .eq('id', user.id)
         .single();
-      if (makerUser?.phone) {
+      if (makerUser?.phone && !makerUser?.push_token) {
         const sealConfirmBody = makerSealConfirmMessage(amountDollars);
         const sid = await sendSMSWithRetry(supabase, makerUser.phone, sealConfirmBody, 'maker_seal_confirm', vow_id);
         if (sid) {

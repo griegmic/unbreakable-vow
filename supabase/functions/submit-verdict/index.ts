@@ -1,5 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { sendSMSWithRetry } from '../_shared/notify.ts';
+import { notifyMaker, sendSMSWithRetry } from '../_shared/notify.ts';
 import { outcomeMessage, makerOutcomeMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 import { upsertSettlement, recordSettlementEvent } from '../_shared/settlements.ts';
@@ -347,30 +347,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    // SMS to maker: outcome notification
-    try {
-      const { data: makerUser } = await supabase
-        .from('users')
-        .select('phone')
-        .eq('id', keeperId)
-        .single();
-      if (makerUser?.phone) {
-        const amtDollars = Math.round(vow.stake_amount / 100);
-        const makerBody = makerOutcomeMessage(verdict as 'kept' | 'broken', amtDollars, vow.destination);
-        const sid = await sendSMSWithRetry(supabase, makerUser.phone, makerBody, 'maker_outcome', vow.id);
-        if (sid) {
-          await supabase.from('sms_log').insert({
-            vow_id: vow.id,
-            message_type: 'maker_outcome',
-            twilio_sid: sid,
-          });
-        }
-      }
-    } catch (smsErr) {
-      console.error('[submit-verdict] Maker outcome SMS failed:', smsErr);
-    }
-
-    // Queue push notification to challenger/maker
+    // Notify challenger/maker. Maker-recipient notifications use exactly one channel.
     const amountDollars = Math.round(vow.stake_amount / 100);
     const noRealPayment = vow.stake_amount === 0 || !hasRealStripePI;
 
@@ -382,59 +359,50 @@ Deno.serve(async (req) => {
         .eq('id', vow.target_user_id)
         .single();
       const targetName = targetProfile?.display_name || 'They';
-      const challengerTitle = verdict === 'kept' ? 'Verdict: Kept' : 'Verdict: Broken';
       const challengerBody = verdict === 'kept'
         ? `You confirmed ${targetName} kept their vow.`
         : noRealPayment
           ? `You ruled ${targetName} broke their vow.`
           : `You ruled ${targetName} broke their vow. $${amountDollars} to ${vow.destination}.`;
 
-      await supabase.from('push_queue').insert({
-        user_id: vow.user_id,
-        title: challengerTitle,
-        body: challengerBody,
-        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict, event: `vow_verdict_${verdict}` },
-        send_after: now,
-      });
+      const { data: challengerUser } = await supabase.from('users').select('phone').eq('id', vow.user_id).single();
+      await notifyMaker(
+        supabase,
+        vow.user_id,
+        { type: 'maker_verdict_recorded', vowId: vow.id, verdict, stake: amountDollars, destination: vow.destination },
+        { to: challengerUser?.phone || '', body: challengerBody },
+        vow.id,
+      );
     } else {
-      // Regular vow: notify the maker
-      let pushTitle: string;
-      let pushBody: string;
-      if (verdict === 'kept') {
-        pushTitle = 'Vow kept';
-        pushBody = `${vow.witness_name} confirmed it. You kept your word.`;
-      } else {
-        pushTitle = 'Vow broken';
-        pushBody = noRealPayment
-          ? `${vow.witness_name} has spoken. The record stands.`
-          : `${vow.witness_name} has spoken. $${amountDollars} to ${vow.destination}.`;
-      }
-
-      await supabase.from('push_queue').insert({
-        user_id: vow.user_id,
-        title: pushTitle,
-        body: pushBody,
-        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict, event: `vow_verdict_${verdict}` },
-        send_after: now,
-      });
+      const { data: makerUser } = await supabase.from('users').select('phone').eq('id', vow.user_id).single();
+      await notifyMaker(
+        supabase,
+        vow.user_id,
+        { type: 'maker_verdict_recorded', vowId: vow.id, verdict, stake: amountDollars, destination: vow.destination },
+        {
+          to: makerUser?.phone || '',
+          body: makerOutcomeMessage(verdict as 'kept' | 'broken', amountDollars, vow.destination),
+        },
+        vow.id,
+      );
     }
 
     // For challenge vows, also notify the target (vow keeper) of the verdict
     if (vow.vow_type === 'challenge' && vow.target_user_id && vow.target_user_id !== vow.user_id) {
-      const targetPushTitle = verdict === 'kept' ? 'You kept your vow!' : 'Vow broken';
       const targetPushBody = verdict === 'kept'
         ? `${vow.witness_name || 'Your challenger'} confirmed it. Well done.`
         : noRealPayment
           ? `${vow.witness_name || 'Your challenger'} says you didn't keep it.`
           : `${vow.witness_name || 'Your challenger'} says you didn't keep it. $${amountDollars} to ${vow.destination}.`;
 
-      await supabase.from('push_queue').insert({
-        user_id: vow.target_user_id,
-        title: targetPushTitle,
-        body: targetPushBody,
-        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict, event: `challenge_verdict_${verdict}` },
-        send_after: now,
-      });
+      const { data: targetUser } = await supabase.from('users').select('phone').eq('id', vow.target_user_id).single();
+      await notifyMaker(
+        supabase,
+        vow.target_user_id,
+        { type: 'maker_verdict_recorded', vowId: vow.id, verdict, stake: amountDollars, destination: vow.destination },
+        { to: targetUser?.phone || '', body: targetPushBody },
+        vow.id,
+      );
     }
 
     return new Response(JSON.stringify({ success: true, verdict }), {

@@ -8,7 +8,8 @@ import { View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { StripeWrapper } from '@/components/stripe-wrapper';
-import '@/lib/notifications';
+import { USE_NATIVE_PERFECT } from '@/lib/native-flags';
+import { recordNotificationOpened, refreshPushTokenIfGranted } from '@/lib/notifications';
 import { supabase } from '@/lib/supabase';
 import { AuthProvider } from '@/providers/auth-provider';
 import { OathStateProvider } from '@/providers/oath-state';
@@ -69,6 +70,7 @@ export default function RootLayout() {
   useEffect(() => {
     console.log('[RootLayout] hiding splash');
     void SplashScreen.hideAsync();
+    void refreshPushTokenIfGranted();
 
     const sub = Notifications.addNotificationReceivedListener(notification => {
       console.log('[RootLayout] notification received:', notification.request.content.title);
@@ -76,12 +78,28 @@ export default function RootLayout() {
 
     const responseSub = Notifications.addNotificationResponseReceivedListener(async (response) => {
       const data = response.notification.request.content.data;
+      void recordNotificationOpened(data as Record<string, unknown>);
       if (data?.route && typeof data.route === 'string') {
+        const route = data.route;
+        if (route.startsWith('/w/') && USE_NATIVE_PERFECT) {
+          const token = route.split('/')[2]?.split('?')[0];
+          if (token) {
+            router.push(`/native-perfect/w/${token}` as never);
+            return;
+          }
+        }
+
         // Only route to protected screens if user has a session
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          const route = data.route;
           if (route.startsWith('/w/') || route.startsWith('/c/')) {
+            if (route.startsWith('/w/') && USE_NATIVE_PERFECT) {
+              const token = route.split('/')[2]?.split('?')[0];
+              if (token) {
+                router.push(`/native-perfect/w/${token}` as never);
+                return;
+              }
+            }
             router.push({
               pathname: '/external-web',
               params: { url: encodeURIComponent(`https://unbreakablevow.app${route}`) },

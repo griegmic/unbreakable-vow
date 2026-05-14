@@ -10,6 +10,7 @@
  */
 import { router, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import React, { useCallback, useMemo, useState } from 'react';
 import {
   ScrollView,
@@ -22,18 +23,18 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   BottomSheet,
-  CauseTypeCard,
+  CauseSegmentButton,
   ChromeHeader,
   ConsequenceRow,
   DatePillRow,
-  DestinationChip,
+  DestinationChoiceCard,
   GoldCTA,
   MoneyDisplay,
   StakeTile,
   VowDateCard,
   VowDateLine,
 } from '@/components/primitives';
-import { hapticPrimary, hapticSecondary, hapticSelection, hapticSheetPresent } from '@/lib/haptics';
+import { hapticPrimary, hapticSecondary, hapticSheetPresent } from '@/lib/haptics';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
 
 const STAKE_OPTIONS = [20, 50, 100, -1]; // -1 = "Other"
@@ -64,14 +65,18 @@ const DATE_OPTIONS = [
   { label: '1 month', value: '1m' },
 ];
 
-const CAUSE_TYPES = [
-  { id: 'charity', title: 'A cause you believe in', subtitle: 'Your stake goes to a real charity.', icon: '♥' },
-  { id: 'anti', title: 'A cause you hate', subtitle: 'Extra motivation. It goes somewhere awful.', icon: '⚡' },
-];
-
 const DESTINATIONS: Record<string, string[]> = {
-  charity: ['ALS Association', 'St. Jude', 'Red Cross', 'ACLU', 'WWF'],
-  anti: ['NRA', 'Flat Earth Society', 'Other'],
+  charity: ['ALS Association', 'St. Jude', 'Red Cross'],
+  anti: ['NRA', 'Flat Earth Society', 'PETA'],
+};
+
+const DESTINATION_SUBTITLES: Record<string, string> = {
+  'ALS Association': 'The default: serious, clean, easy to understand.',
+  'St. Jude': 'Still wholesome. Still motivating.',
+  'Red Cross': 'Classic good-cause stakes.',
+  NRA: 'Maximum motivation.',
+  'Flat Earth Society': 'Ridiculous enough to hurt.',
+  PETA: 'For the extra dramatic vow maker.',
 };
 
 function dateFromValue(value: string): Date {
@@ -80,7 +85,13 @@ function dateFromValue(value: string): Date {
   if (value.endsWith('d')) { now.setDate(now.getDate() + num); }
   else if (value.endsWith('w')) { now.setDate(now.getDate() + num * 7); }
   else if (value.endsWith('m')) { now.setMonth(now.getMonth() + num); }
-  return now;
+  return verdictAtNine(now);
+}
+
+function verdictAtNine(date: Date): Date {
+  const next = new Date(date);
+  next.setHours(21, 0, 0, 0);
+  return next;
 }
 
 function formatDate(date: Date): string {
@@ -98,7 +109,12 @@ export default function StakeScreen() {
 
   // Date state
   const [deadlineValue, setDeadlineValue] = useState('1w');
-  const deadlineDate = useMemo(() => dateFromValue(deadlineValue), [deadlineValue]);
+  const [customDeadlineDate, setCustomDeadlineDate] = useState(() => dateFromValue('1w'));
+  const [customDatePickerVisible, setCustomDatePickerVisible] = useState(false);
+  const deadlineDate = useMemo(
+    () => deadlineValue === 'custom' ? customDeadlineDate : dateFromValue(deadlineValue),
+    [customDeadlineDate, deadlineValue]
+  );
 
   // Destination state
   const [consequence, setConsequence] = useState<'charity' | 'anti'>('charity');
@@ -123,10 +139,25 @@ export default function StakeScreen() {
 
   const handleDateSelect = useCallback((value: string) => {
     setDeadlineValue(value);
+    setCustomDatePickerVisible(false);
+  }, []);
+
+  const handlePickCustomDate = useCallback(() => {
+    setCustomDeadlineDate(deadlineDate);
+    setDeadlineValue('custom');
+    setCustomDatePickerVisible(true);
+  }, [deadlineDate]);
+
+  const handleCustomDateChange = useCallback((_event: DateTimePickerEvent, selectedDate?: Date) => {
+    if (!selectedDate) return;
+    setCustomDeadlineDate(verdictAtNine(selectedDate));
+    setDeadlineValue('custom');
   }, []);
 
   const handleConsequenceChange = useCallback(() => {
     hapticSecondary();
+    setConsequence('anti');
+    setDestination('NRA');
     setCauseSheetVisible(true);
   }, []);
 
@@ -180,9 +211,6 @@ export default function StakeScreen() {
         <ChromeHeader
           onBack={() => router.canGoBack() ? router.back() : router.replace('/native-perfect/create/vow')}
           centerText="2 / 5"
-          onMenu={() => {
-            // TODO: open app menu overlay
-          }}
         />
 
         {/* Progress bar */}
@@ -244,14 +272,26 @@ export default function StakeScreen() {
           />
         </VowDateCard>
 
-        {/* Bottom CTA */}
-        <View style={styles.bottomCta}>
-          <GoldCTA label="Choose your witness →" onPress={handleNext} />
-        </View>
-
-        {/* Safe area bottom spacer */}
-        <View style={{ height: 100 }} />
+        {/* Space reserved for the native sticky CTA. */}
+        <View style={styles.scrollBottomSpacer} />
       </ScrollView>
+
+      {/* Bottom CTA stays native-sticky so the stake summary never gets clipped by the phone edge. */}
+      <View
+        pointerEvents="box-none"
+        style={[
+          styles.fixedBottomCta,
+          { paddingBottom: Math.max(insets.bottom + 18, 30) },
+        ]}
+      >
+        <LinearGradient
+          colors={['rgba(5,4,3,0)', 'rgba(5,4,3,0.92)', 'rgba(5,4,3,0.98)']}
+          locations={[0, 0.34, 1]}
+          style={StyleSheet.absoluteFillObject}
+          pointerEvents="none"
+        />
+        <GoldCTA label="Choose your witness →" onPress={handleNext} />
+      </View>
 
       {/* ── Sheet 02b: Verdict Date ── */}
       <BottomSheet
@@ -270,7 +310,33 @@ export default function StakeScreen() {
             handleDateSelect(val);
             setTimeout(() => setDateSheetVisible(false), 200);
           }}
+          onPickDate={handlePickCustomDate}
         />
+        {customDatePickerVisible ? (
+          <View style={styles.customDateBlock}>
+            <Text style={styles.customDateLabel}>Exact verdict date</Text>
+            <DateTimePicker
+              value={customDeadlineDate}
+              mode="date"
+              display="inline"
+              minimumDate={new Date()}
+              onChange={handleCustomDateChange}
+              themeVariant="dark"
+              accentColor={uvColors.gold}
+            />
+            <Text style={styles.customDateHint}>
+              Verdict will be due at 9:00 PM on {formatDate(customDeadlineDate)}.
+            </Text>
+            <GoldCTA
+              label={`Use ${formatDate(customDeadlineDate)}`}
+              onPress={() => {
+                hapticPrimary();
+                setDateSheetVisible(false);
+                setCustomDatePickerVisible(false);
+              }}
+            />
+          </View>
+        ) : null}
       </BottomSheet>
 
       {/* ── Sheet 02c: Change Destination ── */}
@@ -279,36 +345,52 @@ export default function StakeScreen() {
         onDismiss={() => setCauseSheetVisible(false)}
         variant="cause"
       >
-        <Text style={styles.sheetTitleSerif}>Change where it goes.</Text>
-        <Text style={styles.sheetSub}>
-          If you break your vow, your stake goes to one of these.
-        </Text>
+        {consequence === 'anti' ? (
+          <View style={styles.causeHeroHate}>
+            <Text style={styles.causeHeroTitle}>
+              Want it to sting <Text style={styles.causeHeroEm}>more?</Text>
+            </Text>
+            <Text style={styles.causeHeroSub}>
+              Pick a place you really do not want your money going.
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.goodCauseNote}>
+            <Text style={styles.goodCauseNoteText}>At least the money helps.</Text>
+          </View>
+        )}
 
-        {CAUSE_TYPES.map((ct) => (
-          <CauseTypeCard
-            key={ct.id}
-            title={ct.title}
-            subtitle={ct.subtitle}
-            icon={ct.icon}
-            selected={consequence === ct.id}
-            onSelect={() => {
-              setConsequence(ct.id as 'charity' | 'anti');
-              hapticSelection();
+        <View style={styles.segmentRow}>
+          <CauseSegmentButton
+            label="Good cause"
+            selected={consequence === 'charity'}
+            tone="good"
+            onPress={() => {
+              setConsequence('charity');
+              setDestination(DESTINATIONS.charity[0]);
             }}
           />
-        ))}
+          <CauseSegmentButton
+            label="Cause you hate"
+            selected={consequence === 'anti'}
+            tone="hate"
+            onPress={() => {
+              setConsequence('anti');
+              setDestination(DESTINATIONS.anti[0]);
+            }}
+          />
+        </View>
 
-        <Text style={styles.destLabel}>Destination</Text>
-        <View style={styles.destChips}>
+        <Text style={styles.destLabel}>If broken, send it to</Text>
+        <View style={styles.destCards}>
           {(DESTINATIONS[consequence] || []).map((dest) => (
-            <DestinationChip
+            <DestinationChoiceCard
               key={dest}
               label={dest}
+              subtitle={DESTINATION_SUBTITLES[dest]}
               selected={destination === dest}
-              onSelect={() => {
-                setDestination(dest);
-                hapticSelection();
-              }}
+              tone={consequence === 'anti' ? 'hate' : 'good'}
+              onSelect={() => setDestination(dest)}
             />
           ))}
         </View>
@@ -368,7 +450,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 22,
     paddingTop: 6,
-    paddingBottom: 20,
+    paddingBottom: 178,
   },
   progressTrack: {
     height: 4,
@@ -386,7 +468,7 @@ const styles = StyleSheet.create({
     fontSize: 47,
     lineHeight: 47 * 1.03,
     color: uvColors.text,
-    marginTop: 44,
+    marginTop: 36,
   },
   h1GoldItalic: {
     fontFamily: uvFonts.serifItalic,
@@ -400,15 +482,17 @@ const styles = StyleSheet.create({
     color: uvColors.textMuted,
     fontWeight: '500',
     marginTop: 12,
-    marginBottom: 24,
+    marginBottom: 18,
   },
   stakeCard: {
-    marginTop: 12,
+    marginTop: 8,
     borderWidth: 1,
     borderColor: 'rgba(214,168,60,0.46)',
     borderRadius: 22,
     backgroundColor: 'rgba(27,22,15,0.88)',
-    padding: 20,
+    paddingTop: 17,
+    paddingHorizontal: 18,
+    paddingBottom: 18,
   },
   kicker: {
     fontFamily: uvFonts.sansSemibold,
@@ -430,11 +514,18 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     fontSize: 15,
     lineHeight: 15 * 1.25,
-    marginVertical: 14,
+    marginVertical: 11,
   },
-  bottomCta: {
-    marginTop: 24,
-    marginBottom: 30,
+  scrollBottomSpacer: {
+    height: 8,
+  },
+  fixedBottomCta: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 22,
+    paddingTop: 18,
   },
   // Sheet styles
   sheetTitle: {
@@ -452,6 +543,52 @@ const styles = StyleSheet.create({
     color: uvColors.text,
     paddingRight: 54,
   },
+  causeHeroHate: {
+    borderWidth: 1,
+    borderColor: 'rgba(245,154,61,0.58)',
+    backgroundColor: 'rgba(245,154,61,0.08)',
+    borderRadius: 22,
+    padding: 16,
+    marginBottom: 12,
+  },
+  causeHeroTitle: {
+    fontFamily: uvFonts.serifSemibold,
+    fontSize: 31,
+    lineHeight: 31 * 1.05,
+    color: uvColors.text,
+  },
+  causeHeroEm: {
+    fontFamily: uvFonts.serifItalic,
+    color: uvColors.gold,
+    fontStyle: 'italic',
+  },
+  causeHeroSub: {
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 14,
+    lineHeight: 14 * 1.25,
+    color: uvColors.textMuted,
+    marginTop: 8,
+  },
+  goodCauseNote: {
+    borderWidth: 1,
+    borderColor: 'rgba(214,168,60,0.34)',
+    borderRadius: 18,
+    backgroundColor: 'rgba(214,168,60,0.06)',
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    marginBottom: 12,
+  },
+  goodCauseNoteText: {
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 15,
+    lineHeight: 15 * 1.25,
+    fontWeight: '800',
+    color: uvColors.goldBright,
+  },
+  segmentRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
   sheetSub: {
     fontFamily: uvFonts.sansSemibold,
     fontSize: 15,
@@ -460,6 +597,31 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 18,
     maxWidth: 330,
+  },
+  customDateBlock: {
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(214,168,60,0.26)',
+    borderRadius: 20,
+    backgroundColor: 'rgba(244,234,216,0.035)',
+    padding: 12,
+    gap: 10,
+  },
+  customDateLabel: {
+    fontFamily: uvFonts.sansSemibold,
+    fontWeight: '800',
+    fontSize: 12,
+    letterSpacing: 12 * 0.22,
+    textTransform: 'uppercase',
+    color: uvColors.textKicker,
+  },
+  customDateHint: {
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 13,
+    lineHeight: 13 * 1.35,
+    color: uvColors.textMuted,
+    textAlign: 'center',
+    marginBottom: 2,
   },
   destLabel: {
     fontFamily: uvFonts.sansSemibold,
@@ -470,6 +632,9 @@ const styles = StyleSheet.create({
     color: uvColors.textKicker,
     marginTop: 20,
     marginBottom: 10,
+  },
+  destCards: {
+    gap: 9,
   },
   destChips: {
     flexDirection: 'row',

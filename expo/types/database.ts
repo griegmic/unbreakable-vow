@@ -45,6 +45,10 @@ export interface Database {
           phone: string | null;
           stripe_customer_id: string | null;
           push_token: string | null;
+          push_permission_status?: 'unknown' | 'granted' | 'denied' | 'undetermined' | null;
+          timezone?: string | null;
+          quiet_hours_start?: string | null;
+          quiet_hours_end?: string | null;
           created_at: string;
         };
         Insert: {
@@ -53,6 +57,10 @@ export interface Database {
           phone?: string | null;
           stripe_customer_id?: string | null;
           push_token?: string | null;
+          push_permission_status?: 'unknown' | 'granted' | 'denied' | 'undetermined' | null;
+          timezone?: string | null;
+          quiet_hours_start?: string | null;
+          quiet_hours_end?: string | null;
           created_at?: string;
         };
         Update: {
@@ -61,6 +69,10 @@ export interface Database {
           phone?: string | null;
           stripe_customer_id?: string | null;
           push_token?: string | null;
+          push_permission_status?: 'unknown' | 'granted' | 'denied' | 'undetermined' | null;
+          timezone?: string | null;
+          quiet_hours_start?: string | null;
+          quiet_hours_end?: string | null;
           created_at?: string;
         };
         Relationships: [];
@@ -68,11 +80,11 @@ export interface Database {
       vows: {
         Row: {
           id: string;
-          user_id: string;
+          user_id: string | null;
           raw_input: string;
           refined_text: string;
           status: VowStatus;
-          witness_name: string;
+          witness_name: string | null;
           witness_phone: string | null;
           witness_invite_token: string | null;
           stake_amount: number;
@@ -96,11 +108,11 @@ export interface Database {
         };
         Insert: {
           id?: string;
-          user_id: string;
+          user_id?: string | null;
           raw_input: string;
           refined_text: string;
           status?: VowStatus;
-          witness_name: string;
+          witness_name?: string | null;
           witness_phone?: string | null;
           witness_invite_token?: string | null;
           stake_amount: number;
@@ -124,11 +136,11 @@ export interface Database {
         };
         Update: {
           id?: string;
-          user_id?: string;
+          user_id?: string | null;
           raw_input?: string;
           refined_text?: string;
           status?: VowStatus;
-          witness_name?: string;
+          witness_name?: string | null;
           witness_phone?: string | null;
           witness_invite_token?: string | null;
           stake_amount?: number;

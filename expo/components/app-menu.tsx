@@ -28,10 +28,12 @@ interface MenuItemConfig {
 }
 
 interface AppMenuProps {
+  initial?: string;
   style?: object;
+  variant?: 'icon' | 'avatar';
 }
 
-export function AppMenuButton({ style }: AppMenuProps) {
+export function AppMenuButton({ initial = 'J', style, variant = 'icon' }: AppMenuProps) {
   const [visible, setVisible] = useState<boolean>(false);
   const backdropOpacity = useRef(new Animated.Value(0)).current;
   const panelTranslate = useRef(new Animated.Value(-SCREEN_HEIGHT)).current;
@@ -85,40 +87,45 @@ export function AppMenuButton({ style }: AppMenuProps) {
   const menuItems: MenuItemConfig[] = [
     {
       icon: <Zap color={uvColors.goldBright} size={18} />,
-      label: 'Quick Vow',
-      description: 'Everything on one screen',
-      route: '/quick-vow',
-    },
-    {
-      icon: <BookOpen color={uvColors.goldBright} size={18} />,
-      label: 'Guided Flow',
-      description: 'The cinematic setup',
-      route: '/guided',
+      label: 'Make a vow',
+      description: 'Put money on your word',
+      route: '/native-perfect/quick-vow',
     },
     {
       icon: <Gauge color={uvColors.textMuted} size={18} />,
-      label: 'My Vows',
-      description: 'Active and past vows',
-      route: '/dashboard',
+      label: 'Dashboard',
+      description: 'Open loops first',
+      route: '/native-perfect/dashboard',
     },
     {
-      icon: <Send color={uvColors.goldBright} size={18} />,
-      label: 'Dare a Friend',
-      description: 'Cast a vow on someone',
-      route: '/cast',
+      label: 'My Vows',
+      description: 'Active and past vows',
+      icon: <BookOpen color={uvColors.goldBright} size={18} />,
+      route: '/native-perfect/dashboard',
     },
     {
       icon: <Users color={uvColors.goldBright} size={18} />,
-      label: 'Group Challenges',
-      description: 'Compete with hundreds on shared goals',
-      route: '/challenges',
-      badge: 'SOON',
+      label: "I'm judging",
+      description: 'Verdicts and active watches',
+      route: '/native-perfect/judging',
+    },
+    {
+      icon: <Send color={uvColors.goldBright} size={18} />,
+      label: 'Dares',
+      description: 'Challenges you sent',
+      route: '/native-perfect/dares',
+    },
+    {
+      icon: <Sparkles color={uvColors.goldBright} size={18} />,
+      label: 'Dare someone',
+      description: 'Send a challenge link',
+      route: '/cast',
     },
     {
       icon: <Settings color={uvColors.textMuted} size={18} />,
-      label: 'Settings',
+      label: 'Settings & help',
       description: 'Account, notifications, payment',
-      route: '/settings',
+      route: '/native-perfect/settings',
     },
   ];
 
@@ -126,10 +133,22 @@ export function AppMenuButton({ style }: AppMenuProps) {
     <>
       <Pressable
         onPress={open}
-        style={[styles.menuButton, style]}
+        accessibilityRole="button"
+        accessibilityLabel="Open app menu"
+        hitSlop={10}
+        style={({ pressed }) => [
+          styles.menuButton,
+          variant === 'avatar' && styles.avatarButton,
+          pressed && styles.menuButtonPressed,
+          style,
+        ]}
         testID="app-menu-button"
       >
-        <Menu color={uvColors.textMuted} size={18} />
+        {variant === 'avatar' ? (
+          <Text style={styles.avatarText}>{initial.trim().charAt(0).toUpperCase() || 'J'}</Text>
+        ) : (
+          <Menu color={uvColors.textMuted} size={18} />
+        )}
       </Pressable>
 
       <Modal
@@ -208,7 +227,7 @@ export function AppMenuButton({ style }: AppMenuProps) {
             <View style={styles.panelFooter}>
               <View style={styles.streakRow}>
                 <Trophy color={uvColors.goldBright} size={14} />
-                <Text style={styles.streakText}>Keep your word. Build your streak.</Text>
+                <Text style={styles.streakText}>Make the promise hard to dodge.</Text>
               </View>
             </View>
           </View>
@@ -228,6 +247,22 @@ const styles = StyleSheet.create({
     borderColor: uvColors.borderSoft,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  menuButtonPressed: {
+    opacity: 0.72,
+    transform: [{ scale: 0.98 }],
+  },
+  avatarButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: uvColors.goldBg,
+    borderColor: uvColors.borderGold,
+  },
+  avatarText: {
+    fontFamily: uvFonts.sansSemibold,
+    fontWeight: '800',
+    color: uvColors.goldBright,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,

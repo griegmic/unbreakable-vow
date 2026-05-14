@@ -1,5 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { sendSMSWithRetry } from '../_shared/notify.ts';
+import { queuePush, sendSMSWithRetry } from '../_shared/notify.ts';
 import { vowVoidedMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
@@ -191,13 +191,18 @@ Deno.serve(async (req) => {
 
     // Push to witness user if linked
     if (vow.witness_user_id) {
-      await supabase.from('push_queue').insert({
-        user_id: vow.witness_user_id,
-        title: 'Vow withdrawn',
-        body: 'A vow you were witnessing was withdrawn.',
-        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'vow_voided' },
-        send_after: new Date().toISOString(),
-      });
+      const { data: profile } = await supabase
+        .from('users')
+        .select('display_name')
+        .eq('id', user.id)
+        .single();
+      await queuePush(
+        supabase,
+        vow.witness_user_id,
+        { type: 'witness_vow_voided', vowId: vow.id, makerName: profile?.display_name || 'Someone' },
+        new Date(),
+        { dedupeKey: `${vow.witness_user_id}:${vow.id}:vow_voided:push`, data: { event: 'vow_voided' } },
+      );
     }
 
     return new Response(JSON.stringify({ success: true, refunded }), {

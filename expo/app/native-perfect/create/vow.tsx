@@ -29,17 +29,23 @@ import {
   VowInputCard,
 } from '@/components/primitives';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
+import { useAuth } from '@/providers/auth-provider';
 
 const SUGGESTION_CHIPS = [
   'Gym 3x this week',
-  'No alcohol, 2 weeks',
-  'Delete TikTok',
-  '10k steps',
-  'Call mom weekly',
+  'No alcohol for 2 weeks',
+  '10k steps a day for 2 weeks',
+  'Wake up before 7am every weekday',
+  'Delete TikTok for 7 days',
+  'No takeout this week',
+  'Read 10 pages every night this week',
+  'Meditate 10 min every morning for 14 days',
+  'Call mom twice this week',
 ];
 
 export default function VowScreen() {
   const insets = useSafeAreaInsets();
+  const { isAuthenticated } = useAuth();
   const [rawInput, setRawInput] = useState('');
 
   const handleChipSelect = useCallback((chip: string) => {
@@ -55,9 +61,15 @@ export default function VowScreen() {
   }, [rawInput]);
 
   const handleSignIn = useCallback(() => {
-    // TODO: Route to sign-in (D13) or dashboard if already authed
-    router.push('/native-perfect/create/vow' as never);
-  }, []);
+    if (isAuthenticated) {
+      router.replace('/native-perfect/dashboard' as never);
+      return;
+    }
+    router.push({
+      pathname: '/native-perfect/create/auth',
+      params: { intent: 'signIn' },
+    } as never);
+  }, [isAuthenticated]);
 
   const isNextEnabled = rawInput.trim().length > 0;
 

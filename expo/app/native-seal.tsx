@@ -1,8 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import Constants from 'expo-constants';
 import { Stack, router } from 'expo-router';
-import { ArrowLeft, Check, CreditCard, LockKeyhole, MessageCircle, Smartphone } from 'lucide-react-native';
-import React, { useMemo, useState } from 'react';
+import { ArrowLeft, Check, LockKeyhole, MessageCircle } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -20,9 +20,9 @@ import {
 
 import { sendPhoneOtp, verifyPhoneOtp } from '@/lib/auth';
 import { hapticOtpError, hapticPrimary, hapticSealComplete, hapticSelection } from '@/lib/haptics';
-import { registerForPushNotifications, savePushToken } from '@/lib/notifications';
+import { recordPushPermissionEvent, registerForPushNotifications, savePushToken } from '@/lib/notifications';
 import { displayPhone } from '@/lib/phone';
-import { saveCard, setupPaymentSheetForSetup, showPaymentSheet } from '@/lib/stripe';
+import { isNativeWalletSupported, saveCard, setupPaymentSheetForSetup, showPaymentSheet } from '@/lib/stripe';
 import { supabase } from '@/lib/supabase';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { createVow, sealVow } from '@/lib/vow-api';
@@ -37,19 +37,31 @@ export default function NativeSealScreen() {
   const { isAuthenticated, displayName } = useAuth();
   const { vow, activeVowText, setVowId } = useVowFlow();
   const [state, setState] = useState<SealState>('review');
-  const [paymentMethod, setPaymentMethod] = useState<'apple' | 'card'>('apple');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [makerName, setMakerName] = useState(displayName || '');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [pushAsked, setPushAsked] = useState(false);
+  const [sealedVowId, setSealedVowId] = useState<string | null>(null);
+  const [walletSupported, setWalletSupported] = useState(false);
   const witnessName = vow.witnessName && vow.witnessName !== 'Your witness' ? vow.witnessName : 'your witness';
   const stake = vow.stake.amount || 50;
+  const walletLabel = Platform.OS === 'android' ? 'Google Pay' : 'Apple Pay';
   const deadline = useMemo(() => {
     const d = vow.deadlineIso ? new Date(vow.deadlineIso) : getSundayNight();
     return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
   }, [vow.deadlineIso]);
+
+  useEffect(() => {
+    let mounted = true;
+    void isNativeWalletSupported().then((supported) => {
+      if (mounted) setWalletSupported(supported);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const finishPreviewSeal = () => {
     hapticSealComplete();
@@ -104,6 +116,7 @@ export default function NativeSealScreen() {
 
       const sealed = await sealVow(created.id);
       if (!sealed.success) throw new Error(sealed.error || 'Could not seal vow.');
+      setSealedVowId(created.id);
       hapticSealComplete();
       setState('sealed');
     } catch (err) {
@@ -180,8 +193,33 @@ export default function NativeSealScreen() {
   const maybeRegisterPush = async () => {
     if (pushAsked || IS_EXPO_GO_OR_WEB) return;
     setPushAsked(true);
-    const token = await registerForPushNotifications();
-    if (token) await savePushToken(token);
+    const currentVowId = sealedVowId || (vow.vowId && vow.vowId !== 'local-native-sealed' ? vow.vowId : null);
+    await recordPushPermissionEvent(currentVowId, 'push_permission_prompt_seen');
+    Alert.alert(
+      'Stay accountable?',
+      'Notify me when your witness accepts and when verdict day comes.',
+      [
+        {
+          text: 'Not now',
+          style: 'cancel',
+          onPress: () => {
+            void recordPushPermissionEvent(currentVowId, 'push_permission_denied');
+          },
+        },
+        {
+          text: 'Notify me',
+          onPress: async () => {
+            const token = await registerForPushNotifications();
+            if (token) {
+              await savePushToken(token);
+              await recordPushPermissionEvent(currentVowId, 'push_permission_granted');
+            } else {
+              await recordPushPermissionEvent(currentVowId, 'push_permission_denied');
+            }
+          },
+        },
+      ],
+    );
   };
 
   if (state === 'sealed') {
@@ -380,31 +418,14 @@ export default function NativeSealScreen() {
             <View style={styles.payCard}>
               <View style={styles.payHeader}>
                 <LockKeyhole color={uvColors.goldBright} size={18} />
-                <Text style={styles.payTitle}>Payment method</Text>
+                <Text style={styles.payTitle}>Authorize your ${stake} stake</Text>
               </View>
-              <Text style={styles.paySub}>No charge unless you break your vow</Text>
-              <View style={styles.payOptions}>
-                <Pressable
-                  onPress={() => {
-                    hapticSelection();
-                    setPaymentMethod('apple');
-                  }}
-                  style={[styles.payOption, paymentMethod === 'apple' && styles.payOptionSelected]}
-                >
-                  <Smartphone color={paymentMethod === 'apple' ? uvColors.textOnGold : uvColors.textMuted} size={20} />
-                  <Text style={[styles.payOptionText, paymentMethod === 'apple' && styles.payOptionTextSelected]}>Apple Pay</Text>
-                </Pressable>
-                <Pressable
-                  onPress={() => {
-                    hapticSelection();
-                    setPaymentMethod('card');
-                  }}
-                  style={[styles.payOption, paymentMethod === 'card' && styles.payOptionSelected]}
-                >
-                  <CreditCard color={paymentMethod === 'card' ? uvColors.textOnGold : uvColors.textMuted} size={20} />
-                  <Text style={[styles.payOptionText, paymentMethod === 'card' && styles.payOptionTextSelected]}>Card</Text>
-                </Pressable>
-              </View>
+              <Text style={styles.paySub}>No charge now. Only if you break it.</Text>
+              <Text style={styles.payNote}>
+                {walletSupported
+                  ? `${walletLabel} opens next. Card or Link are available if needed.`
+                  : 'Stripe opens next. Card or Link are available.'}
+              </Text>
             </View>
           </ScrollView>
 
@@ -412,10 +433,10 @@ export default function NativeSealScreen() {
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
             <Pressable disabled={busy} onPress={runSeal} style={({ pressed }) => [styles.cta, pressed && styles.ctaPressed, busy && styles.ctaBusy]}>
               <LinearGradient colors={[uvColors.goldBright, uvColors.gold, uvColors.goldDeep]} style={styles.ctaGradient}>
-                {busy ? <ActivityIndicator color={uvColors.textOnGold} /> : <Text style={styles.ctaText}>Seal this vow</Text>}
+                {busy ? <ActivityIndicator color={uvColors.textOnGold} /> : <Text style={styles.ctaText}>Seal your vow</Text>}
               </LinearGradient>
             </Pressable>
-            <Text style={styles.footerNote}>No charge unless you break your vow</Text>
+            <Text style={styles.footerNote}>No charge now. Only if you break it.</Text>
           </View>
         </SafeAreaView>
       </KeyboardAvoidingView>
@@ -575,34 +596,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
   },
-  payOptions: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  payOption: {
-    flex: 1,
-    minHeight: 60,
-    borderRadius: 16,
-    paddingHorizontal: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    borderWidth: 1,
-    borderColor: uvColors.border,
-    backgroundColor: 'rgba(24,21,18,0.78)',
-  },
-  payOptionSelected: {
-    borderColor: uvColors.gold,
-    backgroundColor: uvColors.goldBright,
-  },
-  payOptionText: {
+  payNote: {
     color: uvColors.textMuted,
     fontFamily: uvFonts.sansSemibold,
-    fontSize: 16,
-  },
-  payOptionTextSelected: {
-    color: uvColors.textOnGold,
+    fontSize: 13,
+    lineHeight: 19,
   },
   sealedContent: {
     flex: 1,

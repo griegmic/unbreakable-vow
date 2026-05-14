@@ -1,6 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { sendSMS } from '../_shared/twilio.ts';
-import { isSMSOptedOut, markSMSOptedOut, sendSMSWithRetry } from '../_shared/notify.ts';
+import { isSMSOptedOut, markSMSOptedOut, notifyMaker, queuePush, sendSMSWithRetry } from '../_shared/notify.ts';
 import { normalizePhoneE164 } from '../_shared/phone.ts';
 import {
   sealMessage, witnessReminderMessage, verdictRequestMessage,
@@ -21,13 +21,64 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY')!;
 
-async function sendPushNotification(pushToken: string, title: string, body: string, data?: Record<string, unknown>) {
+type UserNotifyProfile = {
+  push_token?: string | null;
+  last_push_receipt_ok_at?: string | null;
+  sms_only_preference?: boolean | null;
+  timezone?: string | null;
+  quiet_hours_start?: string | null;
+  quiet_hours_end?: string | null;
+};
+
+function hasHealthyPush(user: UserNotifyProfile | null | undefined): boolean {
+  if (!user?.push_token || user.sms_only_preference) return false;
+  if (!user.last_push_receipt_ok_at) return true;
+  return Date.now() - new Date(user.last_push_receipt_ok_at).getTime() < 7 * 24 * 60 * 60 * 1000;
+}
+
+function getLocalHour(date: Date, timezone?: string | null): number {
+  try {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      hour: '2-digit',
+      hour12: false,
+      timeZone: timezone || 'America/New_York',
+    }).formatToParts(date);
+    return Number(parts.find((part) => part.type === 'hour')?.value || '12');
+  } catch {
+    return date.getUTCHours();
+  }
+}
+
+function quietAwareSendAt(sendAt: Date, user?: UserNotifyProfile | null, bypassQuietHours = false): Date {
+  if (bypassQuietHours) return sendAt;
+  const start = Number((user?.quiet_hours_start || '21:00').slice(0, 2));
+  const end = Number((user?.quiet_hours_end || '08:00').slice(0, 2));
+  const hour = getLocalHour(sendAt, user?.timezone);
+  const inQuietHours = start > end ? hour >= start || hour < end : hour >= start && hour < end;
+  if (!inQuietHours) return sendAt;
+  const adjusted = new Date(sendAt);
+  const hoursToEnd = hour < end ? end - hour : 24 - hour + end;
+  adjusted.setUTCHours(adjusted.getUTCHours() + hoursToEnd, 0, 0, 0);
+  return adjusted;
+}
+
+async function sendQueuedPush(pushToken: string, title: string, body: string, data?: Record<string, unknown>) {
   const response = await fetch('https://exp.host/--/api/v2/push/send', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to: pushToken, title, body, sound: 'default', data }),
   });
-  return response.json();
+  const json = await response.json().catch(() => null);
+  const ticket = Array.isArray(json?.data) ? json.data[0] : json?.data;
+  return {
+    ok: response.ok && ticket?.status !== 'error',
+    receiptId: ticket?.id || null,
+    errorCode: ticket?.details?.error || json?.errors?.[0]?.code || json?.message || null,
+  };
+}
+
+function isDeadPushTokenError(errorCode?: string | null): boolean {
+  return errorCode === 'DeviceNotRegistered' || errorCode === 'InvalidCredentials' || errorCode === 'MessageTooBig';
 }
 
 async function stripePost(endpoint: string, params: Record<string, string>, idempotencyKey?: string) {
@@ -321,28 +372,35 @@ Deno.serve(async (req) => {
           }
         }
 
-        // Push notification to challenger/maker
-        await supabase.from('push_queue').insert({
-          user_id: vow.user_id,
-          title: 'Vow auto-resolved: Kept!',
-          body: noRealPayment
-            ? 'No verdict was received, so the vow was auto-resolved as kept.'
-            : 'No verdict was received, so the vow was auto-resolved as kept. Wallet untouched.',
-          data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict: 'kept' },
-          send_after: now.toISOString(),
-        });
+        const { data: makerUser } = await supabase.from('users').select('phone').eq('id', vow.user_id).single();
+        await notifyMaker(
+          supabase,
+          vow.user_id,
+          { type: 'maker_auto_resolved', vowId: vow.id, stake: amountDollars },
+          {
+            to: makerUser?.phone || '',
+            body: noRealPayment
+              ? 'Unbreakable Vow: No verdict came in. Vow auto-resolved as kept.'
+              : 'Unbreakable Vow: No verdict came in. Vow kept, wallet untouched.',
+          },
+          vow.id,
+        );
 
         // For challenge vows, also notify the target (vow keeper)
         if (vow.vow_type === 'challenge' && vow.target_user_id) {
-          await supabase.from('push_queue').insert({
-            user_id: vow.target_user_id,
-            title: 'Vow auto-resolved: Kept!',
-            body: noRealPayment
-              ? 'No verdict was received, so your vow was auto-resolved as kept.'
-              : 'No verdict was received, so your vow was auto-resolved as kept. Wallet untouched.',
-            data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, verdict: 'kept' },
-            send_after: now.toISOString(),
-          });
+          const { data: targetUser } = await supabase.from('users').select('phone').eq('id', vow.target_user_id).single();
+          await notifyMaker(
+            supabase,
+            vow.target_user_id,
+            { type: 'maker_auto_resolved', vowId: vow.id, stake: amountDollars },
+            {
+              to: targetUser?.phone || '',
+              body: noRealPayment
+                ? 'Unbreakable Vow: No verdict came in. Your vow auto-resolved as kept.'
+                : 'Unbreakable Vow: No verdict came in. Your vow kept, wallet untouched.',
+            },
+            vow.id,
+          );
         }
 
         results.auto_resolve++;
@@ -623,9 +681,8 @@ Deno.serve(async (req) => {
       results.errors.push(`refund_retry: ${msg}`);
     }
 
-    // === TASK 7: Schedule vow lifecycle push notifications ===
-    // Queries active/awaiting_verdict vows and schedules time-based push notifications
-    // with dedup via push_queue data->>'event' + data->>'vow_id'
+    // === TASK 7: Schedule sparse vow lifecycle push notifications ===
+    // No daily spam: day-1 for 3+ day vows, 24h before, verdict time, and witness verdict.
     try {
       const { data: lifecycleVows } = await supabase
         .from('vows')
@@ -637,101 +694,75 @@ Deno.serve(async (req) => {
       for (const vow of lifecycleVows || []) {
         const startsAt = new Date(vow.starts_at);
         const endsAt = new Date(vow.ends_at);
-
-        // Helper: check if a push with this event was already queued for this vow
-        async function alreadyQueued(eventType: string, userId?: string): Promise<boolean> {
-          const { count } = await supabase
-            .from('push_queue')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId || vow.user_id)
-            .contains('data', { vow_id: vow.id, event: eventType });
-          return (count || 0) > 0;
-        }
-
-        // Helper: queue a push notification
-        async function queuePush(userId: string, title: string, body: string, eventType: string, sendAfter: Date) {
-          await supabase.from('push_queue').insert({
-            user_id: userId,
-            title,
-            body,
-            data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: eventType },
-            send_after: sendAfter.toISOString(),
-          });
-          results.vow_lifecycle++;
-        }
-
-        // For challenge vows, lifecycle pushes go to the vow keeper (target), not the challenger
         const keeperId = getVowKeeperId(vow);
+        const vowDurationMs = endsAt.getTime() - startsAt.getTime();
+        const amountDollars = Math.round((vow.stake_amount || 0) / 100);
 
         try {
-          // --- #2: 24 hours after start: "Day 1 down." ---
+          const { data: keeperNotify } = await supabase
+            .from('users')
+            .select('push_token, last_push_receipt_ok_at, sms_only_preference, timezone, quiet_hours_start, quiet_hours_end')
+            .eq('id', keeperId)
+            .maybeSingle();
+
+          // --- Day 1: only for vows 3+ days long. ---
           const day1 = new Date(startsAt.getTime() + 24 * 60 * 60 * 1000);
-          if (now >= day1) {
-            if (!(await alreadyQueued('vow_day1', keeperId))) {
-              const body = vow.witness_name && vow.witness_user_id
-                ? `${vow.witness_name} is watching. Keep it clean today.`
-                : 'You made the promise. Keep it clean today.';
-              await queuePush(keeperId, 'Still in it', body, 'vow_day1', day1);
-            }
+          if (vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= day1 && hasHealthyPush(keeperNotify)) {
+            const queued = await queuePush(
+              supabase,
+              keeperId,
+              { type: 'maker_day1', vowId: vow.id, witnessName: vow.witness_name || undefined },
+              quietAwareSendAt(day1, keeperNotify),
+            );
+            if (queued) results.vow_lifecycle++;
           }
 
-          // --- #3: Midpoint ---
+          // --- 24h before deadline: main maker nudge. ---
+          const twentyFourBefore = new Date(endsAt.getTime() - 24 * 60 * 60 * 1000);
           const midpoint = new Date((startsAt.getTime() + endsAt.getTime()) / 2);
-          // Only send midpoint if vow is at least 3 days long (avoid spamming short vows)
-          const vowDurationMs = endsAt.getTime() - startsAt.getTime();
-          if (vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
-            if (!(await alreadyQueued('vow_midpoint', keeperId))) {
-              await queuePush(keeperId, 'Halfway check', "Halfway there. If you're slipping, fix it today.", 'vow_midpoint', midpoint);
-            }
+          if (twentyFourBefore >= midpoint && now >= twentyFourBefore && hasHealthyPush(keeperNotify)) {
+            const queued = await queuePush(
+              supabase,
+              keeperId,
+              { type: 'maker_24h_warning', vowId: vow.id, stake: amountDollars },
+              quietAwareSendAt(twentyFourBefore, keeperNotify),
+            );
+            if (queued) results.vow_lifecycle++;
           }
 
-          // --- #4: 48 hours before deadline ---
-          const fortyEightBefore = new Date(endsAt.getTime() - 48 * 60 * 60 * 1000);
-          // Only send if 48h-before is after the midpoint (avoid sending before midpoint on short vows)
-          if (fortyEightBefore > midpoint && now >= fortyEightBefore) {
-            if (!(await alreadyQueued('vow_48h_warning', keeperId))) {
-              const amountDollars = Math.round((vow.stake_amount || 0) / 100);
-              const stakeLine = amountDollars > 0 ? `$${amountDollars} is still safe.` : 'Your word is still clean.';
-              await queuePush(keeperId, 'Two days left', `${stakeLine} Finish strong.`, 'vow_48h_warning', fortyEightBefore);
-            }
+          // --- Verdict time: maker push. ---
+          if (now >= endsAt && hasHealthyPush(keeperNotify)) {
+            const queued = await queuePush(
+              supabase,
+              keeperId,
+              { type: 'maker_verdict_time', vowId: vow.id, witnessName: vow.witness_name || 'Your witness' },
+              endsAt,
+            );
+            if (queued) results.vow_lifecycle++;
           }
 
-          // --- #5: 10 minutes before deadline ---
-          const tenMinutesBefore = new Date(endsAt.getTime() - 10 * 60 * 1000);
-          if (tenMinutesBefore > startsAt && now >= tenMinutesBefore) {
-            if (!(await alreadyQueued('vow_10m_warning', keeperId))) {
-              await queuePush(keeperId, 'Last call', '10 minutes left. Close the loop before verdict time.', 'vow_10m_warning', tenMinutesBefore);
-            }
-          }
-
-          // --- #6: Verdict time — notify maker when ends_at is reached ---
-          if (now >= endsAt) {
-            if (!(await alreadyQueued('vow_verdict_day_maker', keeperId))) {
-              const body = vow.witness_name && vow.witness_user_id
-                ? `${vow.witness_name} has the call now.`
-                : 'Verdict time. Your vow is due.';
-              await queuePush(keeperId, 'Verdict time', body, 'vow_verdict_day_maker', endsAt);
-            }
-          }
-
-          // --- #7: Verdict time — notify witness when ends_at is reached ---
-          if (now >= endsAt && vow.witness_user_id) {
-            if (!(await alreadyQueued('vow_verdict_day_witness', vow.witness_user_id))) {
-              // Get vow keeper's display name (for challenge vows, this is the target)
-              const keeperIdForPush = getVowKeeperId(vow);
+          // --- Verdict time: app-linked witness push, SMS remains primary in TASK 2. ---
+          if (now >= endsAt && vow.witness_user_id && vow.witness_invite_token) {
+            const { data: witnessNotify } = await supabase
+              .from('users')
+              .select('push_token, last_push_receipt_ok_at, sms_only_preference')
+              .eq('id', vow.witness_user_id)
+              .maybeSingle();
+            if (hasHealthyPush(witnessNotify)) {
               const { data: keeperProfile } = await supabase
                 .from('users')
                 .select('display_name')
-                .eq('id', keeperIdForPush)
+                .eq('id', keeperId)
                 .single();
               const makerName = keeperProfile?.display_name || 'Someone';
-              await queuePush(
+              const queued = await queuePush(
+                supabase,
                 vow.witness_user_id,
-                'Verdict time',
-                `Time's up on ${makerName}'s vow. What's the verdict?`,
-                'vow_verdict_day_witness',
+                { type: 'witness_verdict_request', vowId: vow.id, token: vow.witness_invite_token, makerName },
                 endsAt,
+                { route: `/w/${vow.witness_invite_token}/verdict` },
               );
+              if (queued) results.vow_lifecycle++;
             }
           }
         } catch (err) {
@@ -756,7 +787,6 @@ Deno.serve(async (req) => {
       for (const vow of smsLifecycleVows || []) {
         const startsAt = new Date(vow.starts_at);
         const endsAt = new Date(vow.ends_at);
-        const vowDurationMs = endsAt.getTime() - startsAt.getTime();
         const midpoint = new Date((startsAt.getTime() + endsAt.getTime()) / 2);
         const twentyFourBefore = new Date(endsAt.getTime() - 24 * 60 * 60 * 1000);
 
@@ -775,22 +805,15 @@ Deno.serve(async (req) => {
         const keeperId = getVowKeeperId(vow);
 
         try {
-          // --- Maker midpoint SMS ---
-          // V6: warmup/midpoint dropped — replaced by 24h heads-up in TASK 9
-          // if (vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
-          //   if (!(await smsAlreadySent('maker_midpoint'))) {
-          //     const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
-          //     if (makerUser?.phone) {
-          //       const body = makerMidpointMessage(vow.witness_name || null);
-          //       const sid = await sendSMS(makerUser.phone, body);
-          //       await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_midpoint', twilio_sid: sid });
-          //       results.maker_sms = (results.maker_sms as number) + 1;
-          //     }
-          //   }
-          // }
+          const { data: keeperNotify } = await supabase
+            .from('users')
+            .select('push_token, last_push_receipt_ok_at, sms_only_preference')
+            .eq('id', keeperId)
+            .maybeSingle();
+          const makerNeedsSmsFallback = !hasHealthyPush(keeperNotify);
 
           // --- Maker 24h before SMS ---
-          if (twentyFourBefore >= midpoint && now >= twentyFourBefore) {
+          if (makerNeedsSmsFallback && twentyFourBefore >= midpoint && now >= twentyFourBefore) {
             if (!(await smsAlreadySent('maker_24h'))) {
               const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
               if (makerUser?.phone) {
@@ -806,7 +829,7 @@ Deno.serve(async (req) => {
           }
 
           // --- Maker verdict time SMS ---
-          if (now >= endsAt) {
+          if (makerNeedsSmsFallback && now >= endsAt) {
             if (!(await smsAlreadySent('maker_verdict_time'))) {
               const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
               if (makerUser?.phone) {
@@ -819,19 +842,6 @@ Deno.serve(async (req) => {
               }
             }
           }
-
-          // --- Witness midpoint SMS ---
-          // V6: midpoint dropped — replaced by 24h heads-up
-          // if (vow.witness_phone && vowDurationMs >= 3 * 24 * 60 * 60 * 1000 && now >= midpoint) {
-          //   if (!(await smsAlreadySent('witness_midpoint'))) {
-          //     const { data: keeperProfile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
-          //     const keeperName = keeperProfile?.display_name || 'your friend';
-          //     const body = witnessMidpointMessage(keeperName);
-          //     const sid = await sendSMS(vow.witness_phone, body);
-          //     await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_midpoint', twilio_sid: sid });
-          //     results.witness_lifecycle_sms = (results.witness_lifecycle_sms as number) + 1;
-          //   }
-          // }
 
           // --- Witness 24h before SMS ---
           if (vow.witness_phone && twentyFourBefore >= midpoint && now >= twentyFourBefore) {
@@ -938,13 +948,22 @@ Deno.serve(async (req) => {
     const { data: pendingPush } = await supabase
       .from('push_queue')
       .select('*')
-      .eq('sent', false)
+      .eq('status', 'queued')
       .lte('send_after', now.toISOString())
+      .order('send_after', { ascending: true })
       .limit(50);
 
     for (const item of pendingPush || []) {
       try {
-        if (!item.user_id) continue;
+        if (!item.user_id) {
+          await supabase.from('push_queue').update({
+            status: 'dead',
+            sent: true,
+            last_attempt_at: now.toISOString(),
+            error_code: 'missing_user_id',
+          }).eq('id', item.id);
+          continue;
+        }
 
         const { data: user } = await supabase
           .from('users')
@@ -952,17 +971,81 @@ Deno.serve(async (req) => {
           .eq('id', item.user_id)
           .single();
 
-        if (user?.push_token) {
-          await sendPushNotification(
+        if (!user?.push_token) {
+          await supabase.from('push_queue').update({
+            status: 'dead',
+            sent: true,
+            attempts: (item.attempts || 0) + 1,
+            last_attempt_at: now.toISOString(),
+            error_code: 'missing_push_token',
+          }).eq('id', item.id);
+          if (item.data?.vow_id || item.data?.vowId) {
+            await createAuditEvent(supabase, item.data.vow_id || item.data.vowId, 'notification_failed', 'system', null, {
+              channel: 'push',
+              user_id: item.user_id,
+              payload_type: item.event_type || item.data?.event,
+              error_code: 'missing_push_token',
+            });
+          }
+          continue;
+        }
+
+        const result = await sendQueuedPush(
             user.push_token,
             item.title,
             item.body,
             (item.data as Record<string, unknown>) || undefined,
-          );
+        );
+
+        const attempts = (item.attempts || 0) + 1;
+        if (result.ok) {
+          await supabase.from('push_queue').update({
+            status: 'sent',
+            sent: true,
+            sent_at: now.toISOString(),
+            attempts,
+            last_attempt_at: now.toISOString(),
+            receipt_id: result.receiptId,
+            error_code: null,
+          }).eq('id', item.id);
+          await supabase.from('users').update({ last_push_receipt_ok_at: now.toISOString() }).eq('id', item.user_id);
+          if (item.data?.vow_id || item.data?.vowId) {
+            await createAuditEvent(supabase, item.data.vow_id || item.data.vowId, 'notification_sent', 'system', null, {
+              channel: 'push',
+              user_id: item.user_id,
+              payload_type: item.event_type || item.data?.event,
+              receipt_id: result.receiptId,
+            });
+          }
+          results.push++;
+          continue;
         }
 
-        await supabase.from('push_queue').update({ sent: true }).eq('id', item.id);
-        results.push++;
+        await supabase.from('users').update({ last_push_receipt_failed_at: now.toISOString() }).eq('id', item.user_id);
+
+        const dead = isDeadPushTokenError(result.errorCode) || attempts >= 5;
+        await supabase.from('push_queue').update({
+          status: dead ? 'dead' : 'queued',
+          sent: dead,
+          attempts,
+          last_attempt_at: now.toISOString(),
+          send_after: dead ? item.send_after : new Date(now.getTime() + Math.min(60, 2 ** attempts) * 60 * 1000).toISOString(),
+          error_code: result.errorCode,
+        }).eq('id', item.id);
+
+        if (dead && user.push_token && isDeadPushTokenError(result.errorCode)) {
+          await supabase.from('users').update({ push_token: null }).eq('id', item.user_id);
+        }
+
+        if (item.data?.vow_id || item.data?.vowId) {
+          await createAuditEvent(supabase, item.data.vow_id || item.data.vowId, 'notification_failed', 'system', null, {
+            channel: 'push',
+            user_id: item.user_id,
+            payload_type: item.event_type || item.data?.event,
+            error_code: result.errorCode,
+            retrying: !dead,
+          });
+        }
       } catch (err) {
         results.errors.push(`push ${item.id}: ${err}`);
       }

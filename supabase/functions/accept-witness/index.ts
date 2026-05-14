@@ -1,6 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { createAuditEvent } from '../_shared/audit.ts';
-import { sendSMSWithRetry } from '../_shared/notify.ts';
+import { notifyMaker, sendSMSWithRetry } from '../_shared/notify.ts';
 import { witnessAcceptConfirmMessage, makerWitnessAcceptedMessage } from '../_shared/sms-templates.ts';
 import { normalizePhoneE164 } from '../_shared/phone.ts';
 
@@ -121,14 +121,21 @@ Deno.serve(async (req) => {
 
       await createAuditEvent(supabase, vow.id, 'witness_declined', 'witness', null, { witness_name: vow.witness_name });
 
-      // Push notification to owner
-      await supabase.from('push_queue').insert({
-        user_id: vow.user_id,
-        title: `${vow.witness_name} declined`,
-        body: 'Your witness can\'t do it. Tap to switch to a new witness or go solo.',
-        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'witness_declined' },
-        send_after: new Date().toISOString(),
-      });
+      const { data: makerUser } = await supabase
+        .from('users')
+        .select('phone')
+        .eq('id', vow.user_id)
+        .single();
+      await notifyMaker(
+        supabase,
+        vow.user_id,
+        { type: 'maker_witness_declined', vowId: vow.id, witnessName: vow.witness_name || 'Your witness' },
+        {
+          to: makerUser?.phone || '',
+          body: `Unbreakable Vow: ${vow.witness_name || 'Your witness'} declined. Pick someone else or go solo.`,
+        },
+        vow.id,
+      );
 
       return new Response(JSON.stringify({ success: true, action: 'declined' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -217,15 +224,6 @@ Deno.serve(async (req) => {
 
     await createAuditEvent(supabase, vow.id, 'witness_accepted', 'witness', null, { witness_name: vow.witness_name });
 
-    // Push notification to vow owner
-    await supabase.from('push_queue').insert({
-      user_id: vow.user_id,
-      title: `${vow.witness_name} accepted!`,
-      body: 'Your witness is locked in. They\'ll deliver the verdict when the time comes.',
-      data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'witness_accepted' },
-      send_after: now,
-    });
-
     // SMS to witness: confirmation that they're locked in
     if (vow.witness_phone) {
       try {
@@ -249,25 +247,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    // SMS to maker: their witness accepted
+    // Notify maker: push if healthy, otherwise SMS. Never both.
     try {
       const { data: makerUser } = await supabase
         .from('users')
         .select('phone')
         .eq('id', vow.user_id)
         .single();
-      if (makerUser?.phone) {
-        const witnessName = vow.witness_name || 'Your witness';
-        const makerBody = makerWitnessAcceptedMessage(witnessName);
-        const sid = await sendSMSWithRetry(supabase, makerUser.phone, makerBody, 'maker_witness_accepted', vow.id);
-        if (sid) {
-          await supabase.from('sms_log').insert({
-            vow_id: vow.id,
-            message_type: 'maker_witness_accepted',
-            twilio_sid: sid,
-          });
-        }
-      }
+      const witnessName = vow.witness_name || 'Your witness';
+      await notifyMaker(
+        supabase,
+        vow.user_id,
+        { type: 'maker_witness_accepted', vowId: vow.id, witnessName },
+        { to: makerUser?.phone || '', body: makerWitnessAcceptedMessage(witnessName) },
+        vow.id,
+      );
     } catch (smsErr) {
       console.error('[accept-witness] maker notify SMS failed:', smsErr);
     }

@@ -15,7 +15,7 @@ function generateUUID(): string {
 export async function createVow(params: {
   rawInput: string;
   refinedText: string;
-  witnessName: string;
+  witnessName: string | null;
   witnessPhone: string | null;
   stakeAmount: number; // dollars
   consequence: string;
@@ -51,10 +51,47 @@ export async function createVow(params: {
     status: 'draft',
     starts_at: new Date().toISOString(),
     ends_at: endDate.toISOString(),
-  }).select().single();
+  } as any).select().single();
 
   if (error) throw error;
   return data;
+}
+
+export async function claimDraftVow(params: {
+  vowId: string;
+  anonymousToken: string;
+}): Promise<{ success: boolean; error?: string }> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return { success: false, error: 'Not authenticated' };
+
+  try {
+    const { data, error } = await supabase.functions.invoke('claim-vow', {
+      body: {
+        vow_id: params.vowId,
+        anonymous_token: params.anonymousToken,
+      },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+      },
+    }) as { data: any; error: any };
+
+    if (error) {
+      let errorBody: any = null;
+      try { errorBody = await error.context?.json(); } catch {}
+      return {
+        success: false,
+        error: errorBody?.message || errorBody?.error || error.message || 'Could not claim this vow.',
+      };
+    }
+
+    if (data?.error) {
+      return { success: false, error: data.message || data.error || 'Could not claim this vow.' };
+    }
+
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Could not claim this vow.' };
+  }
 }
 
 /** @deprecated Use voidVowV2() which calls the void-vow edge function with proper Stripe handling. */
@@ -122,7 +159,7 @@ export async function switchToSoloWitness(vowId: string): Promise<{ success: boo
     const { error } = await supabase.from('vows').update({
       witness_name: 'Just me',
       witness_phone: null,
-      witness_accepted_at: null,
+      witness_accepted_at: new Date().toISOString(),
       witness_declined: false,
     }).eq('id', vowId);
     if (error) {
@@ -186,48 +223,34 @@ export interface WitnessVowData {
 export async function getVowByWitnessToken(token: string): Promise<{ success: boolean; vow?: WitnessVowData; error?: string }> {
   console.log('[vow-api] getVowByWitnessToken:', token);
   try {
-    const { data, error } = await supabase
-      .from('vows')
-      .select('id, refined_text, witness_name, witness_invite_token, stake_amount, consequence, destination, starts_at, ends_at, witness_accepted_at, witness_declined, status, user_id')
-      .eq('witness_invite_token', token)
-      .single();
+    const { data, error } = await supabase.functions.invoke('get-witness-vow', {
+      body: { token },
+    }) as { data: any; error: any };
 
-    if (error || !data) {
+    if (error || !data?.vow) {
       console.error('[vow-api] getVowByWitnessToken error:', error);
       return { success: false, error: 'Vow not found or already resolved.' };
     }
 
-    let userDisplayName: string | null = null;
-    let makerPhone: string | null = null;
-    try {
-      const { data: userData } = await supabase
-        .from('users')
-        .select('display_name, phone')
-        .eq('id', data.user_id)
-        .single();
-      userDisplayName = userData?.display_name ?? null;
-      makerPhone = userData?.phone ?? null;
-    } catch {
-      console.log('[vow-api] could not fetch user display name');
-    }
+    const vow = data.vow;
 
     return {
       success: true,
       vow: {
-        id: data.id,
-        refined_text: data.refined_text,
-        witness_name: data.witness_name,
-        stake_amount: data.stake_amount,
-        consequence: data.consequence,
-        destination: data.destination,
-        starts_at: data.starts_at,
-        ends_at: data.ends_at,
-        witness_accepted_at: data.witness_accepted_at,
-        witness_declined: data.witness_declined ?? false,
-        status: data.status,
-        user_display_name: userDisplayName,
-        maker_phone: makerPhone,
-        witness_invite_token: data.witness_invite_token,
+        id: vow.id,
+        refined_text: vow.refined_text,
+        witness_name: vow.witness_name,
+        stake_amount: vow.stake_amount,
+        consequence: vow.consequence,
+        destination: vow.destination,
+        starts_at: vow.starts_at,
+        ends_at: vow.ends_at,
+        witness_accepted_at: vow.witness_accepted_at,
+        witness_declined: vow.witness_declined ?? false,
+        status: vow.status,
+        user_display_name: vow.user_display_name ?? null,
+        maker_phone: vow.maker_phone ?? null,
+        witness_invite_token: vow.witness_invite_token,
       },
     };
   } catch (err) {
@@ -522,5 +545,47 @@ export async function extendVowDeadline(vowId: string, hours: number): Promise<{
   } catch (err) {
     console.error('[vow-api] extendVowDeadline exception:', err);
     return { success: false, error: 'Failed to extend deadline.' };
+  }
+}
+
+export async function requestEarlyCompletion(vowId: string): Promise<{
+  success: boolean;
+  alreadySent?: boolean;
+  sent?: boolean;
+  verdictUrl?: string;
+  witnessUrl?: string;
+  error?: string;
+}> {
+  try {
+    const { data, error } = await supabase.functions.invoke('request-early-completion', {
+      body: { vow_id: vowId },
+    }) as { data: any; error: any };
+
+    if (error) {
+      let errorBody: any = null;
+      try { errorBody = await error.context?.json(); } catch {}
+      return {
+        success: false,
+        error: errorBody?.error || error.message || 'Could not ask for an early verdict.',
+        witnessUrl: errorBody?.witness_url,
+      };
+    }
+
+    if (data?.error) {
+      return {
+        success: false,
+        error: data.error,
+        witnessUrl: data.witness_url,
+      };
+    }
+
+    return {
+      success: true,
+      alreadySent: Boolean(data?.already_sent),
+      sent: Boolean(data?.sent),
+      verdictUrl: data?.verdict_url,
+    };
+  } catch (err) {
+    return { success: false, error: err instanceof Error ? err.message : 'Could not ask for an early verdict.' };
   }
 }

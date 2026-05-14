@@ -47,11 +47,14 @@ export { StepProgressHeader } from './StepProgressHeader';
 export { ChromeHeader } from './ChromeHeader';
 export { SuggestionChipScroll } from './SuggestionChipScroll';
 export { BottomSheet } from './BottomSheet';
+export { AccountAvatarButton } from './AccountAvatarButton';
 
 // ─── Selection & input ───
 export { DatePillRow } from './DatePillRow';
 export { CauseTypeCard } from './CauseTypeCard';
+export { CauseSegmentButton } from './CauseSegmentButton';
 export { DestinationChip } from './DestinationChip';
+export { DestinationChoiceCard } from './DestinationChoiceCard';
 export { PhoneInput } from './PhoneInput';
 export { OtpInput } from './OtpInput';
 export { RolePill } from './RolePill';

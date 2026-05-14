@@ -1,5 +1,5 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { sendSMSWithRetry } from '../_shared/notify.ts';
+import { queuePush, sendSMSWithRetry } from '../_shared/notify.ts';
 import { earlyCompletionRequestMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
@@ -150,13 +150,17 @@ Deno.serve(async (req) => {
     });
 
     if (vow.witness_user_id) {
-      await supabase.from('push_queue').insert({
-        user_id: vow.witness_user_id,
-        title: 'Early release requested',
-        body: `${makerName} says the vow is done. Confirm if true.`,
-        data: { vow_id: vow.id, event: 'early_completion_requested', route: `/w/${vow.witness_invite_token}/verdict?early=1` },
-        send_after: new Date().toISOString(),
-      });
+      await queuePush(
+        supabase,
+        vow.witness_user_id,
+        { type: 'witness_verdict_request', vowId: vow.id, token: vow.witness_invite_token, makerName },
+        new Date(),
+        {
+          route: `/w/${vow.witness_invite_token}/verdict?early=1`,
+          dedupeKey: `${vow.witness_user_id}:${vow.id}:early_completion_requested:push`,
+          data: { event: 'early_completion_requested' },
+        },
+      );
     }
 
     return new Response(JSON.stringify({ success: true, sent: !!twilioSid, queued: !twilioSid, verdict_url: verdictUrl }), {

@@ -12,6 +12,11 @@ export default function CreateFlowLayout() {
       <Stack.Screen name="vow" options={{ animation: 'fade' }} />
       <Stack.Screen name="stake" />
       <Stack.Screen name="witness" />
+      <Stack.Screen name="auth" />
+      <Stack.Screen name="otp" />
+      <Stack.Screen name="name" />
+      <Stack.Screen name="payment" />
+      <Stack.Screen name="sealed" />
     </Stack>
   );
 }
