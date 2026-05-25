@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { Platform } from 'react-native';
 
 interface CreatePaymentResult {
   clientSecret: string;
@@ -8,6 +9,65 @@ interface CreatePaymentResult {
 interface SaveCardResult {
   clientSecret: string;
   setupIntentId: string;
+}
+
+type FunctionErrorContext = {
+  json?: () => Promise<unknown>;
+  text?: () => Promise<string>;
+};
+
+function getFunctionErrorContext(error: unknown): FunctionErrorContext | undefined {
+  if (!error || typeof error !== 'object' || !('context' in error)) return undefined;
+  const context = (error as { context?: unknown }).context;
+  return context && typeof context === 'object' ? context as FunctionErrorContext : undefined;
+}
+
+function readErrorMessage(body: unknown): string | undefined {
+  if (!body || typeof body !== 'object') return undefined;
+  const record = body as { error?: unknown; message?: unknown };
+  if (typeof record.error === 'string' && record.error.trim()) return record.error;
+  if (typeof record.message === 'string' && record.message.trim()) return record.message;
+  return undefined;
+}
+
+async function readFunctionErrorDetail(error: unknown, fallback: string, label: string): Promise<string> {
+  const context = getFunctionErrorContext(error);
+  if (!context) return fallback;
+
+  try {
+    if (typeof context.json === 'function') {
+      const body = await context.json();
+      console.error(`[Stripe] ${label} error body:`, JSON.stringify(body));
+      return readErrorMessage(body) || fallback;
+    }
+    if (typeof context.text === 'function') {
+      const text = await context.text();
+      console.error(`[Stripe] ${label} error text:`, text);
+      return text || fallback;
+    }
+  } catch (parseErr) {
+    console.error('[Stripe] could not parse error body:', parseErr);
+  }
+
+  return fallback;
+}
+
+export async function isNativeWalletSupported(): Promise<boolean> {
+  if (Platform.OS !== 'ios' && Platform.OS !== 'android') return false;
+  const nativeWalletsEnabled = process.env.EXPO_PUBLIC_ENABLE_NATIVE_WALLET_PAY === '1'
+    || process.env.EXPO_PUBLIC_ENABLE_NATIVE_WALLET_PAY === 'true';
+  if (!nativeWalletsEnabled) return false;
+
+  try {
+    const { isPlatformPaySupported } = await import('@stripe/stripe-react-native');
+    if (Platform.OS === 'android') {
+      return await isPlatformPaySupported({ googlePay: { testEnv: false } });
+    }
+    return await isPlatformPaySupported();
+  } catch (err) {
+    console.warn('[Stripe] platform wallet support check failed:', err);
+    return false;
+  }
 }
 
 // ── Legacy: PaymentIntent flow (existing vows) ──
@@ -22,20 +82,7 @@ export async function createPaymentIntent(vowId: string, amountCents: number): P
   });
 
   if (res.error) {
-    let detail = res.error.message;
-    try {
-      if (typeof (res.error as any).context?.json === 'function') {
-        const body = await (res.error as any).context.json();
-        console.error('[Stripe] create-payment-intent error body:', JSON.stringify(body));
-        detail = body?.error || body?.message || detail;
-      } else if (typeof (res.error as any).context?.text === 'function') {
-        const text = await (res.error as any).context.text();
-        console.error('[Stripe] create-payment-intent error text:', text);
-        detail = text || detail;
-      }
-    } catch (parseErr) {
-      console.error('[Stripe] could not parse error body:', parseErr);
-    }
+    const detail = await readFunctionErrorDetail(res.error, res.error.message, 'create-payment-intent');
     console.error('[Stripe] create-payment-intent failed:', detail);
     throw new Error(`create-payment-intent failed: ${detail}`);
   }
@@ -55,20 +102,7 @@ export async function saveCard(vowId: string): Promise<SaveCardResult> {
   });
 
   if (res.error) {
-    let detail = res.error.message;
-    try {
-      if (typeof (res.error as any).context?.json === 'function') {
-        const body = await (res.error as any).context.json();
-        console.error('[Stripe] save-card error body:', JSON.stringify(body));
-        detail = body?.error || body?.message || detail;
-      } else if (typeof (res.error as any).context?.text === 'function') {
-        const text = await (res.error as any).context.text();
-        console.error('[Stripe] save-card error text:', text);
-        detail = text || detail;
-      }
-    } catch (parseErr) {
-      console.error('[Stripe] could not parse error body:', parseErr);
-    }
+    const detail = await readFunctionErrorDetail(res.error, res.error.message, 'save-card');
     console.error('[Stripe] save-card failed:', detail);
     throw new Error(`save-card failed: ${detail}`);
   }
@@ -83,24 +117,29 @@ export async function setupPaymentSheetForSetup(clientSecret: string, stakeAmoun
   const displayAmount = stakeAmountCents && stakeAmountCents > 0
     ? (stakeAmountCents / 100).toFixed(2)
     : undefined;
+  const walletSupported = await isNativeWalletSupported();
   const { error } = await initPaymentSheet({
     setupIntentClientSecret: clientSecret, // SetupIntent, not PaymentIntent
     merchantDisplayName: 'Unbreakable Vow',
     style: 'alwaysDark',
-    primaryButtonLabel: 'Save payment method',
-    applePay: {
-      merchantCountryCode: 'US',
-      cartItems: displayAmount
-        ? [{ paymentType: 'Immediate', isPending: true, label: 'If broken', amount: displayAmount }]
-        : undefined,
-    },
-    googlePay: {
-      merchantCountryCode: 'US',
-      currencyCode: 'USD',
-      amount: displayAmount,
-      label: 'If broken',
-      testEnv: false,
-    },
+    primaryButtonLabel: 'Save stake',
+    applePay: Platform.OS === 'ios' && walletSupported
+      ? {
+          merchantCountryCode: 'US',
+          cartItems: displayAmount
+            ? [{ paymentType: 'Immediate', isPending: true, label: 'If broken', amount: displayAmount }]
+            : undefined,
+        }
+      : undefined,
+    googlePay: Platform.OS === 'android' && walletSupported
+      ? {
+          merchantCountryCode: 'US',
+          currencyCode: 'USD',
+          amount: displayAmount,
+          label: 'If broken',
+          testEnv: false,
+        }
+      : undefined,
     defaultBillingDetails: { address: { country: 'US' } },
   });
 
@@ -111,12 +150,17 @@ export async function setupPaymentSheetForSetup(clientSecret: string, stakeAmoun
 
 export async function setupPaymentSheet(clientSecret: string): Promise<void> {
   const { initPaymentSheet } = await import('@stripe/stripe-react-native');
+  const walletSupported = await isNativeWalletSupported();
   const { error } = await initPaymentSheet({
     paymentIntentClientSecret: clientSecret,
     merchantDisplayName: 'Unbreakable Vow',
     style: 'alwaysDark',
-    applePay: { merchantCountryCode: 'US' },
-    googlePay: { merchantCountryCode: 'US', testEnv: false },
+    applePay: Platform.OS === 'ios' && walletSupported
+      ? { merchantCountryCode: 'US' }
+      : undefined,
+    googlePay: Platform.OS === 'android' && walletSupported
+      ? { merchantCountryCode: 'US', testEnv: false }
+      : undefined,
     defaultBillingDetails: { address: { country: 'US' } },
   });
 

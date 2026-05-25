@@ -16,12 +16,18 @@
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "app.unbreakablevow.ios",
+      "entitlements": {
+        "com.apple.developer.in-app-payments": [
+          "merchant.app.unbreakablevow"
+        ]
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleURLTypes": [
           {
             "CFBundleTypeRole": "Editor",
             "CFBundleURLSchemes": [
+              "unbreakablevow",
               "com.googleusercontent.apps.543817344565-b2tg6eonrbglhot5rccd87e8vot4b69p"
             ]
           }
