@@ -13,6 +13,7 @@ The reviewer subagents (Step 6) treat this file as authoritative — any deviati
 | 1 | 2026-04-30 | 06 (Sealed Moment) | sealMark halo via stacked box-shadows | APPROVED | Worked example — RN API limitation (single boxShadow only). Compose via View layers. |
 | 2 | 2026-04-30 | 16 / 16B (Quick Vow) | primary path skips 16B when saved payment method exists | APPROVED | Quick Vow is returning-user-only. `Stake $X ->` launches Apple Pay / PaymentSheet directly; 16B is fallback-only. |
 | 3 | 2026-04-30 | 01 (Vow Only) | Body copy text | APPROVED | Joey directed copy change: "Flake and lose it all. Stake real cash..." → "Stake real cash on your word. Your friend calls it. **Flake, and it goes to charity.**" |
+| 4 | 2026-05-04 | 05 (Payment) | CTA/payment trust copy | APPROVED | Use `Make it real.`, `Authorize your $X stake. No charge now. Only if you break it.`, and CTA `Seal your vow`. Do not use `hold`, `Lock it in`, or custom Apple Pay/card selectors on the app-controlled surface. |
 
 ---
 
@@ -127,3 +128,68 @@ This keeps Quick Vow genuinely quick while preserving 16B for valid edge cases: 
 - [ ] Rejected
 - Decided by Joey on 2026-04-30
 - Notes: Approved as a product-flow deviation from the earlier 16 -> 16B happy path.
+
+---
+
+## Proposal #4 — Screen 05 — Payment copy and Stripe handoff simplification
+
+**Date:** 2026-05-04
+**Screen:** 05 (Payment), plus any paid-vow seal/payment handoff surface.
+**Element:** Headline, support copy, CTA, payment-method presentation.
+**Filed by:** Joey approval after Stripe/payment conversion review.
+
+### What the mock originally specified
+
+The earlier mock used a more explicit payment UI:
+
+```text
+Add payment.
+No charge now. Only if you break it.
+Apple Pay / Card tiles
+Lock it in
+```
+
+### What changes
+
+The app-controlled payment step now uses:
+
+```text
+Make it real.
+Authorize your $X stake. No charge now. Only if you break it.
+Seal your vow
+```
+
+The supporting handoff line may say:
+
+```text
+Apple Pay opens next. Card or Link are available if needed.
+```
+
+Do not describe the SetupIntent as a `hold`. Do not render a custom Apple Pay/Card selector in the native app. Stripe PaymentSheet owns Apple Pay, Link, and card fallback.
+
+### Why the mock path is no longer the best primary path
+
+The user is not choosing a payment method as the job-to-be-done. They are sealing the vow. The payment anxiety is handled in the support line, while the CTA stays emotional and product-native.
+
+Technically, this flow uses Stripe SetupIntent to save/authorize a payment method for a possible later off-session charge. It is not a PaymentIntent hold, so `hold` is inaccurate and anxiety-inducing.
+
+### Why the alternative is better
+
+- Fewer decisions on the final step.
+- More accurate Stripe language.
+- More emotional CTA.
+- Cleaner designer/engineering boundary: app controls the trust surface; Stripe controls secure payment-method entry.
+
+### Implementation notes
+
+- Native `PaymentSheet` primary button should be `Save stake`.
+- App CTA should be `Seal your vow`.
+- Support copy should include `No charge now. Only if you break it.`
+- Handoff note may mention Apple Pay, Card, and Link availability, but must avoid promising Apple Pay will appear on unsupported devices.
+
+### Decision
+
+- [x] Approved
+- [ ] Rejected
+- Decided by Joey on 2026-05-04
+- Notes: Approved as the canonical payment copy/handoff for Project Perfect.

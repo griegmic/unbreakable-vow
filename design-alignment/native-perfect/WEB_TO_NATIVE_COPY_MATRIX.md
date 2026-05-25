@@ -24,7 +24,7 @@ Source: `web/src/app/quick-vow/page.tsx`
 - Receipt: `If broken, $X goes to DESTINATION.`
 - Primary CTA: `Continue`
 - Secondary CTA: `Need help? Guided setup`
-- Footer: `Nothing charges unless you break it.`
+- Footer: `No charge now. Only if you break it.`
 
 Native allowed differences:
 - Contact picker may appear when choosing a judge.
@@ -43,12 +43,13 @@ Source: `web/src/app/seal/page.tsx`
 - Review subtitle: `Once you seal, there's no going back.`
 - Review card label: `I VOW TO`
 - Review meta: `STAKE`, `JUDGE`, `BY`
-- Primary CTA: `Seal this vow`
+- Primary CTA: `Seal your vow`
 - Secondary CTA: `Back`
-- Fine print: `No charge unless you break your vow`
+- Fine print: `No charge now. Only if you break it.`
 
 Native allowed differences:
-- Apple Pay/card sheet copy may explain the native payment surface.
+- Payment handoff uses the approved SetupIntent language: `Authorize your $X stake. No charge now. Only if you break it.`
+- Apple Pay/Card/Link availability belongs inside Stripe PaymentSheet; the app should not render a custom payment-method selector.
 - Expo Go may show a test bypass; TestFlight should not.
 
 ## Post-Seal Celebration
