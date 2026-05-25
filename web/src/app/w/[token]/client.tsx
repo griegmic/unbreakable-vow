@@ -177,7 +177,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
 
   const handleTextMaker = () => {
     const smsBody = vow.status === 'draft'
-      ? "I accepted. Now seal it and make the vow live."
+      ? "I'm in as your witness. Finish sealing it so the vow goes live."
       : justAccepted
         ? "Just accepted your vow. I'm officially watching."
         : getNudgeSms(getElapsed());
@@ -197,7 +197,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       <FlowMeta items={[
         { label: stakeDisplay ? `${stakeDisplay} on the line` : 'Their word', gold: true },
         ...(stakeDisplay && destinationShort ? [{ label: `${destinationShort} if broken` }] : []),
-        { label: quote ? `${verdictWeekday} verdict` : `You call it ${endShort}` },
+        { label: quote ? `${verdictWeekday} verdict` : `Verdict ${endShort}` },
       ]} />
     </FlowCard>
   );
@@ -292,7 +292,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
       );
     }
 
-    if (!justAccepted) {
+    if (!justAccepted && !needsMakerToFinish) {
       return (
         <FlowShell>
           <FlowTop action="Make a vow" onAction={() => { window.location.href = '/quick-vow'; }} />
@@ -326,11 +326,11 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
         <FlowStamp>You&apos;re in</FlowStamp>
         <FlowTitle small center>
           {needsMakerToFinish
-            ? <>{makerFirstName} still needs<br/><span style={{ color: 'var(--uv-gold-bright)' }}>to seal it.</span></>
+            ? <>{makerFirstName} still needs<br/><span style={{ color: 'var(--uv-gold-bright)' }}>to finish.</span></>
             : <>{makerFirstName} knows<br/><span style={{ color: 'var(--uv-gold-bright)' }}>you are watching.</span></>}
         </FlowTitle>
         <FlowSub center>
-          {needsMakerToFinish ? <>You accepted. Now nudge {makerFirstName} to finish sealing it.</> : <>That&apos;s it for now. We&apos;ll text you {verdictWeekday}.<br/><strong style={{ color: 'var(--uv-text)' }}>Tasteful pestering encouraged.</strong></>}
+          {needsMakerToFinish ? <>You said yes. Now {makerFirstName} has to finish sealing the {stakeDisplay || 'vow'} before it goes live.</> : <>That&apos;s it for now. We&apos;ll text you {verdictWeekday}.<br/><strong style={{ color: 'var(--uv-text)' }}>Tasteful pestering encouraged.</strong></>}
         </FlowSub>
         <FlowCard>
           <FlowLabel>You&apos;re watching</FlowLabel>
@@ -342,7 +342,7 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
           <FlowMeter pct={Math.max(12, progress)} />
         </FlowCard>
         <div style={{ flex: 1, minHeight: 34 }} />
-        <FlowCTA tone="green" onClick={handleTextMaker}>{needsMakerToFinish ? `Text ${makerFirstName}: seal it` : `Pester ${makerFirstName} responsibly`}</FlowCTA>
+        <FlowCTA tone="green" onClick={handleTextMaker}>{needsMakerToFinish ? `Nudge ${makerFirstName} to finish` : `Pester ${makerFirstName} responsibly`}</FlowCTA>
         <FlowSecondary onClick={() => { window.location.href = '/quick-vow'; }}>Make your own vow</FlowSecondary>
         {needsWitnessName && !nameSaved && (
           <FlowCard compact>
@@ -384,17 +384,17 @@ export default function WitnessInviteClient({ vow, token, makerName, makerPhone 
     <FlowShell>
       <FlowTop />
       <FlowPill>Witness invite</FlowPill>
-      <FlowTitle>{makerFirstName === 'Your friend' ? 'Your friend needs you.' : `${makerFirstName} needs you.`}</FlowTitle>
+      <FlowTitle>{makerFirstName === 'Your friend' ? 'Your friend picked you.' : `${makerFirstName} picked you.`}</FlowTitle>
       <FlowSub>
         {vow.status === 'draft'
-          ? `This vow starts once ${makerFirstName} seals it. Accept as judge now and they will know you are watching.`
-          : `They put ${stakeDisplay || 'their word'} on a promise. Keep them honest, then call it kept or broken.`}
+          ? `They made a promise and asked you to call it kept or broken. Accept now; when ${verdictWeekday} comes, the verdict takes about eight seconds.`
+          : `They put ${stakeDisplay || 'their word'} on a promise and asked you to call it kept or broken. Accept now; the verdict takes about eight seconds.`}
       </FlowSub>
       <VowSummary />
-      <FlowJob title="Your job" body={`Accept, keep ${makerFirstName} accountable, and we text you ${verdictWeekday} to call it.`} />
+      <FlowJob title="What happens" body={`No account needed. Say yes, we text you ${verdictWeekday}, and you tap kept or broken.`} />
       {error && <ErrorText>{error}</ErrorText>}
       <FlowSpacer />
-      <FlowCTA onClick={handleAccept} disabled={busy}>{busy ? 'Accepting...' : 'Accept as judge'}</FlowCTA>
+      <FlowCTA onClick={handleAccept} disabled={busy}>{busy ? 'Accepting...' : "I'm in - I'll witness"}</FlowCTA>
     </FlowShell>
   );
 }

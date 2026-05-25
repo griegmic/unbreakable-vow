@@ -87,7 +87,7 @@ function renderPage(data: {
           i.className = 'modal-icon kept-icon';
           i.textContent = '✓';
           t.textContent = 'Confirm: Kept';
-          p.textContent = "You're confirming that " + NAME + " kept their vow. Their $" + AMOUNT + " will be refunded.";
+          p.textContent = "You're confirming that " + NAME + " kept their vow. Their $" + AMOUNT + " stake will not be charged.";
           b.className = 'btn kept-btn';
         } else {
           i.className = 'modal-icon broken-icon';
@@ -122,7 +122,7 @@ function renderPage(data: {
               '<div class="badge ' + (isKept ? 'kept-badge' : 'broken-badge') + '">' + (isKept ? 'VOW KEPT' : 'VOW BROKEN') + '</div>' +
               '<h2>Verdict recorded.</h2>' +
               '<p class="subtitle">' + (isKept
-                ? NAME + " kept their word. $" + AMOUNT + " refunded."
+                ? NAME + " kept their word. No stake charged."
                 : NAME + " broke their vow. $" + AMOUNT + " goes to " + DEST + "."
               ) + '</p>' +
               '<p class="thanks">Thanks for being a witness.</p>';

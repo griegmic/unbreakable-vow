@@ -97,7 +97,7 @@ export default function SelfResolvePage() {
         const msg = detail === 'already_judged' ? 'This vow has already been judged.'
           : detail === 'invalid_token' ? 'Could not find this vow.'
           : detail === 'invalid_status' ? 'This vow is not ready for a verdict yet.'
-          : detail === 'refund_failed' ? 'Refund could not be processed right now. Please try again in a moment.'
+          : detail === 'refund_failed' ? 'Payment could not be resolved right now. Please try again in a moment.'
           : typeof detail === 'string' ? detail : 'Verdict submission failed. Please try again.';
         setError(msg);
         busyRef.current = false;
@@ -107,7 +107,7 @@ export default function SelfResolvePage() {
 
       if (fnData?.error) {
         const msg = fnData.error === 'already_judged' ? 'This vow has already been judged.'
-          : fnData.error === 'refund_failed' ? 'Refund could not be processed right now. Please try again in a moment.'
+          : fnData.error === 'refund_failed' ? 'Payment could not be resolved right now. Please try again in a moment.'
           : typeof fnData.error === 'string' ? fnData.error : 'Verdict submission failed. Please try again.';
         setError(msg);
         busyRef.current = false;

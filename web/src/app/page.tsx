@@ -11,6 +11,7 @@ const STARTER_CHIPS = [
   'Gym 3x this week',
   'No alcohol, 2 weeks',
   'Delete TikTok for a week',
+  'Call mom twice this week',
 ];
 
 // ─── Ceremony ───────────────────────────────────────────────────────────────
@@ -342,6 +343,9 @@ export default function HomePage() {
           .uv-home-examples { margin-top: 16px !important; }
           .uv-home-third-example { display: none !important; }
         }
+        @media (min-width: 640px) {
+          .uv-home-shell { max-width: 460px; margin: 0 auto; }
+        }
       `}</style>
       <div className="uv-home-shell">
         <div className="uv-home-main">
@@ -352,10 +356,11 @@ export default function HomePage() {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
           <span style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 15, fontWeight: 600,
+            fontFamily: 'var(--uv-font-sans)', fontSize: 12, fontWeight: 700,
             color: 'var(--uv-text-muted)', fontFeatureSettings: '"tnum"',
+            letterSpacing: '0.04em',
           }}>
-            1 / 5
+            Step 1
           </span>
           <div style={{
             height: 3,
@@ -383,22 +388,23 @@ export default function HomePage() {
       </div>
 
       {/* ─── Brand mark ─── */}
-      <div className="uv-home-brand" style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 24 }}>
+      <div className="uv-home-brand" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, marginBottom: 22 }}>
         <div style={{
-          width: 22, height: 22,
+          width: 23, height: 23,
           border: '1px solid var(--uv-gold)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           transform: 'rotate(45deg)',
           flexShrink: 0,
+          boxShadow: '0 0 24px rgba(214,168,60,0.18)',
         }}>
-          <div style={{ width: 6, height: 6, background: 'var(--uv-gold)' }} />
+          <div style={{ width: 7, height: 7, background: 'var(--uv-gold)', borderRadius: 1 }} />
         </div>
         <span style={{
-          fontFamily: 'var(--uv-font-serif)', fontSize: 15, fontWeight: 500,
-          letterSpacing: '0.01em', color: 'var(--uv-text)',
+          fontFamily: 'var(--uv-font-sans)', fontSize: 11, fontWeight: 800,
+          letterSpacing: '0.28em', color: 'var(--uv-text-muted)',
+          textTransform: 'uppercase',
         }}>
-          Unbreakable{' '}
-          <em style={{ color: 'var(--uv-gold)', fontStyle: 'italic', fontWeight: 400 }}>Vow</em>
+          Unbreakable Vow
         </span>
       </div>
 
@@ -413,8 +419,8 @@ export default function HomePage() {
       <div className="uv-home-subtitle" style={{ marginTop: 18, marginBottom: 26 }}>
         <FrauncesSub>
           <span style={{ maxWidth: 360, display: 'block' }}>
-            <strong style={{ color: 'var(--uv-text)', fontWeight: 500 }}>Flake and lose it all.</strong>{' '}
-            Stake real cash on your word. Your friend judges. No mercy.
+            Put cash behind a promise. A friend verifies it.{' '}
+            <strong style={{ color: 'var(--uv-text)', fontWeight: 800 }}>If you flake, it goes to charity.</strong>
           </span>
         </FrauncesSub>
       </div>
@@ -427,9 +433,11 @@ export default function HomePage() {
           background: 'rgba(31,27,22,0.72)',
           border: '1px solid var(--uv-border-strong)',
           borderRadius: 18,
-          padding: '14px 16px',
-          boxShadow: inputText.trim() ? '0 0 0 1px var(--uv-gold-line), 0 18px 48px rgba(0,0,0,0.2)' : 'none',
-          transition: 'box-shadow 180ms ease, border-color 180ms ease',
+          padding: '16px 18px',
+          boxShadow: inputText.trim()
+            ? '0 0 0 1px var(--uv-gold-line), 0 18px 48px rgba(0,0,0,0.24)'
+            : 'inset 0 1px 0 rgba(244,234,216,0.04)',
+          transition: 'box-shadow 180ms ease, border-color 180ms ease, background 180ms ease',
         }}
       >
         <div style={{
@@ -450,14 +458,16 @@ export default function HomePage() {
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
-          placeholder="Run every morning this week"
+          placeholder="I vow to..."
           style={{
-            fontFamily: 'var(--uv-font-serif)', fontSize: 23, fontWeight: 400,
-            color: 'var(--uv-text)',
+            fontFamily: 'var(--uv-font-serif)', fontSize: 28, fontWeight: 500,
+            color: inputText.trim() ? 'var(--uv-text)' : 'var(--uv-text-muted)',
             background: 'transparent',
             border: 'none',
-            padding: '2px 0 4px', width: '100%', outline: 'none',
-            letterSpacing: '-0.005em',
+            padding: '10px 0 4px', width: '100%', outline: 'none',
+            letterSpacing: '0',
+            lineHeight: 1.15,
+            caretColor: 'var(--uv-gold-bright)',
           }}
         />
       </div>
@@ -470,7 +480,16 @@ export default function HomePage() {
       }}>
         Or start here
       </div>
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', gap: 8 }}>
+      <div style={{
+        display: 'flex',
+        flexWrap: 'nowrap',
+        alignItems: 'flex-start',
+        gap: 8,
+        overflowX: 'auto',
+        marginRight: -22,
+        paddingRight: 22,
+        scrollbarWidth: 'none',
+      }}>
         {STARTER_CHIPS.map((chip, index) => (
           <button
             key={chip}
@@ -482,8 +501,9 @@ export default function HomePage() {
               border: '1px solid var(--uv-border-soft)', borderRadius: 9999,
               padding: '11px 15px', letterSpacing: '-0.005em',
               cursor: 'pointer',
-              maxWidth: '100%',
+              whiteSpace: 'nowrap',
               textAlign: 'left',
+              flex: '0 0 auto',
             }}
           >
             {chip}
@@ -540,11 +560,11 @@ export default function HomePage() {
         </button>
         <div style={{
           textAlign: 'center', fontSize: 11, color: 'var(--uv-text-dim)',
-          marginTop: 14, fontFamily: 'var(--uv-font-sans)',
+          marginTop: 14, fontFamily: 'var(--uv-font-sans)', lineHeight: 1.4,
         }}>
-          <strong style={{ fontWeight: 600, color: 'var(--uv-text)' }}>60 seconds</strong>
+          Amount, friend, and charity come next.
           <span style={{ color: 'var(--uv-text-muted)', margin: '0 6px' }}>&middot;</span>
-          No password
+          <strong style={{ fontWeight: 700, color: 'var(--uv-text)' }}>No charge unless you break it.</strong>
         </div>
         </div>
       </div>

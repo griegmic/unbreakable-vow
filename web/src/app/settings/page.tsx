@@ -208,7 +208,7 @@ function DeleteAccountModal({ open, onClose }: { open: boolean; onClose: () => v
           fontFamily: 'var(--uv-font-serif)', fontSize: 15, fontStyle: 'italic',
           color: 'var(--uv-text-muted)', margin: 0, textAlign: 'center', lineHeight: 1.5,
         }}>
-          Your record will be lost. Vows that are still active will void and refund automatically.
+          Your record will be lost. Vows that are still active will be voided, and no unbroken stake will be charged.
         </p>
 
         <div>

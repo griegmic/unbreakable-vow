@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Mail, ArrowLeft, Phone } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { getOtpSendErrorMessage } from '@/lib/auth-errors';
 
 type Step = 'pick' | 'phone' | 'email' | 'otp' | 'name';
 type OtpChannel = 'phone' | 'email';
@@ -123,11 +124,7 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
     const { error } = await supabase.auth.signInWithOtp({ phone: formattedPhone });
     setBusy(false);
     if (error) {
-      setError(
-        error.message.toLowerCase().includes('rate limit')
-          ? 'Too many attempts. Please wait a minute and try again.'
-          : error.message
-      );
+      setError(getOtpSendErrorMessage(error));
       return;
     }
     setOtpChannel('phone');
@@ -188,8 +185,9 @@ export function AuthModal({ visible, onDismiss, onSuccess }: { visible: boolean;
       : await supabase.auth.signInWithOtp({ email: email.trim() });
     setBusy(false);
     if (error) {
-      setError(
-        error.message.toLowerCase().includes('rate limit')
+      setError(otpChannel === 'phone'
+        ? getOtpSendErrorMessage(error)
+        : error.message.toLowerCase().includes('rate limit')
           ? 'Too many attempts. Please wait a minute and try again.'
           : error.message
       );

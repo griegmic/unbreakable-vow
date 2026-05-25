@@ -1103,7 +1103,7 @@ function VowDetailContent() {
         ? `${cdHrs}h ${cdMin}m left`
         : `${cdMin}m left`;
     const consequenceLine = vow.stake_amount > 0
-      ? `${stakeLabel} on hold${vow.destination ? ` · ${vow.destination} if broken` : ''}`
+      ? `${stakeLabel} if broken${vow.destination ? ` · ${vow.destination}` : ''}`
       : 'No money on the line';
     const activeJudgeName = witnessDisplayName === 'your witness' ? 'Your witness' : witnessDisplayName;
     const judgeLine = isSolo
@@ -1162,7 +1162,7 @@ function VowDetailContent() {
           <FlowLabel>The vow</FlowLabel>
           <FlowVow>{vow.refined_text}</FlowVow>
           <FlowMeta items={[
-            { label: stakeLabel ? `${stakeLabel} on hold` : 'Your word', gold: true },
+            { label: stakeLabel ? `${stakeLabel} stake` : 'Your word', gold: true },
             { label: isSolo ? 'You judge' : vow.witness_accepted_at ? `${activeJudgeName} is watching` : `${witnessDisplayName} pending` },
           ]} />
         </FlowCard>

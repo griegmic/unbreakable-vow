@@ -473,7 +473,7 @@ export default function SentPage() {
         }}>
           {[
             { k: 'THE VOW', v: vowText.length > 30 ? vowText.slice(0, 27) + '...' : vowText || 'Your vow' },
-            { k: 'ON HOLD', v: stakeDollars > 0 ? `$${stakeDollars}` : 'No stake' },
+            { k: 'STAKE', v: stakeDollars > 0 ? `$${stakeDollars}` : 'No stake' },
             { k: 'VERDICT', v: verdictDate },
             { k: 'JUDGE', v: stateB ? 'Waiting for acceptance' : 'Needs the link', pending: true, showDot: true },
           ].map((row, i) => (

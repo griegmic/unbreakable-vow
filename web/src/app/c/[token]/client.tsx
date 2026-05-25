@@ -5,6 +5,7 @@ import { Elements, ExpressCheckoutElement, PaymentElement, useStripe, useElement
 import { loadStripe } from '@stripe/stripe-js';
 import { RitualScreen, RitualCard, FrauncesH1, FrauncesSub, GoldCTA, OutlinedGoldCTA, EyebrowTag, ChoicePill } from '@/components/primitives';
 import { supabase } from '@/lib/supabase';
+import { getOtpSendErrorMessage } from '@/lib/auth-errors';
 import { displayPhone, normalizePhoneE164 } from '@/lib/phone';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
@@ -352,9 +353,7 @@ export default function ChallengeInviteClient({
     const { error: otpError } = await supabase.auth.signInWithOtp({ phone: normalized });
     setPhoneBusy(false);
     if (otpError) {
-      setPhoneError(otpError.message?.toLowerCase().includes('rate')
-        ? 'Too many attempts. Please wait a minute and try again.'
-        : otpError.message || 'Could not send the code. Try again.');
+      setPhoneError(getOtpSendErrorMessage(otpError));
       return;
     }
     setOtp('');

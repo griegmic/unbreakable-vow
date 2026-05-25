@@ -5,11 +5,11 @@ import { VowFlowProvider } from '@/providers/vow-flow';
 
 export const metadata: Metadata = {
   title: 'Unbreakable Vow',
-  description: 'Make a vow. Put money on it. Break it, it goes to charity.',
+  description: 'Make a vow. Put cash behind it. A friend verifies it. If you flake, it goes to charity.',
   metadataBase: new URL('https://unbreakablevow.app'),
   openGraph: {
     title: 'Unbreakable Vow',
-    description: 'Make a vow. Put money on it. Break it, it goes to charity.',
+    description: 'Make a vow. Put cash behind it. A friend verifies it. If you flake, it goes to charity.',
     type: 'website',
     images: [{ url: '/og', width: 1200, height: 630 }],
   },

@@ -69,18 +69,17 @@ export async function GET() {
           Mean it.
         </div>
 
-        {/* Subline */}
         <div
           style={{
             color: '#A49A85',
             fontSize: 22,
             textAlign: 'center',
-            maxWidth: 700,
+            maxWidth: 760,
             lineHeight: 1.4,
             display: 'flex',
           }}
         >
-          One sentence. One witness. One stake. One verdict.
+          Put cash behind a promise. A friend verifies it. If you flake, it goes to charity.
         </div>
       </div>
     ),

@@ -100,7 +100,7 @@ export default function WitnessTerminalClient({ variant, makerName, makerPhone, 
           <FrauncesSub>{makerName} knows you declined. They found someone else, or let the vow go.</FrauncesSub>
         )}
         {variant === 'voided' && (
-          <FrauncesSub>The vow was pulled before the verdict. The stake was returned. Nothing left to judge.</FrauncesSub>
+          <FrauncesSub>The vow was pulled before the verdict. No stake will be charged. Nothing left to judge.</FrauncesSub>
         )}
         {variant === 'expired' && (
           <FrauncesSub>The verdict window closed before a decision was recorded. No outcome was sealed.</FrauncesSub>
@@ -113,7 +113,7 @@ export default function WitnessTerminalClient({ variant, makerName, makerPhone, 
           <VowDocCard
             vow={vow.refined_text}
             stake={stakeDollars}
-            destination={isKept ? `Returned to ${makerName}` : vow.destination}
+            destination={isKept ? 'Untouched' : vow.destination}
             verdictDate={new Date(vow.verdict_at || Date.now())}
             compact
           />

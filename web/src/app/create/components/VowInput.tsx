@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef, useCallback } from 'react';
 import { RitualScreen, GoldCTA } from '@/components/primitives';
-import { analyzeVow, getContextualSuggestions, inferDeadline } from '@/lib/vow-logic';
+import { analyzeVow, inferDeadline } from '@/lib/vow-logic';
 
 interface VowInputProps {
   vowText: string;
@@ -16,8 +16,8 @@ const CHIPS = [
   'Gym 3x this week',
   'No alcohol, 2 weeks',
   'Delete TikTok',
-  'No phone til noon',
-  'Call my mom',
+  'No phone before noon',
+  'Call my mom twice this week',
   '10k steps daily for a week',
 ];
 
@@ -133,8 +133,13 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
     setShowByWhen(true);
   };
 
-  const minDate = new Date().toISOString().split('T')[0];
-  const maxDate = new Date(Date.now() + 90 * 86400000).toISOString().split('T')[0];
+  const [dateBounds] = useState(() => {
+    const now = new Date();
+    return {
+      minDate: now.toISOString().split('T')[0],
+      maxDate: new Date(now.getTime() + 90 * 86400000).toISOString().split('T')[0],
+    };
+  });
 
   return (
     <>
@@ -150,18 +155,20 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
             ))}
           </div>
 
-          {/* Hero — sans for readability */}
+          {/* Hero */}
           <h1 style={{
-            fontFamily: 'var(--uv-font-sans)', fontSize: 28, fontWeight: 600,
-            color: 'var(--uv-text)', margin: 0, lineHeight: 1.15, letterSpacing: '-0.5px',
+            fontFamily: 'var(--uv-font-serif)', fontSize: 34, fontWeight: 500,
+            color: 'var(--uv-text)', margin: 0, lineHeight: 1.06, letterSpacing: '0',
           }}>
-            What&apos;s your vow?
+            Make a vow.
+            <br />
+            <span style={{ fontStyle: 'italic', color: 'var(--uv-gold)' }}>Mean it.</span>
           </h1>
           <p style={{
             fontFamily: 'var(--uv-font-sans)', fontSize: 15,
-            color: 'var(--uv-text-dim)', margin: '8px 0 24px',
+            color: 'var(--uv-text-muted)', margin: '12px 0 24px', lineHeight: 1.45,
           }}>
-            You know the one.
+            Put cash behind a promise. A friend verifies it. If you flake, it goes to charity.
           </p>
 
           {/* Input */}
@@ -170,20 +177,21 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
               type="text"
               value={vowText}
               onChange={e => handleInputChange(e.target.value)}
-              placeholder="I will..."
+              placeholder="I vow to..."
               style={{
                 width: '100%', boxSizing: 'border-box',
-                background: 'var(--uv-bg-input)',
+                background: 'rgba(31,27,22,0.72)',
                 border: `1px solid ${isValid ? 'var(--uv-gold)' : touched && isVague && !isEmpty ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
                 borderRadius: isValid && verdictDate ? '12px 12px 0 0' : 12,
-                padding: '14px 16px',
-                fontFamily: 'var(--uv-font-sans)', fontSize: 16,
+                padding: '16px 18px',
+                fontFamily: 'var(--uv-font-serif)', fontSize: 24,
                 color: 'var(--uv-text)',
                 outline: 'none',
-                transition: 'border-color 150ms',
+                transition: 'border-color 150ms, box-shadow 150ms',
+                boxShadow: isValid ? '0 0 0 1px var(--uv-gold-line)' : 'none',
               }}
             />
-            <style>{`input::placeholder { color: var(--uv-text-invisible); font-style: italic; }`}</style>
+            <style>{`input::placeholder { color: var(--uv-text-muted); font-style: italic; opacity: 0.58; }`}</style>
           </div>
 
           {/* Deadline tag — simple, no jargon */}
@@ -282,7 +290,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
               letterSpacing: '1px', textTransform: 'uppercase' as const,
               color: 'var(--uv-text-faint)', marginBottom: 10,
             }}>
-              {selectedChip ? 'Or try something else' : 'Or start with one of these'}
+              {selectedChip ? 'Or try something else' : 'Or start here'}
             </p>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
               {CHIPS.map(chip => {
@@ -295,7 +303,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
                     style={{
                       background: active ? 'var(--uv-gold-selected-bg)' : 'var(--uv-bg-card)',
                       border: `1px solid ${active ? 'var(--uv-gold)' : 'var(--uv-border-strong)'}`,
-                      borderRadius: 10,
+                      borderRadius: 9999,
                       padding: '12px 14px',
                       minHeight: 44,
                       cursor: 'pointer', textAlign: 'left',
@@ -321,12 +329,18 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
           }}>
             Want to do it all at once?{' '}
             <a href="/quick-vow" style={{ color: 'var(--uv-gold)', textDecoration: 'none', fontWeight: 500 }}>
-              Seal a vow &rarr;
+              Seal one fast &rarr;
             </a>
           </p>
 
           {/* CTA */}
           <GoldCTA label="Next →" onPress={handleContinue} disabled={!canContinue} />
+          <p style={{
+            fontFamily: 'var(--uv-font-sans)', fontSize: 11,
+            color: 'var(--uv-text-dim)', margin: '12px 0 0', textAlign: 'center',
+          }}>
+            Amount, friend, and charity come next.
+          </p>
         </div>
       </RitualScreen>
 
@@ -408,7 +422,7 @@ export function VowInput({ vowText, setVowText, endsAt, setEndsAt, onNext }: Vow
 
               <input ref={dateInputRef} type="date" value={customDate}
                 onChange={e => { setCustomDate(e.target.value); setSelectedDeadline('custom'); if (e.target.value) { setEndsAt(new Date(e.target.value + 'T23:59:00')); setShowByWhen(false); } }}
-                min={minDate} max={maxDate}
+                min={dateBounds.minDate} max={dateBounds.maxDate}
                 style={{ position: 'absolute', opacity: 0, pointerEvents: 'none', width: 0, height: 0 }}
                 tabIndex={-1}
               />

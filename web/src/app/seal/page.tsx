@@ -8,6 +8,7 @@ import { HamburgerMenu } from '@/components/hamburger-menu';
 import { useVowFlow } from '@/providers/vow-flow';
 import { useAuth } from '@/providers/auth-provider';
 import { supabase } from '@/lib/supabase';
+import { getOtpSendErrorMessage } from '@/lib/auth-errors';
 import { hashJudgeTerms, prepareJudgeLink, shareOrCopyJudgeLink, type JudgeLinkTerms } from '@/lib/judge-link';
 import { getVowVerdictDate } from '@/lib/vow-logic';
 
@@ -74,7 +75,7 @@ export default function SealPage() {
   const verdictInfo = getVowVerdictDate(activeVowText, vow.deadlineIso);
 
   const witnessName = isSelfWitness ? 'Just me' : (vow.witnessName || 'Witness');
-  const sealLabel = 'Seal this vow';
+  const sealLabel = 'Seal your vow';
 
   useEffect(() => {
     const isLocal = typeof window !== 'undefined' && (
@@ -784,11 +785,7 @@ export default function SealPage() {
 
     if (otpError) {
       console.warn('Phone OTP failed:', otpError.message);
-      if (otpError.message?.toLowerCase().includes('rate')) {
-        setPhoneError('Too many attempts. Please wait a minute and try again.');
-      } else {
-        setPhoneError(otpError.message || 'Failed to send code. Please try again.');
-      }
+      setPhoneError(getOtpSendErrorMessage(otpError));
       return;
     }
 
@@ -932,9 +929,7 @@ export default function SealPage() {
     const { error } = await supabase.auth.signInWithOtp({ phone: `+1${digits}` });
     setPhoneBusy(false);
     if (error) {
-      setPhoneError(error.message?.toLowerCase().includes('rate')
-        ? 'Too many attempts. Please wait a minute.'
-        : error.message);
+      setPhoneError(getOtpSendErrorMessage(error));
       return;
     }
     startCooldown();
@@ -1466,7 +1461,7 @@ export default function SealPage() {
         {/* Fine print */}
         {vow.stake.amount > 0 && (
           <p style={{ fontSize: 11, textAlign: 'center', color: 'var(--uv-text-dim)', marginTop: 12 }}>
-            No charge unless you break your vow
+            No charge now. Only if you break it.
           </p>
         )}
         <p style={{ fontSize: 10, textAlign: 'center', color: 'var(--uv-text-faint)', marginTop: 8, opacity: 0.8, lineHeight: 1.5 }}>

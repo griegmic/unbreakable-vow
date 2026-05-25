@@ -26,7 +26,7 @@ export default function TermsPage() {
     <div style={{ background: 'var(--bg)', color: 'var(--text)', minHeight: '100dvh', padding: '40px 20px' }}>
       <div style={{ maxWidth: 680, margin: '0 auto' }}>
         <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8 }}>
-          Last updated: April 27, 2026
+          Last updated: May 25, 2026
         </p>
 
         <h1 style={{ fontSize: 32, fontWeight: 800, color: 'var(--gold)', marginBottom: 8 }}>
@@ -64,22 +64,23 @@ export default function TermsPage() {
         <h2 style={heading}>4. Payments &amp; Stakes</h2>
         <p style={paragraph}>
           The App allows users to optionally stake money on their vows. All payment processing is handled
-          by Stripe. By placing a stake, you expressly authorize the following:
+          by Stripe. A stake is a symbolic accountability commitment. When you place a stake, you authorize
+          us and Stripe to save your payment method and to charge the stated stake only if the vow is marked broken.
         </p>
         <ul style={list}>
           <li style={{ marginBottom: 8 }}>
-            <strong style={{ color: 'var(--text)' }}>Vow kept:</strong> If your witness confirms the vow was fulfilled, your stake is refunded in full.
+            <strong style={{ color: 'var(--text)' }}>Vow kept:</strong> If your witness confirms the vow was fulfilled, no stake is charged.
           </li>
           <li style={{ marginBottom: 8 }}>
-            <strong style={{ color: 'var(--text)' }}>Vow broken:</strong> If your witness confirms the vow was broken, your stake is captured and will not be returned.
+            <strong style={{ color: 'var(--text)' }}>Vow broken:</strong> If your witness confirms the vow was broken, your saved payment method may be charged for the stated stake.
           </li>
           <li style={{ marginBottom: 8 }}>
-            You authorize The Rave Technologies and Stripe to process the charge at the time of staking
-            and to capture or refund the payment based on the outcome of the vow.
+            You authorize The Rave Technologies and Stripe to process that future charge based on the
+            outcome of the vow.
           </li>
         </ul>
         <p style={paragraph}>
-          All stakes are final once a verdict is rendered. Disputes regarding payment should be directed
+          All charged stakes are final once a broken verdict is rendered. Disputes regarding payment should be directed
           to joe@therave.co.
         </p>
 
