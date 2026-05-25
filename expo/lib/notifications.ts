@@ -4,6 +4,8 @@ import * as Notifications from 'expo-notifications';
 
 import { supabase } from './supabase';
 
+export type PushPermissionStatus = 'unknown' | 'granted' | 'denied' | 'undetermined';
+
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -43,7 +45,15 @@ export async function registerForPushNotifications(): Promise<string | null> {
   return tokenData.data;
 }
 
-export async function savePushPermissionStatus(status: 'unknown' | 'granted' | 'denied' | 'undetermined'): Promise<void> {
+export async function getPushPermissionStatus(): Promise<PushPermissionStatus> {
+  if (!Device.isDevice) return 'denied';
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status === 'granted') return 'granted';
+  if (status === 'denied') return 'denied';
+  return 'undetermined';
+}
+
+export async function savePushPermissionStatus(status: PushPermissionStatus): Promise<void> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return;
 

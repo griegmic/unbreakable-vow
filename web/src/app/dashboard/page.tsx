@@ -333,8 +333,7 @@ export default function DashboardPage() {
 
   // Separate witnessing vows into urgent (Needs You Now) and regular
   const urgentWitnessing = witnessingVows.filter(v =>
-    v.status === 'awaiting_verdict' && v.ends_at &&
-    (Date.now() - new Date(v.ends_at).getTime()) < 24 * 3600000
+    v.status === 'awaiting_verdict'
   );
   const regularWitnessing = witnessingVows.filter(v =>
     !urgentWitnessing.some(u => u.id === v.id)
@@ -450,7 +449,7 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {activeVows.map(vow => {
                 const stakeDollars = Math.round(vow.stake_amount / 100);
-                const isAwaitingWitness = vow.status === 'sealed' && !vow.witness_accepted_at;
+                const isAwaitingWitness = ['active', 'sealed'].includes(vow.status) && !vow.witness_accepted_at && vow.witness_name !== 'Just me' && Boolean(vow.witness_invite_token);
                 const isAwaitingVerdict = vow.status === 'awaiting_verdict';
                 const daysLeft = vow.ends_at ? Math.ceil((new Date(vow.ends_at).getTime() - Date.now()) / 86400000) : null;
                 const totalDays = (vow.starts_at && vow.ends_at)

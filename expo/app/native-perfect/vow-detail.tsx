@@ -2,8 +2,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Linking, Platform, Share, StyleSheet, Text, View } from 'react-native';
 
+import { NotificationOptInCard } from '@/components/notification-opt-in-card';
 import { ActionCard, HeroTitle, NativePerfectScreen } from '@/components/native-perfect/ScreenScaffold';
 import { GoldCTA, QuietPill } from '@/components/primitives';
+import { channelLabel, getNotificationPlan } from '@/lib/notification-plan';
 import { getVowDetail, requestEarlyCompletion, resendWitnessInvite, type VowRow } from '@/lib/vow-api';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { getWitnessUrl } from '@/lib/witness-url';
@@ -51,6 +53,8 @@ export default function NativePerfectVowDetail() {
   const kept = vow.status === 'kept';
   const broken = vow.status === 'broken';
   const live = vow.status === 'active' && (Boolean(vow.witness_accepted_at) || solo);
+  const witnessAccepted = Boolean(vow.witness_accepted_at) || solo || vow.vow_type === 'challenge';
+  const alertPlan = getNotificationPlan(vow);
 
   return (
     <NativePerfectScreen backTo="/native-perfect/dashboard">
@@ -58,7 +62,7 @@ export default function NativePerfectVowDetail() {
         kicker={waiting ? 'One tap away' : due ? 'Verdict due' : kept ? 'Kept' : broken ? 'Broken' : 'Vow live'}
         title={waiting ? `Waiting for ${vow.witness_name || 'your witness'}.` : due ? 'Time is up.' : kept ? 'You kept it.' : broken ? 'You broke it.' : 'Keep'}
         accent={live ? 'going.' : undefined}
-        body={waiting ? 'Your vow starts when your witness accepts.' : due ? `${solo ? 'You' : vow.witness_name || 'Your witness'} decides if you kept your word.` : kept ? 'The stake stays put. Receipt earned.' : broken ? `${money(vow)} goes to ${vow.destination}.` : solo ? 'You are calling this one yourself.' : `${vow.witness_name || 'Your witness'} decides if you kept your word.`}
+        body={waiting ? 'Your vow is sealed. Acceptance locks in your witness.' : due ? (witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} decides if you kept your word.` : `${vow.witness_name || 'Your witness'} never accepted, so you can make the call.`) : kept ? 'The stake stays put. Receipt earned.' : broken ? `${money(vow)} goes to ${vow.destination}.` : solo ? 'You are calling this one yourself.' : `${vow.witness_name || 'Your witness'} decides if you kept your word.`}
       />
 
       <ActionCard
@@ -68,10 +72,26 @@ export default function NativePerfectVowDetail() {
         tone={kept ? 'green' : broken ? 'red' : waiting ? 'orange' : 'gold'}
       />
 
+      {!kept && !broken ? <NotificationOptInCard vowId={vow.id} compact /> : null}
+
+      <ActionCard meta="Alert plan" title="This vow lives here now." body="Every actor gets the next useful nudge, not a flood.">
+        <View style={styles.planList}>
+          {alertPlan.map(item => (
+            <View key={`${item.label}-${item.body}`} style={styles.planRow}>
+              <View style={styles.planTop}>
+                <Text style={styles.planLabel}>{item.label}</Text>
+                <Text style={styles.planChannel}>{channelLabel(item.channel)}</Text>
+              </View>
+              <Text style={styles.planBody}>{item.body}</Text>
+            </View>
+          ))}
+        </View>
+      </ActionCard>
+
       {waiting ? (
         <ActionCard
           title="Send the invite."
-          body={`${vow.witness_name || 'Your witness'} accepts, then the vow starts.`}
+          body={`${vow.witness_name || 'Your witness'} accepts, then they own the verdict with you.`}
           tone="orange"
         >
           <GoldCTA
@@ -105,15 +125,19 @@ export default function NativePerfectVowDetail() {
       ) : null}
 
       {due ? (
-        <ActionCard title="Waiting on the verdict." body={`${vow.witness_name || 'Your witness'} has the final say.`} tone="orange">
-          <QuietPill
-            label={`Nudge ${vow.witness_name || 'witness'} to decide`}
-            onPress={async () => {
-              setNudgeText('Sending...');
-              const result = await requestEarlyCompletion(vow.id);
-              setNudgeText(result.success ? 'Nudge sent' : 'Try again');
-            }}
-          />
+        <ActionCard title={witnessAccepted ? 'Waiting on the verdict.' : 'Make the call.'} body={witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} has the final say.` : `${vow.witness_name || 'Your witness'} never accepted. This is back in your hands.`} tone="orange">
+          {witnessAccepted ? (
+            <QuietPill
+              label={`Nudge ${vow.witness_name || 'witness'} to decide`}
+              onPress={async () => {
+                setNudgeText('Sending...');
+                const result = await requestEarlyCompletion(vow.id);
+                setNudgeText(result.success ? 'Nudge sent' : 'Try again');
+              }}
+            />
+          ) : (
+            <GoldCTA label="Deliver your verdict" onPress={() => router.push(`/self-resolve?vowId=${vow.id}` as never)} />
+          )}
         </ActionCard>
       ) : null}
 
@@ -172,5 +196,39 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     marginTop: 14,
+  },
+  planList: {
+    gap: 12,
+    marginTop: 14,
+  },
+  planRow: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(244,234,216,0.1)',
+    paddingTop: 12,
+  },
+  planTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 4,
+  },
+  planLabel: {
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 12,
+    fontWeight: '800',
+    letterSpacing: 1.4,
+    color: uvColors.goldBright,
+    textTransform: 'uppercase',
+  },
+  planChannel: {
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 12,
+    color: uvColors.textNote,
+  },
+  planBody: {
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 14,
+    lineHeight: 19,
+    color: uvColors.textMuted,
   },
 });

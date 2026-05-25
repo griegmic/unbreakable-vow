@@ -1,6 +1,13 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
-import { queuePush, sendSMSWithRetry } from '../_shared/notify.ts';
-import { sealMessage, challengeMessage, makerSealConfirmMessage } from '../_shared/sms-templates.ts';
+import { notifyMaker, queuePush, sendSMSWithRetry } from '../_shared/notify.ts';
+import {
+  sealMessage,
+  challengeMessage,
+  makerSealConfirmMessage,
+  castSentMessage,
+  makerWitnessInviteFailedMessage,
+  castInviteFailedMessage,
+} from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
@@ -222,9 +229,9 @@ Deno.serve(async (req) => {
               message_type: 'challenge_invite',
               twilio_sid: twilioSid,
             });
+            smsSent = true;
+            break;
           }
-          smsSent = true;
-          break;
         } catch (smsErr) {
           console.error(`[seal-vow] Challenge SMS attempt ${attempt + 1} failed:`, smsErr);
         }
@@ -232,13 +239,15 @@ Deno.serve(async (req) => {
 
       if (!smsSent) {
         await supabase.from('vows').update({ sms_failed: true }).eq('id', vow_id);
-        await supabase.from('push_queue').insert({
-          user_id: user.id,
-          title: 'Challenge text failed',
-          body: `We couldn't text the challenge target. Share the link manually.`,
-          data: { route: `/vow-detail?vowId=${vow_id}`, vow_id, event: 'sms_failed' },
-          send_after: now,
-        });
+        const { data: makerUser } = await supabase.from('users').select('phone').eq('id', user.id).single();
+        const targetName = vow.target_phone ? `Friend ${String(vow.target_phone).slice(-4)}` : 'them';
+        await notifyMaker(
+          supabase,
+          user.id,
+          { type: 'maker_cast_invite_failed', vowId: vow.id, targetName },
+          { to: makerUser?.phone || '', body: castInviteFailedMessage(targetName) },
+          vow.id,
+        );
       }
 
       await createAuditEvent(supabase, vow.id, 'challenge_sent', 'maker', user.id);
@@ -258,9 +267,9 @@ Deno.serve(async (req) => {
               message_type: 'seal',
               twilio_sid: twilioSid,
             });
+            smsSent = true;
+            break;
           }
-          smsSent = true;
-          break;
         } catch (smsErr) {
           console.error(`[seal-vow] SMS attempt ${attempt + 1} failed:`, smsErr);
         }
@@ -268,13 +277,15 @@ Deno.serve(async (req) => {
 
       if (!smsSent) {
         await supabase.from('vows').update({ sms_failed: true }).eq('id', vow_id);
-        await supabase.from('push_queue').insert({
-          user_id: user.id,
-          title: 'Witness text failed',
-          body: `We couldn't text ${vow.witness_name}. Share the link manually.`,
-          data: { route: `/vow-detail?vowId=${vow_id}`, vow_id, event: 'sms_failed' },
-          send_after: now,
-        });
+        const { data: makerUser } = await supabase.from('users').select('phone').eq('id', user.id).single();
+        const witnessName = vow.witness_name || 'your witness';
+        await notifyMaker(
+          supabase,
+          user.id,
+          { type: 'maker_witness_invite_failed', vowId: vow.id, witnessName },
+          { to: makerUser?.phone || '', body: makerWitnessInviteFailedMessage(witnessName) },
+          vow.id,
+        );
       }
 
       await createAuditEvent(supabase, vow.id, 'witness_invited', 'system', null);
@@ -300,27 +311,30 @@ Deno.serve(async (req) => {
       }
     }
 
-    // SMS to maker confirming vow is sealed only when push is not involved.
-    // Native/web already shows the seal ceremony, so this is a quiet fallback receipt.
+    // Maker receipt: anchor the vow/dare after the seal screen disappears.
+    // notifyMaker keeps the channel single: healthy push OR SMS fallback, never both.
     try {
       const { data: makerUser } = await supabase
         .from('users')
-        .select('phone, push_token')
+        .select('phone')
         .eq('id', user.id)
         .single();
-      if (makerUser?.phone && !makerUser?.push_token) {
-        const sealConfirmBody = makerSealConfirmMessage(amountDollars);
-        const sid = await sendSMSWithRetry(supabase, makerUser.phone, sealConfirmBody, 'maker_seal_confirm', vow_id);
-        if (sid) {
-          await supabase.from('sms_log').insert({
-            vow_id,
-            message_type: 'maker_seal_confirm',
-            twilio_sid: sid,
-          });
-        }
-      }
+      const isChallenge = vow.vow_type === 'challenge';
+      const targetName = vow.target_phone ? `Friend ${String(vow.target_phone).slice(-4)}` : 'them';
+      await notifyMaker(
+        supabase,
+        user.id,
+        isChallenge
+          ? { type: 'maker_cast_sent', vowId: vow.id, targetName }
+          : { type: 'maker_vow_sealed', vowId: vow.id },
+        {
+          to: makerUser?.phone || '',
+          body: isChallenge ? castSentMessage(targetName) : makerSealConfirmMessage(amountDollars),
+        },
+        vow.id,
+      );
     } catch (smsErr) {
-      console.error('[seal-vow] maker seal confirm SMS failed:', smsErr);
+      console.error('[seal-vow] maker receipt notification failed:', smsErr);
       // Non-critical — don't block the seal response
     }
 

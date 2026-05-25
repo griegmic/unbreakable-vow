@@ -9,6 +9,7 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Linking, Platform, Share, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { NotificationOptInCard } from '@/components/notification-opt-in-card';
 import { ChromeHeader, GoldCTA, QuietPill, WaitCard } from '@/components/primitives';
 import { hapticPrimary, hapticSecondary } from '@/lib/haptics';
 import { uvColors, uvFonts, uvSpacing } from '@/lib/uv-tokens';
@@ -154,6 +155,8 @@ export default function WaitingWitnessScreen() {
             <QuietPill label="Copy link" onPress={copyLink} />
           </View>
         </WaitCard>
+
+        <NotificationOptInCard vowId={vowId} compact />
 
         <QuietPill label="Judge it myself instead" onPress={judgeMyself} />
 
