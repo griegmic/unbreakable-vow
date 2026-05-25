@@ -68,9 +68,9 @@ function formatDeadline(iso: string): string {
 function buildShareText(terms: ReturnType<typeof stableTerms>, witnessUrl: string): string {
   const amount = Math.round(terms.stake_amount_cents / 100);
   const stakeLine = amount > 0
-    ? `$${amount} on the line for ${terms.destination}`
-    : `Accountability on the line`;
-  return `I just made an Unbreakable Vow: "${terms.refined_text}" — ${stakeLine}. Verdict ${formatDeadline(terms.ends_at)}. Will you be my judge? ${witnessUrl}`;
+    ? `$${amount} on the line if I blow it`
+    : `my word on the line`;
+  return `I made a vow: "${terms.refined_text}" — ${stakeLine}. I picked you to call it kept or broken. No account needed; the verdict takes about eight seconds. Verdict ${formatDeadline(terms.ends_at)}: ${witnessUrl}`;
 }
 
 Deno.serve(async (req) => {
@@ -79,12 +79,13 @@ Deno.serve(async (req) => {
 
   try {
     const authHeader = req.headers.get('Authorization');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     // Support both authenticated and anonymous drafts.
     // Anonymous drafts use an anonymous_token for later claim-vow ownership transfer.
     let userId: string | null = null;
-    if (authHeader) {
+    if (authHeader && authHeader.replace('Bearer ', '') !== anonKey) {
       const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
       if (!authError && user) userId = user.id;
     }
@@ -119,7 +120,7 @@ Deno.serve(async (req) => {
     });
     const termsHash = await sha256(terms);
     const now = new Date().toISOString();
-    const witnessName = cleanString(body.witness_name, 'Your witness');
+    const witnessName = cleanString(body.witness_name) || null;
     const witnessPhone = normalizePhone(body.witness_phone);
 
     let sourceDraft: {

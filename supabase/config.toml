@@ -377,6 +377,9 @@ verify_jwt = false
 [functions.accept-witness]
 verify_jwt = false
 
+[functions.claim-vow]
+verify_jwt = false
+
 [functions.create-payment-intent]
 verify_jwt = false
 
@@ -384,6 +387,12 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.delete-account]
+verify_jwt = false
+
+[functions.get-witness-vow]
+verify_jwt = false
+
+[functions.prepare-judge-link]
 verify_jwt = false
 
 [functions.save-card]
