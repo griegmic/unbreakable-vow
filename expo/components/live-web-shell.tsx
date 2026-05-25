@@ -1,5 +1,5 @@
 import * as Haptics from 'expo-haptics';
-import { Stack, router } from 'expo-router';
+import { Redirect, Stack, router } from 'expo-router';
 import { ArrowLeft, RotateCw } from 'lucide-react-native';
 import React, { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { WebView, type WebViewNavigation } from 'react-native-webview';
 
 import { palette } from '@/constants/unbreakable';
+import { USE_NATIVE_PERFECT } from '@/lib/native-flags';
 
 const BASE_URL = 'https://www.unbreakablevow.app';
 
@@ -22,12 +23,27 @@ function resolveUrl(path?: string) {
   return `${BASE_URL}${normalized}${joiner}app=1`;
 }
 
+function nativePerfectRedirectFor(path?: string): string | null {
+  if (!USE_NATIVE_PERFECT) return null;
+  const normalized = (path || '/quick-vow').startsWith('/') ? (path || '/quick-vow') : `/${path}`;
+  if (normalized === '/' || normalized.startsWith('/quick-vow')) return '/native-perfect/quick-vow';
+  if (normalized.startsWith('/create') || normalized.startsWith('/guided') || normalized.startsWith('/refine')) {
+    return '/native-perfect/create/vow';
+  }
+  if (normalized.startsWith('/stake')) return '/native-perfect/create/stake';
+  if (normalized.startsWith('/witness')) return '/native-perfect/create/witness';
+  if (normalized.startsWith('/seal')) return '/native-perfect/create/payment';
+  if (normalized.startsWith('/dashboard')) return '/native-perfect/dashboard';
+  return null;
+}
+
 export function LiveWebShell({ path = '/quick-vow' }: LiveWebShellProps) {
   const insets = useSafeAreaInsets();
   const webRef = useRef<WebView>(null);
   const [canGoBack, setCanGoBack] = useState(false);
   const [loading, setLoading] = useState(true);
   const initialUrl = useMemo(() => resolveUrl(path), [path]);
+  const nativeRedirect = useMemo(() => nativePerfectRedirectFor(path), [path]);
 
   const handleNavigation = (navState: WebViewNavigation) => {
     setCanGoBack(navState.canGoBack);
@@ -39,13 +55,17 @@ export function LiveWebShell({ path = '/quick-vow' }: LiveWebShellProps) {
       webRef.current?.goBack();
       return;
     }
-    router.replace('/quick-vow');
+    router.replace(USE_NATIVE_PERFECT ? '/native-perfect/quick-vow' : '/quick-vow');
   };
 
   const reload = () => {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     webRef.current?.reload();
   };
+
+  if (nativeRedirect) {
+    return <Redirect href={nativeRedirect as never} />;
+  }
 
   return (
     <View style={[styles.root, { paddingTop: Math.max(insets.top, 8) }]}>
