@@ -29,11 +29,11 @@ export function SuggestionChipScroll({ chips, onSelect }: SuggestionChipScrollPr
               pressed && styles.chipPressed,
             ]}
           >
-            <Text style={styles.chipText}>{chip}</Text>
+            <Text style={styles.chipText} numberOfLines={1}>{chip}</Text>
           </Pressable>
         ))}
         {/* Extra right padding so last chip doesn't hide under fade */}
-        <View style={{ width: 52 }} />
+        <View style={{ width: 44 }} />
       </ScrollView>
 
       {/* Right fade gradient overlay */}
@@ -46,7 +46,9 @@ export function SuggestionChipScroll({ chips, onSelect }: SuggestionChipScrollPr
       />
 
       {/* Chevron indicator */}
-      <View style={styles.chevron} pointerEvents="none" />
+      <View style={styles.chevronCircle} pointerEvents="none">
+        <View style={styles.chevron} />
+      </View>
     </View>
   );
 }
@@ -61,14 +63,16 @@ const styles = StyleSheet.create({
     paddingRight: 0,
   },
   chip: {
-    height: 42,
-    paddingHorizontal: 15,
+    height: 44,
+    paddingHorizontal: 17,
     borderRadius: uvRadius.pill,
     borderWidth: 1,
     borderColor: 'rgba(244,234,216,0.15)',
     backgroundColor: 'rgba(244,234,216,0.035)',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'flex-start',
+    maxWidth: 280,
   },
   chipPressed: {
     backgroundColor: uvColors.bgSelected,
@@ -76,9 +80,9 @@ const styles = StyleSheet.create({
   },
   chipText: {
     fontFamily: uvFonts.sansSemibold,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#c1b7a5',
+    color: '#d0c6b3',
   },
   fade: {
     position: 'absolute',
@@ -87,12 +91,22 @@ const styles = StyleSheet.create({
     bottom: 0,
     width: 58,
   },
-  chevron: {
+  chevronCircle: {
     position: 'absolute',
-    right: 2,
-    top: 16,
-    width: 18,
-    height: 18,
+    right: 5,
+    top: 2,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(15,13,10,0.72)',
+    borderWidth: 1,
+    borderColor: 'rgba(237,196,101,0.14)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  chevron: {
+    width: 13,
+    height: 13,
     borderTopWidth: 2,
     borderRightWidth: 2,
     borderColor: 'rgba(237,196,101,0.72)',

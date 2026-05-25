@@ -34,13 +34,12 @@ import { useAuth } from '@/providers/auth-provider';
 const SUGGESTION_CHIPS = [
   'Gym 3x this week',
   'No alcohol for 2 weeks',
+  'Delete TikTok for 7 days',
+  'Call mom twice this week',
   '10k steps a day for 2 weeks',
   'Wake up before 7am every weekday',
-  'Delete TikTok for 7 days',
   'No takeout this week',
   'Read 10 pages every night this week',
-  'Meditate 10 min every morning for 14 days',
-  'Call mom twice this week',
 ];
 
 export default function VowScreen() {
@@ -75,14 +74,6 @@ export default function VowScreen() {
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
-      {/* Subtle gold radial gradient at top-right */}
-      <LinearGradient
-        colors={['rgba(167,119,30,0.16)', 'transparent']}
-        start={{ x: 0.82, y: 0 }}
-        end={{ x: 0.48, y: 0.34 }}
-        style={StyleSheet.absoluteFillObject}
-        pointerEvents="none"
-      />
       {/* Vertical gradient overlay */}
       <LinearGradient
         colors={[uvColors.bgCard, uvColors.bgGradMid, uvColors.bgGradDeep]}
@@ -131,14 +122,14 @@ export default function VowScreen() {
 
           {/* Copy */}
           <Text style={styles.copy}>
-            {'Stake real cash on your word. Your friend calls it. '}
-            <Text style={styles.copyBold}>Flake, and it goes to charity.</Text>
+            {'Put cash behind a promise. A friend verifies it. '}
+            <Text style={styles.copyBold}>If you flake, it goes to charity.</Text>
           </Text>
 
           {/* Vow input card */}
           <VowInputCard
             kicker="I Vow To"
-            placeholder="Run every morning this week"
+            placeholder="I vow to..."
             value={rawInput}
             onChangeText={setRawInput}
           />
@@ -159,6 +150,9 @@ export default function VowScreen() {
               onPress={handleNext}
               disabled={!isNextEnabled}
             />
+            <Text style={styles.trustLine}>
+              Amount, friend, and charity come next. No charge unless you break it.
+            </Text>
           </View>
 
           {/* Safe area bottom spacer */}
@@ -182,30 +176,30 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   brandWrap: {
-    marginTop: -14,
+    marginTop: -10,
     marginBottom: 22,
   },
   h1: {
     fontFamily: uvFonts.serifSemibold,
-    fontSize: 61,
-    lineHeight: 61 * 0.98,
+    fontSize: 56,
+    lineHeight: 56 * 0.98,
     color: uvColors.text,
   },
   h1GoldItalic: {
     fontFamily: uvFonts.serifItalic,
-    fontSize: 61,
-    lineHeight: 61 * 0.98,
+    fontSize: 56,
+    lineHeight: 56 * 0.98,
     color: uvColors.gold,
     fontStyle: 'italic',
   },
   copy: {
     fontFamily: uvFonts.sansSemibold,
     fontWeight: '600',
-    fontSize: 15,
-    lineHeight: 15 * 1.38,
+    fontSize: 16,
+    lineHeight: 16 * 1.4,
     color: uvColors.textCopy,
-    marginTop: 22,
-    marginBottom: 30,
+    marginTop: 20,
+    marginBottom: 28,
     maxWidth: 349,
   },
   copyBold: {
@@ -221,12 +215,22 @@ const styles = StyleSheet.create({
     letterSpacing: 12 * 0.34,
     textTransform: 'uppercase',
     color: uvColors.textKicker,
-    marginTop: 28,
+    marginTop: 26,
     marginBottom: 12,
   },
   bottomCta: {
     marginTop: 24,
     marginBottom: 30,
     bottom: 0,
+  },
+  trustLine: {
+    fontFamily: uvFonts.sansSemibold,
+    fontWeight: '600',
+    fontSize: 11,
+    lineHeight: 15,
+    color: uvColors.textDim,
+    textAlign: 'center',
+    marginTop: 12,
+    paddingHorizontal: 14,
   },
 });

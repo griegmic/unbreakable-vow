@@ -9,7 +9,12 @@ interface BrandWordmarkProps {
 export function BrandWordmark({ variant }: BrandWordmarkProps) {
   if (variant === 'tinybrand') {
     return (
-      <Text style={styles.tinybrand}>UNBREAKABLE VOW</Text>
+      <View style={styles.tinybrandRow}>
+        <View style={styles.tinyMark}>
+          <View style={styles.tinyDot} />
+        </View>
+        <Text style={styles.tinybrand}>UNBREAKABLE VOW</Text>
+      </View>
     );
   }
 
@@ -28,14 +33,35 @@ export function BrandWordmark({ variant }: BrandWordmarkProps) {
 
 const styles = StyleSheet.create({
   // tinybrand
+  tinybrandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+  },
+  tinyMark: {
+    width: 20,
+    height: 20,
+    borderWidth: 1,
+    borderColor: uvColors.gold,
+    transform: [{ rotate: '45deg' }],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tinyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 1,
+    backgroundColor: uvColors.gold,
+  },
   tinybrand: {
     fontFamily: uvFonts.sansSemibold,
     textAlign: 'center',
     textTransform: 'uppercase',
-    letterSpacing: 10 * 0.34,
-    fontSize: 10,
+    letterSpacing: 11 * 0.28,
+    fontSize: 11,
     fontWeight: '800',
-    color: uvColors.textDim,
+    color: uvColors.textMuted,
   },
 
   // qvBrand

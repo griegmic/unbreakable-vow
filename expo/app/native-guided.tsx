@@ -209,10 +209,10 @@ export default function NativeGuidedScreen() {
                 style={({ pressed }) => [styles.cta, !canContinue && styles.disabled, pressed && canContinue && styles.pressed]}
               >
                 <LinearGradient colors={canContinue ? [uvColors.goldBright, uvColors.gold, uvColors.goldDeep] : ['#2b3039', '#252a32']} style={styles.ctaGradient}>
-                  <Text style={[styles.ctaText, !canContinue && styles.disabledText]}>{step === 'judge' ? `Seal this vow - $${stake}` : 'Next'}</Text>
+                  <Text style={[styles.ctaText, !canContinue && styles.disabledText]}>{step === 'judge' ? 'Seal your vow' : 'Next'}</Text>
                 </LinearGradient>
               </Pressable>
-              <Text style={styles.footerNote}>Nothing charges unless you break it.</Text>
+              <Text style={styles.footerNote}>No charge now. Only if you break it.</Text>
             </View>
           ) : null}
         </SafeAreaView>

@@ -11,6 +11,8 @@ interface WitnessJudgeCardProps {
   onTap?: () => void;
   onChange?: () => void;
   onAskNow?: () => void;
+  showChooseContactCta?: boolean;
+  ctaLabel?: string;
 }
 
 export function WitnessJudgeCard({
@@ -20,6 +22,8 @@ export function WitnessJudgeCard({
   onTap,
   onChange,
   onAskNow,
+  showChooseContactCta = false,
+  ctaLabel = 'Choose contact \u2192',
 }: WitnessJudgeCardProps) {
   if (variant === 'empty') {
     return (
@@ -28,16 +32,30 @@ export function WitnessJudgeCard({
           hapticSecondary();
           onTap?.();
         }}
-        style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+        style={({ pressed }) => [
+          styles.card,
+          showChooseContactCta && styles.cardWithCta,
+          pressed && styles.pressed,
+        ]}
       >
-        <View style={styles.avatarEmpty}>
-          <Text style={styles.plusIcon}>+</Text>
+        <View style={showChooseContactCta ? styles.ctaTopRow : styles.defaultRow}>
+          <View style={[styles.avatarEmpty, showChooseContactCta && styles.avatarEmptyStrong]}>
+            <Text style={[styles.plusIcon, showChooseContactCta && styles.plusIconStrong]}>+</Text>
+          </View>
+          <View style={styles.content}>
+            <Text style={styles.title}>Add a witness</Text>
+            <Text style={styles.subtitle}>Pick someone who won't let you slide.</Text>
+          </View>
+          {!showChooseContactCta && <Text style={styles.rowAction}>{'\u2192'}</Text>}
         </View>
-        <View style={styles.content}>
-          <Text style={styles.title}>Add a witness</Text>
-          <Text style={styles.subtitle}>Pick someone who won't let you slide.</Text>
-        </View>
-        <Text style={styles.rowAction}>{'\u2192'}</Text>
+        {showChooseContactCta && (
+          <LinearGradient
+            colors={[uvColors.goldBright, uvColors.gold]}
+            style={styles.chooseButton}
+          >
+            <Text style={styles.chooseButtonText}>{ctaLabel}</Text>
+          </LinearGradient>
+        )}
       </Pressable>
     );
   }
@@ -95,9 +113,29 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(214,168,60,0.48)',
     backgroundColor: 'rgba(214,168,60,0.08)',
   },
+  cardWithCta: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 0,
+    minHeight: 132,
+    padding: 16,
+    borderColor: 'rgba(237,196,101,0.64)',
+    backgroundColor: 'rgba(214,168,60,0.1)',
+  },
   pressed: {
     transform: [{ scale: 0.97 }],
     opacity: 0.85,
+  },
+  defaultRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    flex: 1,
+  },
+  ctaTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
   },
   avatarEmpty: {
     width: 48,
@@ -109,11 +147,21 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(214,168,60,0.14)',
   },
+  avatarEmptyStrong: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    borderColor: 'rgba(237,196,101,0.28)',
+    backgroundColor: 'rgba(214,168,60,0.2)',
+  },
   plusIcon: {
     fontSize: 24,
     color: uvColors.goldBright,
     fontFamily: uvFonts.sansSemibold,
     fontWeight: '800',
+  },
+  plusIconStrong: {
+    fontSize: 25,
   },
   avatarFilled: {
     width: 48,
@@ -150,6 +198,19 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: uvColors.goldBright,
     fontFamily: uvFonts.sansSemibold,
+  },
+  chooseButton: {
+    height: 54,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 16,
+  },
+  chooseButtonText: {
+    fontFamily: uvFonts.sansSemibold,
+    fontWeight: '900',
+    fontSize: 16,
+    color: uvColors.textOnGold,
   },
   name: {
     fontFamily: uvFonts.sansMedium,

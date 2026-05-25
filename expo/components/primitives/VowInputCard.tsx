@@ -30,7 +30,7 @@ export function VowInputCard({
       <TextInput
         style={styles.input}
         placeholder={placeholder}
-        placeholderTextColor="rgba(185,174,154,0.58)"
+        placeholderTextColor="rgba(185,174,154,0.72)"
         value={value}
         onChangeText={onChangeText}
         onFocus={() => {
@@ -40,6 +40,7 @@ export function VowInputCard({
         onBlur={() => setFocused(false)}
         multiline
         textAlignVertical="top"
+        cursorColor={uvColors.goldBright}
       />
     </View>
   );
@@ -49,31 +50,34 @@ const styles = StyleSheet.create({
   card: {
     minHeight: 128,
     borderWidth: 1.3,
-    borderColor: 'rgba(244,234,216,0.3)',
+    borderColor: 'rgba(244,234,216,0.28)',
     borderRadius: uvRadius['2xl'],
-    paddingTop: 21,
+    paddingTop: 19,
     paddingBottom: 21,
     paddingHorizontal: 18,
     backgroundColor: 'rgba(24,21,18,0.82)',
   },
   cardFocused: {
     borderColor: uvColors.gold,
+    shadowColor: uvColors.gold,
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.14,
+    shadowRadius: 28,
   },
   kicker: {
     fontFamily: uvFonts.sansSemibold,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '800',
-    letterSpacing: 12 * 0.34,
+    letterSpacing: 11 * 0.3,
     textTransform: 'uppercase',
     color: uvColors.textKicker,
   },
   input: {
-    fontFamily: uvFonts.serifItalic,
-    fontSize: 27,
-    lineHeight: 27 * 1.12,
-    fontStyle: 'italic',
+    fontFamily: uvFonts.serifMedium,
+    fontSize: 30,
+    lineHeight: 30 * 1.12,
     color: uvColors.text,
-    marginTop: 29,
+    marginTop: 24,
     padding: 0,
   },
 });

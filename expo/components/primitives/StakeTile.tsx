@@ -44,7 +44,7 @@ export function StakeTile({ label, selected, onPress }: StakeTileProps) {
 const styles = StyleSheet.create({
   tile: {
     flex: 1,
-    height: 62,
+    height: 58,
     borderRadius: 17,
     borderWidth: 1,
     borderColor: 'rgba(244,234,216,0.16)',
@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   tileOuter: {
     flex: 1,
-    height: 62,
+    height: 58,
     borderRadius: 17,
     overflow: 'hidden',
     borderWidth: 1,

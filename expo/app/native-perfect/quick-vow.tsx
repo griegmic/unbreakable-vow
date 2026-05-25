@@ -11,7 +11,7 @@ import { hapticSelection } from '@/lib/haptics';
 import { uvColors, uvFonts, uvSpacing } from '@/lib/uv-tokens';
 import { useAuth } from '@/providers/auth-provider';
 
-const SUGGESTIONS = ['Gym 3x this week', 'Delete TikTok for a week', 'No alcohol, 2 weeks'];
+const SUGGESTIONS = ['Gym 3x this week', 'No alcohol, 2 weeks', 'Delete TikTok for a week', 'Call mom twice this week'];
 const STAKES = [10, 25, 50, 100];
 
 export default function NativePerfectQuickVow() {
@@ -63,15 +63,16 @@ export default function NativePerfectQuickVow() {
           </View>
         </View>
 
-        <Text style={styles.kicker}>Seal a vow</Text>
-        <Text style={styles.title}>One promise.{'\n'}<Text style={styles.goldItalic}>Real consequence.</Text></Text>
+        <Text style={styles.kicker}>Unbreakable Vow</Text>
+        <Text style={styles.title}>Make a vow.{'\n'}<Text style={styles.goldItalic}>Mean it.</Text></Text>
+        <Text style={styles.subcopy}>Put cash behind a promise. A friend verifies it. If you flake, it goes to charity.</Text>
 
         <View style={styles.vowCard}>
           <Text style={styles.cardLabel}>I vow to</Text>
           <TextInput
             value={vow}
             onChangeText={setVow}
-            placeholder="skip takeout all week"
+            placeholder="I vow to..."
             placeholderTextColor="rgba(164,154,133,0.58)"
             multiline
             style={styles.vowInput}
@@ -205,11 +206,19 @@ const styles = StyleSheet.create({
     lineHeight: 41 * 1.02,
     color: uvColors.text,
     marginTop: 8,
-    marginBottom: 14,
+    marginBottom: 10,
   },
   goldItalic: {
     fontFamily: uvFonts.serifItalic,
     color: uvColors.gold,
+  },
+  subcopy: {
+    fontFamily: uvFonts.sansSemibold,
+    fontWeight: '600',
+    fontSize: 14,
+    lineHeight: 20,
+    color: uvColors.textCopy,
+    marginBottom: 16,
   },
   vowCard: {
     borderWidth: 1,
@@ -228,7 +237,7 @@ const styles = StyleSheet.create({
   },
   vowInput: {
     minHeight: 70,
-    fontFamily: uvFonts.sansSemibold,
+    fontFamily: uvFonts.serifMedium,
     fontSize: 22,
     lineHeight: 28,
     color: uvColors.text,
