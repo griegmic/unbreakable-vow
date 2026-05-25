@@ -189,7 +189,7 @@ export async function updateVowWitness(vowId: string, params: {
     }
     if (params.witnessPhone) {
       await supabase.functions.invoke('resend-witness-invite', {
-        body: { vow_id: vowId },
+        body: { vow_id: vowId, force: true },
       }).catch((e) => console.warn('[vow-api] SMS send after witness update failed:', e));
     }
     return { success: true, witnessInviteToken: newToken };

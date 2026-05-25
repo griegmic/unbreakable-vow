@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       return json({ error: 'Unauthorized' }, 401);
     }
 
-    const { vow_id } = await req.json();
+    const { vow_id, force } = await req.json();
     if (!vow_id) return json({ error: 'vow_id required' }, 400);
 
     const { data: vow, error: vowError } = await supabase
@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
       .limit(1)
       .maybeSingle();
 
-    if (recent) return json({ error: 'cooldown' }, 429);
+    if (recent && !force) return json({ error: 'cooldown' }, 429);
 
     const { data: profile } = await supabase.from('users').select('display_name').eq('id', user.id).single();
     const ownerName = profile?.display_name || 'Someone';
@@ -73,6 +73,7 @@ Deno.serve(async (req) => {
 
     await createAuditEvent(supabase, vow.id, sid ? 'witness_invite_resent' : 'witness_invite_retry_queued', 'maker', user.id, {
       witness_name: vow.witness_name,
+      forced: Boolean(force),
     });
 
     return json({ success: true, queued: !sid });

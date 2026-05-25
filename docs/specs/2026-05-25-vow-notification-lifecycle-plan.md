@@ -53,6 +53,8 @@ The current code already has the right foundation: `notifyMaker()`, `queuePush()
 - Native dares screen reads real sent challenges.
 - `resend-witness-invite` now exists, so the native waiting-state recovery button has a real backend path.
 - Push-open audit writes are allowed by RLS only for actors who can already read the vow.
+- Push-permission prompt/grant/deny audit writes are allowed for makers on their own vows.
+- Changing a witness can force the new invite text immediately, bypassing the normal resend cooldown for wrong-number recovery.
 - Expo and web database types now include `challenge_status = expired` and push-queue lifecycle fields.
 
 ## Next Hardening Pass
