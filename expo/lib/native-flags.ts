@@ -16,8 +16,18 @@
 const env = (key: string): boolean =>
   process.env[key] === '1' || process.env[key] === 'true';
 
-/** Master toggle — enables all native-perfect screens */
-export const USE_NATIVE_PERFECT = env('EXPO_PUBLIC_USE_NATIVE_PERFECT');
+const envDisabled = (key: string): boolean =>
+  process.env[key] === '0' || process.env[key] === 'false';
+
+/**
+ * Master toggle — enables all native-perfect screens.
+ *
+ * Phase 10 is now the default for local/Rork/TestFlight validation: native-perfect
+ * is ON unless explicitly disabled with EXPO_PUBLIC_USE_NATIVE_PERFECT=0/false.
+ * This prevents old LiveWebShell screens from leaking into the production app.
+ */
+export const USE_NATIVE_PERFECT = !envDisabled('EXPO_PUBLIC_USE_NATIVE_PERFECT')
+  && (process.env.EXPO_PUBLIC_USE_NATIVE_PERFECT == null || env('EXPO_PUBLIC_USE_NATIVE_PERFECT'));
 
 // --- Per-screen flags (Phase 1) ---
 export const USE_NATIVE_PERFECT_01 = USE_NATIVE_PERFECT || env('EXPO_PUBLIC_USE_NP_01');

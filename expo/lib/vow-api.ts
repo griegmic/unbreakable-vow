@@ -145,10 +145,6 @@ export async function resendWitnessInvite(vowId: string): Promise<{ success: boo
     return { success: true };
   } catch (err) {
     console.error('[vow-api] resendWitnessInvite exception:', err);
-    const fallback = await supabase.functions.invoke('seal-vow', {
-      body: { vow_id: vowId, resend_sms: true },
-    }).catch(() => null);
-    if (fallback?.data) return { success: true };
     return { success: false, error: 'Could not resend invite. Try again later.' };
   }
 }
@@ -192,8 +188,8 @@ export async function updateVowWitness(vowId: string, params: {
       return { success: false, error: error.message };
     }
     if (params.witnessPhone) {
-      await supabase.functions.invoke('seal-vow', {
-        body: { vow_id: vowId, resend_sms: true },
+      await supabase.functions.invoke('resend-witness-invite', {
+        body: { vow_id: vowId, force: true },
       }).catch((e) => console.warn('[vow-api] SMS send after witness update failed:', e));
     }
     return { success: true, witnessInviteToken: newToken };
@@ -355,7 +351,7 @@ export interface VowRow {
   witness_declined: boolean;
   target_user_id: string | null;
   target_phone: string | null;
-  challenge_status: 'pending' | 'accepted' | 'declined' | null;
+  challenge_status: 'pending' | 'accepted' | 'declined' | 'expired' | null;
   challenge_invite_token: string | null;
   stake_amount: number;
   consequence: string;
@@ -425,6 +421,19 @@ export async function getIncomingChallenges(): Promise<VowRow[]> {
     .eq('challenge_status', 'pending')
     .order('created_at', { ascending: false });
   if (error) { console.error('[vow-api] getIncomingChallenges error:', error); return []; }
+  return (data ?? []) as VowRow[];
+}
+
+export async function getSentChallenges(): Promise<VowRow[]> {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return [];
+  const { data, error } = await supabase.from('vows')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .eq('vow_type', 'challenge')
+    .in('challenge_status', ['pending', 'accepted', 'declined', 'expired'])
+    .order('created_at', { ascending: false });
+  if (error) { console.error('[vow-api] getSentChallenges error:', error); return []; }
   return (data ?? []) as VowRow[];
 }
 

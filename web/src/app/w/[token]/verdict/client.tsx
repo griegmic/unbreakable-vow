@@ -96,7 +96,7 @@ export default function VerdictClient({ vow, token, makerName, targetName, isEar
         const msg = detail === 'already_judged' ? 'This vow has already been judged.'
           : detail === 'invalid_token' ? 'Could not find this vow. The link may have expired.'
           : detail === 'invalid_status' ? 'This vow is not ready for a verdict yet.'
-          : detail === 'refund_failed' ? 'Refund could not be processed right now. Please try again in a moment.'
+          : detail === 'refund_failed' ? 'Payment could not be resolved right now. Please try again in a moment.'
           : typeof detail === 'string' ? detail : 'Could not submit verdict. Please try again.';
         setError(msg);
         setView('choose');

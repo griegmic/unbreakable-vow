@@ -88,9 +88,9 @@ export default function CreateAuthScreen() {
           <View style={[styles.progressFill, { width: '80%' }]} />
         </View>
 
-        <Text style={styles.h1}>What&apos;s your number?</Text>
+        <Text style={styles.h1}>What's your number?</Text>
         <Text style={styles.sub}>
-          We&apos;ll text the code that seals your vow. No password.
+          We'll text the code that seals your vow. No password.
         </Text>
 
         <View style={styles.inputWrap}>

@@ -84,6 +84,10 @@ export async function setupPaymentSheetForSetup(clientSecret: string, stakeAmoun
   throw new Error('Native Stripe payment sheet is unavailable in web preview');
 }
 
+export async function isNativeWalletSupported(): Promise<boolean> {
+  return false;
+}
+
 // ── Legacy: Payment sheet for PaymentIntent ──
 
 export async function setupPaymentSheet(clientSecret: string): Promise<void> {

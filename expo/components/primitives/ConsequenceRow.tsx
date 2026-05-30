@@ -38,7 +38,7 @@ const viewStyles: Record<string, ViewStyle> = {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 13,
+    paddingVertical: 12,
     paddingHorizontal: 14,
     borderWidth: 1,
     borderColor: 'rgba(214, 77, 44, 0.28)',

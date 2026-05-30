@@ -28,8 +28,10 @@ export default function CreateSealedScreen() {
   const witnessInviteToken = paramText(params.witnessInviteToken, '');
   const witnessUrl = paramText(params.witnessUrl, '') || getWitnessUrl(witnessInviteToken);
   const inviteSent = paramText(params.inviteSent, '0') === '1';
+  const witnessDecision = paramText(params.witnessDecision, '');
   const [witnessAccepted, setWitnessAccepted] = useState(false);
   const witnessFirstName = witness === 'your witness' ? '' : witness;
+  const witnessDeferred = witnessDecision === 'deferred' || (!witnessInviteToken && witness === 'your witness');
 
   useEffect(() => {
     let alive = true;
@@ -43,14 +45,16 @@ export default function CreateSealedScreen() {
 
   const subcopy = useMemo(() => {
     if (witnessAccepted) return `${witnessFirstName || 'Your witness'} is watching.`;
+    if (witnessDeferred) return 'Your vow is sealed. Add a witness when you are ready.';
     return witness === 'your witness' ? 'Now tell your witness.' : `Now ${witness} needs to know.`;
-  }, [witness, witnessAccepted, witnessFirstName]);
+  }, [witness, witnessAccepted, witnessDeferred, witnessFirstName]);
 
   const ctaLabel = useMemo(() => {
     if (witnessAccepted) return 'See my vow';
+    if (witnessDeferred) return vowId ? 'See my vow' : 'Go to dashboard';
     if (inviteSent) return 'See invite status';
     return witness === 'your witness' ? 'Share the link' : `Tell ${witness}`;
-  }, [inviteSent, witness, witnessAccepted]);
+  }, [inviteSent, vowId, witness, witnessAccepted, witnessDeferred]);
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -76,8 +80,12 @@ export default function CreateSealedScreen() {
         <GoldCTA
           label={ctaLabel}
           onPress={() => {
-            if (witnessAccepted && vowId) {
+            if ((witnessAccepted || witnessDeferred) && vowId) {
               router.replace({ pathname: '/native-perfect/vow-detail', params: { vowId } } as never);
+              return;
+            }
+            if (witnessDeferred) {
+              router.replace('/native-perfect/dashboard' as never);
               return;
             }
             if (inviteSent) {

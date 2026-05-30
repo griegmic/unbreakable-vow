@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { hapticSecondary } from '@/lib/haptics';
+import { AppMenuButton } from '@/components/app-menu';
 
 interface ChromeHeaderProps {
   onBack?: () => void;
@@ -42,7 +43,7 @@ export function ChromeHeader({ onBack, centerText, onMenu }: ChromeHeaderProps) 
           <Text style={styles.menuIcon}>{'\u2261'}</Text>
         </Pressable>
       ) : (
-        <View style={styles.menuPlaceholder} />
+        <AppMenuButton style={styles.menuButton} />
       )}
     </View>
   );

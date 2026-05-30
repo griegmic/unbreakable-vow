@@ -1,11 +1,6 @@
 import React from 'react';
-
-import { LiveWebShell } from '@/components/live-web-shell';
-import { USE_NATIVE_PERFECT } from '@/lib/native-flags';
-
-import NativeQuickVowScreen from './native-quick-vow';
+import { Redirect } from 'expo-router';
 
 export default function QuickVowScreen() {
-  if (USE_NATIVE_PERFECT) return <NativeQuickVowScreen />;
-  return <LiveWebShell path="/quick-vow" />;
+  return <Redirect href="/native-perfect/quick-vow" />;
 }

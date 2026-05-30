@@ -1,11 +1,6 @@
 import React from 'react';
-
-import { LiveWebShell } from '@/components/live-web-shell';
-import { USE_NATIVE_PERFECT } from '@/lib/native-flags';
-
-import NativeGuidedScreen from './native-guided';
+import { Redirect } from 'expo-router';
 
 export default function GuidedScreen() {
-  if (USE_NATIVE_PERFECT) return <NativeGuidedScreen />;
-  return <LiveWebShell path="/create" />;
+  return <Redirect href="/native-perfect/create/vow" />;
 }

@@ -21,11 +21,11 @@ const styles = StyleSheet.create({
   large: {
     textAlign: 'center',
     fontFamily: uvFonts.serifSemibold,
-    fontSize: 76,
-    lineHeight: 76 * 0.9,
+    fontSize: 68,
+    lineHeight: 76,
     color: uvColors.goldBright,
-    marginTop: 10,
-    marginBottom: 16,
+    marginTop: 2,
+    marginBottom: 12,
   },
   compact: {
     textAlign: 'center',

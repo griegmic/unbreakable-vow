@@ -1,4 +1,6 @@
 import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { notifyMaker } from '../_shared/notify.ts';
+import { castAcceptedMessage, castDeclinedMessage, makerSealConfirmMessage } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 
 const STRIPE_SECRET_KEY = Deno.env.get('STRIPE_SECRET_KEY')!;
@@ -295,14 +297,15 @@ Deno.serve(async (req) => {
 
       await createAuditEvent(supabase, vow.id, 'challenge_declined', 'target');
 
-      // Push notification to challenger
-      await supabase.from('push_queue').insert({
-        user_id: vow.user_id,
-        title: 'They backed down',
-        body: `${body.display_name || 'Someone'} backed down from your dare.`,
-        data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'challenge_declined' },
-        send_after: new Date().toISOString(),
-      });
+      const targetName = body.display_name || 'Someone';
+      const { data: challengerUser } = await supabase.from('users').select('phone').eq('id', vow.user_id).single();
+      await notifyMaker(
+        supabase,
+        vow.user_id,
+        { type: 'maker_cast_declined', vowId: vow.id, targetName },
+        { to: challengerUser?.phone || '', body: castDeclinedMessage(targetName) },
+        vow.id,
+      );
 
       return jsonResponse({ success: true, action: 'declined' });
     }
@@ -440,6 +443,7 @@ Deno.serve(async (req) => {
         stripe_payment_intent_id: stripePaymentIntentId,
         stripe_setup_intent_id: stripeSetupIntentId,
         stripe_payment_method_id: stripePaymentMethodId,
+        witness_accepted_at: new Date().toISOString(),
         status: 'active',
         sealed_at: new Date().toISOString(),
       })
@@ -471,15 +475,34 @@ Deno.serve(async (req) => {
       sealed_by: 'challenge_acceptance',
     });
 
-    // 5. Push notification to challenger
+    // 5. Notify challenger through a single healthy channel.
     const recipientName = resolvedDisplayName || fallbackName(resolvedEmail, resolvedPhone);
-    await supabase.from('push_queue').insert({
-      user_id: vow.user_id,
-      title: 'Vow accepted',
-      body: `${recipientName} accepted the vow. It's live.`,
-      data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'challenge_accepted' },
-      send_after: new Date().toISOString(),
-    });
+    const { data: challengerUser } = await supabase.from('users').select('phone').eq('id', vow.user_id).single();
+    await notifyMaker(
+      supabase,
+      vow.user_id,
+      { type: 'maker_cast_accepted', vowId: vow.id, targetName: recipientName },
+      { to: challengerUser?.phone || '', body: castAcceptedMessage(recipientName) },
+      vow.id,
+    );
+
+    // The dare target is now the keeper. Give them their own durable receipt
+    // so the accepted dare does not disappear after the web flow closes.
+    const { data: targetUser } = await supabase
+      .from('users')
+      .select('phone')
+      .eq('id', targetUserId)
+      .single();
+    await notifyMaker(
+      supabase,
+      targetUserId,
+      { type: 'maker_vow_sealed', vowId: vow.id },
+      {
+        to: targetUser?.phone || resolvedPhone || '',
+        body: makerSealConfirmMessage(Math.round(stakeAmountCents / 100)),
+      },
+      vow.id,
+    );
 
     return jsonResponse({
       success: true,

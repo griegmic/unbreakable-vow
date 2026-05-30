@@ -31,7 +31,9 @@ export type PushPayload =
   | { type: 'maker_vow_sealed'; vowId: string }
   | { type: 'maker_witness_accepted'; vowId: string; witnessName: string }
   | { type: 'maker_witness_declined'; vowId: string; witnessName: string }
+  | { type: 'maker_witness_invite_failed'; vowId: string; witnessName: string }
   | { type: 'maker_24h_no_acceptance'; vowId: string; witnessName: string }
+  | { type: 'maker_self_verdict_time'; vowId: string; witnessName: string }
   | { type: 'maker_day1'; vowId: string; witnessName?: string }
   | { type: 'maker_24h_warning'; vowId: string; stake: number }
   | { type: 'maker_verdict_time'; vowId: string; witnessName: string }
@@ -41,6 +43,8 @@ export type PushPayload =
   | { type: 'maker_refund_failed_final'; vowId: string; stake: number }
 
   // Cast / Dare
+  | { type: 'maker_cast_sent'; vowId: string; targetName: string }
+  | { type: 'maker_cast_invite_failed'; vowId: string; targetName: string }
   | { type: 'maker_cast_accepted'; vowId: string; targetName: string }
   | { type: 'maker_cast_declined'; vowId: string; targetName: string }
   | { type: 'maker_cast_auto_voided'; vowId: string; targetName: string }
@@ -65,7 +69,9 @@ export async function sendPush(pushToken: string, payload: PushPayload): Promise
       maker_vow_sealed: 'Vow sealed',
       maker_witness_accepted: 'Your witness is in',
       maker_witness_declined: 'Witness declined',
+      maker_witness_invite_failed: 'Witness text failed',
       maker_24h_no_acceptance: 'Still waiting',
+      maker_self_verdict_time: 'Your verdict is due',
       maker_day1: 'Still in it',
       maker_24h_warning: '24 hours left',
       maker_verdict_time: 'Verdict time',
@@ -73,6 +79,8 @@ export async function sendPush(pushToken: string, payload: PushPayload): Promise
       maker_auto_resolved: 'Vow auto-resolved',
       maker_refund_succeeded: 'Refund processed',
       maker_refund_failed_final: 'Refund issue',
+      maker_cast_sent: 'Dare sent',
+      maker_cast_invite_failed: 'Dare text failed',
       maker_cast_accepted: 'Dare accepted',
       maker_cast_declined: 'Dare declined',
       maker_cast_auto_voided: 'Dare expired',
@@ -120,10 +128,12 @@ function getPushBody(payload: PushPayload): string {
     case 'witness_verdict_request': return `Did ${payload.makerName} keep the vow? Make the call.`;
     case 'witness_maker_self_resolved': return `${payload.makerName} called the vow ${payload.verdict}. Nothing for you to rule.`;
     case 'witness_vow_voided': return `${payload.makerName} withdrew the vow. Nothing for you to judge.`;
-    case 'maker_vow_sealed': return `It's live. No turning back.`;
+    case 'maker_vow_sealed': return `It's sealed and waiting on your dashboard.`;
     case 'maker_witness_accepted': return `${payload.witnessName} accepted. Your vow is live.`;
     case 'maker_witness_declined': return `${payload.witnessName} declined. Pick someone else or go solo.`;
+    case 'maker_witness_invite_failed': return `We couldn't text ${payload.witnessName}. Open the vow to share the link.`;
     case 'maker_24h_no_acceptance': return `${payload.witnessName} has not accepted yet. Nudge once?`;
+    case 'maker_self_verdict_time': return `${payload.witnessName} never accepted. Open the vow and make the call yourself.`;
     case 'maker_day1': return payload.witnessName ? `${payload.witnessName} is watching. One clean day matters.` : 'Your vow is live. One clean day matters.';
     case 'maker_24h_warning': return payload.stake > 0 ? `$${payload.stake} is still on the line. Finish clean.` : 'Your word is still on the line. Finish clean.';
     case 'maker_verdict_time': return `Time's up. ${payload.witnessName} has the call now.`;
@@ -133,9 +143,11 @@ function getPushBody(payload: PushPayload): string {
     case 'maker_auto_resolved': return payload.stake > 0 ? 'No verdict came in. Vow kept, wallet untouched.' : 'No verdict came in. Vow auto-resolved as kept.';
     case 'maker_refund_succeeded': return `Your $${payload.stake} refund went through.`;
     case 'maker_refund_failed_final': return `We could not complete your refund yet. We're on it.`;
-    case 'maker_cast_accepted': return `${payload.targetName} accepted your dare.`;
-    case 'maker_cast_declined': return `${payload.targetName} declined your dare.`;
-    case 'maker_cast_auto_voided': return `${payload.targetName} didn't respond. Dare voided.`;
+    case 'maker_cast_sent': return `${payload.targetName} has the dare. We'll tell you when they answer.`;
+    case 'maker_cast_invite_failed': return `We couldn't text ${payload.targetName}. Open the dare to share the link.`;
+    case 'maker_cast_accepted': return `${payload.targetName} accepted. You'll call the verdict when time is up.`;
+    case 'maker_cast_declined': return `${payload.targetName} passed. Dare closed cleanly.`;
+    case 'maker_cast_auto_voided': return `${payload.targetName} didn't respond. Dare closed.`;
     case 'target_verdict_recorded': return `${payload.makerName} ruled: ${payload.verdict}.`;
     default: return 'Check your vow.';
   }
@@ -174,7 +186,9 @@ export async function queuePush(
     maker_vow_sealed: 'Vow sealed',
     maker_witness_accepted: 'Your witness is in',
     maker_witness_declined: 'Witness declined',
+    maker_witness_invite_failed: 'Witness text failed',
     maker_24h_no_acceptance: 'Still waiting',
+    maker_self_verdict_time: 'Your verdict is due',
     maker_day1: 'Still in it',
     maker_24h_warning: '24 hours left',
     maker_verdict_time: 'Verdict time',
@@ -182,6 +196,8 @@ export async function queuePush(
     maker_auto_resolved: 'Vow auto-resolved',
     maker_refund_succeeded: 'Refund processed',
     maker_refund_failed_final: 'Refund issue',
+    maker_cast_sent: 'Dare sent',
+    maker_cast_invite_failed: 'Dare text failed',
     maker_cast_accepted: 'Dare accepted',
     maker_cast_declined: 'Dare declined',
     maker_cast_auto_voided: 'Dare expired',

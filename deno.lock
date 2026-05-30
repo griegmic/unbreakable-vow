@@ -1,0 +1,27 @@
+{
+  "version": "5",
+  "specifiers": {
+    "jsr:@supabase/functions-js@^0.0.0-automated": "0.0.0-jsr-test.1",
+    "jsr:@supabase/supabase-js@2": "2.104.1"
+  },
+  "jsr": {
+    "@supabase/functions-js@0.0.0-jsr-test.1": {
+      "integrity": "b1b37924af1f0011b4753201e1585a37b030e996c6682492e02575eb27d902b2"
+    },
+    "@supabase/supabase-js@2.104.1": {
+      "integrity": "2b04cd7b529ab6ab8ce1d573bb483bbd61a0e2b81029c9ceeed3c48afbf290e7",
+      "dependencies": [
+        "jsr:@supabase/functions-js"
+      ]
+    }
+  },
+  "workspace": {
+    "packageJson": {
+      "dependencies": [
+        "npm:pixelmatch@^7.2.0",
+        "npm:playwright@^1.59.1",
+        "npm:pngjs@7"
+      ]
+    }
+  }
+}

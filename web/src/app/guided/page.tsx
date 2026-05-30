@@ -239,7 +239,7 @@ function GuidedContent() {
         return;
       }
 
-      // Staked vow: save a payment method. Nothing charges unless the vow breaks.
+      // Staked vow: save a payment method. No charge now; charge only if the vow breaks.
       const fnUrl = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/create-payment-intent`;
       const piRes = await fetch(fnUrl, {
         method: 'POST',
@@ -771,14 +771,14 @@ function GuidedContent() {
         footer={
           <div>
             <PrimaryButton
-              label="Seal this vow"
+              label="Seal your vow"
               onPress={handleSeal}
               disabled={!oathChecked}
               loading={sealing}
             />
             {stakeAmount > 0 && (
               <p className="text-center text-[12px] mt-1.5" style={{ color: 'var(--text-muted)' }}>
-                Nothing charges unless you break it.
+                No charge now. Only if you break it.
               </p>
             )}
           </div>

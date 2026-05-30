@@ -1,11 +1,6 @@
 import React from 'react';
-
-import { LiveWebShell } from '@/components/live-web-shell';
-import { USE_NATIVE_PERFECT } from '@/lib/native-flags';
-
-import NativeDashboardScreen from './native-dashboard';
+import { Redirect } from 'expo-router';
 
 export default function DashboardScreen() {
-  if (USE_NATIVE_PERFECT) return <NativeDashboardScreen />;
-  return <LiveWebShell path="/dashboard" />;
+  return <Redirect href="/native-perfect/dashboard" />;
 }

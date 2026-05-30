@@ -358,7 +358,7 @@ Action: token sweep is a Phase 0 task; Step 9 specs reference token NAMES not he
    - Right action chevron "→" 800/20 gold.
    - Tappable → opens 03b sheet.
 8. **quietActions** row: two outlined buttons, gap 10. "Share link" + "Go solo". 44 min-height, 99 radius, 1px border `rgba(244,234,216,.13)`, color `#bdb39f`, font 700/14.
-9. moneyNote centered: "Nothing charges unless you break it." — 600/13/1.2, color `#8f8573`.
+9. moneyNote centered: "No charge now. Only if you break it." — 600/13/1.2, color `#8f8573`.
 10. NO bottom CTA on this screen — must add witness or share link to advance.
 
 **Interactions:**
@@ -519,39 +519,35 @@ Action: token sweep is a Phase 0 task; Step 9 specs reference token NAMES not he
 
 ---
 
-### 05 — Add Payment
+### 05 — Payment / Stripe Handoff
 
 **Route:** `/native-perfect/create` step 5.
 **Hard requirement:** ≥33/36 reviewer score.
+**Approved deviation:** See `MOCK_DEVIATIONS.md` Proposal #4. The app-controlled payment surface is simplified; Stripe PaymentSheet owns Apple Pay, Link, and card fallback.
 
 **Layout:**
 1. StatusBar.
 2. ChromeHeader: ← Back / 5 / 5 / ≡.
 3. Progress 100%.
-4. h1 `.h2`: `Add <em.gold>payment.</em>`.
-5. Sub: "No charge now. Only if you break it."
-6. **decisionCard:**
+4. h1 `.h2`: `Make it real.`
+5. Sub: `Authorize your $X stake. No charge now. Only if you break it.`
+6. **decisionCard / summaryCard:**
    - Kicker "YOU ARE SEALING".
    - Vow text Fraunces 600/25.
    - metaGrid (3-col equal): STAKE $50 gold, WITNESS Joe, VERDICT Sunday.
-7. **payStack** grid `1.1fr 0.9fr` gap 10:
-   - payTile.on: 82 min-height, gold gradient bg, 1.3px gold border, color `#151006`. Top: payMark white pill " Pay" 800/15. Middle: "Apple Pay" 800/20. Bottom: paySub "Fastest" 700/12, opacity 0.78. (The space before "Pay" is intentional for Apple logo glyph.)
-   - payTile (off): same dim style. Top: "Card" 800/20. Bottom: paySub "Enter card".
-8. **trustCard**: 1px dim border, 18 radius, bg `rgba(244,234,216,.03)`, padding `13 15`. Text: "**Nothing charges today.** Apple Pay saves your payment method. You are charged only if the vow is broken." — 600/13/1.36, strong → `text`.
-9. paymentLegal (absolute, bottom 106): "By continuing you agree to the <u>terms</u>." — 600/12, color `#756c5d`, centered. Underline color `#9e927f`, offset 3.
-10. Bottom CTA: "Lock it in".
+7. Handoff note: `{Apple Pay|Google Pay} opens next. Card or Link are available if needed.`
+8. Bottom CTA: `Seal your vow`.
 
 **Interactions:**
-- Tap payTile → toggles selection (Apple Pay / Card).
-- Tap "Lock it in" → triggers Stripe SetupIntent → presents native PaymentSheet (depicted as 05b).
+- Tap `Seal your vow` → triggers Stripe SetupIntent → presents native PaymentSheet (depicted as 05b).
 
-**Data:** payment method preference.
+**Data:** Vow terms, stake amount, witness, deadline. Do not collect payment method preference in the app-controlled surface.
 
-**Backend:** `create-payment-intent` edge function (creates SetupIntent), then native Stripe PaymentSheet.
+**Backend:** `save-card` edge function creates SetupIntent, then native Stripe PaymentSheet. This is not a PaymentIntent hold.
 
-**Primitives:** new `PayTile` (Apple Pay variant + Card variant), new `TrustCard`, new `LegalLine`.
+**Primitives:** `ChromeHeader`, summary card styles, `GoldCTA`.
 
-**Haptics:** `hapticSelection` on tile toggle. `hapticPrimary` on CTA.
+**Haptics:** `hapticPrimary` on CTA.
 
 ---
 
@@ -564,7 +560,7 @@ Action: token sweep is a Phase 0 task; Step 9 specs reference token NAMES not he
 - systemNote (above sheet, absolute bottom 224): "Stripe/Apple present this native sheet. We control the setup, merchant name, and surrounding context." 700/12/1.35 centered. **This is a designer note for our team — DO NOT render in production.**
 - nativeSheet: as described in Global components. **In production, this is the actual Stripe React Native PaymentSheet** — we don't render it; Stripe does.
 
-**Implication:** Mock 05b is a designer reference for the surrounding context. Layer 0 builds 05 + the Stripe SetupIntent integration. The "sheet" is Stripe's. Acceptance criterion: when user taps "Lock it in" on 05, the Stripe PaymentSheet appears with merchant "Unbreakable Vow", "Save payment method" subtitle, and the contextual rows shown. Configurable via `presentSetupIntent`.
+**Implication:** Mock 05b is a designer reference for the surrounding context. Layer 0 builds 05 + the Stripe SetupIntent integration. The "sheet" is Stripe's. Acceptance criterion: when user taps "Seal your vow" on 05, the Stripe PaymentSheet appears with merchant "Unbreakable Vow" and SetupIntent copy. The configured native primary label is `Save stake`.
 
 **Backend:** Stripe SetupIntent client_secret → `useStripe().initPaymentSheet({ setupIntentClientSecret, customFlow: false, merchantDisplayName: 'Unbreakable Vow', applePay: { merchantCountryCode: 'US' } })` → `presentPaymentSheet()`.
 
@@ -770,7 +766,7 @@ Action: token sweep is a Phase 0 task; Step 9 specs reference token NAMES not he
 3. Pill `.live`: "VOW LIVE".
 4. h1: "Keep\n<em.green>going.</em>"
 5. detailSub: "Joe decides if you kept your word."
-6. activeCard: kicker "THE VOW", vow text, metaGrid: STAKE $50 on hold / JUDGE Joe is watching (green).
+6. activeCard: kicker "THE VOW", vow text, metaGrid: STAKE $50 at stake / JUDGE Joe is watching (green).
 7. **countCard** (sub of activeCard, more gold-tinged): countHead row "TIME LEFT" + metaValue "Sunday night". countBig "4 days left" 800/44 gold. countSub "Verdict by Sun, May 3 at 9:00 PM." 500/14.5/1.4. Meter 6px tall, 38% width gold gradient.
 8. Bottom: CTA `.cta.green` "Done" + quietLinks "Text Joe a check-in" / "Share vow".
 
@@ -791,7 +787,7 @@ Action: token sweep is a Phase 0 task; Step 9 specs reference token NAMES not he
 - Pill: "ALMOST VERDICT TIME" (default orange-on-orange-bg).
 - h1: "Last\n<em.gold>stretch.</em>"
 - detailSub: "Joe calls it soon. Finish clean."
-- activeCard: STAKE $50 on hold / IF BROKEN ALS Association.
+- activeCard: STAKE $50 at stake / IF BROKEN ALS Association.
 - countCard: "TIME LEFT" + "Tonight" / countBig "2h 14m" / countSub "Verdict by Sun, May 3 at 9:00 PM." / meter 91% width.
 - Bottom CTA (default gold): "Text Joe a final check-in".
 - quietLinks: "Back to dashboard" / "Share vow".

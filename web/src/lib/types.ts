@@ -19,7 +19,7 @@ export type Verdict = 'kept' | 'broken';
 
 export type VowType = 'self' | 'challenge';
 
-export type ChallengeStatus = 'pending' | 'accepted' | 'declined';
+export type ChallengeStatus = 'pending' | 'accepted' | 'declined' | 'expired';
 
 export type ActorType = 'maker' | 'witness' | 'target' | 'system';
 
@@ -48,6 +48,13 @@ export interface Database {
           phone: string | null;
           stripe_customer_id: string | null;
           push_token: string | null;
+          push_permission_status?: 'unknown' | 'granted' | 'denied' | 'undetermined' | null;
+          timezone?: string | null;
+          quiet_hours_start?: string | null;
+          quiet_hours_end?: string | null;
+          last_push_receipt_ok_at?: string | null;
+          last_push_receipt_failed_at?: string | null;
+          sms_only_preference?: boolean | null;
           created_at: string;
         };
         Insert: {
@@ -56,6 +63,13 @@ export interface Database {
           phone?: string | null;
           stripe_customer_id?: string | null;
           push_token?: string | null;
+          push_permission_status?: 'unknown' | 'granted' | 'denied' | 'undetermined' | null;
+          timezone?: string | null;
+          quiet_hours_start?: string | null;
+          quiet_hours_end?: string | null;
+          last_push_receipt_ok_at?: string | null;
+          last_push_receipt_failed_at?: string | null;
+          sms_only_preference?: boolean | null;
           created_at?: string;
         };
         Update: {
@@ -64,6 +78,13 @@ export interface Database {
           phone?: string | null;
           stripe_customer_id?: string | null;
           push_token?: string | null;
+          push_permission_status?: 'unknown' | 'granted' | 'denied' | 'undetermined' | null;
+          timezone?: string | null;
+          quiet_hours_start?: string | null;
+          quiet_hours_end?: string | null;
+          last_push_receipt_ok_at?: string | null;
+          last_push_receipt_failed_at?: string | null;
+          sms_only_preference?: boolean | null;
           created_at?: string;
         };
         Relationships: [];
@@ -228,6 +249,14 @@ export interface Database {
           data: Json | null;
           send_after: string;
           sent: boolean;
+          status?: 'queued' | 'sent' | 'failed' | 'dead' | null;
+          attempts?: number | null;
+          last_attempt_at?: string | null;
+          sent_at?: string | null;
+          receipt_id?: string | null;
+          error_code?: string | null;
+          dedupe_key?: string | null;
+          event_type?: string | null;
           created_at: string;
         };
         Insert: {
@@ -238,6 +267,14 @@ export interface Database {
           data?: Json | null;
           send_after: string;
           sent?: boolean;
+          status?: 'queued' | 'sent' | 'failed' | 'dead' | null;
+          attempts?: number | null;
+          last_attempt_at?: string | null;
+          sent_at?: string | null;
+          receipt_id?: string | null;
+          error_code?: string | null;
+          dedupe_key?: string | null;
+          event_type?: string | null;
           created_at?: string;
         };
         Update: {
@@ -248,6 +285,14 @@ export interface Database {
           data?: Json | null;
           send_after?: string;
           sent?: boolean;
+          status?: 'queued' | 'sent' | 'failed' | 'dead' | null;
+          attempts?: number | null;
+          last_attempt_at?: string | null;
+          sent_at?: string | null;
+          receipt_id?: string | null;
+          error_code?: string | null;
+          dedupe_key?: string | null;
+          event_type?: string | null;
           created_at?: string;
         };
         Relationships: [];

@@ -1,3 +1,5 @@
+import { USE_NATIVE_PERFECT } from '@/lib/native-flags';
+
 export function redirectSystemPath({ path }: { path: string; initial: boolean }) {
   let normalizedPath = path;
   try {
@@ -9,11 +11,11 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
     normalizedPath = path;
   }
 
-  // Witness and dare acceptor flows intentionally stay on mobile web. If an
-  // installed app receives those universal links, hand them back to the browser
-  // so cold recipients see the same acquisition/acceptance experience.
   const witnessMatch = normalizedPath.match(/^\/w\/([^/?]+)/);
   if (witnessMatch) {
+    if (USE_NATIVE_PERFECT) {
+      return `/native-perfect/w/${witnessMatch[1]}`;
+    }
     return `/external-web?url=${encodeURIComponent(`https://unbreakablevow.app${normalizedPath}`)}`;
   }
 

@@ -1,11 +1,12 @@
 import React, { useRef, useEffect } from 'react';
 import {
   View,
+  Text,
   TextInput,
   StyleSheet,
   Animated,
 } from 'react-native';
-import { uvColors } from '@/lib/uv-tokens';
+import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { hapticOtpDigit, hapticOtpError } from '@/lib/haptics';
 
 interface OtpInputProps {
@@ -50,23 +51,32 @@ export function OtpInput({
     onChangeText(digits);
   };
 
-  const dots = Array.from({ length }, (_, i) => {
+  const activeIndex = Math.min(value.length, length - 1);
+  const boxes = Array.from({ length }, (_, i) => {
     const filled = i < value.length;
+    const active = i === activeIndex && value.length < length;
     return (
       <View
         key={i}
         style={[
-          styles.dot,
-          filled && styles.dotFilled,
-          error && styles.dotError,
+          styles.box,
+          active && styles.boxActive,
+          filled && styles.boxFilled,
+          error && filled && styles.boxError,
         ]}
-      />
+      >
+        {filled ? (
+          <Text style={styles.digit}>{value[i]}</Text>
+        ) : active ? (
+          <View style={styles.caret} />
+        ) : null}
+      </View>
     );
   });
 
   return (
     <Animated.View style={[styles.container, { transform: [{ translateX: shakeAnim }] }]}>
-      <View style={styles.dotsRow}>{dots}</View>
+      <View style={styles.boxesRow}>{boxes}</View>
       <TextInput
         ref={inputRef}
         value={value}
@@ -87,26 +97,46 @@ const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
   },
-  dotsRow: {
+  boxesRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 10,
+    justifyContent: 'center',
+    width: '100%',
+  },
+  box: {
+    width: 46,
+    height: 58,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: 'rgba(244,234,216,0.18)',
+    backgroundColor: 'rgba(244,234,216,0.03)',
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  dot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
-    borderColor: uvColors.borderStrong,
-    backgroundColor: 'transparent',
-  },
-  dotFilled: {
+  boxActive: {
     borderColor: uvColors.gold,
-    backgroundColor: uvColors.gold,
+    backgroundColor: uvColors.goldSoft,
   },
-  dotError: {
+  boxFilled: {
+    borderColor: 'rgba(244,234,216,0.32)',
+    backgroundColor: 'rgba(244,234,216,0.06)',
+  },
+  boxError: {
     borderColor: uvColors.danger,
     backgroundColor: uvColors.dangerBg,
+  },
+  digit: {
+    fontFamily: uvFonts.sansSemibold,
+    fontSize: 26,
+    lineHeight: 30,
+    fontWeight: '800',
+    color: uvColors.text,
+  },
+  caret: {
+    width: 2,
+    height: 28,
+    borderRadius: 99,
+    backgroundColor: uvColors.goldBright,
   },
   hiddenInput: {
     position: 'absolute',

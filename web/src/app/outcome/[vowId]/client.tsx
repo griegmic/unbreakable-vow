@@ -20,7 +20,9 @@ export default function OutcomeClient({ vow }: { vow: Vow }) {
 
   const handleShare = async () => {
     const text = isKept
-      ? `Vow kept: "${vow.refined_text}" \u2014 $${amount} protected.`
+      ? amount > 0
+        ? `Vow kept: "${vow.refined_text}" \u2014 $${amount} protected.`
+        : `Vow kept: "${vow.refined_text}" \u2014 word honored.`
       : `Vow broken: "${vow.refined_text}" \u2014 $${amount} to ${vow.destination}.`;
 
     if (navigator.share) {

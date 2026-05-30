@@ -21,7 +21,7 @@ export function StepProgressHeader({
       {/* 58px column */}
       <View style={styles.stepCol}>
         <Text style={styles.stepText}>
-          {step} / {totalSteps}
+          Step {step}
         </Text>
       </View>
 
@@ -60,16 +60,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 38,
+    marginBottom: 34,
   },
   stepCol: {
     width: 58,
   },
   stepText: {
     fontFamily: uvFonts.sansSemibold,
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 16 * 0.08,
+    letterSpacing: 12 * 0.04,
     color: uvColors.textMuted,
   },
   progressTrack: {
@@ -91,8 +91,8 @@ const styles = StyleSheet.create({
   signIn: {
     fontFamily: uvFonts.sansSemibold,
     textTransform: 'uppercase',
-    letterSpacing: 12 * 0.26,
-    fontSize: 12,
+    letterSpacing: 11 * 0.26,
+    fontSize: 11,
     fontWeight: '800',
     color: uvColors.textMuted,
   },

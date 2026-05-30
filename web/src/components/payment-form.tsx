@@ -5,7 +5,7 @@ import { loadStripe } from '@stripe/stripe-js';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
-function CheckoutForm({ onSuccess, onCancel, onSkip, mode = 'payment' }: { onSuccess: () => void; onCancel: () => void; onSkip?: () => void; amount?: number; mode?: 'payment' | 'setup' }) {
+function CheckoutForm({ onSuccess, onCancel, onSkip, mode = 'payment' }: { onSuccess: () => void; onCancel: () => void; onSkip?: () => void; mode?: 'payment' | 'setup' }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -162,7 +162,7 @@ function CheckoutForm({ onSuccess, onCancel, onSkip, mode = 'payment' }: { onSuc
         {loading ? (
           <div className="w-5 h-5 border-2 border-[#0B0D11] border-t-transparent rounded-full animate-spin" />
         ) : (
-          <span className="text-[15px] font-bold" style={{ color: 'var(--uv-text-on-gold)' }}>{mode === 'setup' ? 'Save card instead' : 'Use card instead'}</span>
+          <span className="text-[15px] font-bold" style={{ color: 'var(--uv-text-on-gold)' }}>{mode === 'setup' ? 'Save stake' : 'Use card instead'}</span>
         )}
       </button>
       {onSkip && (
@@ -221,10 +221,12 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip, amount
           <div className="w-9 h-1 rounded-full" style={{ backgroundColor: 'var(--uv-text-muted)', opacity: 0.4 }} />
         </div>
         <h2 className="text-lg font-bold font-serif" style={{ color: 'var(--uv-text)' }}>
-          {mode === 'setup' ? 'Save your card' : amount ? `Hold $${amount} on your card` : 'Authorize hold'}
+          {mode === 'setup' ? 'Make it real.' : amount ? `Authorize $${amount}` : 'Authorize stake'}
         </h2>
         <p className="text-[13px] mb-3" style={{ color: 'var(--uv-text-muted)' }}>
-          {mode === 'setup' ? 'No charge now. Only if you break it.' : `No charge now. Released if you keep your vow.`}
+          {mode === 'setup'
+            ? `Authorize your $${amount ?? 50} stake. No charge now. Only if you break it.`
+            : `No charge now. Only if you break it.`}
         </p>
         <Elements
           stripe={stripePromise}
@@ -257,7 +259,7 @@ export function PaymentModal({ clientSecret, onSuccess, onCancel, onSkip, amount
             },
           }}
         >
-          <CheckoutForm onSuccess={onSuccess} onCancel={onCancel} onSkip={onSkip} amount={amount} mode={mode} />
+          <CheckoutForm onSuccess={onSuccess} onCancel={onCancel} onSkip={onSkip} mode={mode} />
         </Elements>
       </div>
     </div>

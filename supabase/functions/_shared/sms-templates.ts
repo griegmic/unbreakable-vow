@@ -61,7 +61,19 @@ export function makerSealConfirmMessage(stake: number): string {
 }
 
 export function makerWitnessAcceptedMessage(witnessName: string): string {
-  return `${BRAND}: ${witnessName} accepted. Your vow is live. Don't break it.${OPT_OUT}`;
+  return `${BRAND}: ${witnessName} accepted. Your vow is live and waiting on your dashboard.${OPT_OUT}`;
+}
+
+export function makerWitnessNoResponseMessage(witnessName: string): string {
+  return `${BRAND}: ${witnessName} has not accepted yet. Open your vow to resend, switch witnesses, or go solo.${OPT_OUT}`;
+}
+
+export function makerWitnessInviteFailedMessage(witnessName: string): string {
+  return `${BRAND}: We couldn't text ${witnessName}. Open your vow to share the witness link yourself.${OPT_OUT}`;
+}
+
+export function makerSelfVerdictTimeMessage(witnessName: string): string {
+  return `${BRAND}: Time's up. ${witnessName} never accepted, so you can make the call in your vow.${OPT_OUT}`;
 }
 
 export function maker24hMessage(stake: number): string {
@@ -92,34 +104,46 @@ export function makerOutcomeMessage(verdict: 'kept' | 'broken', stake: number, d
 
 export function challengeMessage(challengerName: string, stake: number, acceptUrl: string): string {
   if (stake > 0) {
-    return `${BRAND}: ${challengerName} challenged you. Accept, stake $${stake}, and make them judge it: ${acceptUrl}${OPT_OUT}`;
+    return `${BRAND}: ${challengerName} dared you. Accept, stake $${stake}, and make them call the verdict: ${acceptUrl}${OPT_OUT}`;
   }
-  return `${BRAND}: ${challengerName} challenged you. Accept, stake your word, and make them judge it: ${acceptUrl}${OPT_OUT}`;
+  return `${BRAND}: ${challengerName} dared you. Accept, stake your word, and make them call the verdict: ${acceptUrl}${OPT_OUT}`;
+}
+
+export function challengeReminderMessage(challengerName: string, acceptUrl: string): string {
+  return `${BRAND}: ${challengerName} is still waiting on your dare. Accept or pass here: ${acceptUrl}${OPT_OUT}`;
 }
 
 // ─── CAST / DARE — maker-side (the darer) ───
 
+export function castSentMessage(targetName: string): string {
+  return `${BRAND}: Your dare to ${targetName} is sent. We'll tell you when they answer.${OPT_OUT}`;
+}
+
+export function castInviteFailedMessage(targetName: string): string {
+  return `${BRAND}: We couldn't text ${targetName}. Open your dare to share the link yourself.${OPT_OUT}`;
+}
+
 export function castAcceptedMessage(targetName: string): string {
-  return `${BRAND}: ${targetName} accepted your challenge. The clock is ticking.${OPT_OUT}`;
+  return `${BRAND}: ${targetName} accepted your dare. You'll call the verdict when time is up.${OPT_OUT}`;
 }
 
 export function castDeclinedMessage(targetName: string): string {
-  return `${BRAND}: ${targetName} passed on your challenge.${OPT_OUT}`;
+  return `${BRAND}: ${targetName} passed on your dare. Closed cleanly.${OPT_OUT}`;
 }
 
 export function castAutoVoidedMessage(targetName: string): string {
-  return `${BRAND}: ${targetName} didn't respond in 48h. Challenge voided.${OPT_OUT}`;
+  return `${BRAND}: ${targetName} didn't respond in 48h. Dare closed.${OPT_OUT}`;
 }
 
 export function castVerdictDayMessage(targetName: string, verdictUrl: string): string {
-  return `${BRAND}: Time to rule on your challenge to ${targetName}. Did they keep it? ${verdictUrl}${OPT_OUT}`;
+  return `${BRAND}: Time to rule on your dare to ${targetName}. Did they keep it? ${verdictUrl}${OPT_OUT}`;
 }
 
 // ─── CAST — verdict outcome to target ───
 
 export function castOutcomeMessage(makerName: string, verdict: 'kept' | 'broken', stake: number, destination: string): string {
   if (verdict === 'kept') {
-    return `${BRAND}: ${makerName} ruled kept. Challenge closed. Nothing owed.${OPT_OUT}`;
+    return `${BRAND}: ${makerName} ruled kept. Dare closed. Nothing owed.${OPT_OUT}`;
   }
   return `${BRAND}: ${makerName} ruled broken. $${stake} went to ${destination}.${OPT_OUT}`;
 }

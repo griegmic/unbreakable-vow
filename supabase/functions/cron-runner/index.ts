@@ -5,8 +5,10 @@ import { normalizePhoneE164 } from '../_shared/phone.ts';
 import {
   sealMessage, witnessReminderMessage, verdictRequestMessage,
   challengeMessage,
+  challengeReminderMessage,
   witness24hMessage,
-  maker24hMessage, makerVerdictTimeMessage, makerOutcomeMessage,
+  maker24hMessage, makerVerdictTimeMessage,
+  makerSelfVerdictTimeMessage, makerWitnessNoResponseMessage, castAutoVoidedMessage,
 } from '../_shared/sms-templates.ts';
 import { createAuditEvent } from '../_shared/audit.ts';
 import { upsertSettlement } from '../_shared/settlements.ts';
@@ -121,6 +123,7 @@ Deno.serve(async (req) => {
     sms_retry: 0,
     refund_retry: 0,
     vow_lifecycle: 0,
+    challenge_reminder: 0,
     challenge_expire: 0,
     push: 0,
     maker_sms: 0,
@@ -141,6 +144,7 @@ Deno.serve(async (req) => {
     const { data: unacceptedVows } = await supabase
       .from('vows')
       .select('*')
+      .eq('vow_type', 'self')
       .eq('status', 'active')
       .not('witness_phone', 'is', null)
       .is('witness_accepted_at', null)
@@ -148,6 +152,7 @@ Deno.serve(async (req) => {
       .lte('sealed_at', reminderDeadline.toISOString());
 
     for (const vow of unacceptedVows || []) {
+      if (vow.ends_at && new Date(vow.ends_at) <= now) continue;
       // Idempotency check
       const { data: existing } = await supabase
         .from('sms_log')
@@ -169,14 +174,15 @@ Deno.serve(async (req) => {
           await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'witness_reminder', twilio_sid: sid });
         }
 
-        // Push notification to owner
-        await supabase.from('push_queue').insert({
-          user_id: vow.user_id,
-          title: `${vow.witness_name} hasn't responded`,
-          body: 'Your witness hasn\'t accepted yet. You can resend, switch witnesses, or go solo.',
-          data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'witness_no_response' },
-          send_after: now.toISOString(),
-        });
+        const { data: makerUser } = await supabase.from('users').select('phone').eq('id', vow.user_id).single();
+        const witnessName = vow.witness_name || 'Your witness';
+        await notifyMaker(
+          supabase,
+          vow.user_id,
+          { type: 'maker_24h_no_acceptance', vowId: vow.id, witnessName },
+          { to: makerUser?.phone || '', body: makerWitnessNoResponseMessage(witnessName) },
+          vow.id,
+        );
 
         results.witness_reminder++;
       } catch (err) {
@@ -247,7 +253,11 @@ Deno.serve(async (req) => {
         // Update status to awaiting_verdict
         await supabase.from('vows').update({ status: 'awaiting_verdict' }).eq('id', vow.id);
 
-        if (vow.witness_phone) {
+        const isChallengeVow = vow.vow_type === 'challenge';
+        const witnessAccepted = Boolean(vow.witness_accepted_at);
+        const isSolo = vow.witness_name === 'Just me';
+
+        if (vow.witness_phone && (isChallengeVow || witnessAccepted)) {
           // For challenge vows, the vow keeper is target_user_id — use their name
           const nameUserId = (vow.vow_type === 'challenge' && vow.target_user_id) ? vow.target_user_id : vow.user_id;
           const { data: profile } = await supabase.from('users').select('display_name').eq('id', nameUserId).single();
@@ -258,17 +268,34 @@ Deno.serve(async (req) => {
           if (sid) {
             await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'verdict_request', twilio_sid: sid });
           }
+        } else if (!isChallengeVow && !witnessAccepted && !isSolo) {
+          const witnessName = vow.witness_name || 'Your witness';
+          const { data: makerUser } = await supabase.from('users').select('phone').eq('id', vow.user_id).single();
+          await notifyMaker(
+            supabase,
+            vow.user_id,
+            { type: 'maker_self_verdict_time', vowId: vow.id, witnessName },
+            {
+              to: makerUser?.phone || '',
+              body: makerSelfVerdictTimeMessage(witnessName),
+            },
+            vow.id,
+          );
         }
 
-        // For challenge vows, also push-notify the target (vow keeper) that verdict time is here
+        // For challenge vows, also notify the target (vow keeper) that verdict time is here.
         if (vow.vow_type === 'challenge' && vow.target_user_id) {
-          await supabase.from('push_queue').insert({
-            user_id: vow.target_user_id,
-            title: 'Time\'s up',
-            body: `Your vow deadline has passed. ${vow.witness_name || 'Your challenger'} will decide the verdict.`,
-            data: { route: `/vow-detail?vowId=${vow.id}`, vow_id: vow.id, event: 'challenge_verdict_pending' },
-            send_after: now.toISOString(),
-          });
+          const { data: targetUser } = await supabase.from('users').select('phone').eq('id', vow.target_user_id).single();
+          await notifyMaker(
+            supabase,
+            vow.target_user_id,
+            { type: 'maker_verdict_time', vowId: vow.id, witnessName: vow.witness_name || 'Your challenger' },
+            {
+              to: targetUser?.phone || '',
+              body: makerVerdictTimeMessage(vow.witness_name || 'your challenger'),
+            },
+            vow.id,
+          );
         }
 
         results.verdict_request++;
@@ -526,16 +553,20 @@ Deno.serve(async (req) => {
           const amountDollars = Math.round(vow.stake_amount / 100);
 
           let body: string;
+          let toPhone = vow.witness_phone;
+          let messageType = 'seal';
           if (vow.vow_type === 'challenge' && vow.challenge_invite_token) {
             const challengeUrl = `https://unbreakablevow.app/c/${vow.challenge_invite_token}`;
             body = challengeMessage(ownerName, Math.round(vow.stake_amount / 100), challengeUrl);
+            toPhone = vow.target_phone;
+            messageType = 'challenge_invite';
           } else {
             const witnessUrl = `https://unbreakablevow.app/w/${vow.witness_invite_token}`;
             body = sealMessage(amountDollars, witnessUrl, ownerName);
           }
-          const sid = await sendSMSWithRetry(supabase, vow.witness_phone!, body, 'seal', vow.id);
+          const sid = await sendSMSWithRetry(supabase, toPhone!, body, messageType, vow.id);
           if (sid) {
-            await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'seal', twilio_sid: sid });
+            await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: messageType, twilio_sid: sid });
           }
           await supabase.from('vows').update({ sms_failed: false }).eq('id', vow.id);
           await createAuditEvent(supabase, vow.id, sid ? 'sms_retried' : 'sms_retry_queued', 'system');
@@ -732,6 +763,11 @@ Deno.serve(async (req) => {
 
           // --- Verdict time: maker push. ---
           if (now >= endsAt && hasHealthyPush(keeperNotify)) {
+            const witnessAccepted = Boolean(vow.witness_accepted_at);
+            const isChallengeVow = vow.vow_type === 'challenge';
+            const isSolo = vow.witness_name === 'Just me';
+            const pendingExternalWitness = !isChallengeVow && !witnessAccepted && !isSolo;
+            if (pendingExternalWitness) continue;
             const queued = await queuePush(
               supabase,
               keeperId,
@@ -742,7 +778,7 @@ Deno.serve(async (req) => {
           }
 
           // --- Verdict time: app-linked witness push, SMS remains primary in TASK 2. ---
-          if (now >= endsAt && vow.witness_user_id && vow.witness_invite_token) {
+          if (now >= endsAt && (vow.vow_type === 'challenge' || vow.witness_accepted_at) && vow.witness_user_id && vow.witness_invite_token) {
             const { data: witnessNotify } = await supabase
               .from('users')
               .select('push_token, last_push_receipt_ok_at, sms_only_preference')
@@ -830,13 +866,21 @@ Deno.serve(async (req) => {
 
           // --- Maker verdict time SMS ---
           if (makerNeedsSmsFallback && now >= endsAt) {
-            if (!(await smsAlreadySent('maker_verdict_time'))) {
+            if (!(await smsAlreadySent('maker_verdict_time')) && !(await smsAlreadySent('maker_self_verdict_time'))) {
               const { data: makerUser } = await supabase.from('users').select('phone').eq('id', keeperId).single();
               if (makerUser?.phone) {
-                const body = makerVerdictTimeMessage(vow.witness_name || 'your witness');
-                const sid = await sendSMSWithRetry(supabase, makerUser.phone, body, 'maker_verdict_time', vow.id);
+                const witnessAccepted = Boolean(vow.witness_accepted_at);
+                const isChallengeVow = vow.vow_type === 'challenge';
+                const isSolo = vow.witness_name === 'Just me';
+                const witnessName = vow.witness_name || 'your witness';
+                const pendingExternalWitness = !isChallengeVow && !witnessAccepted && !isSolo;
+                const body = pendingExternalWitness
+                  ? makerSelfVerdictTimeMessage(witnessName)
+                  : makerVerdictTimeMessage(witnessName);
+                const messageType = pendingExternalWitness ? 'maker_self_verdict_time' : 'maker_verdict_time';
+                const sid = await sendSMSWithRetry(supabase, makerUser.phone, body, messageType, vow.id);
                 if (sid) {
-                  await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'maker_verdict_time', twilio_sid: sid });
+                  await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: messageType, twilio_sid: sid });
                 }
                 results.maker_sms++;
               }
@@ -844,7 +888,7 @@ Deno.serve(async (req) => {
           }
 
           // --- Witness 24h before SMS ---
-          if (vow.witness_phone && twentyFourBefore >= midpoint && now >= twentyFourBefore) {
+          if (vow.witness_phone && (vow.vow_type === 'challenge' || vow.witness_accepted_at) && twentyFourBefore >= midpoint && now >= twentyFourBefore) {
             if (!(await smsAlreadySent('witness_24h'))) {
               const { data: keeperProfile } = await supabase.from('users').select('display_name').eq('id', keeperId).single();
               const keeperName = keeperProfile?.display_name || 'your friend';
@@ -865,12 +909,61 @@ Deno.serve(async (req) => {
       results.errors.push(`sms_lifecycle: ${msg}`);
     }
 
+    // === TASK 7b: Remind unanswered dare targets once before expiry ===
+    try {
+      const challengeReminderCutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      const challengeExpiryCutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
+      const { data: pendingDares } = await supabase
+        .from('vows')
+        .select('id, user_id, target_phone, challenge_invite_token, created_at')
+        .eq('vow_type', 'challenge')
+        .eq('challenge_status', 'pending')
+        .eq('status', 'draft')
+        .not('target_phone', 'is', null)
+        .not('challenge_invite_token', 'is', null)
+        .lte('created_at', challengeReminderCutoff)
+        .gt('created_at', challengeExpiryCutoff);
+
+      for (const vow of pendingDares || []) {
+        const { data: existing } = await supabase
+          .from('sms_log')
+          .select('id')
+          .eq('vow_id', vow.id)
+          .eq('message_type', 'challenge_reminder')
+          .limit(1)
+          .maybeSingle();
+        if (existing) continue;
+
+        try {
+          const { data: profile } = await supabase.from('users').select('display_name').eq('id', vow.user_id).single();
+          const challengerName = profile?.display_name || 'Someone';
+          const acceptUrl = `https://unbreakablevow.app/c/${vow.challenge_invite_token}`;
+          const sid = await sendSMSWithRetry(
+            supabase,
+            vow.target_phone,
+            challengeReminderMessage(challengerName, acceptUrl),
+            'challenge_reminder',
+            vow.id,
+          );
+          if (sid) {
+            await supabase.from('sms_log').insert({ vow_id: vow.id, message_type: 'challenge_reminder', twilio_sid: sid });
+          }
+          results.challenge_reminder++;
+        } catch (err) {
+          results.errors.push(`challenge_reminder ${vow.id}: ${err}`);
+        }
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      results.errors.push(`challenge_reminder: ${msg}`);
+    }
+
     // === TASK 8: Expire unanswered challenge dares after 48h ===
     try {
       const challengeCutoff = new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString();
       const { data: expiredDares } = await supabase
         .from('vows')
-        .select('id, user_id, refined_text')
+        .select('id, user_id, refined_text, target_phone')
         .eq('vow_type', 'challenge')
         .eq('challenge_status', 'pending')
         .eq('status', 'draft')
@@ -891,14 +984,15 @@ Deno.serve(async (req) => {
 
           await createAuditEvent(supabase, vow.id, 'challenge_expired', 'system');
 
-          // Push notification to challenger
-          await supabase.from('push_queue').insert({
-            user_id: vow.user_id,
-            title: 'Dare expired',
-            body: "They didn't respond to your dare.",
-            data: { vow_id: vow.id, event: 'challenge_expired', route: '/dashboard' },
-            send_after: now.toISOString(),
-          });
+          const targetName = vow.target_phone ? `Friend ${String(vow.target_phone).slice(-4)}` : 'They';
+          const { data: challengerUser } = await supabase.from('users').select('phone').eq('id', vow.user_id).single();
+          await notifyMaker(
+            supabase,
+            vow.user_id,
+            { type: 'maker_cast_auto_voided', vowId: vow.id, targetName },
+            { to: challengerUser?.phone || '', body: castAutoVoidedMessage(targetName) },
+            vow.id,
+          );
 
           results.challenge_expire++;
         } catch (err) {

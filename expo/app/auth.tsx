@@ -1,7 +1,6 @@
 import React from 'react';
-
-import { LiveWebShell } from '@/components/live-web-shell';
+import { Redirect } from 'expo-router';
 
 export default function AuthScreen() {
-  return <LiveWebShell path="/quick-vow" />;
+  return <Redirect href="/native-perfect/create/auth" />;
 }
