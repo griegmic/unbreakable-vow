@@ -233,7 +233,8 @@ function VowDetailContent() {
       textTransitionDoneRef.current = true;
 
       const isSelfWitness = vow.witness_name === 'Just me';
-      if (!isSelfWitness) {
+      const isAcceptedDare = vow.vow_type === 'challenge';
+      if (!isSelfWitness && !isAcceptedDare) {
         setCelebPhase('share');
       } else {
         setCelebPhase('fade');
@@ -287,6 +288,10 @@ function VowDetailContent() {
   // Celebration share handlers
   const handleCelebTextWitness = () => {
     if (!vow || !vow.witness_invite_token || !origin) return;
+    if (vow.vow_type === 'challenge') {
+      handleCelebSkipShare();
+      return;
+    }
     const wUrl = `${origin}/w/${vow.witness_invite_token}`;
     const smsBody = encodeURIComponent(
       `I just made an Unbreakable Vow: "${vow.refined_text}" \u2014 and I need you to hold me to it.\n\n${wUrl}`
@@ -337,6 +342,7 @@ function VowDetailContent() {
 
   // Post-seal celebration overlay
   if (showCelebration && celebPhase !== 'done') {
+    const isCelebratingDare = vow?.vow_type === 'challenge';
     const celebWitnessName = vow?.witness_name && !['Your witness', 'Witness'].includes(vow.witness_name)
       ? vow.witness_name : 'your witness';
     const celebWitnessUrl = vow?.witness_invite_token && origin
@@ -419,7 +425,7 @@ function VowDetailContent() {
                 color: 'var(--uv-gold-bright, #F2C766)',
                 margin: '0 0 12px',
               }}>
-                Sealed
+                {isCelebratingDare ? 'Accepted' : 'Sealed'}
               </p>
               <p
                 style={{
@@ -431,8 +437,17 @@ function VowDetailContent() {
                   margin: 0,
                 }}
               >
-                Your vow is<br />
-                <em style={{ color: 'var(--uv-gold, #D4A955)', fontStyle: 'italic' }}>bound.</em>
+                {isCelebratingDare ? (
+                  <>
+                    You&apos;re<br />
+                    <em style={{ color: 'var(--uv-gold, #D4A955)', fontStyle: 'italic' }}>in.</em>
+                  </>
+                ) : (
+                  <>
+                    Your vow is<br />
+                    <em style={{ color: 'var(--uv-gold, #D4A955)', fontStyle: 'italic' }}>bound.</em>
+                  </>
+                )}
               </p>
               <div style={{
                 width: 92,
@@ -458,7 +473,7 @@ function VowDetailContent() {
                 color: 'var(--uv-text-muted)',
                 margin: 0,
               }}>
-                Next: send the witness link.
+                {isCelebratingDare ? `${celebWitnessName} judges at the deadline.` : 'Next: send the witness link.'}
               </p>
             </div>
           </>
