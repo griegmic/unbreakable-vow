@@ -443,6 +443,7 @@ Deno.serve(async (req) => {
         stripe_payment_intent_id: stripePaymentIntentId,
         stripe_setup_intent_id: stripeSetupIntentId,
         stripe_payment_method_id: stripePaymentMethodId,
+        witness_accepted_at: new Date().toISOString(),
         status: 'active',
         sealed_at: new Date().toISOString(),
       })

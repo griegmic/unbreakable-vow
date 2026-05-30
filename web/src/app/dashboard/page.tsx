@@ -449,7 +449,8 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {activeVows.map(vow => {
                 const stakeDollars = Math.round(vow.stake_amount / 100);
-                const isAwaitingWitness = ['active', 'sealed'].includes(vow.status) && !vow.witness_accepted_at && vow.witness_name !== 'Just me' && Boolean(vow.witness_invite_token);
+                const isChallenge = vow.vow_type === 'challenge';
+                const isAwaitingWitness = !isChallenge && ['active', 'sealed'].includes(vow.status) && !vow.witness_accepted_at && vow.witness_name !== 'Just me' && Boolean(vow.witness_invite_token);
                 const isAwaitingVerdict = vow.status === 'awaiting_verdict';
                 const daysLeft = vow.ends_at ? Math.ceil((new Date(vow.ends_at).getTime() - Date.now()) / 86400000) : null;
                 const totalDays = (vow.starts_at && vow.ends_at)
@@ -457,6 +458,7 @@ export default function DashboardPage() {
                   : null;
                 const dayNumber = (totalDays !== null && daysLeft !== null) ? Math.max(1, totalDays - daysLeft + 1) : null;
                 const witnessFirst = vow.witness_name?.split(' ')[0] || 'Witness';
+                const judgeFirst = isChallenge ? witnessFirst : null;
 
                 // Time display for awaiting-witness: "Sealed X hrs ago"
                 const sealedHoursAgo = vow.sealed_at
@@ -473,6 +475,8 @@ export default function DashboardPage() {
                   ? `Awaiting ${witnessFirst}`
                   : isAwaitingVerdict
                     ? 'Awaiting verdict'
+                    : isChallenge
+                      ? `Dare active`
                     : (dayNumber !== null && totalDays !== null)
                       ? `Active \u00B7 Day ${dayNumber} of ${totalDays}`
                       : 'Active';
@@ -510,7 +514,7 @@ export default function DashboardPage() {
 	                          {isAwaitingWitness
 	                            ? <>Sealed <b style={{ color: 'var(--uv-text)', fontWeight: 700 }}>{sealedHoursAgo ?? '?'} hrs</b> ago</>
 	                            : isAwaitingVerdict
-	                              ? <>{witnessFirst} replies in <b style={{ color: 'var(--uv-text)', fontWeight: 700 }}>{verdictHoursLeft ?? '?'} hrs</b></>
+	                              ? <>{isChallenge ? `${witnessFirst} judges` : `${witnessFirst} replies`} in <b style={{ color: 'var(--uv-text)', fontWeight: 700 }}>{verdictHoursLeft ?? '?'} hrs</b></>
 	                              : daysLeft !== null
 	                                ? (daysLeft <= 0 ? <b style={{ color: 'var(--uv-text)', fontWeight: 700 }}>Time&apos;s up</b> : <><b style={{ color: 'var(--uv-text)', fontWeight: 700 }}>{daysLeft} days</b> left</>)
 	                                : ''
@@ -556,8 +560,8 @@ export default function DashboardPage() {
                       </div>
                       <span style={{ marginLeft: 'auto' }}>
                         <WitnessChip
-                          status={vow.witness_accepted_at ? 'accepted' : 'pending'}
-                          name={witnessFirst}
+                          status={isChallenge || vow.witness_accepted_at ? 'accepted' : 'pending'}
+                          name={judgeFirst || witnessFirst}
                         />
                       </span>
                     </div>

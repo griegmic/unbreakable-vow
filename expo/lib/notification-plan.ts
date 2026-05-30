@@ -20,7 +20,7 @@ export function getNotificationPlan(vow: VowRow): NotificationPlanItem[] {
     ];
   }
 
-  if (vow.status === 'active' && !vow.witness_accepted_at && vow.witness_name !== 'Just me') {
+  if (vow.status === 'active' && !isDare && !vow.witness_accepted_at && vow.witness_name !== 'Just me') {
     return [
       { label: 'Now', body: `${witnessName} has the invite. The link stays here until they answer.`, channel: 'sms' },
       { label: '24 hours', body: `If ${witnessName} has not accepted, you get one clean recovery nudge.`, channel: 'app_or_sms' },
@@ -32,11 +32,13 @@ export function getNotificationPlan(vow: VowRow): NotificationPlanItem[] {
   if (vow.status === 'active') {
     const witnessLine = vow.witness_name === 'Just me'
       ? 'You will decide this one yourself at the deadline.'
+      : isDare
+        ? 'The challenger gets the verdict link at the deadline.'
       : `${witnessName} gets a 24-hour heads-up and the verdict link at the deadline.`;
     return [
       { label: 'Day 1', body: 'Longer vows get one early pulse while motivation is still fresh.', channel: 'app_or_sms' },
       { label: '24 hours left', body: `${stake} is still on the line. Finish clean.`, channel: 'app_or_sms' },
-      { label: 'Verdict time', body: witnessLine, channel: vow.witness_name === 'Just me' ? 'app' : 'sms' },
+      { label: 'Verdict time', body: witnessLine, channel: vow.witness_name === 'Just me' ? 'app' : isDare ? 'app_or_sms' : 'sms' },
     ];
   }
 

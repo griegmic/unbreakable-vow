@@ -47,26 +47,28 @@ export default function NativePerfectVowDetail() {
     );
   }
 
+  const isDare = vow.vow_type === 'challenge';
+  const judgeName = isDare ? (vow.witness_name || 'The challenger') : (vow.witness_name || 'Your witness');
   const solo = vow.witness_name === 'Just me';
-  const waiting = vow.status === 'active' && !vow.witness_accepted_at && !solo;
+  const witnessAccepted = Boolean(vow.witness_accepted_at) || solo || isDare;
+  const waiting = !isDare && vow.status === 'active' && !vow.witness_accepted_at && !solo;
   const due = vow.status === 'awaiting_verdict';
   const kept = vow.status === 'kept';
   const broken = vow.status === 'broken';
-  const live = vow.status === 'active' && (Boolean(vow.witness_accepted_at) || solo);
-  const witnessAccepted = Boolean(vow.witness_accepted_at) || solo || vow.vow_type === 'challenge';
+  const live = vow.status === 'active' && witnessAccepted;
   const alertPlan = getNotificationPlan(vow);
 
   return (
     <NativePerfectScreen backTo="/native-perfect/dashboard">
       <HeroTitle
         kicker={waiting ? 'One tap away' : due ? 'Verdict due' : kept ? 'Kept' : broken ? 'Broken' : 'Vow live'}
-        title={waiting ? `Waiting for ${vow.witness_name || 'your witness'}.` : due ? 'Time is up.' : kept ? 'You kept it.' : broken ? 'You broke it.' : 'Keep'}
-        accent={live ? 'going.' : undefined}
-        body={waiting ? 'Your vow is sealed. Acceptance locks in your witness.' : due ? (witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} decides if you kept your word.` : `${vow.witness_name || 'Your witness'} never accepted, so you can make the call.`) : kept ? 'The stake stays put. Receipt earned.' : broken ? `${money(vow)} goes to ${vow.destination}.` : solo ? 'You are calling this one yourself.' : `${vow.witness_name || 'Your witness'} decides if you kept your word.`}
+        title={waiting ? `Waiting for ${vow.witness_name || 'your witness'}.` : due ? 'Time is up.' : kept ? 'You kept it.' : broken ? 'You broke it.' : isDare ? 'Keep the' : 'Keep'}
+        accent={live ? (isDare ? 'dare.' : 'going.') : undefined}
+        body={waiting ? 'Your vow is sealed. Acceptance locks in your witness.' : due ? (isDare ? `${judgeName} decides if you kept the dare.` : witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} decides if you kept your word.` : `${vow.witness_name || 'Your witness'} never accepted, so you can make the call.`) : kept ? 'The stake stays put. Receipt earned.' : broken ? `${money(vow)} goes to ${vow.destination}.` : isDare ? `${judgeName} decides if you kept the dare.` : solo ? 'You are calling this one yourself.' : `${vow.witness_name || 'Your witness'} decides if you kept your word.`}
       />
 
       <ActionCard
-        meta="The vow"
+        meta={isDare ? 'The dare' : 'The vow'}
         title={vow.refined_text || vow.raw_input}
         body={`${money(vow)} · ${vow.destination} · ${deadline(vow)}`}
         tone={kept ? 'green' : broken ? 'red' : waiting ? 'orange' : 'gold'}
@@ -108,25 +110,31 @@ export default function NativePerfectVowDetail() {
 
       {live ? (
         <ActionCard title={timeLeftTitle(vow)} body={`Verdict by ${deadline(vow)}.`}>
-          <GoldCTA
-            label={earlyText}
-            onPress={async () => {
-              if (!vow.id) return;
-              setEarlyText('Asking...');
-              const result = await requestEarlyCompletion(vow.id);
-              setEarlyText(result.success ? 'Witness asked' : 'Try again');
-            }}
-          />
+          {isDare ? (
+            <GoldCTA label="Share progress" onPress={() => shareVow(vow)} />
+          ) : (
+            <GoldCTA
+              label={earlyText}
+              onPress={async () => {
+                if (!vow.id) return;
+                setEarlyText('Asking...');
+                const result = await requestEarlyCompletion(vow.id);
+                setEarlyText(result.success ? 'Witness asked' : 'Try again');
+              }}
+            />
+          )}
           <View style={styles.quietRow}>
-            {!solo ? <QuietPill label={`Text ${vow.witness_name || 'witness'} a check-in`} onPress={() => textWitness(vow)} /> : null}
-            <QuietPill label="Share vow" onPress={() => shareVow(vow)} />
+            {!solo && !isDare ? <QuietPill label={`Text ${vow.witness_name || 'witness'} a check-in`} onPress={() => textWitness(vow)} /> : null}
+            <QuietPill label={isDare ? 'Share dare' : 'Share vow'} onPress={() => shareVow(vow)} />
           </View>
         </ActionCard>
       ) : null}
 
       {due ? (
-        <ActionCard title={witnessAccepted ? 'Waiting on the verdict.' : 'Make the call.'} body={witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} has the final say.` : `${vow.witness_name || 'Your witness'} never accepted. This is back in your hands.`} tone="orange">
-          {witnessAccepted ? (
+        <ActionCard title={isDare ? 'Waiting on the verdict.' : witnessAccepted ? 'Waiting on the verdict.' : 'Make the call.'} body={isDare ? `${judgeName} has the final say.` : witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} has the final say.` : `${vow.witness_name || 'Your witness'} never accepted. This is back in your hands.`} tone="orange">
+          {isDare ? (
+            <QuietPill label="Back to dashboard" onPress={() => router.replace('/native-perfect/dashboard' as never)} />
+          ) : witnessAccepted ? (
             <QuietPill
               label={`Nudge ${vow.witness_name || 'witness'} to decide`}
               onPress={async () => {

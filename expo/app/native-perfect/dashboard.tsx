@@ -55,8 +55,8 @@ export default function NativePerfectDashboard() {
       {!loading && needsNow ? (
         <ActionCard
           meta="Needs you now"
-          title={needsNow.type === 'verdict' ? `${needsNow.vow.witness_name || 'Someone'} needs your verdict.` : needsNow.type === 'own_verdict' ? 'Your vow needs a verdict.' : `${needsNow.vow.witness_name || 'Your witness'} still needs the invite.`}
-          body={needsNow.type === 'verdict' ? vowTitle(needsNow.vow) : needsNow.type === 'own_verdict' ? 'Open it to nudge the witness or make the call if they never accepted.' : 'One tap gets the witness loop moving.'}
+          title={needsNow.type === 'verdict' ? `${needsNow.vow.witness_name || 'Someone'} needs your verdict.` : needsNow.type === 'own_verdict' ? verdictTitle(needsNow.vow) : `${needsNow.vow.witness_name || 'Your witness'} still needs the invite.`}
+          body={needsNow.type === 'verdict' ? vowTitle(needsNow.vow) : needsNow.type === 'own_verdict' ? verdictBody(needsNow.vow) : 'One tap gets the witness loop moving.'}
           tone="orange"
           onPress={() => openVow(needsNow.vow)}
         />
@@ -138,10 +138,20 @@ function stakeLabel(vow: VowRow) {
 
 function witnessLabel(vow: VowRow) {
   if (isPendingDare(vow)) return 'Waiting on dare target';
+  if (isAcceptedDare(vow)) return `${vow.witness_name || 'The challenger'} judges`;
   if (vow.witness_name === 'Just me') return 'You judge this one';
   if (vow.witness_accepted_at) return `${vow.witness_name || 'Witness'} is watching`;
   if (vow.witness_name) return `Waiting on ${vow.witness_name}`;
   return 'Needs witness';
+}
+
+function verdictTitle(vow: VowRow) {
+  return isAcceptedDare(vow) ? 'Your dare needs a verdict.' : 'Your vow needs a verdict.';
+}
+
+function verdictBody(vow: VowRow) {
+  if (isAcceptedDare(vow)) return `${vow.witness_name || 'The challenger'} makes the call. Keep this open until the outcome lands.`;
+  return 'Open it to nudge the witness or make the call if they never accepted.';
 }
 
 function makerLabel(vow: VowRow) {
@@ -149,11 +159,15 @@ function makerLabel(vow: VowRow) {
 }
 
 function isWaitingWitness(vow: VowRow) {
-  return vow.status === 'active' && !vow.witness_accepted_at && vow.witness_name !== 'Just me' && Boolean(vow.witness_invite_token);
+  return vow.vow_type !== 'challenge' && vow.status === 'active' && !vow.witness_accepted_at && vow.witness_name !== 'Just me' && Boolean(vow.witness_invite_token);
 }
 
 function isPendingDare(vow: VowRow) {
   return vow.vow_type === 'challenge' && vow.challenge_status === 'pending';
+}
+
+function isAcceptedDare(vow: VowRow) {
+  return vow.vow_type === 'challenge' && vow.challenge_status === 'accepted';
 }
 
 function statusLabel(vow: VowRow) {

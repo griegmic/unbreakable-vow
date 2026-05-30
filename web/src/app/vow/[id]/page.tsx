@@ -44,7 +44,7 @@ function Countdown({ endsAt, startsAt }: { endsAt: string; startsAt?: string }) 
   if (time.totalMs <= 0) display = '00:00:00';
   else if (showDayFormat) {
     const start = new Date(startsAt!).getTime(), end = new Date(endsAt).getTime();
-    const total = Math.ceil((end - start) / 86400000), elapsed = Math.ceil((Date.now() - start) / 86400000);
+    const total = Math.ceil((end - start) / 86400000), elapsed = Math.ceil((time.nowMs - start) / 86400000);
     display = `Day ${Math.min(elapsed, total)} of ${total}`;
   } else display = `${pad(time.hours)}:${pad(time.minutes)}:${pad(time.seconds)}`;
   return (
@@ -54,8 +54,9 @@ function Countdown({ endsAt, startsAt }: { endsAt: string; startsAt?: string }) 
   );
 }
 function getTimeRemaining(endsAt: string) {
-  const diff = Math.max(0, new Date(endsAt).getTime() - Date.now());
-  return { hours: Math.floor(diff / 3600000), minutes: Math.floor((diff % 3600000) / 60000), seconds: Math.floor((diff % 60000) / 1000), totalMs: diff };
+  const nowMs = Date.now();
+  const diff = Math.max(0, new Date(endsAt).getTime() - nowMs);
+  return { hours: Math.floor(diff / 3600000), minutes: Math.floor((diff % 3600000) / 60000), seconds: Math.floor((diff % 60000) / 1000), totalMs: diff, nowMs };
 }
 function pad(n: number) { return n.toString().padStart(2, '0'); }
 
@@ -632,6 +633,7 @@ function VowDetailContent() {
   const stakeLabel = vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)}` : null;
   const destinationShort = shortDestinationName(vow.destination);
   const isTerminal = ['kept', 'broken', 'voided'].includes(vow.status);
+  const isChallenge = vow.vow_type === 'challenge';
 
   const witnessLabel = isSolo
     ? "You're the judge"
@@ -644,6 +646,7 @@ function VowDetailContent() {
   const witnessDisplayName = !vow.witness_name || ['Your witness', 'Witness'].includes(vow.witness_name)
     ? 'your witness'
     : vow.witness_name;
+  const challengeJudgeName = witnessDisplayName === 'your witness' ? 'the challenger' : witnessDisplayName;
 
   const stakeSubtitle = vow.stake_amount > 0
     ? `${stakeLabel} at stake \u00b7 ${(destinationShort || vow.destination)} if broken`
@@ -1090,6 +1093,7 @@ function VowDetailContent() {
   //  PHASE: ACTIVE
   // ============================================================
   if (phase === 'active') {
+    const isAcceptedDareTarget = isChallenge && isTarget && !isMaker;
     const cdDays = Math.floor(cdTime.totalMs / 86400000);
     const cdHrs = cdTime.hours % 24;
     const cdMin = cdTime.minutes;
@@ -1106,12 +1110,16 @@ function VowDetailContent() {
       ? `${stakeLabel} if broken${vow.destination ? ` · ${vow.destination}` : ''}`
       : 'No money on the line';
     const activeJudgeName = witnessDisplayName === 'your witness' ? 'Your witness' : witnessDisplayName;
-    const judgeLine = isSolo
+    const judgeLine = isAcceptedDareTarget
+      ? `${challengeJudgeName} decides if you kept the dare.`
+      : isSolo
       ? 'You judge this one.'
       : vow.witness_accepted_at
         ? `${activeJudgeName} decides if you kept it.`
         : `Get ${witnessDisplayName} in before verdict day.`;
-    const primaryLabel = isSolo
+    const primaryLabel = isAcceptedDareTarget
+      ? 'Share progress'
+      : isSolo
       ? 'Mark kept early'
       : vow.witness_accepted_at && !vow.witness_phone
         ? 'Share vow'
@@ -1145,6 +1153,8 @@ function VowDetailContent() {
     const handlePrimaryActiveAction = () => {
       if (isSolo) {
         handleDoneEarly();
+      } else if (isAcceptedDareTarget) {
+        handleActiveShare();
       } else if (vow.witness_phone) {
         handleTextWitness();
       } else if (vow.witness_accepted_at) {
@@ -1159,11 +1169,11 @@ function VowDetailContent() {
         <FlowTop action="Dashboard" onAction={() => router.push('/dashboard')} />
         <FlowStatus>Vow live</FlowStatus>
         <FlowCard hot compact>
-          <FlowLabel>The vow</FlowLabel>
+          <FlowLabel>{isAcceptedDareTarget ? 'The dare' : 'The vow'}</FlowLabel>
           <FlowVow>{vow.refined_text}</FlowVow>
           <FlowMeta items={[
             { label: stakeLabel ? `${stakeLabel} stake` : 'Your word', gold: true },
-            { label: isSolo ? 'You judge' : vow.witness_accepted_at ? `${activeJudgeName} is watching` : `${witnessDisplayName} pending` },
+            { label: isAcceptedDareTarget ? `${challengeJudgeName} judges` : isSolo ? 'You judge' : vow.witness_accepted_at ? `${activeJudgeName} is watching` : `${witnessDisplayName} pending` },
           ]} />
         </FlowCard>
         {vow.ends_at && (
@@ -1179,12 +1189,12 @@ function VowDetailContent() {
           </FlowCard>
         )}
         <FlowJob
-          title={isSolo ? 'Keep going' : vow.witness_accepted_at ? 'Keep going' : 'Next move'}
-          body={isSolo ? 'You call this one when it is done.' : vow.witness_accepted_at ? `${activeJudgeName} decides if you kept your word.` : `Send ${witnessDisplayName} the invite so they can accept.`}
+          title={isAcceptedDareTarget ? 'Keep the dare' : isSolo ? 'Keep going' : vow.witness_accepted_at ? 'Keep going' : 'Next move'}
+          body={isAcceptedDareTarget ? judgeLine : isSolo ? 'You call this one when it is done.' : vow.witness_accepted_at ? `${activeJudgeName} decides if you kept your word.` : `Send ${witnessDisplayName} the invite so they can accept.`}
         />
         <FlowSpacer />
         <FlowCTA tone="green" onClick={handlePrimaryActiveAction} disabled={actionBusy}>{actionBusy ? 'Working...' : primaryLabel}</FlowCTA>
-        {!isSolo && <FlowSecondary onClick={handleDoneEarly}>Ask {witnessDisplayName} to release me early</FlowSecondary>}
+        {!isSolo && !isAcceptedDareTarget && <FlowSecondary onClick={handleDoneEarly}>Ask {witnessDisplayName} to release me early</FlowSecondary>}
         {showSecondaryShare && <FlowSecondary onClick={handleActiveShare}>Share vow</FlowSecondary>}
         <VoidConfirmModal />
         <DevVerdictButtons />
@@ -1197,7 +1207,8 @@ function VowDetailContent() {
   //  PHASE: VERDICT WAITING
   // ============================================================
   if (phase === 'verdict_waiting') {
-    const witnessAccepted = !!vow.witness_accepted_at;
+    const isAcceptedDareTarget = isChallenge && isTarget && !isMaker;
+    const witnessAccepted = !!vow.witness_accepted_at || isAcceptedDareTarget;
     const canSelfResolve = isMaker && (isSolo || !witnessAccepted);
 
     return (
@@ -1206,9 +1217,9 @@ function VowDetailContent() {
         <FlowStatus tone="gold">Verdict due</FlowStatus>
         <FlowTitle>
           {isWitness ? 'Time to call it.' : isSolo ? "Time's up." : `Time's up.`}<br/>
-          <span style={{ color: 'var(--uv-gold-bright)' }}>{isSolo ? 'You decide.' : `${vow.witness_name || 'Your witness'} decides.`}</span>
+          <span style={{ color: 'var(--uv-gold-bright)' }}>{isAcceptedDareTarget ? `${challengeJudgeName} decides.` : isSolo ? 'You decide.' : `${vow.witness_name || 'Your witness'} decides.`}</span>
         </FlowTitle>
-        <FlowSub>{isSolo ? 'How did it go?' : witnessAccepted ? 'They have the verdict link. Give them a nudge if you need to.' : `${vow.witness_name} never accepted. You can self-resolve.`}</FlowSub>
+        <FlowSub>{isAcceptedDareTarget ? 'The dare is done. You will get the outcome once the challenger makes the call.' : isSolo ? 'How did it go?' : witnessAccepted ? 'They have the verdict link. Give them a nudge if you need to.' : `${vow.witness_name} never accepted. You can self-resolve.`}</FlowSub>
         <FlowCard hot compact>
           <FlowLabel>The vow</FlowLabel>
           <FlowVow>{vow.refined_text}</FlowVow>
