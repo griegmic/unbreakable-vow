@@ -5,7 +5,7 @@ import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { AppMenuButton } from '@/components/app-menu';
 import { ActionCard, EmptyState, HeroTitle, NativePerfectScreen } from '@/components/native-perfect/ScreenScaffold';
 import { GoldCTA, QuietPill } from '@/components/primitives';
-import { getMyVows, getWitnessingVows, type VowRow } from '@/lib/vow-api';
+import { getMyVows, getSentChallenges, getWitnessingVows, type VowRow } from '@/lib/vow-api';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { useAuth } from '@/providers/auth-provider';
 
@@ -13,15 +13,17 @@ export default function NativePerfectDashboard() {
   const { displayName } = useAuth();
   const [myVows, setMyVows] = useState<VowRow[]>([]);
   const [judging, setJudging] = useState<VowRow[]>([]);
+  const [sentDares, setSentDares] = useState<VowRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    Promise.all([getMyVows(), getWitnessingVows()])
-      .then(([mine, watches]) => {
+    Promise.all([getMyVows(), getWitnessingVows(), getSentChallenges()])
+      .then(([mine, watches, dares]) => {
         if (!alive) return;
         setMyVows(mine);
         setJudging(watches);
+        setSentDares(dares);
       })
       .finally(() => alive && setLoading(false));
     return () => { alive = false; };
@@ -31,6 +33,8 @@ export default function NativePerfectDashboard() {
   const heroTitle = firstName ? `Hey, ${firstName}.` : 'Ready when you are.';
   const avatarInitial = firstName || 'UV';
   const needsNow = useMemo(() => {
+    const dareVerdict = sentDares.find(v => v.challenge_status === 'accepted' && v.status === 'awaiting_verdict');
+    if (dareVerdict) return { type: 'dare_verdict', vow: dareVerdict };
     const ownVerdict = myVows.find(v => v.status === 'awaiting_verdict');
     if (ownVerdict) return { type: 'own_verdict', vow: ownVerdict };
     const witnessPending = myVows.find(v => isWaitingWitness(v));
@@ -38,7 +42,7 @@ export default function NativePerfectDashboard() {
     const verdictDue = judging.find(v => v.status === 'awaiting_verdict');
     if (verdictDue) return { type: 'verdict', vow: verdictDue };
     return null;
-  }, [judging, myVows]);
+  }, [judging, myVows, sentDares]);
 
   return (
     <NativePerfectScreen>
@@ -55,14 +59,14 @@ export default function NativePerfectDashboard() {
       {!loading && needsNow ? (
         <ActionCard
           meta="Needs you now"
-          title={needsNow.type === 'verdict' ? `${needsNow.vow.witness_name || 'Someone'} needs your verdict.` : needsNow.type === 'own_verdict' ? verdictTitle(needsNow.vow) : `${needsNow.vow.witness_name || 'Your witness'} still needs the invite.`}
-          body={needsNow.type === 'verdict' ? vowTitle(needsNow.vow) : needsNow.type === 'own_verdict' ? verdictBody(needsNow.vow) : 'One tap gets the witness loop moving.'}
+          title={needsNow.type === 'dare_verdict' ? 'Your dare needs a verdict.' : needsNow.type === 'verdict' ? `${needsNow.vow.witness_name || 'Someone'} needs your verdict.` : needsNow.type === 'own_verdict' ? verdictTitle(needsNow.vow) : `${needsNow.vow.witness_name || 'Your witness'} still needs the invite.`}
+          body={needsNow.type === 'dare_verdict' ? `${targetLabel(needsNow.vow)} is waiting on your call.` : needsNow.type === 'verdict' ? vowTitle(needsNow.vow) : needsNow.type === 'own_verdict' ? verdictBody(needsNow.vow) : 'One tap gets the witness loop moving.'}
           tone="orange"
           onPress={() => openVow(needsNow.vow)}
         />
       ) : null}
 
-      {!loading && myVows.length === 0 && judging.length === 0 ? (
+      {!loading && myVows.length === 0 && judging.length === 0 && sentDares.length === 0 ? (
         <EmptyState
           title="No vows on the line."
           body="Make one promise worth keeping. Your dashboard will fill in as vows go live."
@@ -103,6 +107,22 @@ export default function NativePerfectDashboard() {
         </>
       ) : null}
 
+      {!loading && sentDares.length > 0 ? (
+        <>
+          <SectionHeader title="Dares you made" count={sentDares.length} />
+          {sentDares.slice(0, 4).map(dare => (
+            <ActionCard
+              key={dare.id}
+              meta={sentDareStatus(dare)}
+              title={vowTitle(dare)}
+              body={`${targetLabel(dare)} · ${sentDareNextStep(dare)}`}
+              tone={sentDareTone(dare)}
+              onPress={() => openVow(dare)}
+            />
+          ))}
+        </>
+      ) : null}
+
       <View style={styles.actions}>
         <GoldCTA label="Make a vow" onPress={() => router.push('/native-perfect/quick-vow' as never)} />
         <View style={styles.quietActions}>
@@ -134,6 +154,31 @@ function vowTitle(vow: VowRow) {
 function stakeLabel(vow: VowRow) {
   if (isPendingDare(vow)) return 'Dare sent';
   return vow.stake_amount > 0 ? `$${Math.round(vow.stake_amount / 100)} on the line` : '$0 on the line';
+}
+
+function targetLabel(vow: VowRow) {
+  if (vow.target_phone) return `Target ${vow.target_phone.slice(-4)}`;
+  return 'Dare target';
+}
+
+function sentDareStatus(vow: VowRow) {
+  if (vow.challenge_status === 'accepted') return vow.status === 'awaiting_verdict' ? 'Time to judge' : 'You judge';
+  if (vow.challenge_status === 'declined') return 'Backed down';
+  if (vow.challenge_status === 'expired') return 'Expired';
+  return 'Waiting';
+}
+
+function sentDareNextStep(vow: VowRow) {
+  if (vow.challenge_status === 'accepted') return vow.status === 'awaiting_verdict' ? 'deliver the verdict' : `${timeLabel(vow)} until verdict`;
+  if (vow.challenge_status === 'declined') return 'closed cleanly';
+  if (vow.challenge_status === 'expired') return 'no response';
+  return 'waiting on their answer';
+}
+
+function sentDareTone(vow: VowRow): 'gold' | 'green' | 'orange' | 'red' | 'blue' {
+  if (vow.challenge_status === 'accepted') return vow.status === 'awaiting_verdict' ? 'orange' : 'green';
+  if (vow.challenge_status === 'declined' || vow.challenge_status === 'expired') return 'red';
+  return 'orange';
 }
 
 function witnessLabel(vow: VowRow) {

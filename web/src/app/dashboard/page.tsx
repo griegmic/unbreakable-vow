@@ -211,12 +211,14 @@ export default function DashboardPage() {
         .order('created_at', { ascending: false }),
     ]);
 
-    // Merge accepted challenges into myVows so they appear in active/stats
+    // "Your vows" means promises this user must keep. Outbound challenges
+    // belong in the dares section even though this user created the row.
     const myVowsData = (myRes.data ?? []) as DashboardVow[];
+    const selfVowsData = myVowsData.filter(vow => vow.vow_type !== 'challenge');
     const acceptedChallenges = (acceptedChallengeRes.data ?? []) as DashboardVow[];
     const merged: DashboardVow[] = [
-      ...myVowsData,
-      ...acceptedChallenges.filter(v => !myVowsData.some(m => m.id === v.id)),
+      ...selfVowsData,
+      ...acceptedChallenges.filter(v => !selfVowsData.some(m => m.id === v.id)),
     ];
 
     // Resolve maker display names for witnessing vows
@@ -572,23 +574,23 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Section 2: DARES YOU SENT */}
+        {/* Section 2: DARES YOU MADE */}
         {(() => {
-          // Show outbound dares that are pending, declined, or expired (48h no response)
-          // Accepted dares that are active already appear in "Your Vows"
+          // Outbound dares are never "Your vows"; when accepted, you are the judge.
           const DARE_EXPIRY_MS = 48 * 3600000; // 48 hours
           const pendingDares = outboundDares.filter(v => {
             if (v.challenge_status === 'pending') return true;
             if (v.challenge_status === 'declined') return true;
-            // Show expired: pending but created > 48h ago (already filtered by challenge_status above)
+            if (v.challenge_status === 'expired') return true;
+            // Also show locally expired pending dares before the backend catches up.
             return false;
           }).map(v => {
             // Mark expired pending dares
             const age = Date.now() - new Date(v.created_at).getTime();
             const isExpired = v.challenge_status === 'pending' && age > DARE_EXPIRY_MS;
-            return { ...v, _dareState: isExpired ? 'expired' as const : v.challenge_status === 'declined' ? 'declined' as const : 'pending' as const };
+            return { ...v, _dareState: isExpired || v.challenge_status === 'expired' ? 'expired' as const : v.challenge_status === 'declined' ? 'declined' as const : 'pending' as const };
           });
-          // Also show recently accepted dares (last 24h) as a brief confirmation
+          // Accepted outbound dares stay here because the maker is the judge, not the keeper.
           const recentAccepted = outboundDares.filter(v =>
             v.challenge_status === 'accepted' &&
             ['active', 'sealed', 'awaiting_verdict'].includes(v.status)
@@ -601,7 +603,7 @@ export default function DashboardPage() {
             <div style={{ marginBottom: 32 }}>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 14, paddingBottom: 8, borderBottom: '1px solid var(--uv-gold-line)' }}>
                 <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, fontWeight: 600, letterSpacing: '0.32em', textTransform: 'uppercase', color: 'var(--uv-gold-bright)' }}>
-                  Dares you sent
+                  Dares you made
                 </span>
                 <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 12.5, color: 'var(--uv-text-muted)' }}>· {allDares.length}</span>
               </div>
@@ -611,20 +613,22 @@ export default function DashboardPage() {
                   const targetName = dare.target_display_name || (dare.target_phone ? dare.target_phone.replace(/(\d{3})(\d{3})(\d{4})/, '($1) $2-$3') : 'Someone');
                   const sentAgo = Math.max(1, Math.round((Date.now() - new Date(dare.created_at).getTime()) / 3600000));
                   const hoursUntilExpiry = Math.max(0, Math.round((DARE_EXPIRY_MS - (Date.now() - new Date(dare.created_at).getTime())) / 3600000));
+                  const daysUntilVerdict = dare.ends_at ? Math.ceil((new Date(dare.ends_at).getTime() - Date.now()) / 86400000) : null;
+                  const isVerdictDue = dare.status === 'awaiting_verdict';
 
                   const pillTone = dare._dareState === 'pending' ? 'amber'
                     : dare._dareState === 'accepted' ? 'gold'
                     : 'muted';
 
                   const pillText = dare._dareState === 'pending' ? 'Waiting'
-                    : dare._dareState === 'accepted' ? 'Accepted'
+                    : dare._dareState === 'accepted' ? (isVerdictDue ? 'Time to judge' : 'You judge')
                     : dare._dareState === 'declined' ? 'Backed down'
                     : 'Expired';
 
                   const timeText = dare._dareState === 'pending'
                     ? (hoursUntilExpiry > 0 ? `Expires in ${hoursUntilExpiry}h` : 'Expiring soon')
                     : dare._dareState === 'accepted'
-                      ? `Accepted`
+                      ? (isVerdictDue ? 'Verdict due' : daysUntilVerdict !== null ? `${Math.max(0, daysUntilVerdict)} days left` : 'Active')
                       : dare._dareState === 'declined'
                         ? `${sentAgo}h ago`
                         : 'No response';
@@ -689,7 +693,7 @@ export default function DashboardPage() {
                         borderTop: '1px dashed var(--uv-border)',
                       }}>
                         <span style={{ fontFamily: 'var(--uv-font-sans)', fontSize: 13, fontWeight: 500, color: 'var(--uv-text-muted)' }}>
-                          Dared {targetName}
+                          {dare._dareState === 'accepted' ? `Judging ${targetName}` : `Dared ${targetName}`}
                         </span>
                         {stakeDollars > 0 && (
                           <span style={{ fontFamily: 'var(--uv-font-sans)', fontWeight: 700, fontSize: 14, color: 'var(--uv-gold-bright)', fontFeatureSettings: '"tnum"' }}>

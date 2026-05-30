@@ -377,7 +377,8 @@ export interface AuditEvent {
 export async function getMyVows(): Promise<VowRow[]> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return [];
-  // Fetch vows I created
+  // Fetch vows I created. Outbound challenges are not "my vows";
+  // they are judging responsibilities and live in the dares surface.
   const { data: myData, error: myError } = await supabase.from('vows')
     .select('*')
     .eq('user_id', session.user.id)
@@ -393,7 +394,7 @@ export async function getMyVows(): Promise<VowRow[]> {
     .order('created_at', { ascending: false });
   if (challengeError) { console.error('[vow-api] getMyVows challenge error:', challengeError); }
   // Merge, avoiding duplicates
-  const my = (myData ?? []) as VowRow[];
+  const my = ((myData ?? []) as VowRow[]).filter(vow => vow.vow_type !== 'challenge');
   const challenges = (challengeData ?? []) as VowRow[];
   const myIds = new Set(my.map(v => v.id));
   return [...my, ...challenges.filter(v => !myIds.has(v.id))];
@@ -440,10 +441,11 @@ export async function getSentChallenges(): Promise<VowRow[]> {
 export async function getRecentVows(limit: number = 5): Promise<VowRow[]> {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) return [];
-  // Vows I created
+  // Vows I created. Outbound challenges are judging history, not vow history.
   const { data: myData, error: myError } = await supabase.from('vows')
     .select('*')
     .eq('user_id', session.user.id)
+    .neq('vow_type', 'challenge')
     .in('status', ['kept', 'broken', 'voided'])
     .order('created_at', { ascending: false })
     .limit(limit);

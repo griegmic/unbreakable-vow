@@ -9,9 +9,11 @@ import { channelLabel, getNotificationPlan } from '@/lib/notification-plan';
 import { getVowDetail, requestEarlyCompletion, resendWitnessInvite, type VowRow } from '@/lib/vow-api';
 import { uvColors, uvFonts } from '@/lib/uv-tokens';
 import { getWitnessUrl } from '@/lib/witness-url';
+import { useAuth } from '@/providers/auth-provider';
 
 export default function NativePerfectVowDetail() {
   const params = useLocalSearchParams<{ vowId?: string }>();
+  const { session } = useAuth();
   const [vow, setVow] = useState<VowRow | null>(null);
   const [loading, setLoading] = useState(true);
   const [nudgeText, setNudgeText] = useState('Remind witness');
@@ -48,27 +50,45 @@ export default function NativePerfectVowDetail() {
   }
 
   const isDare = vow.vow_type === 'challenge';
+  const isDareMaker = isDare && vow.user_id === session?.user?.id;
+  const isDareTarget = isDare && vow.target_user_id === session?.user?.id && !isDareMaker;
+  const dareAccepted = isDare && vow.challenge_status === 'accepted';
+  const darePending = isDare && vow.challenge_status === 'pending';
+  const dareDeclined = isDare && vow.challenge_status === 'declined';
+  const dareExpired = isDare && vow.challenge_status === 'expired';
   const judgeName = isDare ? (vow.witness_name || 'The challenger') : (vow.witness_name || 'Your witness');
+  const targetName = targetLabel(vow);
   const solo = vow.witness_name === 'Just me';
-  const witnessAccepted = Boolean(vow.witness_accepted_at) || solo || isDare;
+  const witnessAccepted = Boolean(vow.witness_accepted_at) || solo || dareAccepted;
   const waiting = !isDare && vow.status === 'active' && !vow.witness_accepted_at && !solo;
   const due = vow.status === 'awaiting_verdict';
   const kept = vow.status === 'kept';
   const broken = vow.status === 'broken';
   const live = vow.status === 'active' && witnessAccepted;
   const alertPlan = getNotificationPlan(vow);
+  const dareMakerTitle = due ? 'Time to judge.' : kept ? 'They kept it.' : broken ? 'They broke it.' : dareDeclined ? 'They backed down.' : dareExpired ? 'The dare expired.' : darePending ? 'Dare sent.' : 'Your dare is';
+  const dareMakerAccent = live ? 'active.' : undefined;
+  const dareMakerBody = due
+    ? `${targetName} is waiting on your call.`
+    : dareAccepted
+    ? `${targetName} accepted. You judge at the deadline.`
+    : dareDeclined
+    ? `${targetName} declined, so this one is closed.`
+    : dareExpired
+    ? `${targetName} did not answer in time.`
+    : 'Waiting on them to accept or back down.';
 
   return (
     <NativePerfectScreen backTo="/native-perfect/dashboard">
       <HeroTitle
-        kicker={waiting ? 'One tap away' : due ? 'Verdict due' : kept ? 'Kept' : broken ? 'Broken' : 'Vow live'}
-        title={waiting ? `Waiting for ${vow.witness_name || 'your witness'}.` : due ? 'Time is up.' : kept ? 'You kept it.' : broken ? 'You broke it.' : isDare ? 'Keep the' : 'Keep'}
-        accent={live ? (isDare ? 'dare.' : 'going.') : undefined}
-        body={waiting ? 'Your vow is sealed. Acceptance locks in your witness.' : due ? (isDare ? `${judgeName} decides if you kept the dare.` : witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} decides if you kept your word.` : `${vow.witness_name || 'Your witness'} never accepted, so you can make the call.`) : kept ? 'The stake stays put. Receipt earned.' : broken ? `${money(vow)} goes to ${vow.destination}.` : isDare ? `${judgeName} decides if you kept the dare.` : solo ? 'You are calling this one yourself.' : `${vow.witness_name || 'Your witness'} decides if you kept your word.`}
+        kicker={waiting ? 'One tap away' : due ? 'Verdict due' : kept ? 'Kept' : broken ? 'Broken' : isDareMaker ? 'Dare active' : 'Vow live'}
+        title={waiting ? `Waiting for ${vow.witness_name || 'your witness'}.` : isDareMaker ? dareMakerTitle : due ? 'Time is up.' : kept ? 'You kept it.' : broken ? 'You broke it.' : isDareTarget ? 'Keep the' : 'Keep'}
+        accent={isDareMaker ? dareMakerAccent : live ? (isDare ? 'dare.' : 'going.') : undefined}
+        body={waiting ? 'Your vow is sealed. Acceptance locks in your witness.' : isDareMaker ? dareMakerBody : due ? (isDareTarget ? `${judgeName} decides if you kept the dare.` : witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} decides if you kept your word.` : `${vow.witness_name || 'Your witness'} never accepted, so you can make the call.`) : kept ? 'The stake stays put. Receipt earned.' : broken ? `${money(vow)} goes to ${vow.destination}.` : isDareTarget ? `${judgeName} decides if you kept the dare.` : solo ? 'You are calling this one yourself.' : `${vow.witness_name || 'Your witness'} decides if you kept your word.`}
       />
 
       <ActionCard
-        meta={isDare ? 'The dare' : 'The vow'}
+        meta={isDareMaker ? 'Your dare' : isDare ? 'The dare' : 'The vow'}
         title={vow.refined_text || vow.raw_input}
         body={`${money(vow)} · ${vow.destination} · ${deadline(vow)}`}
         tone={kept ? 'green' : broken ? 'red' : waiting ? 'orange' : 'gold'}
@@ -110,7 +130,9 @@ export default function NativePerfectVowDetail() {
 
       {live ? (
         <ActionCard title={timeLeftTitle(vow)} body={`Verdict by ${deadline(vow)}.`}>
-          {isDare ? (
+          {isDareMaker ? (
+            <GoldCTA label="Back to dares" onPress={() => router.replace('/native-perfect/dares' as never)} />
+          ) : isDare ? (
             <GoldCTA label="Share progress" onPress={() => shareVow(vow)} />
           ) : (
             <GoldCTA
@@ -125,14 +147,17 @@ export default function NativePerfectVowDetail() {
           )}
           <View style={styles.quietRow}>
             {!solo && !isDare ? <QuietPill label={`Text ${vow.witness_name || 'witness'} a check-in`} onPress={() => textWitness(vow)} /> : null}
-            <QuietPill label={isDare ? 'Share dare' : 'Share vow'} onPress={() => shareVow(vow)} />
+            {isDareMaker ? <QuietPill label="Back to dashboard" onPress={() => router.replace('/native-perfect/dashboard' as never)} /> : null}
+            {!isDareMaker ? <QuietPill label={isDare ? 'Share dare' : 'Share vow'} onPress={() => shareVow(vow)} /> : null}
           </View>
         </ActionCard>
       ) : null}
 
       {due ? (
-        <ActionCard title={isDare ? 'Waiting on the verdict.' : witnessAccepted ? 'Waiting on the verdict.' : 'Make the call.'} body={isDare ? `${judgeName} has the final say.` : witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} has the final say.` : `${vow.witness_name || 'Your witness'} never accepted. This is back in your hands.`} tone="orange">
-          {isDare ? (
+        <ActionCard title={isDareMaker ? 'Deliver the verdict.' : isDare ? 'Waiting on the verdict.' : witnessAccepted ? 'Waiting on the verdict.' : 'Make the call.'} body={isDareMaker ? `${targetName} is waiting for your decision.` : isDare ? `${judgeName} has the final say.` : witnessAccepted ? `${solo ? 'You' : vow.witness_name || 'Your witness'} has the final say.` : `${vow.witness_name || 'Your witness'} never accepted. This is back in your hands.`} tone="orange">
+          {isDareMaker && vow.witness_invite_token ? (
+            <GoldCTA label="Deliver your verdict" onPress={() => router.push(`/native-perfect/w/${vow.witness_invite_token}` as never)} />
+          ) : isDare ? (
             <QuietPill label="Back to dashboard" onPress={() => router.replace('/native-perfect/dashboard' as never)} />
           ) : witnessAccepted ? (
             <QuietPill
@@ -171,6 +196,11 @@ function timeLeftTitle(vow: VowRow) {
   return days <= 1 ? 'Last stretch.' : `${days} days left`;
 }
 
+function targetLabel(vow: VowRow) {
+  if (vow.target_phone) return `Target ${vow.target_phone.slice(-4)}`;
+  return 'The dare target';
+}
+
 async function textWitness(vow: VowRow) {
   const token = vow.witness_invite_token;
   const url = getWitnessUrl(token);
@@ -184,8 +214,13 @@ async function textWitness(vow: VowRow) {
 }
 
 async function shareVow(vow: VowRow) {
-  const url = vow.witness_invite_token ? getWitnessUrl(vow.witness_invite_token) : 'https://unbreakablevow.app';
-  const message = `I made a vow: "${vow.refined_text || vow.raw_input}".`;
+  const isDare = vow.vow_type === 'challenge';
+  const url = isDare
+    ? `https://unbreakablevow.app/outcome/${vow.id}`
+    : vow.witness_invite_token ? getWitnessUrl(vow.witness_invite_token) : 'https://unbreakablevow.app';
+  const message = isDare
+    ? `I'm keeping a dare: "${vow.refined_text || vow.raw_input}".`
+    : `I made a vow: "${vow.refined_text || vow.raw_input}".`;
   await Share.share({ title: 'Unbreakable Vow', message, url });
 }
 

@@ -23,7 +23,7 @@ export default function NativePerfectDares() {
 
   return (
     <NativePerfectScreen backTo="/native-perfect/dashboard">
-      <HeroTitle title="Dares you" accent="sent." body="See who accepted, who’s stalling, and what needs a resend." />
+      <HeroTitle title="Dares you" accent="made." body="Track who accepted, who backed down, and where you need to judge." />
 
       {loading ? (
         <View style={styles.loading}>
@@ -34,7 +34,7 @@ export default function NativePerfectDares() {
 
       {!loading && dares.length === 0 ? (
         <EmptyState
-          title="No dares sent."
+          title="No dares made."
           body="Dare someone, then this becomes the home base for accepted, passed, and expired dares."
           cta="Dare someone"
           onPress={() => router.push('/cast' as never)}
@@ -46,7 +46,7 @@ export default function NativePerfectDares() {
           key={dare.id}
           meta={statusLabel(dare)}
           title={dare.refined_text || dare.raw_input}
-          body={`${stakeLabel(dare)} · ${deadlineLabel(dare)} · ${nextAlertLabel(dare)}`}
+          body={`${targetLabel(dare)} · ${stakeLabel(dare)} · ${nextAlertLabel(dare)}`}
           tone={toneFor(dare)}
           onPress={() => router.push({ pathname: '/native-perfect/vow-detail', params: { vowId: dare.id } } as never)}
         />
@@ -60,7 +60,7 @@ export default function NativePerfectDares() {
 }
 
 function statusLabel(vow: VowRow) {
-  if (vow.challenge_status === 'accepted') return vow.status === 'awaiting_verdict' ? 'Verdict due' : 'Accepted';
+  if (vow.challenge_status === 'accepted') return vow.status === 'awaiting_verdict' ? 'Time to judge' : 'You judge';
   if (vow.challenge_status === 'declined') return 'Passed';
   if (vow.challenge_status === 'expired') return 'Expired';
   return 'Waiting';
@@ -77,17 +77,22 @@ function stakeLabel(vow: VowRow) {
   return 'No stake yet';
 }
 
-function deadlineLabel(vow: VowRow) {
-  if (!vow.ends_at) return 'No deadline';
-  return new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+function targetLabel(vow: VowRow) {
+  if (vow.target_phone) return `Target ${vow.target_phone.slice(-4)}`;
+  return 'Dare target';
 }
 
 function nextAlertLabel(vow: VowRow) {
   if (vow.challenge_status === 'pending') return '24h reminder, 48h close';
-  if (vow.challenge_status === 'accepted') return 'you judge at verdict time';
+  if (vow.challenge_status === 'accepted') return vow.status === 'awaiting_verdict' ? 'deliver the verdict' : `judge ${deadlineLabel(vow)}`;
   if (vow.challenge_status === 'declined') return 'closed';
   if (vow.challenge_status === 'expired') return 'closed';
   return 'tracked here';
+}
+
+function deadlineLabel(vow: VowRow) {
+  if (!vow.ends_at) return 'when time is up';
+  return new Date(vow.ends_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 const styles = StyleSheet.create({
