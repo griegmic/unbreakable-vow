@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "gdrive": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@piotr-agier/google-drive-mcp"],
+      "env": {
+        "GOOGLE_DRIVE_MCP_CLIENT_ID": "${GOOGLE_DRIVE_MCP_CLIENT_ID}",
+        "GOOGLE_DRIVE_MCP_CLIENT_SECRET": "${GOOGLE_DRIVE_MCP_CLIENT_SECRET}",
+        "GOOGLE_DRIVE_MCP_REFRESH_TOKEN": "${GOOGLE_DRIVE_MCP_REFRESH_TOKEN}"
+      }
+    }
+  }
+}
